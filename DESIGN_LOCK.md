@@ -60,3 +60,12 @@ By the owner's direct instruction, a **site-wide typography and supermarket-name
 - This explicit exception does not authorize unrelated changes to card appearance, spacing, module structure or finance logic.
 
 The historical `design-lock/pc-home-v1` snapshot remains the original baseline. The working branch adds only this owner-approved global presentation layer.
+
+## Owner-approved icon exception — 2026-10-25
+The owner explicitly requested a distinct, semantically relevant icon/logo for **every main card (12)** and **every subcard (48)** on the PC Home.
+- This exception only allows adding the 60 pictograms and placing each subcard's icon above its label.
+- SVGs are bundled locally in `card-icons.js`, with presentation styles in `card-icons.css`; no external icon service or generated screenshots.
+- Main cards keep their original dimensions, 3 × 4 PC layout, category accent colors, labels and order.
+- Subcards keep the same count, order, navigation and Sorani labels; height may accommodate the new icon.
+- Dark, bold labels and the fixed supermarket banner remain protected.
+- All other Home design and finance/database constraints remain locked.
