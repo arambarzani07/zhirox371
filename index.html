@@ -84,7 +84,7 @@ function drawPage(){
   if(title==="کاڵای نوێ"){
    b.innerHTML='<form id="add" class="inputs"><label class="field">ناوی کاڵا<input name="name" required maxlength="160"></label><label class="field">بارکۆد<input name="code" required maxlength="60"></label><label class="field">نرخ (IQD)<input name="price" type="number" min="0" step="1" required></label><button class="primary">زیادکردن</button></form><div class="feedback" id="feedback"></div>';
    b.querySelector("#feedback").textContent=state.msg;
-  }else if(state.products.length){
+  }else if(title==="لیستی کاڵاکان"&&state.products.length){
    const t=document.createElement("table");t.innerHTML='<thead><tr><th>کاڵا</th><th>بارکۆد</th><th>نرخ</th></tr></thead><tbody></tbody>';
    state.products.forEach(p=>{const tr=document.createElement("tr");for(const v of [p.name,p.code,money(p.price)]){const td=document.createElement("td");td.textContent=v;tr.append(td)}t.tBodies[0].append(tr)});b.append(t);
   }else b.innerHTML='<div class="empty">هیچ کاڵایەک نییە</div>';
@@ -99,7 +99,7 @@ function drawPage(){
     state.cart.forEach((x,i)=>{const tr=document.createElement("tr");for(const val of [x.name,money(x.price),"",money(x.qty*x.price)]){const td=document.createElement("td");td.textContent=val;tr.append(td)}tr.children[2].innerHTML='<button class="qty" data-qty="'+i+'" data-delta="-1">−</button> '+x.qty+' <button class="qty" data-qty="'+i+'" data-delta="1">+</button>';table.tBodies[0].append(tr)});
     area.append(table)}return;
  }
- b.innerHTML='<div class="empty">هیچ تۆمارێک نییە</div>';
+ b.innerHTML='<div class="empty">هێشتا ئامادە نییە</div>';
 }
 app.addEventListener("click",e=>{
  const mod=e.target.closest("[data-module]");if(mod){const i=Number(mod.dataset.module);state.open=state.open===i?-1:i;draw();return}
