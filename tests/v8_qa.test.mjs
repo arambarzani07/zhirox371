@@ -44,9 +44,9 @@ test("fixture includes real transactional code paths and required constraints",(
  assert.match(fixture,/where status='open'/);
  assert.match(fixture,/for update/);
 });
-test("concurrent test suite executes nine isolated scenarios",()=>{
+test("concurrent test suite executes ten isolated scenarios",()=>{
  const count=(runner.match(/^test\("/gm)||[]).length;
- assert.equal(count,9);
+ assert.equal(count,10);
  assert.match(runner,/Promise\.all/);
  assert.match(runner,/spawn\("psql"/);
  assert.match(runner,/Cashier permission required/);
