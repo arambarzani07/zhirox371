@@ -27,3 +27,15 @@ Design lock snapshot: `design-lock/pc-home-v1`
 The user has expressly asked: “ڕووکاڕی دیزاین کۆد هەمیشە پیشان بدە و هاوپێچ بکە لەگەل هەموو گۆڕابکاریەکان”.
 
 This file is a collaboration/process rule, **not a technical GitHub branch protection rule**.
+
+## Whole-system preview — explicit owner instruction (2026-10-26)
+The owner explicitly requires: **«هەمیشە هەموو سیستەمەکە پیشان بدە»**.
+
+For EVERY future design or functionality iteration, display **the entire PC system** in ONE interactive, rendered code preview, rather than only the module being edited.
+- Always show the complete 12 main cards, 3 rows × 4 columns, and all 48 child modules reachable from those cards.
+- Include the latest available interior views of cashier/sales, products, stock, customers/debt, suppliers/purchases, finance/cash shifts, reporting, settings/users, offers, labels/printing, staff and audits, distinguishing unfinished modules from live ones.
+- Keep fixed supermarket header, 1020px+ desktop width even on an iPhone, high-contrast dark bold Sorani labels, stationary card grid, and module-specific SVG icons.
+- Let users navigate all sections within the preview. Do not alter or swap to a mobile layout or image preview.
+- Reflect changes in the full preview every time, not just a cropped or separate changed-screen widget.
+- Be transparent: the interactive preview is a **representation** of the verified working source and may contain demo-only controls; it is not evidence that all routes are production functional or live Supabase-connected.
+- Preserve the existing design and database locks; this instruction is a **preview delivery requirement**, not permission to change production scope.
