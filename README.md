@@ -1,7 +1,7 @@
 # سیستەمی کاشێر — Retail OS
 
 ## دۆخ
-V5 — Supabase Auth, Products, RBAC, Stock, Atomic Cash Checkout, Receipts, Cash Drawer and Shift Reconciliation. Development only; NOT production-ready.
+V6 — Supabase Auth, Products, RBAC, Cash Shifts, Receipt Name Snapshots and 58/80mm Browser Printing. Development only; NOT production-ready.
 
 ## GitHub
 - Repository: arambarzani07/zhirox371
@@ -65,6 +65,16 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 - دیزاینی سەرەتای قوفڵکراو تەنها ڕێگای چوونە ناو شێفتی بەشی «دارایی» و «شێفت و کارمەندان» وەرگرتووە.
 - شێفتەکان تاکەکەسیین بۆ هەر کاشێر؛ هێشتا ئامێری چاپ، هەژمارکردنی پارەی بانکی، گەڕاندنەوە و سندووقی هاوبەش نییە.
 - هیچ داتای ساختە یان مامەڵەی ڕاستەقینە تۆمار نەکراوە؛ QA ـی کۆتایی هێشتا ماوە.
+
+## بەشی چاپ و پشکنین — V6
+- `receipt-print.html` و `receipt-print.js`: چاپی پسووڵە بە 58/80mm، بە پشتڕاستکردنەوەی Auth و پسووڵەی Posted. هیچ پسووڵەی ساختە نییە.
+- `operations.js`: دوگمەکانی 58/80mm بۆ دووبارەچاپکردنی پسووڵەی تۆمارکراو.
+- `retail_sale_items.product_name_snapshot`: پاراستنی ناوی کاڵا لە کاتی فرۆشتن بۆ چاپی مێژوویی.
+- `db/v6_receipt_name_snapshot.sql`، `db/V6_CONTRACT.md` و `tests/v6_receipt_print.test.mjs` زیادکراون.
+- `.github/workflows/pc-foundation.yml`: پشکنینی خۆکاری کۆدەکان و پاراستنی دیزاینی قوفڵکراو.
+- ١٣ خشتەی Supabase بە RLS؛ هیچ کڕیار، پسووڵە یان فرۆشتنی ڕاستەقینە نەزیادکراوە.
+- هەڵبژاردنی چاپکەر و قەبارەی کاغەز لە دیالۆگی چاپی Windows/Browser پێویستە؛ بەڵێنی Auto Print و ESC/POS نەدراوە.
+- هێشتا هەڵسەنگاندنی E2E بە دوو کاشێری ڕاستەقینە و تاقیکردنەوەی چاپکەر ماوە.
 
 ## Safety / remaining work
 - All remaining Home-linked internal modules are either empty scaffolds or local/in-memory prototypes.
