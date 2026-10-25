@@ -96,3 +96,37 @@ jobs:
         run: node tests/browser/pc_all_headings_contrast.mjs
       - name: Confirm all 60 redesigned pictograms and stationary cards in Chromium
         run: node tests/browser/pc_icon_visual_polish.mjs
+  v12-real-auth-rls:
+    name: V12 — Real local Supabase Auth / JWT / PostgREST / RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Checkout repository (never a hosted DB)
+        uses: actions/checkout@v4
+      - name: Node 22 for authenticated E2E assertions
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Supabase local CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.81.3
+      - name: Start isolated local GoTrue, PostgREST and PostgreSQL containers
+        run: |
+          supabase --version
+          supabase init --yes
+          supabase start
+      - name: Apply verified retail contract ONLY to disposable local DB
+        env:
+          PGPASSWORD: postgres
+        run: |
+          python3 tests/v12/prepare_local_fixture.py > /tmp/v12-local-functions.sql
+          psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f /tmp/v12-local-functions.sql
+          psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v12/rls_mirror.sql
+      - name: Install pinned Supabase JS client (temporary QA dependency)
+        run: npm install --no-save --no-package-lock @supabase/supabase-js@2.118.0
+      - name: Real signup, JWT, RBAC, tenant RLS and local-only TRUNCATE regression test
+        run: node tests/v12/auth_rls_e2e.mjs
+      - name: Stop and remove disposable Supabase stack
+        if: always()
+        run: supabase stop --no-backup || true
