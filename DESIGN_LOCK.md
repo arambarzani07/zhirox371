@@ -79,3 +79,11 @@ Owner requested **stationary PC screens with no shifting**:
 - The PC Home remains at least 1020px wide with 12 cards in the original 3 × 4 positions; on narrow viewers, horizontal panning is permitted rather than rewriting the PC design for mobile.
 - Thermal receipt printing bypasses screen-lock CSS in print media.
 - Implementation is isolated to \`ui-fixed-pc.css\`, loaded on each HTML page. No financial RPC, RLS, database, old POS or PC Relay change is authorized.
+
+## Owner-approved premium pictogram refinement — 2026-10-26
+The owner explicitly requested that all module/card logos look more attractive.
+- Keep all **60 unique**, semantically matched, local SVG pictograms (12 main + 48 subcard).
+- Refine them with consistent thicker strokes, subdued two-tone accents, soft tinted gradient badge backgrounds, a delicate border and subtle static depth.
+- Source: `card-icons.js` and `card-icons.css`, tested by `tests/browser/pc_icon_visual_polish.mjs`.
+- No animation/movement, no background image requests, no external CDN, no change to 3x4 layout, actual card dimensions, icon assignment, names, RTL, contrast, finances or database.
+- All future replies continue to show the whole PC system in one navigable code preview.
