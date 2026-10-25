@@ -45,6 +45,7 @@ th{background:#fafbfd;color:#74849a;font-weight:800}
 .footer-actions{display:flex;gap:9px;margin-top:18px}
 select option{color:#26384d}
 .receipt-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.receipt-head h2{margin:0}.receipt-detail{margin-top:18px;border:1px solid #e3eaf2;padding:20px;border-radius:12px;background:#fbfcfe}.receipt-action{border:1px solid #e2e8f1;border-radius:8px;background:#fff;padding:7px 11px;color:#456282;font-weight:750;font-size:12px}.receipt-metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:13px;font-size:12px;color:#63768d}.receipt-metrics strong{color:#24466e}
+.shift-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}.shift-metrics>div{min-height:95px;padding:18px;background:#f7f9fc;border:1px solid #e9edf3;border-radius:11px;display:flex;flex-direction:column;justify-content:space-between}.shift-metrics span{font-size:12px;color:#74849a}.shift-metrics strong{font-size:18px;color:#274871;direction:ltr;text-align:right}.shift-report{margin-top:18px;background:#f8fafc;border:1px solid #e4eaf1;padding:17px;border-radius:11px;font-size:13px}.shift-report dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.shift-report dt{color:#7a8ba0;font-size:12px;margin-bottom:5px}.shift-report dd{margin:0;font-weight:800}
 [hidden]{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
@@ -72,6 +73,7 @@ select option{color:#26384d}
 <section id="operations-panel" hidden>
 <nav class="nav" id="tabs">
 <button data-tab="cash" type="button">فرۆشتنی کاش</button>
+<button data-tab="shift" type="button">سندووق و شێفت</button>
 <button data-tab="receipts" type="button">پسووڵەکان</button>
 <button data-tab="stock" type="button">کۆگا</button>
 <button data-tab="staff" type="button">کارمەندان</button>
@@ -98,6 +100,40 @@ select option{color:#26384d}
 </form>
 <div class="msg" id="checkout-msg" role="status"></div>
 </aside>
+</section>
+<section id="shift-panel" class="surface" hidden>
+<div class="receipt-head"><h2>سندووق و شێفت</h2><button class="secondary" id="shift-refresh" type="button">نوێکردنەوە</button></div>
+<div id="shift-current" class="shift-info" hidden>
+<div class="shift-metrics">
+<div><span>پارەی سەرەتا</span><strong id="shift-opening">0 IQD</strong></div>
+<div><span>کۆی فرۆشتن</span><strong id="shift-sales">0 IQD</strong></div>
+<div><span>جووڵەی پارە</span><strong id="shift-moves">0 IQD</strong></div>
+<div><span>پارەی چاوەڕوانکراو</span><strong id="shift-expected">0 IQD</strong></div>
+</div>
+</div>
+<form id="shift-open-form" class="formrow">
+<label class="field">پارەی سەرەتای شێفت (IQD)<input type="number" name="opening" min="0" max="9999999999999" step="1" required></label>
+<button class="primary" type="submit">کردنەوەی شێفت</button>
+</form>
+<div id="shift-active-forms" hidden>
+<div class="line"></div>
+<h2>هاتووچۆی پارە</h2>
+<form id="shift-movement-form" class="formrow">
+<label class="field">جۆر<select name="kind"><option value="cash_in">پارەی هاتوو</option><option value="cash_out">پارەی دەرچوو</option></select></label>
+<label class="field">بڕ (IQD)<input name="amount" type="number" min="1" max="9999999999999" step="1" required></label>
+<label class="field">هۆکار<input name="note" maxlength="160" required autocomplete="off"></label>
+<button class="primary" type="submit">تۆمارکردن</button>
+</form>
+<div class="line"></div>
+<h2>داخستنی شێفت</h2>
+<form id="shift-close-form" class="formrow">
+<label class="field">پارەی ژمێردراوی سندووق (IQD)<input name="counted" type="number" min="0" max="9999999999999" step="1" required></label>
+<button class="primary" type="submit">داخستنی شێفت</button>
+</form>
+</div>
+<div class="msg" id="shift-msg" role="status"></div>
+<div id="shift-report" class="shift-report" hidden></div>
+<div id="shift-history"></div>
 </section>
 <section id="stock-panel" class="surface" hidden>
 <h2>تۆمارکردنی کاڵای هاتوو</h2>
