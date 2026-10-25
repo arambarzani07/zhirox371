@@ -62,3 +62,27 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/fixture.sql
       - name: Concurrent checkout, request replay, cash movement and shift-close verification
         run: node --test --test-concurrency=1 tests/integration/concurrency.test.mjs
+  browser-readability:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PC design source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned headless Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Serve actual PC source locally
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/retail-preview-server.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8765/index.html > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/retail-preview-server.log
+          exit 1
+      - name: Read all 60 card labels in real browser, including narrow dark viewport
+        run: node tests/browser/pc_card_readability.mjs
