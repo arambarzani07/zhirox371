@@ -96,6 +96,8 @@ jobs:
         run: node tests/browser/pc_all_headings_contrast.mjs
       - name: Confirm all 60 redesigned pictograms and stationary cards in Chromium
         run: node tests/browser/pc_icon_visual_polish.mjs
+      - name: Check Products-owned multi barcode and carton registration in isolated Chromium
+        run: node tests/browser/v14_product_catalog.mjs
   v12-real-auth-rls:
     name: V12 — Real local Supabase Auth / JWT / PostgREST / RLS
     runs-on: ubuntu-latest
