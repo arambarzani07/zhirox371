@@ -89,7 +89,11 @@ if(main.length!==12||sub.length!==12||sub.some(row=>row.length!==4)||new Set(exp
  expected.some(id=>!icons[id])||Object.keys(icons).length!==60)throw Error("Home icon catalog incomplete or duplicated");
 function svg(id){
  const body=icons[id];if(!body)throw Error("Unknown card icon: "+id);
- return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+body+'</svg>';
+ return '<svg xmlns="http://www.w3.org/2000/svg" class="retail-pictogram" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+  +'<circle class="pictogram-halo" cx="19.4" cy="4.6" r="3.2" fill="currentColor" stroke="none" opacity=".13"/>'
+  +'<g class="pictogram-lines">'+body+'</g>'
+  +'<path class="pictogram-glint" d="M3.4 5.4 5.4 3.4" stroke="currentColor" stroke-width="1.3" opacity=".55"/>'
+  +'</svg>';
 }
 window.RetailCardIcons=Object.freeze({main:Object.freeze(main),sub:Object.freeze(sub.map(row=>Object.freeze(row))),svg});
 })();
