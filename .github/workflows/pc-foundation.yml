@@ -1,0 +1,26 @@
+name: Retail OS PC Foundation Checks
+on:
+  push:
+    branches:
+      - feature/retail-os-pc-foundation
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  static-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch immutable design baseline
+        run: git fetch origin +refs/heads/design-lock/pc-home-v1:refs/remotes/origin/design-lock/pc-home-v1
+      - name: Configure Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run foundation, Home-lock and UI safety tests
+        run: node --test tests/*.test.mjs
