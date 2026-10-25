@@ -33,7 +33,7 @@ test("same product never accepts repeated barcode across unit, alias and carton"
  assert.throws(()=>parse(bad2),/دووبارە/);
 });
 test("carton requires a paired unique barcode, units per carton and its OWN sale price",()=>{
- for(const [key,val] of [["carton_barcode",""],["units_per_carton",""],["carton_price",""]]]){
+ for(const [key,val] of [["carton_barcode",""],["units_per_carton",""],["carton_price",""]]){
   const bad=new Map(advanced);bad.set(key,val);assert.throws(()=>parse(bad),/پێویستن/);
  }
  for(const v of ["1","0","2.5","-3","100001"]){
