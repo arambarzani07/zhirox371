@@ -1,7 +1,7 @@
 # سیستەمی کاشێر — Retail OS
 
 ## دۆخ
-V2 — Supabase Auth and Products Foundation. Development only; NOT production-ready.
+V3 — Supabase Auth, Products, Role-Based Permissions, Stock Intake and Atomic Cash Checkout. Development only; NOT production-ready.
 
 ## GitHub
 - Repository: arambarzani07/zhirox371
@@ -35,6 +35,17 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 - Product and initial barcode creation is all-or-nothing (one database transaction).
 - anon cannot call retail_create_product. authenticated cannot directly insert sales or stock events.
 - No store, account or product has been seeded.
+
+## بەشە نوێیەکان — V3
+- `operations.html` + `operations.js`: فرۆشتنی کاش، هاتنی کۆگا، دەسەڵاتی کارمەندان، تۆماری چاودێری.
+- ڕووکاری قوفڵکراوی `index.html` تەنها لە ڕێگای کلیلککردنەوە بۆ ئەم بەشانە پەیوەست کرا؛ CSS و 12 کارت نەگۆڕدراون.
+- خاوەن دەتوانێت ڕۆڵی manager/cashier بۆ Auth user UUID ـی موجود دابنێت، ناتوانێت خۆی بە خۆی مۆڵەت بەخشێت.
+- بەڕێوەبەر و خاوەن دەتوانن کۆگا زیاد بکەن؛ کاشێر دەتوانێت فرۆشتنی کاش تۆمار بکات.
+- پسووڵە، کۆگا و audit لە یەک تراکنشندا تۆمار دەکرێن؛ دووبارەکردنەوەی request UUID هەمان فرۆشتن دەگەڕێنێتەوە.
+- سنوور: تەنها IQD، پارەی کاش، کاڵای تاک و بڕی تەواو. چاپکەر، کارتۆن، قەرز و پارەدانی تێکەڵ هێشتا نییە.
+- پڕۆژە هێشتا بە دوو کاشێری ڕاستەقینە هاوکات تاقی نەکراوەتەوە و بۆ بەکارهێنانی ڕاستەقینە ڕێگەپێنەدراوە.
+- قەراردادی تەواو و سنوورەکان لە [db/V3_CONTRACT.md](db/V3_CONTRACT.md).
+- پشکنینی کۆدی V3: `node --test tests/v3_operations.test.mjs` (Node 22+).
 
 ## Safety / remaining work
 - All remaining Home-linked internal modules are either empty scaffolds or local/in-memory prototypes.
