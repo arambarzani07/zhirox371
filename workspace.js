@@ -142,17 +142,26 @@
   });
   $("product-form").addEventListener("submit",async event=>{
     event.preventDefault();if(!db||!store||!user)return;
-    const f=new FormData(event.currentTarget),name=String(f.get("name")||"").trim(),
-      barcode=String(f.get("barcode")||"").trim(),price=Number(f.get("price"));
-    if(!name||name.length>160||!barcode||barcode.length>60||!Number.isSafeInteger(price)||price<0||price>999999999){
-      message("product-message","زانیارییەکان بە دروستی پڕ بکەرەوە","error");return;
-    }
+    let catalog;
+    try {
+      catalog=window.RetailCatalog.fromForm(new FormData(event.currentTarget));
+    }catch(error){message("product-message",error.message,"error");return;}
     const btn=$("save-product");busy(btn,true);message("product-message","");
     try {
-      const {error}=await db.rpc("retail_create_product",{
-        p_store_id:store.id,p_name:name,p_barcode:barcode,p_price_minor:price
-      });
-      if(error)throw error;
+      // Product definitions, costs and pack barcodes belong exclusively here,
+      // NEVER in cashier. The legacy RPC only supports one unit barcode and price.
+      // Full details are sent atomically ONLY if the advanced server RPC is ready.
+      const result=catalog.advanced?
+        await db.rpc("retail_register_product_v14",{p_store_id:store.id,p_catalog:catalog}):
+        await db.rpc("retail_create_product",{
+          p_store_id:store.id,p_name:catalog.name,
+          p_barcode:catalog.unit_barcode,p_price_minor:catalog.unit_sale_price_iqd
+        });
+      if(result.error){
+        if(catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
+          throw new Error("تۆمارکردنی فرەبارکۆد و کارتۆن هێشتا لە داتابەیس چالاک نییە");
+        throw result.error;
+      }
       event.target.reset();message("product-message","کاڵاکە بە سەرکەوتوویی تۆمارکرا","success");
     }catch(error){message("product-message",explain(error),"error");}
     finally{busy(btn,false);}
