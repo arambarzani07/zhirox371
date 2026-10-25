@@ -47,6 +47,9 @@ try{
    for(let j=0;j<4;j++){
      await readable(page.locator(".subgrid .sub-name").nth(j),"subcard "+(i+1)+"/"+(j+1));
    }
+   // Drawer is an overlay by design; close it before selecting another main card.
+   await page.locator("[data-close]").click();
+   assert.equal(await page.locator(".drawer").count(),0);
  }
  assert.equal(checked,60);
  const desktopWidth=await page.locator(".desktop").evaluate(x=>x.getBoundingClientRect().width);
