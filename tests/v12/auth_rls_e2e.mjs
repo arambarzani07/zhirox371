@@ -35,7 +35,16 @@ const login=async role=>{
  assert.ok(auth.data.session?.access_token.split(".").length===3,"JWT missing");
  const who=await client.auth.getUser();
  assert.equal(ok(who,"getUser")?.user?.id,id,"GoTrue must verify issued token");
- return {role,id,client};
+ const jwt=auth.data.session.access_token;
+ const claims=JSON.parse(Buffer.from(jwt.split(".")[1],"base64url").toString("utf8"));
+ assert.equal(claims.sub,id,"real GoTrue JWT user ID");
+ assert.equal(claims.role,"authenticated","JWT database role must be authenticated");
+ // The test runs without browser storage. Forward the just-issued REAL JWT
+ // explicitly through PostgREST; never let a forgotten in-memory session
+ // downgrade calls to the anon key during isolated Node integration tests.
+ const api=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+   global:{headers:{Authorization:"Bearer "+jwt}}});
+ return {role,id,client:api};
 };
 function localSQL(query){
  const args=["-X","-q","-h","127.0.0.1","-p","54322","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1","-t","-A","-c",query];
