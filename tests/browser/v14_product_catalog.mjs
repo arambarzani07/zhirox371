@@ -11,7 +11,7 @@ const origin=process.env.PC_PREVIEW_ORIGIN||"http://127.0.0.1:8765";
 const pageErrors=[];page.on("pageerror",e=>pageErrors.push(e.message));
 await page.route("https://cdn.jsdelivr.net/**",r=>r.fulfill({status:200,contentType:"application/javascript",body:"/* isolated QA client */"}));
 await page.addInitScript({content:fixture});
-const input=name=>page.locator('[name="'+name+'"]');
+const input=name=>page.locator('#product-form [name="'+name+'"]');
 async function fillAdvanced(){
  await input("name").fill("شیری تاقیکردنەوە");
  await input("sku").fill("MILK-101");
