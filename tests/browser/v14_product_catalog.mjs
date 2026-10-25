@@ -40,8 +40,9 @@ try {
  assert.equal(await numRpc("retail_register_product_v14"),0,"invalid input unexpectedly wrote");
  await input("carton_barcode").fill("6260001112230");
  await input("units_per_carton").fill("1");
+ assert.equal(await page.locator("#product-form").evaluate(form=>form.checkValidity()),false,
+   "browser blocks carton quantity below minimum before submitting");
  await page.locator("#save-product").click();
- assert.match(await page.locator("#product-message").innerText(),/نادروستە/);
  assert.equal(await numRpc("retail_register_product_v14"),0);
  await input("units_per_carton").fill("12");
  await page.locator("#save-product").click();
