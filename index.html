@@ -27,11 +27,13 @@ table{width:100%;border-collapse:collapse;margin-top:22px;font-size:13px}th,td{p
 .qty{border:1px solid #e2e9f1;border-radius:7px;background:#f2f5f8;padding:5px 10px}.feedback{min-height:26px;padding-top:12px;font-size:12px;color:#b25b4e}
 </style>
 <link rel="stylesheet" href="./ui-global.css">
+<link rel="stylesheet" href="./card-icons.css">
 </head>
 <body>
 <div class="market-banner">سوپەرمارکێتی کانی چنار</div><div class="viewport"><div class="desktop">
 <header><div class="brand"><i>◈</i><span>سیستەمی کاشێر</span></div><button class="home" id="home" title="سەرەتا" aria-label="سەرەتا">⌂</button></header>
 <main id="app"></main></div></div>
+<script src="./card-icons.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -50,6 +52,7 @@ const specs=[
 ["شێفت و کارمەندان","#a67d45","#fbf1e3","▤",["شێفتەکان","ئامادەبوون","کاتی کار","هەڵسەنگاندن"]],
 ["چاودێری و مۆڵەتەکان","#745dc5","#eeeafd","♢",["ئاگادارییەکان","داوای مۆڵەت","گۆڕانکارییەکان","پشکنینی مامەڵە"]]
 ];
+const cardIcons=window.RetailCardIcons;
 const state={open:-1,page:null,products:[],cart:[],msg:""};
 const money=n=>n.toLocaleString("en-US")+" IQD";
 function back(){state.page=null;state.msg="";draw()}
@@ -64,14 +67,14 @@ function draw(){
    const b=document.createElement("button");b.type="button";b.className="module";b.dataset.module=i;b.setAttribute("aria-expanded",String(i===state.open));
    b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);
    b.innerHTML='<span class="icon"></span><span class="end"><span class="name"></span><span class="chev">⌄</span></span>';
-   b.querySelector(".icon").textContent=s[3];b.querySelector(".name").textContent=s[0];row.append(b);
+   b.querySelector(".icon").innerHTML=cardIcons.svg(cardIcons.main[i]);b.querySelector(".name").textContent=s[0];row.append(b);
   }
   app.append(row);
   if(Math.floor(state.open/4)===r&&state.open>=0){
    const s=specs[state.open],drawer=document.createElement("div");drawer.className="drawer";
    drawer.innerHTML='<div class="drawerhead"><strong></strong><button class="close" data-close aria-label="داخستن">✕</button></div><div class="subgrid"></div>';
    drawer.querySelector("strong").textContent=s[0];
-   s[4].forEach((label,j)=>{const b=document.createElement("button");b.className="sub";b.dataset.sub=j;b.innerHTML="<span></span><span>↖</span>";b.firstElementChild.textContent=label;drawer.querySelector(".subgrid").append(b)});
+   s[4].forEach((label,j)=>{const b=document.createElement("button");b.className="sub";b.dataset.sub=j;b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);b.innerHTML='<span class="sub-icon"></span><span class="sub-footer"><span class="sub-name"></span><span class="sub-arrow">↖</span></span>';b.querySelector(".sub-icon").innerHTML=cardIcons.svg(cardIcons.sub[state.open][j]);b.querySelector(".sub-name").textContent=label;drawer.querySelector(".subgrid").append(b)});
    app.append(drawer);
   }
  }
