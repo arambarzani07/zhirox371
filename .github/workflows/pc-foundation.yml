@@ -94,3 +94,5 @@ jobs:
         run: node tests/browser/pc_forms_interaction.mjs
       - name: Verify headings, field labels, blank states and tabs stay dark in PC UI
         run: node tests/browser/pc_all_headings_contrast.mjs
+      - name: Confirm all 60 redesigned pictograms and stationary cards in Chromium
+        run: node tests/browser/pc_icon_visual_polish.mjs
