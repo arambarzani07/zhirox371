@@ -71,6 +71,18 @@ function makeReadableLabel(node){
  return node;
 }
 
+function focusModule(index){
+ if(index<0)return;
+ const button=app.querySelector('[data-module="'+index+'"]');
+ if(button)button.focus({preventScroll:true});
+}
+function closeSubmenu(restoreFocus=true){
+ const previouslyOpen=state.open;
+ if(previouslyOpen<0)return;
+ state.open=-1;
+ draw();
+ if(restoreFocus)focusModule(previouslyOpen);
+}
 function back(){state.page=null;state.msg="";draw()}
 function draw(){
  if(state.page){drawPage();return}
@@ -80,14 +92,14 @@ function draw(){
   const row=document.createElement("div");row.className="row";
   for(let c=0;c<4;c++){
    const i=r*4+c,s=specs[i];
-   const b=document.createElement("button");b.type="button";b.className="module";b.dataset.module=i;b.setAttribute("aria-expanded",String(i===state.open));
+   const b=document.createElement("button");b.type="button";b.className="module";b.dataset.module=i;b.setAttribute("aria-expanded",String(i===state.open));if(i===state.open)b.setAttribute("aria-controls","market-card-submenu");
    b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);
    b.innerHTML='<span class="icon"></span><span class="end"><span class="name"></span><span class="chev">⌄</span></span>';
    b.querySelector(".icon").innerHTML=cardIcons.svg(cardIcons.main[i]);const mainLabel=makeReadableLabel(b.querySelector(".name"));mainLabel.textContent=s[0];row.append(b);
   }
   app.append(row);
   if(Math.floor(state.open/4)===r&&state.open>=0){
-   const s=specs[state.open],drawer=document.createElement("div");drawer.className="drawer";
+   const s=specs[state.open],drawer=document.createElement("div");drawer.className="drawer";drawer.id="market-card-submenu";drawer.setAttribute("role","region");drawer.setAttribute("aria-label",s[0]);
    drawer.innerHTML='<div class="drawerhead"><strong></strong><button class="close" data-close aria-label="داخستن">✕</button></div><div class="subgrid"></div>';
    makeReadableLabel(drawer.querySelector(".drawerhead strong")).textContent=s[0];
    s[4].forEach((label,j)=>{const b=document.createElement("button");b.className="sub";b.dataset.sub=j;b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);b.innerHTML='<span class="sub-icon"></span><span class="sub-footer"><span class="sub-name"></span><span class="sub-arrow">↖</span></span>';b.querySelector(".sub-icon").innerHTML=cardIcons.svg(cardIcons.sub[state.open][j]);makeReadableLabel(b.querySelector(".sub-name")).textContent=label;drawer.querySelector(".subgrid").append(b)});
@@ -123,9 +135,11 @@ function drawPage(){
  b.innerHTML='<div class="empty">هێشتا ئامادە نییە</div>';
 }
 app.addEventListener("click",e=>{
- const mod=e.target.closest("[data-module]");if(mod){const i=Number(mod.dataset.module);state.open=state.open===i?-1:i;draw();return}
- if(e.target.closest("[data-close]")){state.open=-1;draw();return}
+ const mod=e.target.closest("[data-module]");if(mod){const i=Number(mod.dataset.module);state.open=state.open===i?-1:i;draw();focusModule(i);return}
+ if(e.target.closest("[data-close]")){closeSubmenu();return}
  const sub=e.target.closest("[data-sub]");if(sub){const tab=Number(sub.dataset.sub);if(state.open===1&&(tab===0||tab===1)){window.location.assign("./workspace.html?view="+(tab===0?"new":"list"));return;}if(state.open===11&&tab===3){window.location.assign("./qa.html");return;}if((state.open===7&&tab===2)||(state.open===9&&tab===3)){window.location.assign("./diagnostics.html");return;}if((state.open===0&&(tab===0||tab===1))||(state.open===2&&tab===0)||(state.open===5&&tab===0)||(state.open===10&&tab===0)||(state.open===7&&tab===0)||(state.open===11&&tab===2)){const mode=state.open===0?(tab===1?"receipts":"cash"):state.open===2?"stock":(state.open===5||state.open===10)?"shift":state.open===7?"staff":"audit";window.location.assign("./operations.html?view="+mode);return;}state.page={module:state.open,label:specs[state.open][4][tab]};state.msg="";draw();return}
+ if(state.open>=0&&e.target.closest(".drawer")&&!e.target.closest("[data-sub]")){closeSubmenu();return}
+ if(state.open>=0&&!e.target.closest(".drawer")&&!e.target.closest("[data-module]")){closeSubmenu();return}
  if(e.target.closest("[data-back]")){back();return}
  if(e.target.closest("[data-clear]")){state.cart=[];draw();return}
  const q=e.target.closest("[data-qty]");if(q){const i=Number(q.dataset.qty);state.cart[i].qty+=Number(q.dataset.delta);if(!state.cart[i].qty)state.cart.splice(i,1);draw()}
@@ -140,7 +154,8 @@ app.addEventListener("submit",e=>{
  const x=state.cart.find(x=>x.code===code);if(x)x.qty++;else state.cart.push({...p,qty:1});state.msg="";draw();}
 });
 document.getElementById("home").addEventListener("click",()=>{state.open=-1;back()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(state.page)back();else{state.open=-1;draw()}}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(state.page)back();else if(state.open>=0){e.preventDefault();closeSubmenu();}}});
+document.addEventListener("pointerdown",e=>{if(state.open<0||state.page||app.contains(e.target)||e.target.closest("#home"))return;closeSubmenu(false);});
 draw();
 })();
 </script></body></html>
