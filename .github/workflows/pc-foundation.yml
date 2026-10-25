@@ -24,3 +24,41 @@ jobs:
           node-version: "22"
       - name: Run foundation, Home-lock and UI safety tests
         run: node --test tests/*.test.mjs
+  postgres-concurrency:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: qa-only-not-a-production-secret
+          POSTGRES_DB: retail_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d retail_qa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: retail_qa
+      PGUSER: postgres
+      PGPASSWORD: qa-only-not-a-production-secret
+      PGCONNECT_TIMEOUT: 8
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Build isolated relational fixture with actual Supabase function definitions
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/fixture.sql
+      - name: Concurrent checkout, request replay, cash movement and shift-close verification
+        run: node --test --test-concurrency=1 tests/integration/concurrency.test.mjs
