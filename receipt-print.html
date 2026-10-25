@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>چاپی پسووڵە — سیستەمی کاشێر</title>
+<style>
+:root{--receipt-paper:58mm;--receipt-content:48mm;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#f1f4f8;color:#1c2633;font-family:system-ui,"Segoe UI",Tahoma,sans-serif}
+button,select{font:inherit}button{cursor:pointer}
+button:focus-visible,select:focus-visible{outline:3px solid #93b8df;outline-offset:2px}
+.shell{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:20px;padding:24px}
+.toolbar{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8ee;border-radius:12px;padding:12px 16px;flex-wrap:wrap;justify-content:center}
+.toolbar label{display:flex;align-items:center;gap:9px;font-size:13px}
+.toolbar select{height:38px;border:1px solid #d7e2ee;border-radius:8px;color:#33465d;padding:0 10px;background:#fff}
+.button{height:38px;padding:0 15px;border:0;border-radius:8px;color:#fff;background:#274a77;font-weight:750;font-size:13px}
+.button:disabled{opacity:.5;cursor:not-allowed}
+.secondary{background:#edf2f8;color:#4b637c}
+.sheet{width:var(--receipt-paper);padding:5mm;background:white;box-shadow:0 6px 28px #24384b1b;min-height:65mm}
+.receipt{width:100%;font-size:10px;line-height:1.65;word-break:break-word}
+.receipt h1{font-size:14px;text-align:center;margin:0 0 5px}
+.center{text-align:center}
+.row{display:flex;justify-content:space-between;gap:5px;align-items:flex-start}
+.rule{border-bottom:1px dashed #444;margin:8px 0}
+.line{padding:4px 0;border-bottom:1px dotted #aaa}
+.strong{font-weight:800}
+.money{direction:ltr;unicode-bidi:embed;white-space:nowrap}
+.line-name{font-weight:650;font-size:11px}
+.totals .row{margin:4px 0}
+.footer{margin-top:14px;text-align:center;font-size:10px}
+.status{font-size:13px;color:#8b4d4d;max-width:420px;text-align:center;min-height:20px}
+[hidden]{display:none!important}
+@media print{
+ @page{size:auto;margin:0}
+ html,body{background:white!important;margin:0!important;padding:0!important}
+ .shell{padding:0;margin:0;display:block;min-height:0}
+ .toolbar,.status{display:none!important}
+ .sheet{width:var(--receipt-paper);min-height:0;box-shadow:none;padding:4mm;margin:0;border:none}
+ .receipt{width:var(--receipt-content)}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+<script src="./config.js"></script>
+<script src="./receipt-print.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<div class="toolbar">
+<label>پانیی کاغەز
+<select id="paper">
+<option value="58">58mm</option>
+<option value="80">80mm</option>
+</select></label>
+<button class="button" id="print" disabled>چاپکردن</button>
+<button class="button secondary" id="back" type="button">گەڕانەوە</button>
+</div>
+<div class="status" id="message" role="status"></div>
+<article class="sheet" id="sheet" hidden>
+<div class="receipt">
+<h1 id="store-name"></h1>
+<div class="center">پسووڵەی فرۆشتن</div>
+<div class="rule"></div>
+<div class="row"><span>ژمارە</span><strong id="receipt-number" class="money"></strong></div>
+<div class="row"><span>کات</span><span id="receipt-date" class="money"></span></div>
+<div class="rule"></div>
+<div id="receipt-lines"></div>
+<div class="rule"></div>
+<div class="totals">
+<div class="row strong"><span>کۆی گشتی</span><span class="money" id="total"></span></div>
+<div class="row"><span>پارەی وەرگیراو</span><span class="money" id="paid"></span></div>
+<div class="row"><span>پارەی گەڕاوە</span><span class="money" id="change"></span></div>
+</div>
+<div class="rule"></div>
+<div class="footer">سوپاس بۆ کڕینەکەتان</div>
+</div></article>
+</div>
+</body></html>
