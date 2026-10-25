@@ -118,3 +118,81 @@
   .market-banner { display: none !important; }
   body { padding-top: 0 !important; }
 }
+
+/* Contrast gate V10: ensure EVERY visible heading and field label on white PC
+ * surfaces is readable; the previous card-only fix did not cover page headings.
+ * Keep active navy buttons/banner white and preserve thermal receipt printing. */
+@media screen {
+  body > .viewport > .desktop > main,
+  body > .viewport > .desktop > main :is(.surface,.panel,.page,.detail,.metric,.blank,.empty,.formrow,.toolbar) {
+    color-scheme: light;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  body > .viewport > .desktop > main :is(h1,h2,h3,h4,h5,h6),
+  body > .viewport > .desktop > main :is(h1,h2,h3,h4,h5,h6) :is(span,strong,b),
+  body > .viewport > .desktop > main :is(.section-title,.page-title,.card-title,.heading,.form-title,.toolbar h2,.receipt-head h2) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+    font-weight: 900 !important;
+  }
+
+  body > .viewport > .desktop > main :is(.field,.form-col,label,.blank,.empty,.smallinfo,.hint,.note,.notice,.caption,.muted,.who,.metric span,.shift-metrics span,.totals span,.due span),
+  body > .viewport > .desktop > main :is(.field,.form-col,label,.blank,.empty,.smallinfo,.hint,.note,.notice,.caption,.muted,.who,.metric span,.shift-metrics span,.totals span,.due span) :is(span,strong,b) {
+    color: #30465f !important;
+    -webkit-text-fill-color: #30465f !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+  }
+
+  body > .viewport > .desktop > main :is(input,textarea,select) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+  }
+  body > .viewport > .desktop > main :is(input,textarea)::placeholder {
+    color: #41566f !important;
+    -webkit-text-fill-color: #41566f !important;
+    opacity: 1 !important;
+  }
+  body > .viewport > .desktop > main :is(.nav button:not(.active),.tab:not(.active),.secondary,.receipt-action) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 850 !important;
+  }
+
+  /* Primary and active tabs intentionally use white text on navy. */
+  body > .viewport > .desktop > main :is(.primary,.nav button.active,.tab.active,.filter.active),
+  body > .viewport > .desktop > main :is(.primary,.nav button.active,.tab.active,.filter.active) :is(span,strong,b) {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    font-weight: 850 !important;
+  }
+  /* Messages still convey actionable errors/success distinctly. */
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).error,
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status)[role="alert"] {
+    color: #913d36 !important;
+    -webkit-text-fill-color: #913d36 !important;
+  }
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).success {
+    color: #13694e !important;
+    -webkit-text-fill-color: #13694e !important;
+  }
+  /* Do not use text transparency to indicate disabled controls. */
+  body > .viewport > .desktop > main button:disabled {
+    opacity: 1 !important;
+    color: #41566f !important;
+    -webkit-text-fill-color: #41566f !important;
+    background-color: #e4ebf3 !important;
+    border-color: #b9c9dc !important;
+    cursor: not-allowed;
+  }
+}
