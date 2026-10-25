@@ -1,0 +1,69 @@
+/* Shared accessible typography and persistent supermarket header.
+   Applies to all desktop screens; receipts/diagnostic test strips print untouched. */
+:root {
+  --market-banner-height: 70px;
+  --market-ink: #1b2e47;
+  --market-secondary-ink: #41546b;
+}
+@media screen {
+  html { scroll-padding-top: calc(var(--market-banner-height) + 14px); }
+  body {
+    padding-top: var(--market-banner-height) !important;
+    color: var(--market-ink);
+    font-family: "Noto Sans Arabic","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    font-weight: 700;
+  }
+  .market-banner {
+    position: fixed;
+    z-index: 10000;
+    top: 0;
+    inset-inline: 0;
+    width: 100%;
+    min-height: var(--market-banner-height);
+    padding: 12px 24px;
+    margin: 0;
+    background: #203e66;
+    color: #fff !important;
+    border-bottom: 3px solid #759bd0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Noto Sans Arabic","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    font-size: 28px;
+    font-weight: 900 !important;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-align: center;
+    text-shadow: 0 1px 1px #15294466;
+    white-space: nowrap;
+    direction: rtl;
+  }
+  /* Stronger but still legible text, without flattening module accent colors. */
+  body :is(button,input,select,textarea,label,th,td,p,small,a) { font-weight: 700; }
+  body :is(h1,h2,h3,h4,h5,h6,strong,b,.brand,.name,.drawerhead strong) {
+    font-weight: 850 !important;
+  }
+  body :is(.field,.hint,.muted,.smallinfo,.who,.note,.notice,.empty,.blank,.caption,.status,th,.detail p,.detail .tip,.metric span,.metric dt,.shift-metrics span,.rowline span) {
+    color: var(--market-secondary-ink) !important;
+    font-weight: 700;
+  }
+  body :is(input,select,textarea) {
+    color: var(--market-ink) !important;
+    font-weight: 700 !important;
+  }
+  body :is(input,textarea)::placeholder { color: #566981 !important; opacity: 1; }
+  body :is(.module,.sub,.tab:not(.active),.secondary,.plain,.test,.testcase,.back,.home) {
+    color: var(--market-ink);
+  }
+  body :is(.feedback,.msg,.status)[role="alert"],
+  body :is(.feedback,.msg).error { color: #913d36 !important; }
+  body :is(.feedback,.msg).success { color: #13694e !important; }
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {
+    outline: 3px solid #5386c4;
+    outline-offset: 2px;
+  }
+}
+@media print {
+  .market-banner { display: none !important; }
+  body { padding-top: 0 !important; }
+}
