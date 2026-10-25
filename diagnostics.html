@@ -64,13 +64,13 @@ kbd{display:inline-block;font:700 13px ui-monospace,monospace;border:1px solid #
 <body><div class="viewport"><div class="desktop">
 <header><a class="brand" href="./index.html"><span class="mark">◈</span><span>سیستەمی کاشێر</span></a><a class="home" href="./index.html" title="سەرەتا" aria-label="سەرەتا">⌂</a></header>
 <main>
-<h1>پشکنینی ئامێرەکانی PC</h1>
+<h1>پشکنینی ئامێرەکان</h1>
 <div class="cards">
 <section class="surface">
-<div class="heading"><h2>سکانەری بارکۆد</h2><button class="secondary" id="focus-scanner">ئامادەکردنی سکان</button></div>
-<p class="hint">بارکۆدێکی ڕاستەقینە بسکانە یان بە دەست بنووسە و Enter بکە. هیچ بارکۆدێک نەنێردرێت بۆ داتابەیس.</p>
+<div class="heading"><h2>سکانەری بارکۆد</h2><button class="secondary" id="focus-scanner">ئامادەکردن</button></div>
+<p class="hint">بارکۆد بسکانە یان بنووسە و Enter بکە.</p>
 <form id="scan-form" class="formrow">
-<label class="field">بارکۆدی خوێندراو<input id="scan-input" name="barcode" maxlength="128" autocomplete="off" spellcheck="false" inputmode="none" required></label>
+<label class="field">بارکۆد<input id="scan-input" name="barcode" maxlength="128" autocomplete="off" spellcheck="false" inputmode="none" required></label>
 <button class="primary">پشکنین</button>
 </form>
 <div class="data">
@@ -83,29 +83,29 @@ kbd{display:inline-block;font:700 13px ui-monospace,monospace;border:1px solid #
 </section>
 <section class="surface">
 <h2>کیبۆرد و دوگمەکان</h2>
-<p class="hint">لە خانەکە کلیک بکە و دوگمەیەک لە کیبۆرد فشار بدە. دوگمەکانی F3، F5، F7، F9 و F12 لە هەندێک وێبگەڕدا کردارە تایبەتییەکانیان هەیە.</p>
+<p class="hint">خانەکە هەڵبژێرە و دوگمەیەک دابگرە.</p>
 <label class="field">خانەی پشکنینی کیبۆرد<input id="keyboard-input" aria-label="پشکنینی کیبۆرد" autocomplete="off"></label>
 <div class="key-report"><span class="hint">دوایین دوگمە:</span><kbd id="key-last">—</kbd><span class="hint" id="key-feedback"></span></div>
 <div class="section-divider"></div>
-<h3>پشکنینی دۆخی وێبگەڕ</h3>
+<h3>دۆخی وێبگەڕ</h3>
 <div class="data">
 <div class="metric"><span>پەیوەندی ئینتەرنێت</span><strong id="network-status">—</strong></div>
 <div class="metric"><span>ئەم پەڕەیە</span><strong id="page-status">—</strong></div>
 </div>
-<p class="hint">دۆخی ئینتەرنێت تەنها دۆخی ڕاگەیەندراوی وێبگەڕە؛ پەیوەندی بە Supabase یان چاپکەر پشتڕاست ناکاتەوە.</p>
+<p class="hint">دۆخی Online بوون پەیوەندی بە سێرڤەر پشتڕاست ناکاتەوە.</p>
 </section>
 <section class="surface full print-only">
-<div class="heading"><h2>پشکنینی چاپکەر — 58/80mm</h2></div>
+<div class="heading"><h2>چاپکەر — 58/80mm</h2></div>
 <div class="print-panel">
 <div class="print-info">
-<div class="badge">ئەمە تەنها تاقیکردنەوەی چاپکەرە — پسووڵەی فرۆشتن نییە</div>
+<div class="badge">تاقیکردنەوەی چاپ — نەک پسووڵەی فرۆشتن</div>
 <div class="formrow">
 <label class="field">پانیی کاغەز<select id="paper-width">
 <option value="58">58mm</option><option value="80">80mm</option>
 </select></label>
 <button class="primary" id="test-print" type="button">چاپی تاقیکردنەوە</button>
 </div>
-<p class="hint">دوگمەکە Print Dialog دەکاتەوە. هەڵبژاردنی چاپکەر، Paper Size و Auto Cut لە ڕێکخستنەکانی Windows/Driver دیاری دەکرێن، نەک لێرە.</p>
+<p class="hint">چاپکەر و پانیی کاغەز لە Print Dialog هەڵبژێرە.</p>
 <div class="feedback" id="print-feedback" role="status"></div>
 </div>
 <article class="paper" id="test-sheet" aria-label="کاغەزی تاقیکردنەوە">
