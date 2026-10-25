@@ -4,7 +4,7 @@ import {resolve,dirname} from "node:path";
 import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
 
-const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
+const root=resolve(dirname(fileURLToPath(import.meta.url)),"../..");
 const fixture=readFileSync(resolve(root,"tests/browser/qa_supabase_fixture.js"),"utf8");
 const origin=process.env.PC_PREVIEW_ORIGIN||"http://127.0.0.1:8765";
 const browser=await chromium.launch({headless:true});
