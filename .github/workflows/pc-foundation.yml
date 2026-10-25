@@ -86,3 +86,5 @@ jobs:
           exit 1
       - name: Read all 60 card labels in real browser, including narrow dark viewport
         run: node tests/browser/pc_card_readability.mjs
+      - name: Check fixed PC screens and unchanged 12-card positions
+        run: node tests/browser/fixed_pc_screens.mjs
