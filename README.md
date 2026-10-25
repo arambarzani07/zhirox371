@@ -1,7 +1,7 @@
 # سیستەمی کاشێر — Retail OS
 
 ## دۆخ
-V4 — Supabase Auth, Products, RBAC, Stock, Atomic Cash Checkout, Receipt Numbers and Safe Retries. Development only; NOT production-ready.
+V5 — Supabase Auth, Products, RBAC, Stock, Atomic Cash Checkout, Receipts, Cash Drawer and Shift Reconciliation. Development only; NOT production-ready.
 
 ## GitHub
 - Repository: arambarzani07/zhirox371
@@ -30,8 +30,8 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 
 ## Supabase
 - Project: Zhirox-New-Project / qcfmlyyzfykzszvtllrw.
-- 11 empty RLS-enabled tables: retail_stores, retail_products, retail_barcodes, retail_customers, retail_sales, retail_sale_items, retail_stock_events, retail_memberships, retail_stock_balances, retail_audit_events, retail_receipt_counters.
-- Migrations: retail_pc_foundation, retail_products_atomic_create_and_safety_gate, retail_rbac_stock_atomic_cash_checkout, retail_checkout_request_unique_constraint_fix, retail_v4_receipt_numbers_and_request_fingerprint.
+- 13 empty RLS-enabled tables: retail_stores, retail_products, retail_barcodes, retail_customers, retail_sales, retail_sale_items, retail_stock_events, retail_memberships, retail_stock_balances, retail_audit_events, retail_receipt_counters, retail_cash_sessions, retail_cash_movements.
+- Migrations: retail_pc_foundation, retail_products_atomic_create_and_safety_gate, retail_rbac_stock_atomic_cash_checkout, retail_checkout_request_unique_constraint_fix, retail_v4_receipt_numbers_and_request_fingerprint, retail_v5_cash_shift_reconciliation, retail_v5_live_shift_summary, retail_v5_cash_movement_concurrent_retry_guard.
 - Product and initial barcode creation is all-or-nothing (one database transaction).
 - anon cannot call retail_create_product. authenticated cannot directly insert sales or stock events.
 - No store, account or product has been seeded.
@@ -57,10 +57,19 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 - **مێژووی ناوی کاڵا** لە ڕیزی پسووڵەدا snapshot ناکرێت؛ دوای گۆڕینی ناوی کاڵا دەکرێت ناوی ئێستا پیشان بدرێت.
 - تۆمارەکانی داتابەیس لەم قۆناغەدا بەتاڵ ماون؛ هیچ فرۆشتنێکی ڕاستەقینە یان داتای نموونەیی زیاد نەکراوە.
 
+## بەشە نوێیەکان — V5
+- `operations.html`/ `operations.js`: سندووق و شێفتی کاشێر، پارەی سەرەتا، پارەی هاتوو/دەرچوو، داخستنی شێفت و ڕاپۆرتی کەموزیادی.
+- `retail_cash_sessions`, `retail_cash_movements`, `retail_sales.cash_session_id` و `retail_shift_summary`.
+- فرۆشتنی نوێ تەنها بە شێفتی کراوەی هەمان کاشێر تۆمار دەکرێت؛ داخستنی شێفت و فرۆشتن هاوکات هەمان ڕیزی شێفت قوفڵ دەکەن.
+- `db/v5_cash_shifts.sql`، `db/V5_CONTRACT.md` و `tests/v5_cash_shifts.test.mjs` زیادکران.
+- دیزاینی سەرەتای قوفڵکراو تەنها ڕێگای چوونە ناو شێفتی بەشی «دارایی» و «شێفت و کارمەندان» وەرگرتووە.
+- شێفتەکان تاکەکەسیین بۆ هەر کاشێر؛ هێشتا ئامێری چاپ، هەژمارکردنی پارەی بانکی، گەڕاندنەوە و سندووقی هاوبەش نییە.
+- هیچ داتای ساختە یان مامەڵەی ڕاستەقینە تۆمار نەکراوە؛ QA ـی کۆتایی هێشتا ماوە.
+
 ## Safety / remaining work
 - All remaining Home-linked internal modules are either empty scaffolds or local/in-memory prototypes.
-- Now connected in development: cash checkout RPC, stock receiving RPC, membership assignment and audit reads. Not implemented: full cash-shift accounting, refund/reversals, debt settlement, mixed payments, reports and printing.
+- Now connected in development: cash checkout, cash drawer shifts and reconciliation, stock receiving, membership assignment and audit reads. Not implemented: refunds/reversals, debt settlement, mixed payments, broader reports and printing.
 - Owner/manager/cashier RBAC is implemented server-side; it has not been live-tested with separate real Auth accounts. Do not use in production before QA.
 - Email confirmation redirects must be configured in Supabase Auth to match any deployed web origin.
 - Static tests: node --test tests/foundation.test.mjs (Node 22+).
-- Next engineering gate: end-to-end integration tests for real roles, concurrent checkout/idempotency, receipt numbering, cash reconciliation, returns and device integration.
+- Next engineering gate: live end-to-end authorization and concurrent shift/checkout tests, then receipt printing, returns, mixed currencies and device integration.
