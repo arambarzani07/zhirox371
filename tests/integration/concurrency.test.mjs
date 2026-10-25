@@ -127,3 +127,21 @@ test("identical posted checkout replay works after shift closure",async()=>{
  assert.equal(y.success,true,y.stderr);assert.equal(x.uuid,y.uuid);
  assert.equal(state().sales,1);assert.equal(state().stock,1);
 });
+
+test("twelve concurrent checkout calls selling three units commit exactly three times",async()=>{
+ seed(3);
+ const results=await Promise.all(Array.from({length:12},(_,i)=>run(
+  checkout(i%2===0?A:B,uuid(20+i))
+ )));
+ const passed=results.filter(x=>x.success);
+ const failed=results.filter(x=>!x.success);
+ assert.equal(passed.length,3,JSON.stringify(results));
+ assert.equal(failed.length,9);
+ assert.ok(failed.every(x=>/Insufficient stock/i.test(x.stderr)),JSON.stringify(failed));
+ const s=state();
+ assert.equal(s.stock,0);
+ assert.equal(s.sales,3);
+ assert.equal(s.events,3);
+ const receiptNumbers=sql("select string_agg(receipt_no::text,',' order by receipt_no) from public.retail_sales where status='posted'");
+ assert.equal(receiptNumbers,"1,2,3");
+});
