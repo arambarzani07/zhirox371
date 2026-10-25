@@ -36,7 +36,7 @@ test("receipt stays unprintable until authenticated posted sale is validated",()
 });
 
 test("printed user content is text-only, with no unsafe HTML interpolation",()=>{
- assert.match(printJs,/node\.textContent=String\(text\)/);
+ assert.match(printJs,/node\.textContent\s*=\s*String\(text\)/);
  assert.match(printJs,/\$\("store-name"\)\.textContent=store\.data\.name/);
  assert.doesNotMatch(printJs,/innerHTML\s*=/);
  assert.doesNotThrow(()=>new Function(printJs));
