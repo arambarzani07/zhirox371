@@ -69,3 +69,13 @@ The owner explicitly requested a distinct, semantically relevant icon/logo for *
 - Subcards keep the same count, order, navigation and Sorani labels; height may accommodate the new icon.
 - Dark, bold labels and the fixed supermarket banner remain protected.
 - All other Home design and finance/database constraints remain locked.
+
+## Owner-approved fixed-screen exception — 2026-10-25
+Owner requested **stationary PC screens with no shifting**:
+- Across all six PC HTML pages, the market banner and 75px application header remain fixed within the visible desktop shell.
+- Page content alone may scroll vertically inside a stable \`main\` container; the outer window remains vertically immobile.
+- Home subcards open as a stationary overlay directly beneath their selected main-card row. Other card rows do not move; the overlay has an explicit close button.
+- The drawer no longer animates or fades, and buttons keep high-contrast bold text.
+- The PC Home remains at least 1020px wide with 12 cards in the original 3 × 4 positions; on narrow viewers, horizontal panning is permitted rather than rewriting the PC design for mobile.
+- Thermal receipt printing bypasses screen-lock CSS in print media.
+- Implementation is isolated to \`ui-fixed-pc.css\`, loaded on each HTML page. No financial RPC, RLS, database, old POS or PC Relay change is authorized.
