@@ -1,7 +1,7 @@
 # سیستەمی کاشێر — Retail OS
 
 ## دۆخ
-V6 — Supabase Auth, Products, RBAC, Cash Shifts, Receipt Name Snapshots and 58/80mm Browser Printing. Development only; NOT production-ready.
+V7 — Auth, Products, Protected Checkout, Cash Shifts, Receipts and PC Hardware Diagnostics. Development only; NOT production-ready.
 
 ## GitHub
 - Repository: arambarzani07/zhirox371
@@ -75,6 +75,14 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 - ١٣ خشتەی Supabase بە RLS؛ هیچ کڕیار، پسووڵە یان فرۆشتنی ڕاستەقینە نەزیادکراوە.
 - هەڵبژاردنی چاپکەر و قەبارەی کاغەز لە دیالۆگی چاپی Windows/Browser پێویستە؛ بەڵێنی Auto Print و ESC/POS نەدراوە.
 - هێشتا هەڵسەنگاندنی E2E بە دوو کاشێری ڕاستەقینە و تاقیکردنەوەی چاپکەر ماوە.
+
+## پشکنینی PC — V7
+- `diagnostics.html`، `diagnostics.js` و `diagnostics-core.mjs`: بەشی سەربەخۆی پشکنینی سکانی بارکۆد، EAN-13، پێوانەی prefix 27، کیبۆرد و چاپی تاقیکردنەوەی 58/80mm.
+- `index.html`: ژێرکارتەکانی ڕێکخستن → ئامێرەکان و چاپکردن → قاڵبی چاپ، بەبێ گۆڕینی دیزاینی قوفڵکراو، کراونەتە ڕێگە بۆ Diagnostics.
+- `tests/v7_diagnostics.test.mjs` و `docs/V7_HARDWARE_QA.md`: تاقیکردنەوەکان و یاساکانی QA.
+- پشکنینی خۆکاری GitHub Actions: 39/39 تاقیکردنەوە سەرکەوتوون لە run 40216110209.
+- چاپی تاقیکردنەوە فرۆشتن نییە؛ هیچ بڕی پارەیەک نانووسێت، هیچ داتابەیسێک ناگۆڕێت.
+- ناسینەوەی Windows printer، Auto Cut و Cash Drawer لە وێبگەڕ بە تەنها پشتڕاست ناکرێت.
 
 ## Safety / remaining work
 - All remaining Home-linked internal modules are either empty scaffolds or local/in-memory prototypes.
