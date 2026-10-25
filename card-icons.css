@@ -64,3 +64,33 @@
     outline-offset: 1px;
   }
 }
+
+
+/* Readability gate: no transient faded cards or drawer labels, including on mobile
+   browsers viewing the original fixed-width PC layout. */
+@media screen {
+  body .module,
+  body .subgrid .sub,
+  body .drawer,
+  body .drawerhead {
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  body .drawer { animation: none !important; }
+  body .module .name,
+  body .drawerhead strong,
+  body .subgrid .sub-footer .sub-name {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 900 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+  }
+  /* Preserve individual module SVG colors instead of tinting icons dark. */
+  body .module .icon svg,
+  body .subgrid .sub-icon svg {
+    stroke: var(--color) !important;
+    opacity: 1 !important;
+  }
+}
