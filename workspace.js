@@ -130,10 +130,13 @@
     if(!name||name.length>160)return;
     const btn=$("create-store");busy(btn,true);message("store-message","");
     try{
-      const {data,error}=await db.from("retail_stores")
-        .insert({owner_user_id:user.id,name,currency:"IQD"}).select("id,name,currency").single();
+      // With RLS, INSERT ... RETURNING may fail its separate SELECT policy
+      // even when the owner passes the INSERT check. Read after commit instead.
+      const {error}=await db.from("retail_stores")
+        .insert({owner_user_id:user.id,name,currency:"IQD"});
       if(error)throw error;
-      store=data;show("products-panel");setTab(currentTab);
+      await loadStore();
+      if(!store)throw new Error("Store saved; refresh and sign in to load it");
     }catch(error){message("store-message",explain(error),"error");}
     finally{busy(btn,false);}
   });
