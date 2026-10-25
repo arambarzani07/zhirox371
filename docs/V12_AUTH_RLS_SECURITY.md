@@ -38,3 +38,13 @@ Also review unnecessary REFERENCES, TRIGGER, DELETE and TRUNCATE grants in publi
 V12 Auth/RLS job: GitHub Actions pc-foundation.yml / v12-real-auth-rls. The run result is authoritative: test files alone do not establish successful completion.
 **Release gate: BLOCKED** until least-privilege grant fix is approved and executed separately, E2E tests pass, and PC device/printing tests are completed.
 CI-green is not production readiness. The hosted database remained unchanged during this phase.
+
+## Verified V12 isolated execution
+- GitHub Actions: https://github.com/arambarzani07/zhirox371/actions/runs/40237168702
+- Successful full local Supabase Auth/PostgREST/PostgreSQL job.
+- Real email/password signups, verified JWTs and database auth.uid(): 4 distinct users.
+- **14 of 14 E2E security/workflow groups passed**, including tenant separation, role assignments, stock/cash permissions, revocation and anonymous denial.
+- The local-only authenticated/TRUNCATE experiment **did remove the QA customer's table contents despite RLS**. Only the ephemeral database was affected; the stack was stopped and destroyed.
+- Existing browser UI/static and disposable PostgreSQL concurrency jobs passed.
+- A store-creation INSERT + immediate RETURNING SELECT can fail under the effective RLS visibility rules. The browser form in workspace.js was adjusted to INSERT, then separately reload the store after commit (GitHub branch only).
+- **Release gate still BLOCKED** until the unrelated hosted TRUNCATE privilege is fixed with explicitly authorized migration. Passing a negative security regression demonstration does NOT mean production authorization is approved.
