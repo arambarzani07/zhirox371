@@ -88,3 +88,5 @@ jobs:
         run: node tests/browser/pc_card_readability.mjs
       - name: Check fixed PC screens and unchanged 12-card positions
         run: node tests/browser/fixed_pc_screens.mjs
+      - name: Check keyboard and outside-click submenu dismissal without moving PC grid
+        run: node tests/browser/fixed_pc_submenu_controls.mjs
