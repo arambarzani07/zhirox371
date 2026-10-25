@@ -38,20 +38,20 @@ main{padding:38px 44px 58px;max-width:1440px;margin:auto}h1{font-size:23px;font-
 <body><div class="viewport"><div class="desktop">
 <header><a class="brand" href="./index.html"><span class="mark">◈</span><span>سیستەمی کاشێر</span></a><a class="home" href="./index.html" aria-label="سەرەتا">⌂</a></header>
 <main>
-<h1>ناوەندی پشکنینی مامەڵەکان</h1>
+<h1>پشکنینی مامەڵەکان</h1>
 <div class="row">
 <div class="metric"><span>دۆخی پڕۆژە</span><strong style="font-size:17px">QA / V8</strong></div>
-<div class="metric"><span>دۆخی تاقیکردنەوە</span><strong>10</strong><span>دۆخی تراکنشنی هاوکات</span></div>
-<div class="metric"><span>داتابەیسی تاقیگە</span><strong style="font-size:17px">PostgreSQL 16</strong></div>
+<div class="metric"><span>تاقیکردنەوە</span><strong>10</strong><span>هاوکات</span></div>
+<div class="metric"><span>داتابەیس</span><strong style="font-size:17px">PostgreSQL 16</strong></div>
 </div>
 <section class="surface">
-<div class="head"><h2>تاقیکردنەوەکانی فرۆشتن و سندووق</h2><a class="link" href="https://github.com/arambarzani07/zhirox371/actions/workflows/pc-foundation.yml" target="_blank" rel="noopener noreferrer">بینینی ئەنجامی GitHub Actions</a></div>
+<div class="head"><h2>تاقیکردنەوەکان</h2><a class="link" href="https://github.com/arambarzani07/zhirox371/actions/workflows/pc-foundation.yml" target="_blank" rel="noopener noreferrer">ئەنجامی تاقیکردنەوە</a></div>
 <div class="filters"><button type="button" data-filter="all" class="active">هەمووی</button><button type="button" data-filter="sale">فرۆشتن</button><button type="button" data-filter="shift">شێفت و سندووق</button><button type="button" data-filter="auth">دەسەڵات</button></div>
 <div class="layout">
 <div class="testlist" id="cases"></div>
-<div class="detail"><h3 id="case-title"></h3><span class="tag">تاقیگەی جیاواز — نەک داتابەیسی سەرەکی</span><div class="line"></div><p id="case-description"></p><p class="tip" id="case-expected"></p></div>
+<div class="detail"><h3 id="case-title"></h3><span class="tag">تاقیگەی جیاواز</span><div class="line"></div><p id="case-description"></p><p class="tip" id="case-expected"></p></div>
 </div>
-<p class="notice">ئەم پەڕەیە خۆی هیچ فرۆشتنێک تۆمار ناکات. ئەنجامی راستەقینەی CI لە لینکی GitHub Actions دەبینرێت. تاقیکردنەوەی PostgreSQL ـی جیاواز جێگای تاقیکردنەوەی هەژمار و چاپکەری ڕاستەقینە ناگرێتەوە.</p>
+<p class="notice">ئەم پەڕەیە داتابەیس ناگۆڕێت. ئەنجامی ڕاستەقینە لە GitHub Actions ببینە.</p>
 </section>
 </main></div></div>
 <script>
@@ -60,16 +60,16 @@ main{padding:38px 44px 58px;max-width:1440px;margin:auto}h1{font-size:23px;font-
 const root=document.getElementById("cases"), title=document.getElementById("case-title"),
 description=document.getElementById("case-description"),expected=document.getElementById("case-expected");
 const items=[
-["فرۆشتنی کۆتا دانە بە دوو کاشێر","sale","دوو کاشێر هاوکات داوای فرۆشتنی یەک دانەی کۆتا دەکەن.","تەنها یەک فرۆشتن سەرکەوتوو دەبێت؛ کۆگا نابێت منفی بێت."],
+["فرۆشتنی کۆتا دانە بە دوو کاشێر","sale","دوو کاشێر هەمان دانە دەفرۆشن.","تەنها یەک فرۆشتن سەرکەوتوو دەبێت؛ کۆگا نابێت منفی بێت."],
 ["دووبارە ناردنی هەمان مامەڵە","sale","هەمان request ID لە دوو پەیوەندیی هاوکات دەنێردرێت.","یەک پسووڵە و یەک جووڵەی کۆگا."],
-["گۆڕینی پارە بە request ID ـی کۆن","sale","دوای سەرکەوتنی فرۆشتن، پارەی هەمان request ID دەگۆڕدرێت.","دەبێت ڕەت بکرێتەوە."],
+["گۆڕینی پارە بە request ID ـی کۆن","sale","بڕی پارەی داواکاریی تۆمارکراو دەگۆڕدرێت.","دەبێت ڕەت بکرێتەوە."],
 ["داواکاریی کاشێری جیاواز","auth","کاشێری دووەم هەمان request ID ـی کاشێری یەکەم بەکار دەهێنێت.","پێویستە ڕەت بکرێتەوە."],
-["فرۆشتن هاوکات لەگەڵ داخستنی شێفت","shift","فرۆشتن و داخستنی شێفت لە دوو پەیوەندی هەمان کات دەست پێ دەکەن.","ڕاپۆرتی شێفت دەبێت لەگەڵ کۆی پسووڵەکان یەک بگرێتەوە."],
+["فرۆشتن هاوکات لەگەڵ داخستنی شێفت","shift","فرۆشتن و داخستنی شێفت هاوکات دەبن.","ڕاپۆرتی شێفت دەبێت لەگەڵ کۆی پسووڵەکان یەک بگرێتەوە."],
 ["دووبارەناردنی پارەی سندووق","shift","هەمان cash movement ID هاوکات دوو جار نێردراوە.","تەنها یەک جووڵەی پارە تۆمار دەبێت."],
 ["فرۆشتن بێ شێفت","shift","کاشێر بێ شێفتی کراوە داوای فرۆشتن دەکات.","هیچ فرۆشتن و کەمکردنەوەی کۆگا تۆمار ناکرێت."],
 ["بەکارهێنەری بێ مۆڵەت","auth","هەژمارێکی بێ مۆڵەتی کاشێر داوای فرۆشتن دەکات.","دەبێت ڕەت بکرێتەوە."],
-["دووبارە پشکنینەوە دوای داخستنی شێفت","shift","دوای تۆمارکردنی پسووڵە و داخستنی شێفت، هەمان request ID دووبارە دەنێردرێت.","هەمان پسووڵە دەگەڕێتەوە، بێ فرۆشتنی نوێ."],
-["١٢ داواکاری هاوکات بۆ سێ دانە","sale","١٢ مامەڵە لە دوو کاشێرەوە هاوکات هەوڵی فرۆشتنی سێ دانەی کۆگا دەدەن.","تەنها سێ فرۆشتن سەرکەوتوو دەبێت و ژمارەی پسووڵەکان 1، 2، 3 دەبن."]
+["دووبارە پشکنینەوە دوای داخستنی شێفت","shift","هەمان داواکاری دوای داخستنی شێفت دەنێردرێتەوە.","هەمان پسووڵە دەگەڕێتەوە، بێ فرۆشتنی نوێ."],
+["١٢ داواکاری هاوکات بۆ سێ دانە","sale","١٢ داواکاری بۆ سێ دانە هاوکات دەبن.","تەنها سێ فرۆشتن سەرکەوتوو دەبێت و ژمارەی پسووڵەکان 1، 2، 3 دەبن."]
 ];
 let filter="all",selected=0;
 function draw(){
@@ -81,7 +81,7 @@ function draw(){
   const arrow=document.createElement("span");arrow.textContent="↖";b.append(number,name,arrow);
   b.addEventListener("click",()=>{selected=i;draw()});root.append(b);
  });
- const row=items[selected];title.textContent=row[0];description.textContent=row[2];expected.textContent="ئەنجامی چاوەڕوانکراو: "+row[3];
+ const row=items[selected];title.textContent=row[0];description.textContent=row[2];expected.textContent="ئەنجام: "+row[3];
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>{
  filter=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(y=>y.classList.toggle("active",y===b));
