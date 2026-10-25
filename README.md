@@ -30,8 +30,8 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 
 ## Supabase
 - Project: Zhirox-New-Project / qcfmlyyzfykzszvtllrw.
-- 7 empty RLS-enabled tables: retail_stores, retail_products, retail_barcodes, retail_customers, retail_sales, retail_sale_items, retail_stock_events.
-- Migrations: retail_pc_foundation and retail_products_atomic_create_and_safety_gate.
+- 10 empty RLS-enabled tables: retail_stores, retail_products, retail_barcodes, retail_customers, retail_sales, retail_sale_items, retail_stock_events, retail_memberships, retail_stock_balances, retail_audit_events.
+- Migrations: retail_pc_foundation, retail_products_atomic_create_and_safety_gate, retail_rbac_stock_atomic_cash_checkout, retail_checkout_request_unique_constraint_fix.
 - Product and initial barcode creation is all-or-nothing (one database transaction).
 - anon cannot call retail_create_product. authenticated cannot directly insert sales or stock events.
 - No store, account or product has been seeded.
@@ -49,8 +49,8 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 
 ## Safety / remaining work
 - All remaining Home-linked internal modules are either empty scaffolds or local/in-memory prototypes.
-- Not connected: finalized checkout, payments, stock writes, debt settlement, reports, printing.
-- No cashier/manager RBAC yet; do not permit real operations before RBAC and atomic checkout are complete.
+- Now connected in development: cash checkout RPC, stock receiving RPC, membership assignment and audit reads. Not implemented: full cash-shift accounting, refund/reversals, debt settlement, mixed payments, reports and printing.
+- Owner/manager/cashier RBAC is implemented server-side; it has not been live-tested with separate real Auth accounts. Do not use in production before QA.
 - Email confirmation redirects must be configured in Supabase Auth to match any deployed web origin.
 - Static tests: node --test tests/foundation.test.mjs (Node 22+).
-- Next engineering gate: RBAC, audit records, protected stock ledger and transaction-safe posted sales.
+- Next engineering gate: end-to-end integration tests for real roles, concurrent checkout/idempotency, receipt numbering, cash reconciliation, returns and device integration.
