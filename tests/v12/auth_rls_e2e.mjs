@@ -201,6 +201,56 @@ assert.equal(ok(await outsider.from("retail_sales").select("id"),"tenant isolati
 assert.equal(ok(await cashier.from("retail_audit_events").select("id"),"cashier audit remains denied").length,0);
 passed("LOCAL repair preserves owner/manager/cashier RPC flows and tenant isolation");
 
+
+const newCatalog={
+  advanced:true,name:"شیر و تاقیکردنەوە",sku:"MILK-101",plu:"0000020",
+  unit_barcode:"6260001112223",unit_purchase_price_iqd:750,unit_sale_price_iqd:1000,
+  unit_alias_barcodes:["6260001112247","6260001112254"],
+  carton:{name:"کارتۆنی شیر",barcode:"6260001112230",units_per_carton:12,
+          purchase_price_iqd:8500,sale_price_iqd:11000},currency:"IQD"
+};
+const productCountBefore=Number(localSQL("select count(*) from public.retail_products"));
+const v14Id=ok(await owner.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:newCatalog}),
+    "owner registers advanced product atomically in LOCAL QA");
+assert.ok(v14Id,"Advanced product ID missing");
+assert.equal(Number(localSQL("select count(*) from public.retail_products")),productCountBefore+1);
+assert.equal(Number(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"'")),4);
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"' and unit_type='carton' and units_per_scan=12"),"1");
+assert.equal(localSQL("select price_minor||':'||purchase_price_minor from public.retail_products where id='"+v14Id+"'"),"1000:750");
+assert.equal(localSQL("select sale_price_minor||':'||purchase_price_minor from public.retail_product_cartons where product_id='"+v14Id+"'"),"11000:8500");
+passed("V14 local owner registration: one item, four barcodes, true carton size and distinct unit/carton costs and prices");
+
+fail(await manager.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:{
+  ...newCatalog,unit_barcode:"8299944000011",unit_alias_barcodes:[],carton:null
+}}),"manager may not register product");
+fail(await cashier.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:{
+  ...newCatalog,unit_barcode:"8299944000012",unit_alias_barcodes:[],carton:null
+}}),"cashier may not register product");
+fail(await outsider.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:{
+  ...newCatalog,unit_barcode:"8299944000013",unit_alias_barcodes:[],carton:null
+}}),"unrelated owner cannot register on foreign store");
+passed("V14 product catalogue management is owner-only; cashier/manager/outsider cannot define barcodes or prices");
+
+const duplicateBarcode={...newCatalog,sku:"MILK-102",unit_barcode:"8299944000020",
+ unit_alias_barcodes:["6260001112247"],carton:null};
+const duplicate=await owner.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:duplicateBarcode});
+fail(duplicate,"cross-product alias collision must abort transaction");
+assert.equal(duplicate.error.code,"23505");
+assert.equal(Number(localSQL("select count(*) from public.retail_products")),productCountBefore+1,"Duplicate RPC partially created product");
+const badSize={...newCatalog,sku:"MILK-103",unit_barcode:"8299944000021",
+  unit_alias_barcodes:[],carton:{...newCatalog.carton,barcode:"8299944000022",units_per_carton:1}};
+fail(await owner.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:badSize}),"invalid carton size must be rejected");
+assert.equal(Number(localSQL("select count(*) from public.retail_products")),productCountBefore+1);
+passed("V14 duplicate multi-barcode and invalid carton are fully atomic; no partial rows");
+
+const managerCarton=ok(await manager.from("retail_product_cartons").select("product_id,purchase_price_minor,sale_price_minor"),"manager pack price read");
+assert.ok(managerCarton.some(x=>x.product_id===v14Id&&Number(x.purchase_price_minor)===8500));
+assert.equal(ok(await cashier.from("retail_product_cartons").select("product_id,purchase_price_minor"),"cashier purchase cost RLS read").length,0);
+assert.equal(ok(await outsider.from("retail_product_cartons").select("product_id"),"outsider carton RLS read").length,0);
+assert.ok(ok(await cashier.from("retail_barcodes").select("code,unit_type"),"cashier barcode lookup").some(x=>x.code==="6260001112230"&&x.unit_type==="carton"));
+passed("V14 manager sees pack purchase costs; cashier cannot read costs but may look up carton barcode");
+console.log("V14 local QA: 4 security/product registration groups passed. Carton checkout is still disabled in the existing unit-only cashier contract. No hosted DB modifications.");
+
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
 console.log("V12/V13 result: "+tests.length+" local real-GoTrue/JWT/PostgREST/PostgreSQL RLS test groups passed. SECURITY RELEASE GATE BLOCKED by TRUNCATE privilege. No hosted project accessed.");
