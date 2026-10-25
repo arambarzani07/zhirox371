@@ -18,6 +18,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:18px}
 .tabs{display:flex;gap:8px;margin-bottom:20px}.tab{border:1px solid #e0e7ef;background:#fff;color:#65768d;padding:11px 19px;border-radius:10px;font-size:13px;font-weight:750}.tab.active{background:#274871;color:white;border-color:#274871}
 .message{min-height:20px;margin-top:16px;font-size:12px;color:#5a758a}.message.error{color:#ad4b45}.message.success{color:#087c60}
+.catalog-fields{width:100%;display:grid;gap:18px}.catalog-group{border:1px solid #e3eaf2;border-radius:13px;padding:17px;background:#fff}.catalog-group h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catalog-row .form-col{min-width:0}.catalog-group textarea{min-height:80px;resize:vertical;border:1px solid #dce4ee;border-radius:10px;padding:11px 13px;background:#fff;color:#172b45;font:inherit;font-size:13px}.catalog-group :is(input,textarea){font-weight:800;color:#172b45}.catalog-buttons{display:flex;gap:10px;align-items:center;margin-top:3px}
 .sep{height:1px;background:#edf0f4;margin:24px 0}
 .table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:right;padding:14px;border-bottom:1px solid #edf1f5}.table th{background:#fbfcfe;color:#677990;font-weight:800}
 .price{direction:ltr;unicode-bidi:embed;display:inline-block}.blank{border:1px dashed #e0e8ef;background:#fafbfd;color:#8a9cad;text-align:center;padding:38px;border-radius:12px;margin-top:15px;font-size:13px}
@@ -28,6 +29,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <link rel="stylesheet" href="./ui-fixed-pc.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="./config.js"></script>
+<script src="./product-catalog.js"></script>
 <script src="./workspace.js" defer></script>
 </head>
 <body>
@@ -62,10 +64,30 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <div class="surface" id="new-panel">
 <h2>کاڵای نوێ</h2>
 <form id="product-form" class="form">
+<div class="catalog-fields">
+<section class="catalog-group"><h3>ناسنامەی کاڵا</h3>
+<div class="catalog-row">
 <label class="form-col">ناوی کاڵا<input name="name" minlength="1" maxlength="160" required autocomplete="off"></label>
-<label class="form-col">بارکۆد<input name="barcode" maxlength="60" required autocomplete="off"></label>
-<label class="form-col">نرخ (IQD)<input name="price" type="number" min="0" max="999999999" step="1" required></label>
-<button type="submit" class="primary" id="save-product">زیادکردن</button>
+<label class="form-col">کۆدی ناوخۆیی<input name="sku" maxlength="80" autocomplete="off"></label>
+<label class="form-col">کۆدی تەرازوو<input name="plu" maxlength="30" autocomplete="off"></label>
+</div></section>
+<section class="catalog-group"><h3>دانە</h3><div class="catalog-row">
+<label class="form-col">بارکۆدی دانە<input name="barcode" maxlength="60" required autocomplete="off"></label>
+<label class="form-col">نرخی کڕینی دانە (IQD)<input name="purchase_price" type="number" min="0" max="999999999" step="1"></label>
+<label class="form-col">نرخی فرۆشتنی دانە (IQD)<input name="price" type="number" min="0" max="999999999" step="1" required></label>
+</div>
+<div class="catalog-row" style="margin-top:13px">
+<label class="form-col">فرەبارکۆدی دانە<textarea name="extra_barcodes" maxlength="2000" autocomplete="off"></textarea></label>
+</div></section>
+<section class="catalog-group"><h3>کارتۆن</h3><div class="catalog-row">
+<label class="form-col">ناوی کارتۆن<input name="carton_name" maxlength="100" autocomplete="off"></label>
+<label class="form-col">بارکۆدی کارتۆن<input name="carton_barcode" maxlength="60" autocomplete="off"></label>
+<label class="form-col">دانە لە کارتۆن<input name="units_per_carton" type="number" min="2" max="100000" step="1"></label>
+<label class="form-col">نرخی کڕینی کارتۆن (IQD)<input name="carton_purchase_price" type="number" min="0" max="999999999" step="1"></label>
+<label class="form-col">نرخی فرۆشتنی کارتۆن (IQD)<input name="carton_price" type="number" min="0" max="999999999" step="1"></label>
+</div></section>
+</div>
+<div class="catalog-buttons"><button type="submit" class="primary" id="save-product">زیادکردن</button></div>
 </form><div id="product-message" class="message" role="status"></div>
 </div>
 <div class="surface" id="list-panel" hidden>
