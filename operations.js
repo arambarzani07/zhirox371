@@ -125,6 +125,14 @@ async function refreshAudit(){
  new Date(x.created_at).toLocaleString("en-GB"),x.action,x.actor_id
  ]));
 }
+function printLink(saleId,paper,label){
+ const a=document.createElement("a");
+ a.className="receipt-action";
+ a.href="./receipt-print.html?sale="+encodeURIComponent(String(saleId))+"&paper="+paper;
+ a.target="_blank";a.rel="noopener noreferrer";
+ a.textContent=label;
+ return a;
+}
 async function refreshReceipts(){
  if(!db||!store)return;
  msg("receipts-msg","");
@@ -145,7 +153,7 @@ async function refreshReceipts(){
   for(const val of vals){const td=document.createElement("td");td.textContent=val;tr.append(td)}
   const td=document.createElement("td"),button=document.createElement("button");
   button.className="receipt-action";button.textContent="وردەکاری";button.dataset.receipt=sale.id;
-  td.append(button);tr.append(td);table.tBodies[0].append(tr);
+  td.append(button,printLink(sale.id,"58","58mm"),printLink(sale.id,"80","80mm"));tr.append(td);table.tBodies[0].append(tr);
  }root.append(table);
  if(rows.length===100)msg("receipts-msg","١٠٠ پسووڵەی دواهەم پیشان دەدرێت؛ پەڕەبەندی هێشتا نییە");
 }
@@ -154,7 +162,7 @@ async function showReceipt(saleId){
  const [head,items]=await Promise.all([
    db.from("retail_sales").select("id,receipt_no,total_minor,cash_received_minor,change_due_minor,created_at,cashier_id")
      .eq("store_id",store.id).eq("id",saleId).eq("status","posted").single(),
-   db.from("retail_sale_items").select("product_id,quantity,unit_price_minor")
+   db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot")
      .eq("store_id",store.id).eq("sale_id",saleId).limit(200)
  ]);
  if(head.error||items.error){msg("receipts-msg",safe(head.error||items.error),"error");return}
@@ -171,11 +179,11 @@ async function showReceipt(saleId){
    span.textContent=part[0]+" : ";bold.textContent=part[1];span.append(bold);info.append(span);
  }box.append(info);
  const t=document.createElement("div");box.append(t);
- const lastBox=$("receipts-list"); // Render the detail table without replacing the list.
+ const printActions=document.createElement("div");printActions.className="receipt-print-actions";printActions.append(printLink(saleId,"58","چاپی 58mm"),printLink(saleId,"80","چاپی 80mm"));box.append(printActions);
  const table=document.createElement("table");table.innerHTML="<thead><tr><th>کاڵا</th><th>بڕ</th><th>نرخ</th><th>کۆ</th></tr></thead><tbody></tbody>";
  for(const line of items.data||[]){
    const tr=document.createElement("tr"),p=products.find(x=>x.id===line.product_id);
-   for(const v of [p?.name||line.product_id,String(line.quantity),money(line.unit_price_minor),money(Number(line.quantity)*Number(line.unit_price_minor))]){
+   for(const v of [line.product_name_snapshot||p?.name||line.product_id,String(line.quantity),money(line.unit_price_minor),money(Number(line.quantity)*Number(line.unit_price_minor))]){
      const td=document.createElement("td");td.textContent=v;tr.append(td);
    }table.tBodies[0].append(tr);
  }t.append(table);
@@ -358,8 +366,10 @@ async function commitCheckout(){
      const {data:receipt,error:receiptError}=await db.from("retail_sales")
        .select("receipt_no,total_minor,change_due_minor")
        .eq("store_id",store.id).eq("id",saleId).single();
-     if(!receiptError&&receipt?.receipt_no)
+     if(!receiptError&&receipt?.receipt_no){
        msg("checkout-msg","پسووڵەی ژمارە "+String(receipt.receipt_no).padStart(6,"0")+" تۆمارکرا","success");
+       $("checkout-msg").append(printLink(saleId,"58","چاپی 58mm"),printLink(saleId,"80","چاپی 80mm"));
+     }
      await loadInventory();
    }catch(inventoryError){msg("system-msg","فرۆشتن تۆمارکرا؛ نوێکردنەوەی کۆگا سەرکەوتوو نەبوو","error")}
  }catch(err){
