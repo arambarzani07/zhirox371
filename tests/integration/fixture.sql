@@ -444,8 +444,8 @@ CREATE OR REPLACE FUNCTION public.retail_receive_stock(p_store uuid, p_product u
 AS $function$
  select retail_internal.receive_stock(p_store,p_product,p_quantity,p_reason);
 $function$;
-revoke all on function public.retail_receive_stock(uuid,uuid,numeric,'opening'::text) from public, anon;
-grant execute on function public.retail_receive_stock(uuid,uuid,numeric,'opening'::text) to authenticated;
+revoke all on function public.retail_receive_stock(uuid,uuid,numeric,text) from public, anon;
+grant execute on function public.retail_receive_stock(uuid,uuid,numeric,text) to authenticated;
 
 CREATE OR REPLACE FUNCTION public.retail_shift_close(p_store uuid, p_session uuid, p_counted bigint)
  RETURNS jsonb
