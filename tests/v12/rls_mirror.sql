@@ -160,3 +160,18 @@ REVOKE INSERT,UPDATE,DELETE,TRUNCATE ON public.retail_memberships,
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 -- Explicitly preserve the concerning TRUNCATE grant to demonstrate the hosted
 -- authorization gap in the disposable database; never apply this script to prod.
+
+
+-- QA-only request identity diagnostic; exists solely on local disposable stack.
+CREATE FUNCTION public.retail_v12_auth_context()
+RETURNS jsonb LANGUAGE sql STABLE SET search_path TO ''
+AS $$
+ SELECT jsonb_build_object(
+  'sub', (select auth.uid()),
+  'db_role', current_user,
+  'jwt_role', current_setting('request.jwt.claim.role',true),
+  'jwt_sub', current_setting('request.jwt.claim.sub',true)
+ );
+$$;
+REVOKE ALL ON FUNCTION public.retail_v12_auth_context() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.retail_v12_auth_context() TO authenticated;
