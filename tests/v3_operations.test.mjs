@@ -22,8 +22,8 @@ test("Home links to live feature workspaces but includes no new banner",()=>{
  assert.match(home,/operations\.html\?view=/);
  assert.doesNotMatch(home,/DESIGN PREVIEW|MOCK DATA|SYSTEM ONLINE/i);
 });
-test("desktop operations UI exposes four permission-dependent tabs",()=>{
- for(const tab of ["cash","stock","staff","audit"])
+test("desktop operations UI exposes five permission-dependent tabs",()=>{
+ for(const tab of ["cash","stock","staff","audit","receipts"])
    assert.match(cash,new RegExp('data-tab="'+tab+'"'));
  assert.match(cash,/min-width:1020px/);
  assert.match(cash,/<html lang="ckb" dir="rtl">/);
@@ -33,7 +33,8 @@ test("cash operation prices come from loaded catalog and checkout uses RPC",()=>
  assert.match(logic,/\.from\("retail_barcodes"\)/);
  assert.match(logic,/\.from\("retail_stock_balances"\)/);
  assert.match(logic,/\.rpc\("retail_checkout_cash"/);
- assert.match(logic,/requestId\?\?=crypto\.randomUUID\(\)/);
+ assert.match(logic,/requestId=crypto\.randomUUID\(\)/);
+ assert.match(logic,/pendingCheckout/);
  assert.doesNotMatch(logic,/\.from\("retail_sales"\)\.insert/);
 });
 test("role permissions and audit read from Supabase",()=>{
