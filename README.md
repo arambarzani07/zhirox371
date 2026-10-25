@@ -9,6 +9,10 @@ V2 — Supabase Auth and Products Foundation. Development only; NOT production-r
 - Immutable-in-practice design snapshot branch: design-lock/pc-home-v1
 - Approved Home design rules: DESIGN_LOCK.md. No branch protection configured.
 
+## یاسای پیشاندانی گۆڕانکارییەکان
+- لەگەڵ هەر commit و گۆڕانکارییەک، پێشبینینی **کاراکردووی کۆدی PC** و لینکەکانی فایل/commit پێویستن.
+- [PREVIEW_POLICY.md](PREVIEW_POLICY.md) ـی پڕۆژەیەکە بخوێنەرەوە. دیزاینی قوفڵکراو هەروا دەمێنێتەوە.
+
 ## ڕووکاری PC
 - index.html is the approved Sorani RTL desktop launcher: 12 main cards, 3 rows × 4, expandable subcards directly under the selected row.
 - The locked Home CSS, markup, and card definitions have not been changed. Navigation from the first two Products subcards now opens workspace.html.
