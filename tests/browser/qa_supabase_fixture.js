@@ -12,7 +12,7 @@
     barcodes:[{store_id:store.id,product_id:seed.id,code:"4006381333931",unit_type:"unit",units_per_scan:1}],
     stock:[{store_id:store.id,product_id:seed.id,quantity:2}],
     sessions:[],movements:[],sales:[],memberships:[],audit:[],
-    called:[],nextProduct:0,nextReceipt:0,forceRpcError:null
+    called:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[]
   };
   const error=(code,message)=>({code,message});
   function tableRows(name){
@@ -65,6 +65,22 @@
         state.products.push({id,store_id:store.id,name:args.p_name,price_minor:args.p_price_minor,active:true,currency:"IQD"});
         state.barcodes.push({store_id:store.id,product_id:id,code:args.p_barcode,unit_type:"unit",units_per_scan:1});
         data=id;
+      }
+    }else if(name==="retail_register_product_v14"){
+      const catalog=args.p_catalog;
+      if(!state.advancedRpcEnabled)err=error("PGRST202","Function not found");
+      else{
+        const allCodes=[catalog.unit_barcode,...catalog.unit_alias_barcodes,...(catalog.carton?[catalog.carton.barcode]:[])];
+        if(state.barcodes.some(x=>allCodes.includes(x.code)))err=error("23505","duplicate barcode");
+        else{
+          const id="cccccccc-cccc-4ccc-8ccc-"+String(++state.nextProduct).padStart(12,"0");
+          state.products.push({id,store_id:store.id,name:catalog.name,price_minor:catalog.unit_sale_price_iqd,active:true,currency:"IQD"});
+          for(const code of [catalog.unit_barcode,...catalog.unit_alias_barcodes])
+            state.barcodes.push({store_id:store.id,product_id:id,code,unit_type:"unit",units_per_scan:1});
+          if(catalog.carton)state.barcodes.push({store_id:store.id,product_id:id,code:catalog.carton.barcode,unit_type:"carton",units_per_scan:catalog.carton.units_per_carton});
+          state.advancedCatalogs.push({id,...catalog});
+          data=id;
+        }
       }
     }else if(name==="retail_shift_open"){
       if(state.sessions.some(x=>x.status==="open"))err=error("22023","Shift already open");
