@@ -71,7 +71,6 @@ kbd{display:inline-block;font:700 13px ui-monospace,monospace;border:1px solid #
 <div class="cards">
 <section class="surface">
 <div class="heading"><h2>سکانەری بارکۆد</h2><button class="secondary" id="focus-scanner">ئامادەکردن</button></div>
-<p class="hint">بارکۆد بسکانە یان بنووسە و Enter بکە.</p>
 <form id="scan-form" class="formrow">
 <label class="field">بارکۆد<input id="scan-input" name="barcode" maxlength="128" autocomplete="off" spellcheck="false" inputmode="none" required></label>
 <button class="primary">پشکنین</button>
@@ -86,16 +85,14 @@ kbd{display:inline-block;font:700 13px ui-monospace,monospace;border:1px solid #
 </section>
 <section class="surface">
 <h2>کیبۆرد و دوگمەکان</h2>
-<p class="hint">خانەکە هەڵبژێرە و دوگمەیەک دابگرە.</p>
 <label class="field">خانەی پشکنینی کیبۆرد<input id="keyboard-input" aria-label="پشکنینی کیبۆرد" autocomplete="off"></label>
 <div class="key-report"><span class="hint">دوایین دوگمە:</span><kbd id="key-last">—</kbd><span class="hint" id="key-feedback"></span></div>
 <div class="section-divider"></div>
 <h3>دۆخی وێبگەڕ</h3>
 <div class="data">
-<div class="metric"><span>پەیوەندی ئینتەرنێت</span><strong id="network-status">—</strong></div>
+<div class="metric"><span>پەیوەندی ئینتەرنێت</span><strong id="network-status" title="ئینتەرنێت بە تەنها پەیوەندی بە سێرڤەر پشتڕاست ناکاتەوە">—</strong></div>
 <div class="metric"><span>ئەم پەڕەیە</span><strong id="page-status">—</strong></div>
 </div>
-<p class="hint">دۆخی Online بوون پەیوەندی بە سێرڤەر پشتڕاست ناکاتەوە.</p>
 </section>
 <section class="surface full print-only">
 <div class="heading"><h2>چاپکەر — 58/80mm</h2></div>
@@ -108,7 +105,6 @@ kbd{display:inline-block;font:700 13px ui-monospace,monospace;border:1px solid #
 </select></label>
 <button class="primary" id="test-print" type="button">چاپی تاقیکردنەوە</button>
 </div>
-<p class="hint">چاپکەر و پانیی کاغەز لە Print Dialog هەڵبژێرە.</p>
 <div class="feedback" id="print-feedback" role="status"></div>
 </div>
 <article class="paper" id="test-sheet" aria-label="کاغەزی تاقیکردنەوە">
