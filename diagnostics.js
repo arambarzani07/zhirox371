@@ -51,12 +51,12 @@ $("scan-form").addEventListener("submit",event=>{
   $("scale-code").textContent=result.scaleItemCode ?? "—";
   if(result.possibleScaleBarcode) {
     feedback("scan-feedback",result.validEan13?
-      "بارکۆدی پێوانەی prefix 27 دۆزرایەوە. تەنها کۆدی ٧ ژمارەیی دیاری کرا؛ نرخ/کێش هێشتا نەکراوەتەوە.":
+      "بارکۆدی پێوانە دۆزرایەوە؛ نرخ و کێش دیاری نەکرا.":
       "کۆدی prefix 27 ـە، بەڵام checksum ـی EAN-13 نادروستە.",!!result.validEan13);
   } else if(result.validEan13===false) {
     feedback("scan-feedback","Checksum ـی EAN-13 نادروستە. تکایە بارکۆدەکە دووبارە بسکانە.");
   } else {
-    feedback("scan-feedback","کۆدەکە لە ڕووکاری پشکنین خوێندرایەوە؛ ئەمە ناسینەوەی فیزیکیی سکانەر پشتڕاست ناکاتەوە.",true);
+    feedback("scan-feedback","کۆد خوێندرایەوە؛ سکانەر پشتڕاست نەکراوە.",true);
   }
 });
 $("keyboard-input").addEventListener("keydown",event=>{
@@ -68,7 +68,7 @@ widthSelector.addEventListener("change",event=>setPaperWidth(event.target.value)
 $("test-print").addEventListener("click",()=>{
   // The print slip carries no sale, customer, price, payment or real receipt identifiers.
   // Browsers decide the printer/paper driver options; this cannot certify physical success.
-  feedback("print-feedback","دیالۆگی چاپ دەکرێتەوە؛ چاپکەر و قەبارەی کاغەز لەوێ هەڵبژێرە.");
+  feedback("print-feedback","چاپکەر و کاغەز لە دیالۆگی چاپ هەڵبژێرە.");
   window.print();
 });
 window.addEventListener("online",connectionStatus);
