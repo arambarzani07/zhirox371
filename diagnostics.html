@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>پشکنینی ئامێرەکان — سیستەمی کاشێر</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fa;color:#23344a;font-family:system-ui,"Segoe UI",Tahoma,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #94b3e0;outline-offset:2px}
+.viewport{width:100%;overflow-x:auto;min-height:100vh}
+.desktop{min-width:1020px;min-height:100vh;direction:rtl}
+header{height:75px;background:#fff;border-bottom:1px solid #e7ecf2;display:flex;align-items:center;justify-content:space-between;padding:0 42px}
+.brand{display:flex;align-items:center;gap:13px;color:#27394f;font-size:19px;font-weight:800;text-decoration:none}
+.mark{height:43px;width:43px;display:grid;place-items:center;background:#243d60;color:#fff;border-radius:12px;font-size:25px}
+.home{width:38px;height:38px;display:grid;place-items:center;border:1px solid #e5eaf0;background:#f7f9fc;color:#556a84;text-decoration:none;border-radius:10px;font-size:20px}
+main{padding:38px 44px 58px;max-width:1500px;margin:auto}
+h1{font-size:23px;font-weight:850;margin:0 0 24px}
+h2{font-size:18px;font-weight:800;margin:0 0 20px}
+h3{font-size:14px;font-weight:800;margin:0 0 10px}
+.cards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.surface{background:#fff;border:1px solid #e5eaf0;border-radius:16px;padding:23px;min-height:230px}
+.full{grid-column:1 / -1}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.hint{font-size:12px;color:#788ba1;line-height:1.8}
+.formrow{display:flex;gap:11px;align-items:end;margin-top:18px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:8px;flex:1;min-width:170px;font-size:12px;color:#677b91}
+.field input,.field select{border:1px solid #dce4ee;border-radius:10px;height:44px;padding:11px 12px;color:#263d55;background:white}
+.primary{border:0;border-radius:9px;background:#284973;color:#fff;padding:11px 19px;height:43px;font-size:13px;font-weight:750}
+.secondary{border:1px solid #dfe6ee;border-radius:9px;background:#f6f8fb;color:#536985;padding:10px 16px;min-height:42px;font-size:13px;font-weight:700}
+.data{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:20px}
+.metric{border:1px solid #e8edf3;background:#f8fafc;padding:13px 15px;border-radius:10px;min-height:72px;display:flex;flex-direction:column;gap:7px}
+.metric span{font-size:12px;color:#7b8b9e}
+.metric strong{font-size:14px;color:#244872;direction:ltr;text-align:right;overflow-wrap:anywhere}
+.feedback{min-height:21px;font-size:12px;color:#a45450;margin-top:14px;line-height:1.6}
+.feedback.success{color:#16846d}
+.print-panel{display:flex;gap:23px;align-items:flex-start;margin-top:20px}
+.paper{width:58mm;min-height:88mm;background:#fff;border:1px solid #dfe6ed;padding:5mm;box-shadow:0 5px 17px #253b4d10;flex:none;color:#151c25}
+.paper.wide{width:80mm}
+.paper h3{text-align:center;font-size:13px;margin:0 0 6px;color:#202a39}
+.paper .line{border-bottom:1px dashed #999;margin:9px 0}
+.paper .test-text{font-size:11px;font-weight:850;text-align:center;margin:15px 0}
+.paper .tiny{font-size:10px;line-height:1.65;text-align:center}
+.paper .left{text-align:left;direction:ltr;font-size:10px}
+.print-info{flex:1;min-width:240px}
+.print-info .formrow{margin-top:0}
+.print-info .hint{max-width:430px}
+.badge{font-size:12px;color:#a47327;background:#fff7e6;padding:7px 10px;border-radius:8px;border:1px solid #f2e5c8;display:inline-block}
+.section-divider{height:1px;background:#edf0f5;margin:22px 0}
+.key-report{margin-top:15px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+kbd{display:inline-block;font:700 13px ui-monospace,monospace;border:1px solid #d9e1eb;border-bottom-width:3px;border-radius:8px;padding:8px 13px;color:#355275;background:#f8fafd;direction:ltr}
+[hidden]{display:none!important}
+@media print{
+ @page{size:auto;margin:0}
+ html,body{margin:0!important;padding:0!important;background:white!important}
+ header,h1,.heading,.surface:not(.print-only),.print-info,.hint,.badge{display:none!important}
+ .viewport,.desktop,main,.cards{display:block!important;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important}
+ .print-only{padding:0!important;margin:0!important;border:none!important;min-height:0!important}
+ .print-panel{display:block!important;margin:0!important}
+ .paper{padding:3mm!important;margin:0!important;min-height:0!important;border:0!important;box-shadow:none!important;width:var(--diagnostic-paper,58mm)!important}
+}
+</style>
+<script src="./diagnostics.js" defer></script>
+</head>
+<body><div class="viewport"><div class="desktop">
+<header><a class="brand" href="./index.html"><span class="mark">◈</span><span>سیستەمی کاشێر</span></a><a class="home" href="./index.html" title="سەرەتا" aria-label="سەرەتا">⌂</a></header>
+<main>
+<h1>پشکنینی ئامێرەکانی PC</h1>
+<div class="cards">
+<section class="surface">
+<div class="heading"><h2>سکانەری بارکۆد</h2><button class="secondary" id="focus-scanner">ئامادەکردنی سکان</button></div>
+<p class="hint">بارکۆدێکی ڕاستەقینە بسکانە یان بە دەست بنووسە و Enter بکە. هیچ بارکۆدێک نەنێردرێت بۆ داتابەیس.</p>
+<form id="scan-form" class="formrow">
+<label class="field">بارکۆدی خوێندراو<input id="scan-input" name="barcode" maxlength="128" autocomplete="off" spellcheck="false" inputmode="none" required></label>
+<button class="primary">پشکنین</button>
+</form>
+<div class="data">
+<div class="metric"><span>درێژی بارکۆد</span><strong id="barcode-length">—</strong></div>
+<div class="metric"><span>جۆری کۆد</span><strong id="barcode-type">—</strong></div>
+<div class="metric"><span>Checksum ـی EAN-13</span><strong id="barcode-checksum">—</strong></div>
+<div class="metric"><span>کۆدی کاڵای پێوانە</span><strong id="scale-code">—</strong></div>
+</div>
+<div class="feedback" id="scan-feedback" role="status"></div>
+</section>
+<section class="surface">
+<h2>کیبۆرد و دوگمەکان</h2>
+<p class="hint">لە خانەکە کلیک بکە و دوگمەیەک لە کیبۆرد فشار بدە. دوگمەکانی F3، F5، F7، F9 و F12 لە هەندێک وێبگەڕدا کردارە تایبەتییەکانیان هەیە.</p>
+<label class="field">خانەی پشکنینی کیبۆرد<input id="keyboard-input" aria-label="پشکنینی کیبۆرد" autocomplete="off"></label>
+<div class="key-report"><span class="hint">دوایین دوگمە:</span><kbd id="key-last">—</kbd><span class="hint" id="key-feedback"></span></div>
+<div class="section-divider"></div>
+<h3>پشکنینی دۆخی وێبگەڕ</h3>
+<div class="data">
+<div class="metric"><span>پەیوەندی ئینتەرنێت</span><strong id="network-status">—</strong></div>
+<div class="metric"><span>ئەم پەڕەیە</span><strong id="page-status">—</strong></div>
+</div>
+<p class="hint">دۆخی ئینتەرنێت تەنها دۆخی ڕاگەیەندراوی وێبگەڕە؛ پەیوەندی بە Supabase یان چاپکەر پشتڕاست ناکاتەوە.</p>
+</section>
+<section class="surface full print-only">
+<div class="heading"><h2>پشکنینی چاپکەر — 58/80mm</h2></div>
+<div class="print-panel">
+<div class="print-info">
+<div class="badge">ئەمە تەنها تاقیکردنەوەی چاپکەرە — پسووڵەی فرۆشتن نییە</div>
+<div class="formrow">
+<label class="field">پانیی کاغەز<select id="paper-width">
+<option value="58">58mm</option><option value="80">80mm</option>
+</select></label>
+<button class="primary" id="test-print" type="button">چاپی تاقیکردنەوە</button>
+</div>
+<p class="hint">دوگمەکە Print Dialog دەکاتەوە. هەڵبژاردنی چاپکەر، Paper Size و Auto Cut لە ڕێکخستنەکانی Windows/Driver دیاری دەکرێن، نەک لێرە.</p>
+<div class="feedback" id="print-feedback" role="status"></div>
+</div>
+<article class="paper" id="test-sheet" aria-label="کاغەزی تاقیکردنەوە">
+<h3>سیستەمی کاشێر</h3>
+<div class="line"></div>
+<div class="test-text">تاقیکردنەوەی چاپکەر</div>
+<div class="tiny">ئەمە پسووڵەی فرۆشتن نییە</div>
+<div class="line"></div>
+<div class="tiny left">A B C D E F G 1 2 3 4 5 6 7 8 9 0</div>
+<div class="tiny">کوردیی سۆرانی — پشکنینی فۆنت</div>
+<div class="tiny left" id="paper-mark">WIDTH: 58mm</div>
+<div class="line"></div>
+</article>
+</div>
+</section>
+</div>
+</main></div></div>
+</body></html>
