@@ -92,3 +92,5 @@ jobs:
         run: node tests/browser/fixed_pc_submenu_controls.mjs
       - name: Exercise PC cashier, product, receipt, shift and staff forms (in-browser QA only)
         run: node tests/browser/pc_forms_interaction.mjs
+      - name: Verify headings, field labels, blank states and tabs stay dark in PC UI
+        run: node tests/browser/pc_all_headings_contrast.mjs
