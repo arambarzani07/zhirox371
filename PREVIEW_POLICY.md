@@ -39,3 +39,15 @@ For EVERY future design or functionality iteration, display **the entire PC syst
 - Reflect changes in the full preview every time, not just a cropped or separate changed-screen widget.
 - Be transparent: the interactive preview is a **representation** of the verified working source and may contain demo-only controls; it is not evidence that all routes are production functional or live Supabase-connected.
 - Preserve the existing design and database locks; this instruction is a **preview delivery requirement**, not permission to change production scope.
+
+## Zero-extra-copy PC rule — explicit owner instruction (2026-10-26)
+
+Owner: **«لەمەو دوا هیچ نووسینێکی زیادە وەک ڕێنمایی و نیشاندان لەسەر شاشەکە دەرمەخە»**.
+
+This applies to all actual PC screens and **every full-system in-chat interactive preview**:
+- Do not add any explanatory/instructional paragraphs, demo/preview notices, walkthroughs, filler, status decorations, repeated titles, or text just to occupy space.
+- Show only necessary page titles, card/subcard names, real form labels, inputs, action labels, operational data, and actionable validation/error/safety warnings.
+- Never suppress real backend failures, role-denied statuses, financial verification, print-test vs sale receipt distinctions, security warnings, or keyboard-accessibility labels. Keep accessibility descriptions non-visible when suitable.
+- Remove existing optional how-to hints from diagnostic screens and nonessential QA footnote without changing business logic, card layout, SQL, Auth, or the design lock.
+- If a change is preview-only, do not insert disclaimers in the PC canvas. In conversational prose outside the PC preview, still clarify whether it is a demo or connected functionality.
+- Future complete 12-card, 48-subcard previews must keep their functional navigation but show no instructional footer, example disclaimer, version number, QA counter decoration, or superfluous labels.
