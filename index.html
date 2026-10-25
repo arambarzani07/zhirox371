@@ -55,6 +55,21 @@ const specs=[
 const cardIcons=window.RetailCardIcons;
 const state={open:-1,page:null,products:[],cart:[],msg:""};
 const money=n=>n.toLocaleString("en-US")+" IQD";
+/* Contrast-critical labels: bind opaque dark ink to the text node itself.
+   Inline important declarations outrank theme styles, including iOS Safari overrides. */
+function makeReadableLabel(node){
+ for(const [key,value] of [
+   ["color","#172b45"],
+   ["-webkit-text-fill-color","#172b45"],
+   ["opacity","1"],
+   ["font-weight","900"],
+   ["text-shadow","none"],
+   ["visibility","visible"]
+ ])node.style.setProperty(key,value,"important");
+ node.dataset.contrastLabel="true";
+ return node;
+}
+
 function back(){state.page=null;state.msg="";draw()}
 function draw(){
  if(state.page){drawPage();return}
@@ -67,14 +82,14 @@ function draw(){
    const b=document.createElement("button");b.type="button";b.className="module";b.dataset.module=i;b.setAttribute("aria-expanded",String(i===state.open));
    b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);
    b.innerHTML='<span class="icon"></span><span class="end"><span class="name"></span><span class="chev">⌄</span></span>';
-   b.querySelector(".icon").innerHTML=cardIcons.svg(cardIcons.main[i]);b.querySelector(".name").textContent=s[0];row.append(b);
+   b.querySelector(".icon").innerHTML=cardIcons.svg(cardIcons.main[i]);const mainLabel=makeReadableLabel(b.querySelector(".name"));mainLabel.textContent=s[0];row.append(b);
   }
   app.append(row);
   if(Math.floor(state.open/4)===r&&state.open>=0){
    const s=specs[state.open],drawer=document.createElement("div");drawer.className="drawer";
    drawer.innerHTML='<div class="drawerhead"><strong></strong><button class="close" data-close aria-label="داخستن">✕</button></div><div class="subgrid"></div>';
-   drawer.querySelector("strong").textContent=s[0];
-   s[4].forEach((label,j)=>{const b=document.createElement("button");b.className="sub";b.dataset.sub=j;b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);b.innerHTML='<span class="sub-icon"></span><span class="sub-footer"><span class="sub-name"></span><span class="sub-arrow">↖</span></span>';b.querySelector(".sub-icon").innerHTML=cardIcons.svg(cardIcons.sub[state.open][j]);b.querySelector(".sub-name").textContent=label;drawer.querySelector(".subgrid").append(b)});
+   makeReadableLabel(drawer.querySelector(".drawerhead strong")).textContent=s[0];
+   s[4].forEach((label,j)=>{const b=document.createElement("button");b.className="sub";b.dataset.sub=j;b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);b.innerHTML='<span class="sub-icon"></span><span class="sub-footer"><span class="sub-name"></span><span class="sub-arrow">↖</span></span>';b.querySelector(".sub-icon").innerHTML=cardIcons.svg(cardIcons.sub[state.open][j]);makeReadableLabel(b.querySelector(".sub-name")).textContent=label;drawer.querySelector(".subgrid").append(b)});
    app.append(drawer);
   }
  }
