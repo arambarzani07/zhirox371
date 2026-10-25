@@ -247,56 +247,6 @@ $function$;
 revoke all on function retail_internal.checkout_cash(uuid,uuid,jsonb,bigint) from public, anon;
 grant execute on function retail_internal.checkout_cash(uuid,uuid,jsonb,bigint) to authenticated;
 
-CREATE OR REPLACE FUNCTION public.retail_cash_movement(p_store uuid, p_session uuid, p_request uuid, p_kind text, p_amount bigint, p_note text)
- RETURNS uuid
- LANGUAGE sql
- SET search_path TO ''
-AS $function$
- select retail_internal.cash_movement(p_store,p_session,p_request,p_kind,p_amount,p_note);
-$function$;
-revoke all on function public.retail_cash_movement(uuid,uuid,uuid,text,bigint,text) from public, anon;
-grant execute on function public.retail_cash_movement(uuid,uuid,uuid,text,bigint,text) to authenticated;
-
-CREATE OR REPLACE FUNCTION public.retail_checkout_cash(p_store uuid, p_request uuid, p_items jsonb, p_cash_received bigint)
- RETURNS uuid
- LANGUAGE sql
- SET search_path TO ''
-AS $function$
- select retail_internal.checkout_cash(p_store,p_request,p_items,p_cash_received);
-$function$;
-revoke all on function public.retail_checkout_cash(uuid,uuid,jsonb,bigint) from public, anon;
-grant execute on function public.retail_checkout_cash(uuid,uuid,jsonb,bigint) to authenticated;
-
-CREATE OR REPLACE FUNCTION public.retail_receive_stock(p_store uuid, p_product uuid, p_quantity numeric, p_reason text DEFAULT 'opening'::text)
- RETURNS numeric
- LANGUAGE sql
- SET search_path TO ''
-AS $function$
- select retail_internal.receive_stock(p_store,p_product,p_quantity,p_reason);
-$function$;
-revoke all on function public.retail_receive_stock(uuid,uuid,numeric,'opening'::text) from public, anon;
-grant execute on function public.retail_receive_stock(uuid,uuid,numeric,'opening'::text) to authenticated;
-
-CREATE OR REPLACE FUNCTION public.retail_shift_close(p_store uuid, p_session uuid, p_counted bigint)
- RETURNS jsonb
- LANGUAGE sql
- SET search_path TO ''
-AS $function$
- select retail_internal.shift_close(p_store,p_session,p_counted);
-$function$;
-revoke all on function public.retail_shift_close(uuid,uuid,bigint) from public, anon;
-grant execute on function public.retail_shift_close(uuid,uuid,bigint) to authenticated;
-
-CREATE OR REPLACE FUNCTION public.retail_shift_open(p_store uuid, p_opening bigint)
- RETURNS uuid
- LANGUAGE sql
- SET search_path TO ''
-AS $function$
- select retail_internal.shift_open(p_store,p_opening);
-$function$;
-revoke all on function public.retail_shift_open(uuid,bigint) from public, anon;
-grant execute on function public.retail_shift_open(uuid,bigint) to authenticated;
-
 CREATE OR REPLACE FUNCTION retail_internal.cash_movement(p_store uuid, p_session uuid, p_request uuid, p_kind text, p_amount bigint, p_note text)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -466,6 +416,56 @@ end
 $function$;
 revoke all on function retail_internal.shift_open(uuid,bigint) from public, anon;
 grant execute on function retail_internal.shift_open(uuid,bigint) to authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_cash_movement(p_store uuid, p_session uuid, p_request uuid, p_kind text, p_amount bigint, p_note text)
+ RETURNS uuid
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+ select retail_internal.cash_movement(p_store,p_session,p_request,p_kind,p_amount,p_note);
+$function$;
+revoke all on function public.retail_cash_movement(uuid,uuid,uuid,text,bigint,text) from public, anon;
+grant execute on function public.retail_cash_movement(uuid,uuid,uuid,text,bigint,text) to authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_checkout_cash(p_store uuid, p_request uuid, p_items jsonb, p_cash_received bigint)
+ RETURNS uuid
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+ select retail_internal.checkout_cash(p_store,p_request,p_items,p_cash_received);
+$function$;
+revoke all on function public.retail_checkout_cash(uuid,uuid,jsonb,bigint) from public, anon;
+grant execute on function public.retail_checkout_cash(uuid,uuid,jsonb,bigint) to authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_receive_stock(p_store uuid, p_product uuid, p_quantity numeric, p_reason text DEFAULT 'opening'::text)
+ RETURNS numeric
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+ select retail_internal.receive_stock(p_store,p_product,p_quantity,p_reason);
+$function$;
+revoke all on function public.retail_receive_stock(uuid,uuid,numeric,'opening'::text) from public, anon;
+grant execute on function public.retail_receive_stock(uuid,uuid,numeric,'opening'::text) to authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_shift_close(p_store uuid, p_session uuid, p_counted bigint)
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+ select retail_internal.shift_close(p_store,p_session,p_counted);
+$function$;
+revoke all on function public.retail_shift_close(uuid,uuid,bigint) from public, anon;
+grant execute on function public.retail_shift_close(uuid,uuid,bigint) to authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_shift_open(p_store uuid, p_opening bigint)
+ RETURNS uuid
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+ select retail_internal.shift_open(p_store,p_opening);
+$function$;
+revoke all on function public.retail_shift_open(uuid,bigint) from public, anon;
+grant execute on function public.retail_shift_open(uuid,bigint) to authenticated;
 
 -- Avoid direct financial writes from the authenticated testing role.
 revoke all on public.retail_stores,public.retail_memberships,public.retail_products,public.retail_stock_balances,public.retail_cash_sessions,public.retail_cash_movements,public.retail_sales,public.retail_sale_items,public.retail_stock_events,public.retail_receipt_counters,public.retail_audit_events from authenticated;
