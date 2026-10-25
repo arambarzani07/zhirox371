@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>کاڵاکان — سیستەمی کاشێر</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fa;color:#213149;font-family:system-ui,"Segoe UI",Tahoma,sans-serif}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid #97b7e8;outline-offset:2px}
+.viewport{overflow-x:auto;min-height:100vh}.desktop{min-width:1020px;min-height:100vh}
+header{background:#fff;height:75px;padding:0 42px;border-bottom:1px solid #e7ecf2;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:13px;font-size:19px;font-weight:800;color:#26394f;text-decoration:none}.brand i{width:43px;height:43px;border-radius:12px;background:#243d60;color:#fff;display:grid;place-items:center;font-style:normal;font-size:25px}
+.right{display:flex;align-items:center;gap:12px}.who{font-size:12px;color:#7889a1}.home{width:38px;height:38px;border:1px solid #e5eaf0;border-radius:10px;background:#f7f9fc;color:#556a84;text-align:center;font-size:19px;text-decoration:none;display:grid;place-items:center}
+main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;margin:0 0 25px;font-weight:800}h2{font-size:18px;margin:0 0 20px}h3{font-size:15px;margin:0 0 16px}
+.surface{background:#fff;border:1px solid #e5eaf1;border-radius:16px;padding:25px}
+.small{max-width:560px;margin:45px auto}
+.form{display:flex;flex-wrap:wrap;align-items:end;gap:13px}.form-col{display:flex;flex-direction:column;gap:7px;min-width:180px;flex:1;color:#66778d;font-size:12px}.form-col input{height:44px;border-radius:10px;border:1px solid #dce4ee;padding:11px 13px;background:#fff;color:#213149}
+.primary{height:44px;background:#274871;color:white;border:0;border-radius:10px;padding:0 22px;font-weight:800;font-size:13px}.secondary{height:44px;background:#f5f7fa;color:#4b607b;border:1px solid #e3e9f0;border-radius:10px;padding:0 16px;font-weight:700;font-size:13px}
+.primary:disabled,.secondary:disabled{opacity:.6;cursor:wait}
+.actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.tabs{display:flex;gap:8px;margin-bottom:20px}.tab{border:1px solid #e0e7ef;background:#fff;color:#65768d;padding:11px 19px;border-radius:10px;font-size:13px;font-weight:750}.tab.active{background:#274871;color:white;border-color:#274871}
+.message{min-height:20px;margin-top:16px;font-size:12px;color:#5a758a}.message.error{color:#ad4b45}.message.success{color:#087c60}
+.sep{height:1px;background:#edf0f4;margin:24px 0}
+.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:right;padding:14px;border-bottom:1px solid #edf1f5}.table th{background:#fbfcfe;color:#677990;font-weight:800}
+.price{direction:ltr;unicode-bidi:embed;display:inline-block}.blank{border:1px dashed #e0e8ef;background:#fafbfd;color:#8a9cad;text-align:center;padding:38px;border-radius:12px;margin-top:15px;font-size:13px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px}.toolbar h2{margin:0}.input-search{height:40px;border:1px solid #dce4ee;border-radius:9px;padding:10px 12px;min-width:235px;background:#fff;color:#223650}
+[hidden]{display:none!important}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+<script src="./config.js"></script>
+<script src="./workspace.js" defer></script>
+</head>
+<body>
+<div class="viewport"><div class="desktop">
+<header>
+<a class="brand" href="./index.html"><i>◈</i><span>سیستەمی کاشێر</span></a>
+<div class="right"><span class="who" id="who"></span><button class="secondary" id="logout" type="button" hidden>دەرچوون</button><a class="home" href="./index.html" title="سەرەتا" aria-label="سەرەتا">⌂</a></div>
+</header>
+<main>
+<h1>کاڵاکان</h1>
+<section class="surface small" id="auth-panel" hidden>
+<h2>چوونەژوورەوە</h2>
+<form id="login-form">
+<label class="form-col">ئیمەیڵ<input type="email" name="email" autocomplete="username" required maxlength="254"></label>
+<div style="height:13px"></div>
+<label class="form-col">وشەی نهێنی<input type="password" name="password" autocomplete="current-password" minlength="8" required></label>
+<div class="actions"><button class="primary" id="sign-in" type="submit">چوونەژوورەوە</button><button class="secondary" type="button" id="sign-up">دروستکردنی هەژمار</button></div>
+</form>
+<p class="message" id="auth-message" role="status"></p>
+</section>
+<section class="surface small" id="store-panel" hidden>
+<h2>فرۆشگای نوێ</h2>
+<form id="store-form" class="form">
+<label class="form-col">ناوی فرۆشگا<input name="name" minlength="1" maxlength="160" required autocomplete="organization"></label>
+<button class="primary" id="create-store">دروستکردن</button>
+</form>
+<p class="message" id="store-message" role="status"></p>
+</section>
+<section id="products-panel" hidden>
+<div class="tabs"><button class="tab" type="button" data-tab="new">کاڵای نوێ</button><button class="tab" type="button" data-tab="list">لیستی کاڵاکان</button></div>
+<div class="surface" id="new-panel">
+<h2>زیادکردنی کاڵا</h2>
+<form id="product-form" class="form">
+<label class="form-col">ناوی کاڵا<input name="name" minlength="1" maxlength="160" required autocomplete="off"></label>
+<label class="form-col">بارکۆد<input name="barcode" maxlength="60" required autocomplete="off"></label>
+<label class="form-col">نرخ (IQD)<input name="price" type="number" min="0" max="999999999" step="1" required></label>
+<button type="submit" class="primary" id="save-product">زیادکردن</button>
+</form><div id="product-message" class="message" role="status"></div>
+</div>
+<div class="surface" id="list-panel" hidden>
+<div class="toolbar"><h2>لیستی کاڵاکان</h2><div style="display:flex;gap:9px"><input id="search" class="input-search" placeholder="گەڕان بە ناو یان بارکۆد" aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
+<div id="results"><div class="blank">هیچ کاڵایەک نییە</div></div>
+<div id="list-message" class="message" role="status"></div>
+</div>
+</section>
+<div id="system-message" class="message" role="alert"></div>
+</main></div></div>
+</body></html>
