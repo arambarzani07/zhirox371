@@ -1,7 +1,7 @@
 # سیستەمی کاشێر — Retail OS
 
 ## دۆخ
-V7 — Auth, Products, Protected Checkout, Cash Shifts, Receipts and PC Hardware Diagnostics. Development only; NOT production-ready.
+V8 — Auth, Protected Checkout, Cash Shifts, Receipts, Hardware Diagnostics and Concurrent PostgreSQL QA. Development only; NOT production-ready.
 
 ## GitHub
 - Repository: arambarzani07/zhirox371
@@ -83,6 +83,14 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 - پشکنینی خۆکاری GitHub Actions: 39/39 تاقیکردنەوە سەرکەوتوون لە run 40216110209.
 - چاپی تاقیکردنەوە فرۆشتن نییە؛ هیچ بڕی پارەیەک نانووسێت، هیچ داتابەیسێک ناگۆڕێت.
 - ناسینەوەی Windows printer، Auto Cut و Cash Drawer لە وێبگەڕ بە تەنها پشتڕاست ناکرێت.
+
+## قۆناغی V8 — پشکنینی هاوکات
+- `tests/integration/fixture.sql`: temporary PostgreSQL 16 schema plus verified live Supabase function definitions, no writes to production.
+- `tests/integration/concurrency.test.mjs`: 10 genuinely concurrent SQL integration cases, including 12 simultaneous requests for three stock units.
+- `.github/workflows/pc-foundation.yml`: independent PostgreSQL integration job and frozen-Home static test job; no production keys.
+- `qa.html`: interactive Sorani PC QA case browser, linked from چاودێری و مۆڵەتەکان → پشکنینی مامەڵە (Home navigation only).
+- `tests/v8_qa.test.mjs` and `docs/V8_CONCURRENCY_QA.md`: QA contracts and scope exclusions.
+- Hosted Supabase database remains empty; full live Supabase Auth, tenant RLS, physical printer and load E2E checks are NOT yet complete.
 
 ## Safety / remaining work
 - All remaining Home-linked internal modules are either empty scaffolds or local/in-memory prototypes.
