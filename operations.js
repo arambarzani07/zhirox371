@@ -3,9 +3,11 @@
 const $=id=>document.getElementById(id);
 const config=window.RETAIL_CONFIG;
 const view=new URLSearchParams(location.search).get("view");
-let db=null,user=null,store=null,role=null,products=[],barcodes=[],balances=new Map(),members=[],cart=[],requestId=null,tab="cash",busy=false,pendingCheckout=null;
+let db=null,user=null,store=null,role=null,products=[],barcodes=[],balances=new Map(),members=[],cart=[],requestId=null,tab="cash",busy=false,pendingCheckout=null,shiftSession=null,pendingCashMovement=null;
 const money=n=>Number(n).toLocaleString("en-US")+" IQD";
 const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نییە":
+ /no open cash shift|shift not open/i.test(e?.message||"")?"شێفتی کاشێر نەکراوەتەوە":
+ /insufficient cash in drawer/i.test(e?.message||"")?"پارەی سندووق بەش ناکات":
  /insufficient stock/i.test(e?.message||"")?"بڕی کۆگا بەش ناکات":
  /cash amount is below/i.test(e?.message||"")?"پارەی وەرگیراو کەمترە لە کۆی فرۆشتن":
  /invalid checkout/i.test(e?.message||"")?"زانیاری فرۆشتن هەڵەیە":
@@ -17,7 +19,7 @@ function msg(id,value="",kind=""){const x=$(id);x.textContent=value;x.className=
 function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();}
 function pendingKey(){return store&&user?"retail_pending_checkout_"+store.id+"_"+user.id:null}
 function persistPending(){const key=pendingKey();if(!key)return;try{if(pendingCheckout)sessionStorage.setItem(key,JSON.stringify(pendingCheckout));else sessionStorage.removeItem(key);}catch(e){msg("system-msg","پاراستنی هەوڵی فرۆشتن لە بیرگەی وێبگەڕدا سەرکەوتوو نەبوو","error")}}
-function syncPending(){const pending=!!pendingCheckout;for(const id of ["barcode","cash"])$(id).disabled=pending||busy;$("clear-cart").disabled=pending||busy;$("finish-sale").disabled=pending||busy;$("retry-checkout").hidden=!pending;$("retry-checkout").disabled=busy;}
+function syncPending(){const pending=!!pendingCheckout;for(const id of ["barcode","cash"])$(id).disabled=pending||busy;$("clear-cart").disabled=pending||busy;$("finish-sale").disabled=pending||busy||!shiftSession;$("retry-checkout").hidden=!pending;$("retry-checkout").disabled=busy;}
 function restorePending(){const key=pendingKey();if(!key)return;try{const val=JSON.parse(sessionStorage.getItem(key)||"null");if(!val||!val.id||!Array.isArray(val.items)||!Number.isSafeInteger(val.cash))return;pendingCheckout=val;requestId=val.id;cart=val.items.map(x=>{const p=products.find(p=>p.id===x.product_id);return p?{id:p.id,name:p.name,price:Number(p.price_minor),available:balances.get(p.id)||0,qty:x.quantity}:null}).filter(Boolean);$("cash").value=val.cash;msg("checkout-msg","ئەنجامی فرۆشتنی پێشوو دیار نییە؛ بۆ پشکنینی دووبارە هەمان داواکاری بەکاربهێنە","error");renderCart();syncPending();}catch(e){msg("system-msg","هەوڵی پارێزراوی پێشوو نەتوانرا بخوێندرێتەوە","error")}}
 function unlockPending(){pendingCheckout=null;requestId=null;persistPending();syncPending();}
 function canManage(){return role==="owner"||role==="manager";}
@@ -31,7 +33,7 @@ function selectTab(next){
  if(next==="staff"&&role!=="owner")next="cash";
  if((next==="stock"||next==="audit")&&!canManage())next="cash";
  tab=next;
- for(const x of ["cash","stock","staff","audit","receipts"])$(x+"-panel").hidden=x!==next;
+ for(const x of ["cash","stock","staff","audit","receipts","shift"])$(x+"-panel").hidden=x!==next;
  document.querySelectorAll("[data-tab]").forEach(x=>{
    x.classList.toggle("active",x.dataset.tab===next);
    x.hidden=(x.dataset.tab==="staff"&&role!=="owner") ||
@@ -42,6 +44,7 @@ function selectTab(next){
  if(next==="staff")void refreshStaff();
  if(next==="audit")void refreshAudit();
  if(next==="receipts")void refreshReceipts();
+ if(next==="shift")void refreshShift();
 }
 function renderTable(target,headers,data){
  const x=$(target);x.replaceChildren();
@@ -182,6 +185,89 @@ $("receipts-list").addEventListener("click",e=>{
  const button=e.target.closest("[data-receipt]");
  if(button&&!busy)void showReceipt(button.dataset.receipt);
 });
+
+function cashMoveKey(){return store&&user?"retail_cash_movement_"+store.id+"_"+user.id:null}
+function saveCashMove(){
+ const key=cashMoveKey();if(!key)return;
+ try{if(pendingCashMovement)sessionStorage.setItem(key,JSON.stringify(pendingCashMovement));else sessionStorage.removeItem(key)}
+ catch(e){msg("shift-msg","پاراستنی داواکاری لە وێبگەڕ سەرکەوتوو نەبوو","error")}
+}
+function redrawShift(summary){
+ const has=!!shiftSession;
+ $("shift-open-form").hidden=has;
+ $("shift-active-forms").hidden=!has;
+ $("shift-current").hidden=!has;
+ if(summary){
+  $("shift-opening").textContent=money(summary.opening);
+  $("shift-sales").textContent=money(summary.sales);
+  $("shift-moves").textContent=money(summary.movements);
+  $("shift-expected").textContent=money(summary.expected);
+ }
+ $("movement-retry").hidden=!pendingCashMovement;
+ $("movement-retry").disabled=busy;
+ syncPending();
+}
+async function refreshShift(){
+ if(!db||!store||!user)return;
+ const {data,error}=await db.from("retail_cash_sessions")
+  .select("id,status,opening_cash_minor,opened_at,expected_cash_minor,counted_cash_minor,variance_minor")
+  .eq("store_id",store.id).eq("cashier_id",user.id)
+  .order("opened_at",{ascending:false}).limit(30);
+ if(error){msg("shift-msg",safe(error),"error");return}
+ const rows=data||[];
+ shiftSession=rows.find(x=>x.status==="open")||null;
+ if(shiftSession){
+  const summary=await db.rpc("retail_shift_summary",{p_store:store.id,p_session:shiftSession.id});
+  if(summary.error){msg("shift-msg",safe(summary.error),"error");return}
+  redrawShift(summary.data);
+ }else redrawShift(null);
+ renderTable("shift-history",["کات","دۆخ","پارەی سەرەتا","جیاوازی"],rows.map(x=>[
+   new Date(x.opened_at).toLocaleString("en-GB"),
+   x.status==="open"?"کراوە":"داخراوە",
+   money(x.opening_cash_minor),x.variance_minor==null?"—":money(x.variance_minor)
+ ]));
+ if(shiftSession){try{
+   const saved=JSON.parse(sessionStorage.getItem(cashMoveKey())||"null");
+   pendingCashMovement=saved&&saved.sessionId===shiftSession.id?saved:null;
+ }catch(e){pendingCashMovement=null;}
+ }else pendingCashMovement=null;
+ $("movement-retry").hidden=!pendingCashMovement;
+ if(!shiftSession&&!pendingCheckout)msg("checkout-msg","بۆ فرۆشتن سەرەتا شێفت بکەرەوە");
+ syncPending();
+}
+function renderShiftClose(summary){
+ const x=$("shift-report");x.replaceChildren();x.hidden=false;
+ const h=document.createElement("h3");h.textContent="پوختەی کۆتایی شێفت";x.append(h);
+ const dl=document.createElement("dl");
+ for(const [title,value] of [
+  ["پارەی سەرەتا",summary.opening],["کۆی فرۆشتن",summary.sales],
+  ["جووڵەی پارە",summary.movements],["پارەی چاوەڕوانکراو",summary.expected],
+  ["پارەی ژمێردراو",summary.counted],["جیاوازی",summary.variance]
+ ]){const d=document.createElement("div"),dt=document.createElement("dt"),dd=document.createElement("dd");
+ dt.textContent=title;dd.textContent=money(value);d.append(dt,dd);dl.append(d)}
+ x.append(dl);
+}
+async function commitCashMovement(){
+ if(!db||busy||!pendingCashMovement)return;
+ lock(true);msg("shift-msg");
+ try{
+  const v=pendingCashMovement;
+  const {error}=await db.rpc("retail_cash_movement",{
+    p_store:store.id,p_session:v.sessionId,p_request:v.id,
+    p_kind:v.kind,p_amount:v.amount,p_note:v.note
+  });
+  if(error)throw error;
+  pendingCashMovement=null;saveCashMove();
+  $("shift-movement-form").reset();
+  msg("shift-msg","جووڵەی پارە تۆمارکرا","success");
+  await refreshShift();
+ }catch(e){
+  if(["22023","42501","23505"].includes(e?.code)){
+    pendingCashMovement=null;saveCashMove();
+    msg("shift-msg",safe(e),"error");
+  }else msg("shift-msg",safe(e)+" — پشکنینەوە بە هەمان داواکاری","error");
+ }finally{lock(false);$("movement-retry").hidden=!pendingCashMovement}
+}
 async function enter(){
  const {data,error}=await db.from("retail_stores").select("id,name,owner_user_id,currency")
  .order("created_at",{ascending:true}).limit(1).maybeSingle();
@@ -197,8 +283,9 @@ async function enter(){
  }
  viewPanel("operations");
  await loadInventory();
+ await refreshShift();
  restorePending();
- selectTab(["cash","stock","staff","audit","receipts"].includes(view)?view:"cash");
+ selectTab(["cash","stock","staff","audit","receipts","shift"].includes(view)?view:"shift");
  syncPending();
 }
 async function init(){
@@ -226,7 +313,7 @@ $("login-form").addEventListener("submit",async e=>{
 });
 $("logout").onclick=async()=>{
  if(db)await db.auth.signOut();
- user=null;store=null;role=null;products=[];cart=[];requestId=null;pendingCheckout=null;viewPanel("login");
+ user=null;store=null;role=null;products=[];cart=[];requestId=null;pendingCheckout=null;shiftSession=null;pendingCashMovement=null;viewPanel("login");
  msg("login-msg");
 };
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{if(!busy)selectTab(b.dataset.tab)}));
@@ -267,6 +354,7 @@ async function commitCheckout(){
    unlockPending();cart=[];$("cash").value="";
    renderCart();msg("checkout-msg","فرۆشتن تۆمارکرا — "+saleId,"success");
    try{
+     await refreshShift();
      const {data:receipt,error:receiptError}=await db.from("retail_sales")
        .select("receipt_no,total_minor,change_due_minor")
        .eq("store_id",store.id).eq("id",saleId).single();
@@ -325,6 +413,48 @@ $("staff-form").addEventListener("submit",async e=>{
    });if(error)throw error;
    await refreshStaff();msg("staff-msg","مۆڵەتی کارمەند نوێکرایەوە","success");
  }catch(err){msg("staff-msg",safe(err),"error")}
+ finally{lock(false)}
+});
+
+$("shift-refresh").addEventListener("click",()=>{if(!busy)void refreshShift()});
+$("shift-open-form").addEventListener("submit",async e=>{
+ e.preventDefault();if(!db||!store||busy||shiftSession)return;
+ const opening=Number(new FormData(e.target).get("opening"));
+ if(!Number.isSafeInteger(opening)||opening<0||opening>9999999999999){msg("shift-msg","بڕی سەرەتایی نادروستە","error");return}
+ lock(true);msg("shift-msg");
+ try{
+  const {error}=await db.rpc("retail_shift_open",{p_store:store.id,p_opening:opening});
+  if(error)throw error;
+  e.target.reset();$("shift-report").hidden=true;
+  msg("shift-msg","شێفت کرایەوە","success");
+  await refreshShift();
+ }catch(e){msg("shift-msg",safe(e),"error")}finally{lock(false)}
+});
+$("shift-movement-form").addEventListener("submit",async e=>{
+ e.preventDefault();if(!shiftSession||busy||pendingCashMovement)return;
+ const f=new FormData(e.target),amount=Number(f.get("amount")),note=String(f.get("note")||"").trim(),kind=String(f.get("kind"));
+ if(!Number.isSafeInteger(amount)||amount<=0||amount>9999999999999||!note||note.length>160){
+  msg("shift-msg","زانیاری جووڵەی پارە نادروستە","error");return;
+ }
+ pendingCashMovement={id:crypto.randomUUID(),sessionId:shiftSession.id,kind,amount,note};
+ saveCashMove();await commitCashMovement();
+});
+$("movement-retry").addEventListener("click",()=>{if(!busy)void commitCashMovement()});
+$("shift-close-form").addEventListener("submit",async e=>{
+ e.preventDefault();if(!db||!shiftSession||busy||pendingCashMovement||pendingCheckout)return;
+ const counted=Number(new FormData(e.target).get("counted"));
+ if(!Number.isSafeInteger(counted)||counted<0||counted>9999999999999){
+   msg("shift-msg","پارەی ژمێردراو نادروستە","error");return;
+ }
+ lock(true);msg("shift-msg");
+ const closingId=shiftSession.id;
+ try{
+  const {data,error}=await db.rpc("retail_shift_close",{p_store:store.id,p_session:closingId,p_counted:counted});
+  if(error)throw error;
+  renderShiftClose(data);e.target.reset();
+  msg("shift-msg","شێفت داخرا","success");
+  await refreshShift();
+ }catch(err){msg("shift-msg",safe(err),"error");}
  finally{lock(false)}
 });
 void init();
