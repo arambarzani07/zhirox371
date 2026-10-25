@@ -1,7 +1,7 @@
 # سیستەمی کاشێر — Retail OS
 
 ## دۆخ
-V3 — Supabase Auth, Products, Role-Based Permissions, Stock Intake and Atomic Cash Checkout. Development only; NOT production-ready.
+V4 — Supabase Auth, Products, RBAC, Stock, Atomic Cash Checkout, Receipt Numbers and Safe Retries. Development only; NOT production-ready.
 
 ## GitHub
 - Repository: arambarzani07/zhirox371
@@ -30,8 +30,8 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 
 ## Supabase
 - Project: Zhirox-New-Project / qcfmlyyzfykzszvtllrw.
-- 10 empty RLS-enabled tables: retail_stores, retail_products, retail_barcodes, retail_customers, retail_sales, retail_sale_items, retail_stock_events, retail_memberships, retail_stock_balances, retail_audit_events.
-- Migrations: retail_pc_foundation, retail_products_atomic_create_and_safety_gate, retail_rbac_stock_atomic_cash_checkout, retail_checkout_request_unique_constraint_fix.
+- 11 empty RLS-enabled tables: retail_stores, retail_products, retail_barcodes, retail_customers, retail_sales, retail_sale_items, retail_stock_events, retail_memberships, retail_stock_balances, retail_audit_events, retail_receipt_counters.
+- Migrations: retail_pc_foundation, retail_products_atomic_create_and_safety_gate, retail_rbac_stock_atomic_cash_checkout, retail_checkout_request_unique_constraint_fix, retail_v4_receipt_numbers_and_request_fingerprint.
 - Product and initial barcode creation is all-or-nothing (one database transaction).
 - anon cannot call retail_create_product. authenticated cannot directly insert sales or stock events.
 - No store, account or product has been seeded.
@@ -46,6 +46,16 @@ Open workspace.html from the Products Home subcards, on the same static web orig
 - پڕۆژە هێشتا بە دوو کاشێری ڕاستەقینە هاوکات تاقی نەکراوەتەوە و بۆ بەکارهێنانی ڕاستەقینە ڕێگەپێنەدراوە.
 - قەراردادی تەواو و سنوورەکان لە [db/V3_CONTRACT.md](db/V3_CONTRACT.md).
 - پشکنینی کۆدی V3: `node --test tests/v3_operations.test.mjs` (Node 22+).
+
+## بەشە نوێیەکان — V4
+- ژمارەی پسووڵەی تایبەت بۆ هەر فرۆشگا لە database transaction زیادکرا؛ `retail_receipt_counters` بەپێی RLS پارێزراوە.
+- `retail_sales.request_payload` هەمان داواکاری دەناسێتەوە؛ request ID لەگەڵ ئەکتەر یان زانیاریی جیاواز ڕەت دەکرێتەوە.
+- `operations.html`/ `operations.js`: لیستی ١٠٠ پسووڵەی دواهەم، وردەکاریی پسووڵە و دووپاتکردنەوەی مامەڵەی نادیار.
+- `index.html`: ژێرکارتی پسووڵەکان ڕووی کردووەتە `operations.html?view=receipts`. هیچ دیزاینێکی سەرەتا نەگۆڕدراوە.
+- `db/v4_receipt_migration.sql` و `db/V4_CONTRACT.md`: SQL و سنوورەکانی V4.
+- `tests/v4_receipts.test.mjs` بۆ static assertions؛ تاقیکردنەوەی ڕاستەقینەی دوو کاشێری هاوکات هێشتا پێویستە.
+- **مێژووی ناوی کاڵا** لە ڕیزی پسووڵەدا snapshot ناکرێت؛ دوای گۆڕینی ناوی کاڵا دەکرێت ناوی ئێستا پیشان بدرێت.
+- تۆمارەکانی داتابەیس لەم قۆناغەدا بەتاڵ ماون؛ هیچ فرۆشتنێکی ڕاستەقینە یان داتای نموونەیی زیاد نەکراوە.
 
 ## Safety / remaining work
 - All remaining Home-linked internal modules are either empty scaffolds or local/in-memory prototypes.
