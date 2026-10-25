@@ -87,6 +87,15 @@ begin
  where id=p_session and store_id=p_store for update;
  if not found or v_status<>'open' or v_cashier<>v_actor
  then raise exception 'Shift not open for user' using errcode='42501';end if;
+ -- A second same-request call must re-check AFTER obtaining the shift lock.
+ select * into v_found from public.retail_cash_movements
+ where store_id=p_store and request_id=p_request;
+ if found then
+   if v_found.session_id<>p_session or v_found.actor_id<>v_actor
+    or v_found.kind<>p_kind or v_found.amount_minor<>p_amount or v_found.note<>btrim(p_note)
+   then raise exception 'Cash request reused with changed payload' using errcode='23505';end if;
+   return v_found.id;
+ end if;
  if p_kind='cash_out' then
    select (s.opening_cash_minor+
     coalesce((select sum(total_minor) from public.retail_sales where store_id=p_store and cash_session_id=p_session and status='posted'),0)+
