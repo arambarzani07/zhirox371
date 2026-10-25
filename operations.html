@@ -59,7 +59,7 @@ select option{color:#26384d}
 <div class="head-actions"><span class="smallinfo" id="who"></span><button id="logout" type="button" class="secondary" hidden>دەرچوون</button><a class="home" href="./index.html" aria-label="سەرەتا">⌂</a></div>
 </header>
 <main>
-<h1>کاشێر و بەڕێوەبردن</h1>
+<h1>کاشێر</h1>
 <section class="surface narrow" id="login-panel" hidden>
 <h2>چوونەژوورەوە</h2>
 <form id="login-form" class="formrow">
@@ -67,13 +67,13 @@ select option{color:#26384d}
 <label class="field">وشەی نهێنی<input type="password" name="password" required autocomplete="current-password"></label>
 <button class="primary" type="submit">چوونەژوورەوە</button>
 </form>
-<p><a href="./workspace.html" style="color:#4c6e9e;font-size:12px">دروستکردنی هەژمار و فرۆشگا</a></p>
+<p><a href="./workspace.html" style="color:#4c6e9e;font-size:12px">هەژماری نوێ</a></p>
 <div class="msg" id="login-msg" role="status"></div>
 </section>
 <section id="operations-panel" hidden>
 <nav class="nav" id="tabs">
-<button data-tab="cash" type="button">فرۆشتنی کاش</button>
-<button data-tab="shift" type="button">سندووق و شێفت</button>
+<button data-tab="cash" type="button">فرۆشتن</button>
+<button data-tab="shift" type="button">شێفت</button>
 <button data-tab="receipts" type="button">پسووڵەکان</button>
 <button data-tab="stock" type="button">کۆگا</button>
 <button data-tab="staff" type="button">کارمەندان</button>
@@ -94,15 +94,15 @@ select option{color:#26384d}
 <div class="totals"><span>کۆی گشتی</span><strong id="total">0 IQD</strong></div>
 <div class="line"></div>
 <form id="checkout-form">
-<label class="field">پارەی وەرگیراو (IQD)<input id="cash" name="cash" type="number" min="0" max="9999999999999" step="1" required></label>
+<label class="field">وەرگیراو (IQD)<input id="cash" name="cash" type="number" min="0" max="9999999999999" step="1" required></label>
 <div class="due"><span>پارەی گەڕاوە</span><strong id="change">0 IQD</strong></div>
-<div class="footer-actions"><button class="primary" type="submit" id="finish-sale">تۆمارکردنی فرۆشتن</button><button class="secondary" type="button" id="retry-checkout" hidden>دووبارە پشکنینەوە</button><button class="secondary" type="button" id="clear-cart">پاککردنەوە</button></div>
+<div class="footer-actions"><button class="primary" type="submit" id="finish-sale">تەواوکردن</button><button class="secondary" type="button" id="retry-checkout" hidden>پشکنینەوە</button><button class="secondary" type="button" id="clear-cart">پاککردنەوە</button></div>
 </form>
 <div class="msg" id="checkout-msg" role="status"></div>
 </aside>
 </section>
 <section id="shift-panel" class="surface" hidden>
-<div class="receipt-head"><h2>سندووق و شێفت</h2><button class="secondary" id="shift-refresh" type="button">نوێکردنەوە</button></div>
+<div class="receipt-head"><h2>شێفت</h2><button class="secondary" id="shift-refresh" type="button">نوێکردنەوە</button></div>
 <div id="shift-current" class="shift-info" hidden>
 <div class="shift-metrics">
 <div><span>پارەی سەرەتا</span><strong id="shift-opening">0 IQD</strong></div>
@@ -112,24 +112,24 @@ select option{color:#26384d}
 </div>
 </div>
 <form id="shift-open-form" class="formrow">
-<label class="field">پارەی سەرەتای شێفت (IQD)<input type="number" name="opening" min="0" max="9999999999999" step="1" required></label>
-<button class="primary" type="submit">کردنەوەی شێفت</button>
+<label class="field">پارەی سەرەتا (IQD)<input type="number" name="opening" min="0" max="9999999999999" step="1" required></label>
+<button class="primary" type="submit">کردنەوە</button>
 </form>
 <div id="shift-active-forms" hidden>
 <div class="line"></div>
-<h2>هاتووچۆی پارە</h2>
+<h2>جووڵەی پارە</h2>
 <form id="shift-movement-form" class="formrow">
 <label class="field">جۆر<select name="kind"><option value="cash_in">پارەی هاتوو</option><option value="cash_out">پارەی دەرچوو</option></select></label>
 <label class="field">بڕ (IQD)<input name="amount" type="number" min="1" max="9999999999999" step="1" required></label>
 <label class="field">هۆکار<input name="note" maxlength="160" required autocomplete="off"></label>
 <button class="primary" type="submit">تۆمارکردن</button>
 </form>
-<div class="footer-actions"><button class="secondary" id="movement-retry" type="button" hidden>دووبارە پشکنینەوە</button></div>
+<div class="footer-actions"><button class="secondary" id="movement-retry" type="button" hidden>پشکنینەوە</button></div>
 <div class="line"></div>
 <h2>داخستنی شێفت</h2>
 <form id="shift-close-form" class="formrow">
-<label class="field">پارەی ژمێردراوی سندووق (IQD)<input name="counted" type="number" min="0" max="9999999999999" step="1" required></label>
-<button class="primary" type="submit">داخستنی شێفت</button>
+<label class="field">پارەی ژمێردراو (IQD)<input name="counted" type="number" min="0" max="9999999999999" step="1" required></label>
+<button class="primary" type="submit">داخستن</button>
 </form>
 </div>
 <div class="msg" id="shift-msg" role="status"></div>
@@ -137,7 +137,7 @@ select option{color:#26384d}
 <div id="shift-history"></div>
 </section>
 <section id="stock-panel" class="surface" hidden>
-<h2>تۆمارکردنی کاڵای هاتوو</h2>
+<h2>هاتنی کاڵا</h2>
 <form id="stock-form" class="formrow">
 <label class="field">کاڵا<select id="stock-product" name="product" required></select></label>
 <label class="field">بڕ<input name="quantity" type="number" step="0.001" min="0.001" max="1000000" required></label>
@@ -148,9 +148,9 @@ select option{color:#26384d}
 <div id="stock-list"></div>
 </section>
 <section id="staff-panel" class="surface" hidden>
-<h2>دەسەڵاتی کارمەندان</h2>
+<h2>کارمەندان</h2>
 <form id="staff-form" class="formrow">
-<label class="field">ناسنامەی بەکارهێنەر (UUID)<input name="user" required maxlength="36" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>
+<label class="field">ناسنامەی کارمەند (UUID)<input name="user" required maxlength="36" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>
 <label class="field">ڕۆڵ<select name="role"><option value="cashier">کاشێر</option><option value="manager">بەڕێوەبەر</option></select></label>
 <label class="field">دۆخ<select name="active"><option value="true">چالاک</option><option value="false">ناچالاک</option></select></label>
 <button type="submit" class="primary">پاشەکەوتکردن</button>
@@ -158,7 +158,7 @@ select option{color:#26384d}
 <div class="msg" id="staff-msg" role="status"></div><div id="staff-list"></div>
 </section>
 <section id="audit-panel" class="surface" hidden>
-<h2>تۆماری چاودێری</h2><div id="audit-list"></div>
+<h2>چاودێری</h2><div id="audit-list"></div>
 </section>
 <section id="receipts-panel" class="surface" hidden>
 <div class="receipt-head"><h2>پسووڵەکان</h2><button class="secondary" id="receipts-refresh" type="button">نوێکردنەوە</button></div>
