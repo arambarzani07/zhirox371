@@ -18,7 +18,9 @@ test("V8 owner-facing QA screen contains scenario list, filters and truthful sta
  assert.match(qa,/data-filter="sale"/);
  assert.match(qa,/data-filter="shift"/);
  assert.match(qa,/data-filter="auth"/);
- assert.match(qa,/تاقیگەی جیاواز/);
+ assert.doesNotMatch(qa,/class="tag">تاقیگەی جیاواز/);
+ assert.match(qa,/id="case-description"/);
+ assert.match(qa,/id="case-expected"/);
  assert.match(qa,/actions\/workflows\/pc-foundation\.yml/);
  assert.doesNotMatch(qa,/sb_secret_|retail_checkout_cash\(/);
 });
