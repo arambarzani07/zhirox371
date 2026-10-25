@@ -58,8 +58,15 @@ for(const type of ["owner","manager","cashier","outsider"])accounts[type]=await 
 passed("4 independent GoTrue sign-ups, password logins and verified JWT sessions (all local)");
 
 const owner=accounts.owner.client,manager=accounts.manager.client,cashier=accounts.cashier.client,outsider=accounts.outsider.client;
-const storeA=ok(await owner.from("retail_stores").insert({id:code(),owner_user_id:accounts.owner.id,name:"A V12 only",currency:"IQD"}).select().single(),"owner creates store A");
-const storeB=ok(await outsider.from("retail_stores").insert({id:code(),owner_user_id:accounts.outsider.id,name:"B V12 only",currency:"IQD"}).select().single(),"outsider creates store B");
+const ownerContext=ok(await owner.rpc("retail_v12_auth_context"),"signed GoTrue JWT reaches local PostgREST");
+assert.equal(ownerContext.sub,accounts.owner.id,"PostgreSQL auth.uid must equal real JWT sub");
+assert.equal(ownerContext.db_role,"authenticated","PostgREST must execute under authenticated role");
+passed("GoTrue bearer token verified in real PostgreSQL auth.uid(), not just client session");
+const storeAId=code(),storeBId=code();
+ok(await owner.from("retail_stores").insert({id:storeAId,owner_user_id:accounts.owner.id,name:"A V12 only",currency:"IQD"}),"owner creates store A without RETURNING");
+ok(await outsider.from("retail_stores").insert({id:storeBId,owner_user_id:accounts.outsider.id,name:"B V12 only",currency:"IQD"}),"outsider creates store B without RETURNING");
+const storeA=ok(await owner.from("retail_stores").select("id,owner_user_id").eq("id",storeAId).single(),"owner sees inserted store A");
+const storeB=ok(await outsider.from("retail_stores").select("id,owner_user_id").eq("id",storeBId).single(),"outsider sees inserted store B");
 assert.equal(storeA.owner_user_id,accounts.owner.id);
 fail(await cashier.from("retail_stores").insert({id:code(),owner_user_id:accounts.owner.id,name:"Forged store",currency:"IQD"}),"cashier cannot impersonate owner");
 passed("only owning authenticated users create stores, forged owner_user_id is rejected");
