@@ -42,7 +42,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <label class="form-col">ئیمەیڵ<input type="email" name="email" autocomplete="username" required maxlength="254"></label>
 <div style="height:13px"></div>
 <label class="form-col">وشەی نهێنی<input type="password" name="password" autocomplete="current-password" minlength="8" required></label>
-<div class="actions"><button class="primary" id="sign-in" type="submit">چوونەژوورەوە</button><button class="secondary" type="button" id="sign-up">دروستکردنی هەژمار</button></div>
+<div class="actions"><button class="primary" id="sign-in" type="submit">چوونەژوورەوە</button><button class="secondary" type="button" id="sign-up">هەژماری نوێ</button></div>
 </form>
 <p class="message" id="auth-message" role="status"></p>
 </section>
@@ -57,7 +57,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <section id="products-panel" hidden>
 <div class="tabs"><button class="tab" type="button" data-tab="new">کاڵای نوێ</button><button class="tab" type="button" data-tab="list">لیستی کاڵاکان</button></div>
 <div class="surface" id="new-panel">
-<h2>زیادکردنی کاڵا</h2>
+<h2>کاڵای نوێ</h2>
 <form id="product-form" class="form">
 <label class="form-col">ناوی کاڵا<input name="name" minlength="1" maxlength="160" required autocomplete="off"></label>
 <label class="form-col">بارکۆد<input name="barcode" maxlength="60" required autocomplete="off"></label>
@@ -66,7 +66,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 </form><div id="product-message" class="message" role="status"></div>
 </div>
 <div class="surface" id="list-panel" hidden>
-<div class="toolbar"><h2>لیستی کاڵاکان</h2><div style="display:flex;gap:9px"><input id="search" class="input-search" placeholder="گەڕان بە ناو یان بارکۆد" aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
+<div class="toolbar"><h2>کاڵاکان</h2><div style="display:flex;gap:9px"><input id="search" class="input-search" placeholder="گەڕان" aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
 <div id="results"><div class="blank">هیچ کاڵایەک نییە</div></div>
 <div id="list-message" class="message" role="status"></div>
 </div>
