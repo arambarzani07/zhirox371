@@ -30,7 +30,9 @@ test("scanner test print is never mistaken for a real receipt",()=>{
 });
 test("QA copy remains short without falsifying automated test status",()=>{
  const qa=src("qa.html");
- assert.match(qa, /تاقیگەی جیاواز/);
- assert.match(qa, /GitHub Actions/);
- assert.match(qa, /ئەم پەڕەیە داتابەیس ناگۆڕێت/);
+ assert.doesNotMatch(qa, /class="tag">تاقیگەی جیاواز/);
+ assert.doesNotMatch(qa, /ئەم پەڕەیە داتابەیس ناگۆڕێت/);
+ assert.match(qa, /id="case-description"/);
+ assert.match(qa, /id="case-expected"/);
+ assert.match(qa, /actions\/workflows\/pc-foundation\.yml/);
 });
