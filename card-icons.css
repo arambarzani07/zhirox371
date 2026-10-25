@@ -1,0 +1,66 @@
+/* Approved icon-only change: main/child pictograms, no changes to the desktop grid,
+   card order, existing module accent colors or Sorani labels. */
+@media screen {
+  .module .icon svg {
+    display: block;
+    width: 29px;
+    height: 29px;
+    stroke: var(--color);
+    fill: none;
+    flex-shrink: 0;
+  }
+  .subgrid .sub {
+    min-height: 112px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 9px;
+    text-align: right;
+    font-weight: 850;
+  }
+  .subgrid .sub-icon {
+    display: grid;
+    place-items: center;
+    width: 39px;
+    height: 39px;
+    background: var(--light);
+    border-radius: 10px;
+    flex: none;
+    color: var(--color) !important;
+    -webkit-text-fill-color: var(--color) !important;
+  }
+  .subgrid .sub-icon svg {
+    display: block;
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: var(--color);
+  }
+  .subgrid .sub-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+  .subgrid .sub-footer .sub-name {
+    display: block;
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    font-weight: 850 !important;
+    line-height: 1.6;
+    font-size: 13px;
+  }
+  .subgrid .sub-footer .sub-arrow {
+    color: #415a78 !important;
+    -webkit-text-fill-color: #415a78 !important;
+    flex: none;
+  }
+  .subgrid .sub:hover .sub-icon,
+  .subgrid .sub:focus-visible .sub-icon {
+    outline: 1px solid var(--color);
+    outline-offset: 1px;
+  }
+}
