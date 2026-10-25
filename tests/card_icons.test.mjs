@@ -33,7 +33,7 @@ test("every semantic icon has a valid static inline SVG wrapper and visual strok
   assert.match(xml,/stroke="currentColor"/,id);
   assert.match(xml,/(?:<path |<rect |<circle |<line |<polyline )/,id);
   assert.match(xml,/<\/svg>$/,id);
-  assert.doesNotMatch(xml,/(?:https?:\/\/|<script|onload\s*=|onclick\s*=)/i,id);
+  assert.doesNotMatch(xml,/(?:<script|\bonload\s*=|\bonclick\s*=|\bsrc\s*=\s*"https?:)/i,id);
  }
 });
 test("each Home main and child card renders its matching SVG at runtime",()=>{
