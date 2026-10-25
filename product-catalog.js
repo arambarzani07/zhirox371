@@ -1,0 +1,60 @@
+/* Catalog ownership lives in Products; checkout never creates or edits barcode definitions. */
+"use strict";
+(function(root){
+ function fail(message){throw new Error(message);}
+ function text(v){return String(v??"").trim();}
+ function price(v,required=false,label="نرخ"){
+  if(text(v)===""){if(required)fail(label+" پێویستە");return null;}
+  const n=Number(v);
+  if(!Number.isSafeInteger(n)||n<0||n>999999999)fail(label+" نادروستە");
+  return n;
+ }
+ function barcode(v,required=false){
+  const s=text(v);
+  if(!s){if(required)fail("بارکۆدی دانە پێویستە");return "";}
+  if(s.length>60||/[\s,،;]/u.test(s))fail("بارکۆد نادروستە");
+  return s;
+ }
+ function fromForm(form){
+  const f=form instanceof Map?form:form;
+  const get=name=>f.get(name);
+  const name=text(get("name"));
+  if(!name||name.length>160)fail("ناوی کاڵا نادروستە");
+  const unit=barcode(get("barcode"),true);
+  const unitPrice=price(get("price"),true,"نرخی فرۆشتنی دانە");
+  const unitCost=price(get("purchase_price"),false,"نرخی کڕینی دانە");
+  const cartonCost=price(get("carton_purchase_price"),false,"نرخی کڕینی کارتۆن");
+  const cartonPrice=price(get("carton_price"),false,"نرخی فرۆشتنی کارتۆن");
+  const sku=text(get("sku")),plu=text(get("plu")),cartonName=text(get("carton_name"));
+  if(sku.length>80||plu.length>30||cartonName.length>100)fail("زانیارییەکانی کاڵا زۆر درێژن");
+  const cartonCode=barcode(get("carton_barcode"));
+  const rawExtra=text(get("extra_barcodes"));
+  const unitAliases=rawExtra?rawExtra.split(/[\n,،;]+/u).map(x=>barcode(x)).filter(Boolean):[];
+  if(unitAliases.length>30)fail("ژمارەی بارکۆدەکان لە سنوور زیاترە");
+  const codes=[unit,...unitAliases,...(cartonCode?[cartonCode]:[])];
+  if(new Set(codes).size!==codes.length)fail("بارکۆدی دووبارە لە هەمان کاڵا هەیە");
+  const rawUnits=text(get("units_per_carton"));
+  const cartonRequested=Boolean(cartonCode||cartonName||rawUnits||cartonCost!==null||cartonPrice!==null);
+  let units=null;
+  if(cartonRequested){
+   if(!cartonCode||!rawUnits||cartonPrice===null)fail("بارکۆد، بڕی دانە و نرخی فرۆشتنی کارتۆن پێویستن");
+   units=Number(rawUnits);
+   if(!Number.isSafeInteger(units)||units<2||units>100000)fail("ژمارەی دانەی کارتۆن نادروستە");
+  }
+  const advanced=Boolean(unitAliases.length||cartonRequested||unitCost!==null||sku||plu);
+  return Object.freeze({
+   advanced,
+   name, sku:sku||null, plu:plu||null,
+   unit_barcode:unit,
+   unit_purchase_price_iqd:unitCost,
+   unit_sale_price_iqd:unitPrice,
+   unit_alias_barcodes:unitAliases,
+   carton:cartonRequested?{
+    name:cartonName||null,barcode:cartonCode,units_per_carton:units,
+    purchase_price_iqd:cartonCost,sale_price_iqd:cartonPrice
+   }:null,
+   currency:"IQD"
+  });
+ }
+ root.RetailCatalog=Object.freeze({fromForm});
+})(typeof window!=="undefined"?window:globalThis);
