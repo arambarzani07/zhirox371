@@ -34,9 +34,7 @@ try{
  assert.equal(await page.locator(".module").count(),12);
  const expected=await positions(),patterns=[];
  for(let i=0;i<12;i++){
-   patterns.push(await assertVisualBadge(".module:nth-of-type("+ (i%4+1)+") .icon", "main "+i).catch(async()=>{
-    return assertVisualBadge(".module .icon >> nth="+i, "main "+i);
-   }));
+   patterns.push(await assertVisualBadge(".module .icon >> nth="+i, "main "+i));
    await page.locator(".module").nth(i).evaluate(el=>el.click());
    assert.deepEqual(await positions(),expected,"PC card positions moved when opening icon group "+i);
    const subs=page.locator(".drawer .sub-icon");
