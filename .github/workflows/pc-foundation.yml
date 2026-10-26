@@ -86,6 +86,8 @@ jobs:
           exit 1
       - name: Read all 60 card labels in real browser, including narrow dark viewport
         run: node tests/browser/pc_card_readability.mjs
+      - name: Enforce AAA ink/background contrast for all 60 cards in desktop and iPhone dark mode
+        run: node tests/browser/pc_contrast_lock_aaa.mjs
       - name: Check fixed PC screens and unchanged 12-card positions
         run: node tests/browser/fixed_pc_screens.mjs
       - name: Check keyboard and outside-click submenu dismissal without moving PC grid
