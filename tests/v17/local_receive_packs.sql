@@ -37,6 +37,20 @@ BEGIN
    OR p_expected_units IS NULL OR p_expected_units NOT BETWEEN 1 AND 1000000
    OR p_reason IS NULL OR p_reason NOT IN ('opening','purchase')
  THEN RAISE EXCEPTION 'Invalid stock receipt' USING errcode='22023';END IF;
+ -- A committed request must be replayable even if its source barcode was
+ -- retired after the first successful stock receipt. Check the immutable
+ -- request record before resolving current barcode definitions.
+ SELECT * INTO v_existing FROM public.retail_stock_receipt_requests_v17
+  WHERE store_id=p_store AND request_id=p_request;
+ IF FOUND THEN
+   IF v_existing.actor_id IS DISTINCT FROM v_actor
+      OR v_existing.barcode IS DISTINCT FROM p_barcode
+      OR v_existing.packages IS DISTINCT FROM p_packages
+      OR v_existing.units_per_package IS DISTINCT FROM p_expected_units
+      OR v_existing.reason IS DISTINCT FROM p_reason
+   THEN RAISE EXCEPTION 'Stock receipt request reused' USING errcode='23505';END IF;
+   RETURN v_existing.total_stock;
+ END IF;
  SELECT b.product_id,b.unit_type,b.units_per_scan,p.active
  INTO v_product,v_mode,v_units,v_active
  FROM public.retail_barcodes b JOIN public.retail_products p
