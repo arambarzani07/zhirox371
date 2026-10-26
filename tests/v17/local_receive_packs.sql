@@ -49,7 +49,7 @@ BEGIN
     (v_units<2 OR NOT EXISTS(SELECT 1 FROM public.retail_product_cartons c
       WHERE c.product_id=v_product AND c.store_id=p_store
       AND c.units_per_carton=v_units)))
-  OR v_expected_units<>v_units
+  OR p_expected_units<>v_units
  THEN RAISE EXCEPTION 'Inactive or changed pack barcode' USING errcode='22023';END IF;
  v_increment=p_packages::numeric*v_units;
  IF v_increment>1000000 THEN
