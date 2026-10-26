@@ -20,6 +20,7 @@ async function fillAdvanced(){
  await input("extra_barcodes").fill("6260001112247\n6260001112254");
  await input("price").fill("1000");
  await input("purchase_price").fill("750");
+ await page.locator('#product-form [name="sale_mode"][value="both"]').check();
  await input("carton_name").fill("کارتۆنی شیر");
  await input("carton_barcode").fill("6260001112230");
  await input("extra_carton_barcodes").fill("6260001112261\n6260001112278");
