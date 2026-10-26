@@ -19,3 +19,11 @@ The **cashier** only reads registered barcodes. It does not create, modify, or r
 This change is NOT authorization to migrate a real Supabase project. A real hosted database will not yet have `retail_register_product_v14`; advanced form registration is blocked and shows an actionable error, rather than silently dropping purchase costs or carton fields. The basic single-unit workflow remains usable on the existing contract. The carton scan/checkout remains disabled because the production checkout uses unit-only pricing and quantities; allowing it would risk inaccurate cash receipts and stock accounting.
 
 Pre-existing hosted `TRUNCATE` privilege security gate from V12/V13 remains unresolved. Production Supabase, PC Relay and legacy POS were not mutated. All design locks remain: fixed 12 main cards, 48 subcards, high contrast, no extra instructional UI copy.
+
+## Carton multiple barcodes — approved extension (2026-10-26)
+- `workspace.html` now includes **فرەبارکۆدی کارتۆن** alongside the primary carton barcode.
+- `product-catalog.js` includes `carton.alias_barcodes`. Accept up to 30 carton aliases and up to 30 unit aliases; reject duplicates **within and across** both lists and their primary codes. A carton alias requires a primary carton barcode, pack size and sale price.
+- The existing isolated `tests/v14/local_product_registration.sql` RPC inserts **every carton alias** into `retail_barcodes` using the same `product_id`, `unit_type='carton'`, and `units_per_scan` as the primary. A single row in `retail_product_cartons` stores the shared cost and sale price, so aliases cannot create divergent carton pricing.
+- One item can now have example **6 codes**: 1 unit primary + 2 unit aliases + 1 carton primary + 2 carton aliases. All writes are atomic, and duplicated barcode attempts roll back.
+- `tests/browser/v14_product_catalog.mjs` exercises the real form with isolated browser fixtures; `tests/v12/auth_rls_e2e.mjs` exercises disposable real GoTrue/PostgREST/PostgreSQL authorization and rollback.
+- Cashier **remains lookup-only and unit-only for actual checkout** until a separately verified carton-aware financial RPC is introduced. This change is NOT a hosted migration and production Supabase/PC Relay remain unchanged.
