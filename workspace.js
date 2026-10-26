@@ -66,11 +66,17 @@
       .eq("store_id", store.id).order("created_at", {ascending:false}).limit(200);
     if (productsResult.error) {message("list-message", explain(productsResult.error), "error");return;}
     const base = productsResult.data || [];
-    const barcodesResult = await db.from("retail_barcodes")
-      .select("product_id,code").eq("store_id", store.id).limit(1000);
+    let barcodesResult = await db.from("retail_barcodes")
+      .select("product_id,code,active").eq("store_id", store.id).limit(1000);
+    // V15 stores inactive retired codes. Older hosted DBs lack this column:
+    // use the previous catalogue query instead of disrupting unit-only work.
+    if (["42703","PGRST204","PGRST205"].includes(barcodesResult.error?.code))
+      barcodesResult=await db.from("retail_barcodes")
+        .select("product_id,code").eq("store_id", store.id).limit(1000);
     if (barcodesResult.error) {message("list-message", explain(barcodesResult.error), "error");return;}
     const index = new Map();
     for (const b of barcodesResult.data || []) {
+      if (b.active===false)continue;
       if (!index.has(b.product_id)) index.set(b.product_id,[]);
       index.get(b.product_id).push(b.code);
     }
