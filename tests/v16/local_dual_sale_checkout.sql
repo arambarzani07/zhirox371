@@ -107,7 +107,7 @@ BEGIN
     JOIN public.retail_products p ON p.store_id=b.store_id AND p.id=b.product_id
     LEFT JOIN public.retail_product_cartons c ON c.store_id=b.store_id AND c.product_id=b.product_id
    WHERE b.store_id=p_store AND b.code=v_barcode AND b.active
-   FOR SHARE OF b,p,c;
+   FOR SHARE OF b,p;
    IF NOT FOUND OR NOT v_pactive OR v_currency<>'IQD'
       OR v_pack_type NOT IN ('unit','carton')
       OR v_pack_units IS NULL OR v_pack_units<1
