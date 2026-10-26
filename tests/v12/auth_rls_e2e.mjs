@@ -456,7 +456,31 @@ assert.ok(oneCarton);
 assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+cartonOnlyId+"'"),"12.000");
 passed("V16 carton-only product sells a real carton at independent price, stock decremented by 12");
 
-console.log("V16 local QA: five mode, scan and checkout groups passed; no hosted DB modifications.");
+const raceCatalog={...milkV16,name:"Concurrent last carton",sale_mode:"carton",
+ unit_barcode:"",unit_alias_barcodes:[],unit_sale_price_iqd:null,unit_purchase_price_iqd:null,
+ carton:{...milkV16.carton,barcode:"8394000033010",alias_barcodes:[]}};
+const raceId=ok(await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,p_catalog:raceCatalog
+}),"owner creates carton-only last-box concurrency case");
+ok(await manager.rpc("retail_receive_stock",{
+ p_store:storeA.id,p_product:raceId,p_quantity:12,p_reason:"opening"
+}),"stock exactly one carton");
+ok(await manager.rpc("retail_shift_open",{p_store:storeA.id,p_opening:0}),
+ "manager opens independent local cash shift");
+const raceLine=[{barcode:"8394000033010",quantity:1,
+ expected_price_minor:11000,expected_units:12}];
+const concurrent=await Promise.all([
+ cashier.rpc("retail_checkout_packs_v16",{p_store:storeA.id,p_request:code(),p_items:raceLine,p_cash_received:11000}),
+ manager.rpc("retail_checkout_packs_v16",{p_store:storeA.id,p_request:code(),p_items:raceLine,p_cash_received:11000})
+]);
+assert.equal(concurrent.filter(r=>!r.error).length,1,"Only one concurrent cashier may buy the last carton");
+assert.equal(concurrent.filter(r=>r.error?.code==="22023").length,1);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+raceId+"'"),"0.000");
+assert.equal(localSQL("select count(*) from public.retail_sale_items where product_id='"+raceId+"'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_stock_events where product_id='"+raceId+"' and delta=-12"),"1");
+passed("V16 concurrent cashier/manager last-carton race posts exactly one receipt and never overdrafts stock");
+
+console.log("V16 local QA: six mode, scan and checkout groups passed; no hosted DB modifications.");
 
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
