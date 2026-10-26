@@ -35,7 +35,8 @@ test("pending checkout reuses same request and only clears on confirmation",()=>
  assert.match(js,/pendingCheckout/);
  assert.match(js,/sessionStorage\.setItem/);
  assert.match(js,/sessionStorage\.getItem/);
- assert.match(js,/\.rpc\("retail_checkout_cash"/);
+ assert.match(js,/retail_checkout_cash/);
+ assert.match(js,/retail_checkout_packs_v16/);
  assert.match(js,/p_request:pendingCheckout\.id/);
  assert.match(js,/p_items:pendingCheckout\.items/);
  assert.match(html,/id="retry-checkout"/);
