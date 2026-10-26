@@ -234,6 +234,42 @@
         session.status="closed";session.variance_minor=args.p_counted-expected;
         data={opening:session.opening_cash_minor,sales,movements:moves,expected,counted:args.p_counted,variance:session.variance_minor};
       }
+    }else if(name==="retail_receive_mixed_v171"){
+      const prior=state.stockReceipts.find(x=>x.request===args.p_request);
+      const fingerprint=JSON.stringify({lines:args.p_lines,reason:args.p_reason});
+      if(prior){
+        if(prior.fingerprint!==fingerprint)err=error("23505","Mixed request reused");
+        else data=prior.total;
+      }else{
+        const lines=args.p_lines,found=[];
+        let total=0,productId=null,invalid=!Array.isArray(lines)||lines.length!==2;
+        if(!invalid)for(const line of lines){
+          const b=state.barcodes.find(x=>x.code===line.barcode&&x.active!==false);
+          const prod=state.products.find(x=>x.id===b?.product_id&&x.active!==false);
+          const carton=state.advancedCatalogs.find(x=>x.id===prod?.id)?.carton;
+          const valid=!!(b&&prod&&Number.isSafeInteger(line.packages)&&line.packages>=1&&
+            Number.isSafeInteger(line.expected_units)&&line.expected_units===b.units_per_scan&&
+            ((b.unit_type==="unit"&&b.units_per_scan===1)||
+             (b.unit_type==="carton"&&b.units_per_scan>=2&&carton?.units_per_carton===b.units_per_scan)));
+          if(!valid||(productId&&productId!==prod.id)){invalid=true;break;}
+          productId=prod.id;found.push(b.unit_type);total+=line.packages*b.units_per_scan;
+        }
+        if(invalid||!found.includes("unit")||!found.includes("carton")||total>1000000||
+           !["opening","purchase"].includes(args.p_reason))
+          err=error("22023","Invalid mixed stock receipt");
+        else{
+          const row=state.stock.find(x=>x.product_id===productId);
+          if(row)row.quantity+=total;
+          else state.stock.push({store_id:store.id,product_id:productId,quantity:total});
+          data=state.stock.find(x=>x.product_id===productId).quantity;
+          state.stockReceipts.push({request:args.p_request,lines,base_units:total,total,
+            reason:args.p_reason,fingerprint});
+          state.audit.push({id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
+            store_id:store.id,subject_id:productId,actor_id:account.id,
+            action:"stock.receive_mixed_v171",created_at:new Date().toISOString(),
+            details:{lines,base_units:total,total_stock:data}});
+        }
+      }
     }else if(name==="retail_receive_packs_v17"){
       const previous=state.stockReceipts.find(x=>x.request===args.p_request);
       const b=state.barcodes.find(x=>x.code===args.p_barcode&&x.active!==false);
