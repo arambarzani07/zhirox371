@@ -18,7 +18,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:18px}
 .tabs{display:flex;gap:8px;margin-bottom:20px}.tab{border:1px solid #e0e7ef;background:#fff;color:#65768d;padding:11px 19px;border-radius:10px;font-size:13px;font-weight:750}.tab.active{background:#274871;color:white;border-color:#274871}
 .message{min-height:20px;margin-top:16px;font-size:12px;color:#5a758a}.message.error{color:#ad4b45}.message.success{color:#087c60}
-.catalog-fields{width:100%;display:grid;gap:18px}.catalog-group{border:1px solid #e3eaf2;border-radius:13px;padding:17px;background:#fff}.catalog-group h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catalog-row .form-col{min-width:0}.catalog-group textarea{min-height:80px;resize:vertical;border:1px solid #dce4ee;border-radius:10px;padding:11px 13px;background:#fff;color:#172b45;font:inherit;font-size:13px}.catalog-group :is(input,textarea){font-weight:800;color:#172b45}.catalog-buttons{display:flex;gap:10px;align-items:center;margin-top:3px}.catalog-history{margin-top:18px;padding:18px;border:1px solid #dce4ee;border-radius:12px;background:#fff}.catalog-history h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-table-btn{height:33px;padding:0 13px;border:1px solid #cbd7e5;border-radius:8px;background:#f2f6fa;color:#172b45;font-size:12px;font-weight:900}
+.catalog-modes{display:flex;gap:24px;align-items:center;flex-wrap:wrap}.catalog-modes label{display:flex;align-items:center;gap:8px;color:#172b45;font-weight:900;font-size:14px}.catalog-modes input{accent-color:#274871;width:18px;height:18px}.catalog-group[hidden]{display:none!important}.catalog-fields{width:100%;display:grid;gap:18px}.catalog-group{border:1px solid #e3eaf2;border-radius:13px;padding:17px;background:#fff}.catalog-group h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catalog-row .form-col{min-width:0}.catalog-group textarea{min-height:80px;resize:vertical;border:1px solid #dce4ee;border-radius:10px;padding:11px 13px;background:#fff;color:#172b45;font:inherit;font-size:13px}.catalog-group :is(input,textarea){font-weight:800;color:#172b45}.catalog-buttons{display:flex;gap:10px;align-items:center;margin-top:3px}.catalog-history{margin-top:18px;padding:18px;border:1px solid #dce4ee;border-radius:12px;background:#fff}.catalog-history h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-table-btn{height:33px;padding:0 13px;border:1px solid #cbd7e5;border-radius:8px;background:#f2f6fa;color:#172b45;font-size:12px;font-weight:900}
 .sep{height:1px;background:#edf0f4;margin:24px 0}
 .table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:right;padding:14px;border-bottom:1px solid #edf1f5}.table th{background:#fbfcfe;color:#677990;font-weight:800}
 .price{direction:ltr;unicode-bidi:embed;display:inline-block}.blank{border:1px dashed #e0e8ef;background:#fafbfd;color:#8a9cad;text-align:center;padding:38px;border-radius:12px;margin-top:15px;font-size:13px}
@@ -71,7 +71,8 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <label class="form-col">کۆدی ناوخۆیی<input name="sku" maxlength="80" autocomplete="off"></label>
 <label class="form-col">کۆدی تەرازوو<input name="plu" maxlength="30" autocomplete="off"></label>
 </div></section>
-<section class="catalog-group"><h3>دانە</h3><div class="catalog-row">
+<section class="catalog-group"><h3>شێوازی فرۆشتن</h3><div class="catalog-modes" role="radiogroup" aria-label="شێوازی فرۆشتن"><label><input type="radio" name="sale_mode" value="unit" checked> دانە</label><label><input type="radio" name="sale_mode" value="carton"> کارتۆن</label><label><input type="radio" name="sale_mode" value="both"> هەردووکیان</label></div></section>
+<section class="catalog-group" id="unit-fields"><h3>دانە</h3><div class="catalog-row">
 <label class="form-col">بارکۆدی دانە<input name="barcode" maxlength="60" required autocomplete="off"></label>
 <label class="form-col">نرخی کڕینی دانە (IQD)<input name="purchase_price" type="number" min="0" max="999999999" step="1"></label>
 <label class="form-col">نرخی فرۆشتنی دانە (IQD)<input name="price" type="number" min="0" max="999999999" step="1" required></label>
@@ -79,7 +80,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <div class="catalog-row" style="margin-top:13px">
 <label class="form-col">فرەبارکۆدی دانە<textarea name="extra_barcodes" maxlength="2000" autocomplete="off"></textarea></label>
 </div></section>
-<section class="catalog-group"><h3>کارتۆن</h3><div class="catalog-row">
+<section class="catalog-group" id="carton-fields" hidden><h3>کارتۆن</h3><div class="catalog-row">
 <label class="form-col">ناوی کارتۆن<input name="carton_name" maxlength="100" autocomplete="off"></label>
 <label class="form-col">بارکۆدی کارتۆن<input name="carton_barcode" maxlength="60" autocomplete="off"></label>
 <label class="form-col">دانە لە کارتۆن<input name="units_per_carton" type="number" min="2" max="100000" step="1"></label>
