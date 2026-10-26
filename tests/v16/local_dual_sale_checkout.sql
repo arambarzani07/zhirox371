@@ -6,6 +6,13 @@ ALTER TABLE public.retail_sale_items
   ADD COLUMN units_per_package integer NOT NULL DEFAULT 1 CHECK(units_per_package>=1),
   ADD COLUMN base_units numeric(14,3);
 
+-- Column-level protection: the regular Auth Data API must not expose unit
+-- purchase costs. The owner-only snapshot RPC remains the safe cost reader.
+REVOKE SELECT ON TABLE public.retail_products FROM authenticated;
+GRANT SELECT(id,store_id,name,price_minor,currency,active,created_at,
+  sku,plu,catalog_version,unit_primary_barcode)
+ON TABLE public.retail_products TO authenticated;
+
 -- Read-only cashier price lookup. Purchase costs NEVER appear in this result.
 CREATE FUNCTION public.retail_scan_catalog_v16(p_store uuid)
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
