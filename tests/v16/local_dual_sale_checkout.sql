@@ -12,7 +12,7 @@ ALTER TABLE public.retail_sale_items
 -- The trigger is database-side and applies to all item insert paths.
 CREATE FUNCTION retail_internal.guard_unit_sale_v16()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
-AS $
+AS $v16guard$
 BEGIN
  IF NEW.package_type='unit' AND NOT EXISTS(
    SELECT 1 FROM public.retail_barcodes b
@@ -23,7 +23,7 @@ BEGIN
  END IF;
  RETURN NEW;
 END;
-$;
+$v16guard$;
 REVOKE ALL ON FUNCTION retail_internal.guard_unit_sale_v16() FROM PUBLIC,anon,authenticated;
 CREATE TRIGGER retail_guard_unit_sale_v16
  BEFORE INSERT ON public.retail_sale_items FOR EACH ROW
