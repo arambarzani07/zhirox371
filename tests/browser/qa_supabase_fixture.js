@@ -11,7 +11,7 @@
     products:[seed],
     barcodes:[{store_id:store.id,product_id:seed.id,code:"4006381333931",unit_type:"unit",units_per_scan:1}],
     stock:[{store_id:store.id,product_id:seed.id,quantity:2}],
-    sessions:[],movements:[],sales:[],memberships:[],audit:[],
+    sessions:[],movements:[],sales:[],saleItems:[],memberships:[],audit:[],
     called:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[]
   };
   const error=(code,message)=>({code,message});
@@ -25,7 +25,7 @@
     if(name==="retail_sales")return state.sales;
     if(name==="retail_memberships")return state.memberships;
     if(name==="retail_audit_events")return state.audit;
-    if(name==="retail_sale_items")return [];
+    if(name==="retail_sale_items")return state.saleItems;
     throw Error("Unknown QA table "+name);
   }
   function from(table){
@@ -137,6 +137,13 @@
           }
         }
       }
+    }else if(name==="retail_scan_catalog_v16"){
+      data=state.barcodes.filter(b=>b.active!==false).map(b=>{
+        const p=state.products.find(p=>p.id===b.product_id);
+        const catalog=state.advancedCatalogs.find(x=>x.id===b.product_id);
+        return {code:b.code,product_id:b.product_id,unit_type:b.unit_type,units_per_scan:b.units_per_scan,
+          price_minor:b.unit_type==="carton"?catalog?.carton?.sale_price_iqd:p?.price_minor};
+      }).filter(x=>Number.isSafeInteger(x.price_minor));
     }else if(name==="retail_shift_open"){
       if(state.sessions.some(x=>x.status==="open"))err=error("22023","Shift already open");
       else{
@@ -172,6 +179,49 @@
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,cashier_id:account.id,status:"posted",
             created_at:new Date().toISOString()};
           state.sales.push(sale);data=sale.id;
+        }
+      }
+    }else if(name==="retail_checkout_packs_v16"){
+      const previous=state.sales.find(x=>x.request_id===args.p_request);
+      const payload=JSON.stringify({items:args.p_items,cash:args.p_cash_received});
+      const shift=state.sessions.find(x=>x.status==="open");
+      if(previous){
+        if(previous.request_payload!==payload)err=error("23505","request reused with changed payload");
+        else data=previous.id;
+      }else if(!shift)err=error("22023","No open cash shift");
+      else{
+        let total=0,invalid=false,needs=new Map();
+        const saleLines=[];
+        for(const line of args.p_items){
+          const code=String(line.barcode);
+          const b=state.barcodes.find(b=>b.code===code&&b.active!==false);
+          const p=state.products.find(p=>p.id===b?.product_id);
+          const catalog=state.advancedCatalogs.find(x=>x.id===b?.product_id);
+          const price=b?.unit_type==="carton"?catalog?.carton?.sale_price_iqd:p?.price_minor;
+          if(!b||!p||!Number.isSafeInteger(line.quantity)||line.quantity<1||
+             line.expected_price_minor!==price||line.expected_units!==b.units_per_scan){
+            invalid=true;break;
+          }
+          total+=price*line.quantity;
+          needs.set(p.id,(needs.get(p.id)||0)+line.quantity*b.units_per_scan);
+          saleLines.push({product_id:p.id,quantity:line.quantity,unit_price_minor:price,
+            package_type:b.unit_type,package_barcode:b.code,units_per_package:b.units_per_scan,
+            base_units:line.quantity*b.units_per_scan,product_name_snapshot:p.name});
+        }
+        if(invalid)err=error("22023","Barcode price/pack changed or inactive");
+        else if(args.p_cash_received<total)err=error("22023","Cash amount is below total");
+        else if([...needs].some(([id,n])=>(state.stock.find(s=>s.product_id===id)?.quantity||0)<n))
+          err=error("22023","Insufficient stock");
+        else{
+          for(const [id,n] of needs)state.stock.find(s=>s.product_id===id).quantity-=n;
+          const id="ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0");
+          state.sales.push({id,store_id:store.id,receipt_no:state.nextReceipt,
+            total_minor:total,cash_received_minor:args.p_cash_received,
+            change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,
+            cashier_id:account.id,status:"posted",request_id:args.p_request,
+            request_payload:payload,created_at:new Date().toISOString()});
+          for(const entry of saleLines)state.saleItems.push({...entry,store_id:store.id,sale_id:id});
+          data=id;
         }
       }
     }else if(name==="retail_shift_close"){
