@@ -21,7 +21,7 @@
   const name=text(get("name"));
   if(!name||name.length>160)fail("ناوی کاڵا نادروستە");
   const incoming=text(get("sale_mode"));
-  const requestedMode=incoming||((text(get("carton_barcode"))||text(get("extra_carton_barcodes"))||text(get("units_per_carton"))||text(get("carton_price")))?"both":"unit");
+  const requestedMode=incoming||(text(get("carton_barcode"))||text(get("extra_carton_barcodes"))||text(get("units_per_carton"))||text(get("carton_price"))?"both":"unit");
   if(!["unit","carton","both"].includes(requestedMode))fail("شێوازی فرۆشتن نادروستە");
   const unitEnabled=requestedMode!=="carton",cartonEnabled=requestedMode!=="unit";
   const unit=barcode(get("barcode"),unitEnabled);
