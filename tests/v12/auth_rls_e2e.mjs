@@ -379,6 +379,11 @@ assert.equal(cartonOnlySnapshot.sale_mode,"carton");
 assert.equal(cartonOnlySnapshot.unit_sale_price_iqd,null);
 passed("V16 registers both or carton-only as one product, without counterfeit unit barcodes");
 
+const exposedCost=await cashier.from("retail_products").select("purchase_price_minor").eq("store_id",storeA.id);
+fail(exposedCost,"cashier must never read confidential unit acquisition cost");
+assert.equal(ok(await owner.rpc("retail_product_snapshot_v15",{
+ p_store_id:storeA.id,p_product_id:milkId
+}),"owner reads cost via protected snapshot").unit_purchase_price_iqd,750);
 const scanCatalog=ok(await cashier.rpc("retail_scan_catalog_v16",{p_store:storeA.id}),
  "cashier reads server-priced scan catalog without purchase costs");
 assert.ok(scanCatalog.some(x=>x.code==="8394000011011"&&x.unit_type==="unit"&&x.price_minor===1000&&x.units_per_scan===1));
