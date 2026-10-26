@@ -34,6 +34,7 @@ DECLARE
  v_actor uuid:=(select auth.uid());
  v_product uuid;
  v_name text;
+ v_sale_mode text;
  v_unit_code text;
  v_alias text;
  v_cost bigint;
@@ -55,14 +56,24 @@ BEGIN
  THEN RAISE EXCEPTION 'Invalid catalog payload' USING errcode='22023';END IF;
  IF p_catalog->>'currency' IS DISTINCT FROM 'IQD'
  THEN RAISE EXCEPTION 'IQD catalog required' USING errcode='22023';END IF;
+ v_sale_mode=coalesce(p_catalog->>'sale_mode',CASE WHEN p_catalog->'carton' IS NOT NULL AND jsonb_typeof(p_catalog->'carton')<>'null' THEN 'both' ELSE 'unit' END);
+ IF v_sale_mode NOT IN ('unit','carton','both') THEN
+  RAISE EXCEPTION 'Invalid sale mode' USING errcode='22023';END IF;
  v_name=nullif(btrim(p_catalog->>'name'),'');
  v_unit_code=nullif(btrim(p_catalog->>'unit_barcode'),'');
- IF v_name IS NULL OR length(v_name)>160 OR v_unit_code IS NULL
+ IF v_name IS NULL OR length(v_name)>160 OR (v_sale_mode<>'carton' AND v_unit_code IS NULL)
     OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item name or barcode' USING errcode='22023';END IF;
- IF jsonb_typeof(p_catalog->'unit_sale_price_iqd')<>'number'
- THEN RAISE EXCEPTION 'Missing unit sale price' USING errcode='22023';END IF;
- v_unit_price=(p_catalog->>'unit_sale_price_iqd')::numeric;
+ IF v_sale_mode='carton' THEN
+  IF v_unit_code IS NOT NULL OR jsonb_array_length(coalesce(p_catalog->'unit_alias_barcodes','[]'::jsonb))>0
+     OR (p_catalog->'unit_purchase_price_iqd' IS NOT NULL AND jsonb_typeof(p_catalog->'unit_purchase_price_iqd')<>'null')
+  THEN RAISE EXCEPTION 'Carton-only must not include unit barcodes or costs' USING errcode='22023';END IF;
+  v_unit_price=0;
+ ELSE
+  IF jsonb_typeof(p_catalog->'unit_sale_price_iqd')<>'number'
+  THEN RAISE EXCEPTION 'Missing unit sale price' USING errcode='22023';END IF;
+  v_unit_price=(p_catalog->>'unit_sale_price_iqd')::numeric;
+ END IF;
  IF v_unit_price<0 OR v_unit_price>999999999 OR v_unit_price<>trunc(v_unit_price)
  THEN RAISE EXCEPTION 'Invalid unit price' USING errcode='22023';END IF;
  IF jsonb_typeof(p_catalog->'unit_purchase_price_iqd')='number' THEN
@@ -80,6 +91,9 @@ BEGIN
     OR jsonb_array_length(v_aliases)>30
  THEN RAISE EXCEPTION 'Invalid unit aliases' USING errcode='22023';END IF;
  v_carton=p_catalog->'carton';
+ IF (v_sale_mode='unit' AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
+    OR (v_sale_mode IN ('carton','both') AND (v_carton IS NULL OR jsonb_typeof(v_carton)='null'))
+ THEN RAISE EXCEPTION 'Sale mode carton definition mismatch' USING errcode='22023';END IF;
  IF v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null' THEN
   IF jsonb_typeof(v_carton)<>'object' OR jsonb_typeof(v_carton->'units_per_carton')<>'number'
      OR jsonb_typeof(v_carton->'sale_price_iqd')<>'number'
@@ -109,8 +123,10 @@ BEGIN
  VALUES(p_store_id,v_name,nullif(p_catalog->>'sku',''),nullif(p_catalog->>'plu',''),
         v_unit_price::bigint,v_cost,'IQD',true) RETURNING id INTO v_product;
 
- INSERT INTO public.retail_barcodes(store_id,product_id,code,unit_type,units_per_scan)
- VALUES(p_store_id,v_product,v_unit_code,'unit',1);
+ IF v_sale_mode<>'carton' THEN
+  INSERT INTO public.retail_barcodes(store_id,product_id,code,unit_type,units_per_scan)
+  VALUES(p_store_id,v_product,v_unit_code,'unit',1);
+ END IF;
 
  FOR v_alias IN SELECT value FROM jsonb_array_elements_text(v_aliases)
  LOOP
@@ -139,7 +155,7 @@ BEGIN
  END IF;
  INSERT INTO public.retail_audit_events(store_id,actor_id,action,subject_id,details)
  VALUES(p_store_id,v_actor,'product.register_v14',v_product,
-        jsonb_build_object('barcodes',1+jsonb_array_length(v_aliases)
+        jsonb_build_object('barcodes',(v_sale_mode<>'carton')::int+jsonb_array_length(v_aliases)
        +(v_carton_code IS NOT NULL)::int
        +CASE WHEN v_carton_code IS NOT NULL THEN jsonb_array_length(v_carton_aliases) ELSE 0 END));
  RETURN v_product;
