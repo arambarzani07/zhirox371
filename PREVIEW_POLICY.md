@@ -51,3 +51,14 @@ This applies to all actual PC screens and **every full-system in-chat interactiv
 - Remove existing optional how-to hints from diagnostic screens and nonessential QA footnote without changing business logic, card layout, SQL, Auth, or the design lock.
 - If a change is preview-only, do not insert disclaimers in the PC canvas. In conversational prose outside the PC preview, still clarify whether it is a demo or connected functionality.
 - Future complete 12-card, 48-subcard previews must keep their functional navigation but show no instructional footer, example disclaimer, version number, QA counter decoration, or superfluous labels.
+
+## Locked-design source fidelity — correction after owner feedback (2026-10-26)
+
+The owner reported that a recent chat preview changed the locked appearance. **Do not hand-design an alternative desktop UI in the chat and represent it as the approved screen.**
+
+- The authoritative working Home source is `index.html` plus `ui-global.css`, `ui-fixed-pc.css`, `card-icons.css` and `card-icons.js` on `feature/retail-os-pc-foundation`.
+- The historical `design-lock/pc-home-v1` **Git branch** is an older snapshot; subsequent explicitly accepted persistent market banner, fixed PC viewport, high-contrast labels and 60 distinct SVG icons are part of the currently locked working appearance and must not be silently reverted.
+- In all chat previews preserve the REAL Home structure: 4 columns × 3 rows; card dimensions, spacing, header and banner; current SVGs; 12 Home cards and 48 child cards; submenu overlays float over later card rows without displacing them. Do not invent a persistent sidebar, alternate Home card design, modified card texts, unnecessary status copy or alternative layout.
+- If a user requests only barcode/scanner functionality, change only cashier scanning controls, NOT Home's locked appearance.
+- `tests/owner_locked_home_sha.test.mjs` records byte-for-byte Git blob checks for the five current locked Home files; any future mutation fails CI unless the owner explicitly unlocks the design and authorizes a new baseline. A green check does not certify the visual equivalence of an in-chat generated preview; inspect its rendering against source.
+- In-chat previews are illustrative representations unless they run the unmodified GitHub source; do not falsely claim pixel identity or production connectivity.
