@@ -212,3 +212,8 @@ REVOKE ALL ON FUNCTION public.retail_update_product_v15(uuid,uuid,integer,jsonb)
 GRANT EXECUTE ON FUNCTION public.retail_product_snapshot_v15(uuid,uuid),
  public.retail_product_history_v15(uuid,uuid),
  public.retail_update_product_v15(uuid,uuid,integer,jsonb) TO authenticated;
+-- Prevent direct UPDATE/DELETE bypass of the audited owner-only RPC in local QA.
+-- V14 registration INSERT remains authorized through its existing pathway.
+REVOKE UPDATE, DELETE ON public.retail_products, public.retail_barcodes,
+ public.retail_product_cartons FROM authenticated;
+
