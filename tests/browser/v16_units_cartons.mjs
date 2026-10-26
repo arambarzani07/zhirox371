@@ -78,6 +78,10 @@ try{
  assert.ok(state.lines.some(x=>x.package_type==="unit"&&x.quantity===3&&x.base_units===3&&x.unit_price_minor===1000));
  assert.equal(state.requests.length,1);
  console.log("PASS V16 PC Cashier: 2 cartons+3 units posted, 27 base-unit deduction");
+ await page.locator('[data-tab="stock"]').click();
+ assert.match(await page.locator("#stock-list").innerText(),/33 دانە \(2 کارتۆن \+ 9 دانە\)/);
+ await page.locator('[data-tab="cash"]').click();
+ console.log("PASS V16 PC Stock: one shared base stock displayed as 2 cartons + 9 loose units");
 
  await scan("6260001112261");await scan("6260001112261");await scan("6260001112261");
  assert.match(await page.locator("#scan-msg").innerText(),/کۆگا بەش ناکات/);
