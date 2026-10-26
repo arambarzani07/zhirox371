@@ -126,6 +126,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f /tmp/v12-local-functions.sql
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v12/rls_mirror.sql
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v14/local_product_registration.sql
+          psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v15/local_product_editor.sql
       - name: Install pinned Supabase JS client (temporary QA dependency)
         run: npm install --no-save --no-package-lock @supabase/supabase-js@2.118.0
       - name: Real signup, JWT, RBAC, tenant RLS and local-only TRUNCATE regression test
