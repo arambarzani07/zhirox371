@@ -21,7 +21,7 @@ test("V16 explicit selling modes preserve a single product identity",()=>{
 });
 test("V16 forbids incomplete modes, ghost unit codes and cartons without size",()=>{
  assert.throws(()=>parse(new Map([...unit,["sale_mode","carton"]])),/بارکۆدی دانە|خانەکانی دانە/);
- assert.throws(()=>parse(new Map([...carton,["sale_mode","unit"]])),/خانەکانی کارتۆن/);
+ assert.throws(()=>parse(new Map([...carton,["sale_mode","unit"]])),/بارکۆدی دانە|خانەکانی کارتۆن/);
  assert.throws(()=>parse(new Map([...unit,["sale_mode","both"]])),/پێویستن/);
  assert.throws(()=>parse(new Map([...carton,["units_per_carton","1"]])),/نادروستە/);
  assert.throws(()=>parse(new Map([...unit,["sale_mode","invalid"]])),/نادروستە/);
