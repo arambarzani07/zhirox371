@@ -19,6 +19,7 @@ try{
  await field("barcode").fill("6260001112223");
  await field("extra_barcodes").fill("6260001112247\n6260001112254");
  await field("price").fill("1000");await field("purchase_price").fill("750");
+ await page.locator('#product-form [name="sale_mode"][value="both"]').check();
  await field("carton_barcode").fill("6260001112230");
  await field("extra_carton_barcodes").fill("6260001112261\n6260001112278");
  await field("units_per_carton").fill("12");
