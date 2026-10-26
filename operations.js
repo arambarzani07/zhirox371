@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const config=window.RETAIL_CONFIG;
 const view=new URLSearchParams(location.search).get("view");
-let db=null,user=null,store=null,role=null,products=[],barcodes=[],balances=new Map(),members=[],cart=[],requestId=null,tab="cash",busy=false,pendingCheckout=null,shiftSession=null,pendingCashMovement=null;
+let db=null,user=null,store=null,role=null,products=[],barcodes=[],balances=new Map(),members=[],cart=[],requestId=null,tab="cash",busy=false,pendingCheckout=null,shiftSession=null,pendingCashMovement=null,stockAttempt=null;
 const money=n=>Number(n).toLocaleString("en-US")+" IQD";
 const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نییە":
  /no open cash shift|shift not open/i.test(e?.message||"")?"شێفتی کاشێر نەکراوەتەوە":
@@ -102,10 +102,37 @@ async function loadInventory(){
    msg("system-msg","لیستەکە سنووردارە؛ هەموو کاڵاکان پیشان نەدراون.");
  }
 }
+function updateStockUnits(){
+ const chosen=$("stock-product").value,mode=$("stock-mode").value,barcode=$("stock-barcode"),old=barcode.value;
+ barcode.replaceChildren();
+ for(const b of barcodes.filter(b=>b.product_id===chosen&&b.unit_type===mode&&
+    (mode==="unit"?Number(b.units_per_scan)===1:Number(b.units_per_scan)>=2))){
+   const option=document.createElement("option");option.value=b.code;option.textContent=b.code;
+   barcode.append(option);
+ }
+ if([...barcode.options].some(o=>o.value===old))barcode.value=old;
+ const hasUnit=barcodes.some(b=>b.product_id===chosen&&b.unit_type==="unit"&&Number(b.units_per_scan)===1);
+ const hasCarton=barcodes.some(b=>b.product_id===chosen&&b.unit_type==="carton"&&Number(b.units_per_scan)>=2);
+ const modeSelect=$("stock-mode");
+ for(const option of modeSelect.options)option.disabled=option.value==="unit"?!hasUnit:!hasCarton;
+ if(barcode.options.length===0 && (hasUnit||hasCarton)){
+   modeSelect.value=hasUnit?"unit":"carton";
+   updateStockUnits();return;
+ }
+ updateStockBaseTotal();
+}
+function updateStockBaseTotal(){
+ const selected=barcodes.find(b=>b.product_id===$("stock-product").value&&b.code===$("stock-barcode").value);
+ const qty=Number($("stock-quantity").value);
+ const units=Number(selected?.units_per_scan||0);
+ $("stock-base-total").value=Number.isSafeInteger(qty)&&qty>0&&Number.isSafeInteger(units)&&units>0?
+   String(qty*units):"";
+}
 function renderStock(){
  const selector=$("stock-product"),old=selector.value;selector.replaceChildren();
  for(const p of products){const opt=document.createElement("option");opt.value=p.id;opt.textContent=p.name;selector.append(opt)}
  if(products.some(p=>p.id===old))selector.value=old;
+ updateStockUnits();
  renderTable("stock-list",["کاڵا","بڕی کۆگا"],products.map(p=>{
    const units=Number(balances.get(p.id)||0);
    const pack=barcodes.find(b=>b.product_id===p.id&&b.unit_type==="carton");
@@ -469,20 +496,49 @@ $("checkout-form").addEventListener("submit",async e=>{
  await commitCheckout();
 });
 $("retry-checkout").addEventListener("click",()=>{if(pendingCheckout&&!busy)void commitCheckout();});
+$("stock-product").addEventListener("change",updateStockUnits);
+$("stock-mode").addEventListener("change",updateStockUnits);
+$("stock-barcode").addEventListener("change",updateStockBaseTotal);
+$("stock-quantity").addEventListener("input",updateStockBaseTotal);
 $("stock-form").addEventListener("submit",async e=>{
  e.preventDefault();if(!canManage()||busy||!store)return;
  const f=new FormData(e.target),amount=Number(f.get("quantity")),reason=String(f.get("reason")||"");
- if(!Number.isFinite(amount)||amount<=0||amount>1000000||Math.round(amount*1000)!==amount*1000){
-   msg("stock-msg","بڕەکە نادروستە","error");return
+ const product=String(f.get("product")||""),code=String(f.get("barcode")||""),mode=String(f.get("mode")||"");
+ const barcode=barcodes.find(b=>b.product_id===product&&b.code===code&&b.unit_type===mode);
+ const units=Number(barcode?.units_per_scan);
+ if(!barcode||!Number.isSafeInteger(amount)||amount<1||amount>1000000||
+    !Number.isSafeInteger(units)||units<1||amount*units>1000000||
+    !["unit","carton"].includes(mode)||!["opening","purchase"].includes(reason)){
+   msg("stock-msg","بڕ یان بارکۆدی کۆگا نادروستە","error");return;
  }
+ const args={p_store:store.id,p_barcode:code,p_packages:amount,p_expected_units:units,p_reason:reason};
+ const fingerprint=JSON.stringify(args);
+ if(!stockAttempt||stockAttempt.fingerprint!==fingerprint)
+   stockAttempt={fingerprint,id:crypto.randomUUID()};
  lock(true);msg("stock-msg");
  try{
-   const {error}=await db.rpc("retail_receive_stock",{
-     p_store:store.id,p_product:String(f.get("product")),p_quantity:amount,p_reason:reason
-   });if(error)throw error;
-   e.target.reset();await loadInventory();msg("stock-msg","بڕی کۆگا تۆمارکرا","success");
- }catch(err){msg("stock-msg",safe(err),"error")}
- finally{lock(false)}
+   const result=await db.rpc("retail_receive_packs_v17",{...args,p_request:stockAttempt.id});
+   if(result.error)throw result.error;
+   stockAttempt=null;e.target.reset();
+   await loadInventory();msg("stock-msg","بڕی کۆگا تۆمارکرا","success");
+ }catch(err){
+   // Only the known missing-RPC case can safely use the pre-V17 unit-only path.
+   if(["PGRST202","42883"].includes(err?.code)&&mode==="unit"){
+     try{
+       const legacy=await db.rpc("retail_receive_stock",{
+         p_store:store.id,p_product:product,p_quantity:amount,p_reason:reason
+       });
+       if(legacy.error)throw legacy.error;
+       stockAttempt=null;e.target.reset();await loadInventory();
+       msg("stock-msg","بڕی کۆگا تۆمارکرا","success");
+     }catch(e2){msg("stock-msg",safe(e2),"error");}
+   }else if(["PGRST202","42883"].includes(err?.code)){
+     stockAttempt=null;
+     msg("stock-msg","وەرگرتنی کارتۆن لە سێرڤەر چالاک نییە","error");
+   }else if(/Failed to fetch|NetworkError/i.test(err?.message||"")){
+     msg("stock-msg","ئەنجامی وەرگرتن دیار نییە؛ هەمان کردار دووبارە بکەرەوە","error");
+   }else{stockAttempt=null;msg("stock-msg",safe(err),"error");}
+ }finally{lock(false)}
 });
 $("staff-form").addEventListener("submit",async e=>{
  e.preventDefault();if(role!=="owner"||busy||!store)return;
