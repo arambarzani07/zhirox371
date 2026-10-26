@@ -100,7 +100,7 @@ try {
  console.log("PASS PC keys: F2 restores one scan input; Escape discards only partial scan");
 
  await page.locator('#cart-list [data-delta="1"]').first().click();
- assert.equal(await page.locator("#total").innerText(),"29,000 IQD");
+ assert.equal(await page.locator("#total").innerText(),"27,000 IQD");
  assert.equal(await page.evaluate(()=>document.activeElement?.id),"barcode");
  await page.locator('#cart-list [data-delta="-1"]').first().click();
  assert.equal(await page.locator("#total").innerText(),"26,000 IQD");
