@@ -262,7 +262,7 @@
           if(row)row.quantity+=total;
           else state.stock.push({store_id:store.id,product_id:productId,quantity:total});
           data=state.stock.find(x=>x.product_id===productId).quantity;
-          state.stockReceipts.push({request:args.p_request,lines,base_units:total,total,
+          state.stockReceipts.push({request:args.p_request,lines,base_units:total,total:data,
             reason:args.p_reason,fingerprint});
           state.audit.push({id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
             store_id:store.id,subject_id:productId,actor_id:account.id,
