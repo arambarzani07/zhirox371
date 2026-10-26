@@ -85,9 +85,22 @@
     if (base.length >= 200 || (barcodesResult.data || []).length >= 1000)
       message("list-message", "تەنها بەشێک لە کاڵاکان پیشان دەدرێت؛ پەڕەبەندی لە قۆناغی داهاتوو زیاد دەکرێت");
   }
+  function syncSellingMode(){
+    const form=$("product-form");
+    const mode=String(new FormData(form).get("sale_mode")||"unit");
+    for(const [section,enabled] of [["unit-fields",mode!=="carton"],["carton-fields",mode!=="unit"]]){
+      const node=$(section);node.hidden=!enabled;
+      node.querySelectorAll("input,textarea").forEach(field=>field.disabled=!enabled);
+    }
+  }
+  function sellingModeFromSnapshot(c){
+    if(["unit","carton","both"].includes(c.sale_mode))return c.sale_mode;
+    return c.carton?(c.unit_barcode?"both":"carton"):"unit";
+  }
   function resetEditor() {
     editing=null;
     $("product-form").reset();
+    syncSellingMode();
     $("product-form-title").textContent="کاڵای نوێ";
     $("save-product").textContent="زیادکردن";
     $("cancel-edit").hidden=true;$("history-product").hidden=true;
@@ -96,7 +109,11 @@
     message("product-message","");
   }
   function fillEditor(c) {
-    const form=$("product-form"),assign=(key,value)=>{
+    const form=$("product-form");
+    const radio=form.querySelector(`[name="sale_mode"][value="${sellingModeFromSnapshot(c)}"]`);
+    if(radio)radio.checked=true;
+    syncSellingMode();
+    const assign=(key,value)=>{
       const input=form.elements.namedItem(key);
       if(input)input.value=value===null||value===undefined?"":String(value);
     };
@@ -263,6 +280,8 @@
     }catch(error){message("product-message",explain(error),"error");}
     finally{busy(btn,false);}
   });
+  $("product-form").querySelectorAll(`[name="sale_mode"]`).forEach(x=>x.addEventListener("change",syncSellingMode));
+  syncSellingMode();
   $("cancel-edit").addEventListener("click",resetEditor);
   $("history-product").addEventListener("click",()=>void showProductHistory());
   $("refresh").addEventListener("click",()=>void loadProducts());
