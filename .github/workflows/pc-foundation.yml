@@ -112,6 +112,8 @@ jobs:
         run: node tests/browser/v16_auto_scan.mjs
       - name: Verify V16 carton/unit receipt history and 58/80 mm printing in Chromium
         run: node tests/browser/v16_receipt_packs.mjs
+      - name: Verify V18 50k product / 150k barcode pagination, inspection and hybrid scanner in Chromium
+        run: node tests/browser/v18_catalog_scaling.mjs
   v12-real-auth-rls:
     name: V12 — Real local Supabase Auth / JWT / PostgREST / RLS
     runs-on: ubuntu-latest
@@ -144,6 +146,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v16/local_dual_sale_checkout.sql
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v17/local_receive_packs.sql
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v17/local_receive_mixed_v171.sql
+          psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v18/local_catalog_scaling_v18.sql
       - name: Install pinned Supabase JS client (temporary QA dependency)
         run: npm install --no-save --no-package-lock @supabase/supabase-js@2.118.0
       - name: Real signup, JWT, RBAC, tenant RLS and local-only TRUNCATE regression test

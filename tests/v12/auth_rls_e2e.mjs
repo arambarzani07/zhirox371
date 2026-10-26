@@ -619,6 +619,43 @@ passed("V17.1 concurrent identical mixed receipts commit once and preserve one s
 
 console.log("V17 local QA: four real GoTrue, audit and stock-receipt groups passed. No hosted DB mutation.");
 
+// V18: Server-side catalog pagination, barcode directory pagination, and exact barcode lookup
+const v18CatalogPage=ok(await cashier.rpc("retail_catalog_page_v18",{
+ p_store:storeA.id,p_search:"Milk",p_offset:0,p_limit:50
+}),"cashier reads V18 paginated catalog without purchase costs");
+assert.ok(v18CatalogPage.total_count>=1);
+assert.ok(v18CatalogPage.items.some(x=>x.id===milkId&&x.sale_mode==="both"&&Number(x.carton_price_minor)===11000));
+assert.ok(v18CatalogPage.items.every(x=>!Object.hasOwn(x,"purchase_price_minor")&&!Object.hasOwn(x,"unit_purchase_price_iqd")));
+
+const v18BarcodePage=ok(await manager.rpc("retail_barcode_page_v18",{
+ p_store:storeA.id,p_search:"8394000012010",p_offset:0,p_limit:50
+}),"manager reads V18 paginated barcode directory");
+assert.equal(v18BarcodePage.total_count,1);
+assert.equal(v18BarcodePage.items[0].unit_type,"carton");
+assert.equal(Number(v18BarcodePage.items[0].price_minor),11000);
+
+const v18ResolvedCarton=ok(await cashier.rpc("retail_resolve_barcode_v18",{
+ p_store:storeA.id,p_code:"8394000012010"
+}),"cashier resolves carton primary barcode via V18 RPC");
+assert.equal(v18ResolvedCarton.found,true);
+assert.equal(v18ResolvedCarton.product_id,milkId);
+assert.equal(v18ResolvedCarton.unit_type,"carton");
+assert.equal(Number(v18ResolvedCarton.units_per_scan),12);
+assert.equal(Number(v18ResolvedCarton.price_minor),11000);
+assert.ok(!Object.hasOwn(v18ResolvedCarton,"purchase_price_minor"));
+
+const v18Retired=ok(await cashier.rpc("retail_resolve_barcode_v18",{
+ p_store:storeA.id,p_code:"8394000012011"
+}),"retired carton alias returns found=false in V18 RPC");
+assert.equal(v18Retired.found,false);
+
+fail(await outsider.rpc("retail_catalog_page_v18",{p_store:storeA.id,p_search:"",p_offset:0,p_limit:50}),
+ "outsider cannot read store A V18 catalog page");
+fail(await outsider.rpc("retail_barcode_page_v18",{p_store:storeA.id,p_search:"",p_offset:0,p_limit:50}),
+ "outsider cannot read store A V18 barcode page");
+fail(await outsider.rpc("retail_resolve_barcode_v18",{p_store:storeA.id,p_code:"8394000012010"}),
+ "outsider cannot resolve store A barcode");
+passed("V18 paginated catalog, barcode directory, and exact barcode lookup enforce tenant RBAC and hide purchase costs");
 
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 

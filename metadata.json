@@ -1,7 +1,7 @@
 {
   "name": "سیستەمی کاشێر — سوپەرمارکێتی کانی چنار",
-  "description": "سیستەمی پێشکەوتووی کاشێر و کۆگا بۆ سوپەرمارکێتی کانی چنار (Retail OS PC V17.1)",
-  "version": "17.1.0",
+  "description": "سیستەمی پێشکەوتووی کاشێر و کۆگا بۆ سوپەرمارکێتی کانی چنار (Retail OS PC V18)",
+  "version": "18.0.0",
   "permissions": [],
   "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

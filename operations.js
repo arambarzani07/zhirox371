@@ -3,7 +3,10 @@
 const $=id=>document.getElementById(id);
 const config=window.RETAIL_CONFIG;
 const view=new URLSearchParams(location.search).get("view");
+const PAGE_SIZE=50;
 let db=null,user=null,store=null,role=null,products=[],barcodes=[],balances=new Map(),members=[],cart=[],requestId=null,tab="cash",busy=false,pendingCheckout=null,shiftSession=null,pendingCashMovement=null,stockAttempt=null;
+let stockOffset=0,stockTotal=0,stockPageIds=[];
+const prefixCache=new Map();
 const money=n=>Number(n).toLocaleString("en-US")+" IQD";
 const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نییە":
  /no open cash shift|shift not open/i.test(e?.message||"")?"شێفتی کاشێر نەکراوەتەوە":
@@ -17,11 +20,76 @@ const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نیی�
  /duplicate/i.test(e?.message||"")?"ئەم کردارە دووبارەیە":
  /Failed to fetch|NetworkError/i.test(e?.message||"")?"پەیوەندیی سێرڤەر/ئینتەرنێت بپشکنە":
  (e?.message||"کردارەکە سەرکەوتوو نەبوو"));
-function msg(id,value="",kind=""){const x=$(id);x.textContent=value;x.className="msg"+(kind?" "+kind:"");}
-function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();}
+function msg(id,value="",kind=""){const x=$(id);if(!x)return;x.textContent=value;x.className="msg"+(kind?" "+kind:"");}
+function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();}
 function pendingKey(){return store&&user?"retail_pending_checkout_"+store.id+"_"+user.id:null}
 function persistPending(){const key=pendingKey();if(!key)return;try{if(pendingCheckout)sessionStorage.setItem(key,JSON.stringify(pendingCheckout));else sessionStorage.removeItem(key);}catch(e){msg("system-msg","پاراستنی هەوڵی فرۆشتن لە بیرگەی وێبگەڕدا سەرکەوتوو نەبوو","error")}}
 function syncPending(){const pending=!!pendingCheckout;for(const id of ["barcode","cash"])$(id).disabled=pending||busy;$("clear-cart").disabled=pending||busy;$("finish-sale").disabled=pending||busy||!shiftSession;$("retry-checkout").hidden=!pending;$("retry-checkout").disabled=busy;}
+function syncStockPager(){
+ const box=$("stock-pagination");
+ if(!box)return;
+ if(stockTotal<=0){box.hidden=true;return;}
+ box.hidden=stockTotal<=PAGE_SIZE&&stockOffset===0;
+ const count=stockPageIds.length;
+ const start=stockOffset+1;
+ const end=Math.min(stockOffset+count,stockTotal);
+ $("stock-page-info").textContent=start.toLocaleString("en-US")+"–"+end.toLocaleString("en-US")+" / "+stockTotal.toLocaleString("en-US");
+ $("stock-prev").disabled=busy||stockOffset<=0;
+ $("stock-next").disabled=busy||stockOffset+PAGE_SIZE>=stockTotal;
+}
+function upsertHotProduct(prod,barcodeList,stockQty){
+ if(!prod||!prod.id)return;
+ const pIdx=products.findIndex(x=>x.id===prod.id);
+ const normalized={
+   id:prod.id,
+   name:prod.name,
+   price_minor:Number(prod.price_minor??0),
+   currency:prod.currency||"IQD",
+   active:prod.active!==false
+ };
+ if(pIdx>=0)products[pIdx]=normalized;
+ else products.push(normalized);
+ if(stockQty!==undefined&&stockQty!==null)balances.set(prod.id,Number(stockQty));
+ if(Array.isArray(barcodeList)){
+   for(const b of barcodeList){
+     if(!b||!b.code||b.active===false)continue;
+     const bIdx=barcodes.findIndex(x=>x.code===b.code);
+     const entry={
+       product_id:prod.id,
+       code:b.code,
+       unit_type:b.unit_type||"unit",
+       units_per_scan:Number(b.units_per_scan||1),
+       price_minor:b.price_minor!=null?Number(b.price_minor):normalized.price_minor,
+       active:true
+     };
+     if(bIdx>=0)barcodes[bIdx]=entry;
+     else barcodes.push(entry);
+   }
+ }
+}
+async function resolveBarcodeServer(code){
+ const clean=String(code||"").trim();
+ if(!db||!store||!clean)return null;
+ const res=await db.rpc("retail_resolve_barcode_v18",{p_store:store.id,p_code:clean});
+ if(!res.error&&res.data){
+   prefixCache.set(clean,!!res.data.has_longer_prefix);
+   if(!res.data.found)return null;
+   const d=res.data;
+   const sibs=Array.isArray(d.product_barcodes)&&d.product_barcodes.length?d.product_barcodes:[{
+     code:d.code,product_id:d.product_id,unit_type:d.unit_type,units_per_scan:d.units_per_scan,price_minor:d.price_minor
+   }];
+   upsertHotProduct({
+     id:d.product_id,name:d.product_name,price_minor:d.unit_price_minor??d.price_minor,currency:d.currency||"IQD",active:true
+   },sibs,d.stock_quantity);
+   return barcodes.find(x=>x.code===clean&&x.active!==false)||null;
+ }
+ if(["PGRST202","42883"].includes(res.error?.code)){
+   const hasLonger=barcodes.some(x=>x.active!==false&&x.code.length>clean.length&&x.code.startsWith(clean));
+   prefixCache.set(clean,hasLonger);
+   return barcodes.find(x=>x.code===clean&&x.active!==false)||null;
+ }
+ return null;
+}
 function restorePending(){const key=pendingKey();if(!key)return;try{const val=JSON.parse(sessionStorage.getItem(key)||"null");if(!val||!val.id||!Array.isArray(val.items)||!Number.isSafeInteger(val.cash))return;pendingCheckout=val;requestId=val.id;cart=val.items.map(x=>{const b=val.v16?barcodes.find(b=>b.code===x.barcode):barcodes.find(b=>b.product_id===x.product_id&&b.unit_type==="unit");
  const p=products.find(p=>p.id===(b?.product_id||x.product_id));
  return p&&b?{id:p.id,name:p.name,barcode:b.code,mode:b.unit_type,
@@ -66,6 +134,40 @@ function renderTable(target,headers,data){
  table.append(body);x.append(table);
 }
 async function loadInventory(){
+ const searchVal=$("stock-search")?$("stock-search").value.trim():"";
+ const v18=await db.rpc("retail_catalog_page_v18",{
+   p_store:store.id,p_search:searchVal,p_offset:stockOffset,p_limit:PAGE_SIZE
+ });
+ if(!v18.error&&v18.data&&Array.isArray(v18.data.items)){
+   stockTotal=Number(v18.data.total_count??v18.data.items.length);
+   stockPageIds=[];
+   if(stockTotal<=PAGE_SIZE&&!searchVal&&stockOffset===0){
+     barcodes=[];
+     prefixCache.clear();
+   }
+   for(const item of v18.data.items){
+     if(item.active===false)continue;
+     stockPageIds.push(item.id);
+     upsertHotProduct(item,item.barcode_details||[],item.stock_quantity);
+   }
+   if(stockTotal<=PAGE_SIZE&&!searchVal&&stockOffset===0){
+     for(const b of barcodes){
+       prefixCache.set(b.code,barcodes.some(x=>x.active!==false&&x.code.length>b.code.length&&x.code.startsWith(b.code)));
+     }
+   }
+   for(const line of cart){
+     let resolved=barcodes.find(x=>x.code===line.barcode&&x.active!==false);
+     if(!resolved)resolved=await resolveBarcodeServer(line.barcode);
+     if(resolved){
+       line.price=Number(resolved.price_minor);
+       line.units=Number(resolved.units_per_scan);
+       line.available=balances.get(line.id)||0;
+     }
+   }
+   if(tab==="stock")renderStock();else if(tab==="cash")renderCart();
+   return;
+ }
+ if(!["PGRST202","42883"].includes(v18.error?.code))throw v18.error;
  const pres=await db.from("retail_products")
    .select("id,name,price_minor,currency,active")
    .eq("store_id",store.id).eq("active",true)
@@ -91,17 +193,17 @@ async function loadInventory(){
  if(sres.error)throw sres.error;
  products=pres.data||[];barcodes=(bres.data||[]).filter(b=>b.active!==false);
  balances=new Map((sres.data||[]).map(x=>[x.product_id,Number(x.quantity)]));
+ const q=searchVal.toLocaleLowerCase();
+ const filtered=q?products.filter(p=>(p.name+" "+barcodes.filter(b=>b.product_id===p.id).map(b=>b.code).join(" ")).toLocaleLowerCase().includes(q)):products;
+ stockTotal=filtered.length;
+ stockPageIds=filtered.slice(stockOffset,stockOffset+PAGE_SIZE).map(p=>p.id);
  cart=cart.map(x=>{const p=products.find(p=>p.id===x.id);
    const scan=barcodes.find(b=>b.code===x.barcode);
    if(!p||!scan||scan.unit_type!==x.mode)return null;
    return {...x,name:p.name,price:Number(scan.price_minor??p.price_minor),
      units:Number(scan.units_per_scan),available:balances.get(x.id)||0};
  }).filter(Boolean);
- const old=document.activeElement;
  if(tab==="stock")renderStock();else if(tab==="cash")renderCart();
- if(products.length===400||barcodes.length===2000||(sres.data||[]).length===2000){
-   msg("system-msg","لیستەکە سنووردارە؛ هەموو کاڵاکان پیشان نەدراون.");
- }
 }
 function updateStockUnits(){
  const product=$("stock-product").value,mode=$("stock-mode").value;
@@ -148,11 +250,12 @@ function updateStockBaseTotal(){
  $("stock-base-total").value=valid&&Number.isSafeInteger(amount)&&amount<=1000000?String(amount):"";
 }
 function renderStock(){
+ const pageProducts=stockPageIds.length?stockPageIds.map(id=>products.find(p=>p.id===id)).filter(Boolean):products.slice(0,PAGE_SIZE);
  const selector=$("stock-product"),old=selector.value;selector.replaceChildren();
- for(const p of products){const opt=document.createElement("option");opt.value=p.id;opt.textContent=p.name;selector.append(opt)}
- if(products.some(p=>p.id===old))selector.value=old;
+ for(const p of pageProducts){const opt=document.createElement("option");opt.value=p.id;opt.textContent=p.name;selector.append(opt)}
+ if(pageProducts.some(p=>p.id===old))selector.value=old;
  updateStockUnits();
- renderTable("stock-list",["کاڵا","بڕی کۆگا"],products.map(p=>{
+ renderTable("stock-list",["کاڵا","بڕی کۆگا"],pageProducts.map(p=>{
    const units=Number(balances.get(p.id)||0);
    const pack=barcodes.find(b=>b.product_id===p.id&&b.unit_type==="carton");
    const perPack=Number(pack?.units_per_scan||0);
@@ -164,6 +267,7 @@ function renderStock(){
      units.toLocaleString("en-US")+" دانە";
    return [p.name,display];
  }));
+ syncStockPager();
 }
 function cartChanged(){if(pendingCheckout){syncPending();return}requestId=null;msg("checkout-msg","");renderCart()}
 function stockUsed(productId,excludeIndex=-1){return cart.reduce((n,line,i)=>n+(i===excludeIndex||line.id!==productId?0:line.qty*line.units),0)}
@@ -407,7 +511,7 @@ $("login-form").addEventListener("submit",async e=>{
 });
 $("logout").onclick=async()=>{
  if(db)await db.auth.signOut();
- user=null;store=null;role=null;products=[];cart=[];requestId=null;pendingCheckout=null;shiftSession=null;pendingCashMovement=null;viewPanel("login");
+ user=null;store=null;role=null;products=[];barcodes=[];prefixCache.clear();cart=[];requestId=null;pendingCheckout=null;shiftSession=null;pendingCashMovement=null;viewPanel("login");
  msg("login-msg");
 };
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{if(!busy)selectTab(b.dataset.tab)}));
@@ -436,21 +540,32 @@ $("barcode").addEventListener("input",()=>{
  clearTimeout(scanIdleTimer);
  const code=$("barcode").value.trim();
  if(tab!=="cash"||busy||pendingCheckout||!code)return;
- if(!barcodes.some(b=>b.code===code))return;
- // A valid short barcode could be the start of a longer barcode.
- // Wait for explicit Enter rather than silently selling the wrong item.
- if(barcodes.some(b=>b.code.length>code.length&&b.code.startsWith(code)))return;
- scanIdleTimer=setTimeout(()=>{
-   if(tab==="cash"&&!busy&&!pendingCheckout&&$("barcode").value.trim()===code)
-     $("scan-form").requestSubmit();
+ scanIdleTimer=setTimeout(async()=>{
+   if(tab!=="cash"||busy||pendingCheckout||$("barcode").value.trim()!==code)return;
+   let b=barcodes.find(x=>x.code===code&&x.active!==false);
+   let hasLonger=barcodes.some(x=>x.active!==false&&x.code.length>code.length&&x.code.startsWith(code));
+   if(!b||!prefixCache.has(code)){
+     const resolved=await resolveBarcodeServer(code);
+     if(tab!=="cash"||busy||pendingCheckout||$("barcode").value.trim()!==code)return;
+     if(resolved)b=resolved;
+   }
+   if(prefixCache.has(code))hasLonger=hasLonger||!!prefixCache.get(code);
+   // A valid short barcode could be the start of a longer barcode.
+   // Wait for explicit Enter rather than silently selling the wrong item.
+   if(!b||hasLonger)return;
+   $("scan-form").requestSubmit();
  },160);
 });
-$("scan-form").addEventListener("submit",e=>{
+$("scan-form").addEventListener("submit",async e=>{
  e.preventDefault();clearTimeout(scanIdleTimer);scanIdleTimer=null;
  if(pendingCheckout||busy){msg("scan-msg","فرۆشتنی پێشوو هێشتا یەکلا نەبووە.","error");return}
- const code=String(new FormData(e.target).get("barcode")||"").trim();
- const b=barcodes.find(x=>x.code===code);
- if(!b){e.target.reset();msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");focusScanner();return}
+ const form=e.currentTarget;
+ const code=String(new FormData(form).get("barcode")||"").trim();
+ let b=barcodes.find(x=>x.code===code&&x.active!==false);
+ if(!b&&code){
+   b=await resolveBarcodeServer(code);
+ }
+ if(!b){form.reset();msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");focusScanner();return}
  if(!["unit","carton"].includes(b.unit_type)||
     (b.unit_type==="unit"&&Number(b.units_per_scan)!==1)||
     (b.unit_type==="carton"&&!Number.isSafeInteger(Number(b.price_minor)))){
@@ -467,7 +582,7 @@ $("scan-form").addEventListener("submit",e=>{
  const current=cart.find(x=>x.id===p.id&&x.mode===mode);
  if(current)current.qty++;
  else cart.push({id:p.id,name:p.name,barcode:b.code,mode,price,units,available:stock,qty:1});
- e.target.reset();msg("scan-msg");cartChanged();focusScanner();
+ form.reset();msg("scan-msg");cartChanged();focusScanner();
 });
 $("cart-list").addEventListener("click",e=>{
  const btn=e.target.closest("[data-line]");if(!btn||busy||pendingCheckout)return;
@@ -537,6 +652,25 @@ $("stock-barcode").addEventListener("change",updateStockBaseTotal);
 $("stock-quantity").addEventListener("input",updateStockBaseTotal);
 $("stock-mixed-carton").addEventListener("change",updateStockBaseTotal);
 $("stock-mixed-qty").addEventListener("input",updateStockBaseTotal);
+if($("stock-search")){
+ $("stock-search").addEventListener("input",()=>{
+   stockOffset=0;
+   void loadInventory();
+ });
+}
+if($("stock-refresh")){
+ $("stock-refresh").addEventListener("click",()=>{if(!busy)void loadInventory();});
+}
+if($("stock-prev")){
+ $("stock-prev").addEventListener("click",()=>{
+   if(!busy&&stockOffset>=PAGE_SIZE){stockOffset-=PAGE_SIZE;void loadInventory();}
+ });
+}
+if($("stock-next")){
+ $("stock-next").addEventListener("click",()=>{
+   if(!busy&&stockOffset+PAGE_SIZE<stockTotal){stockOffset+=PAGE_SIZE;void loadInventory();}
+ });
+}
 $("stock-form").addEventListener("submit",async e=>{
  e.preventDefault();if(!canManage()||busy||!store)return;
  const f=new FormData(e.target),reason=String(f.get("reason")||"");

@@ -46,6 +46,7 @@ th{background:#fafbfd;color:#74849a;font-weight:800}
 select option{color:#26384d}
 .receipt-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.receipt-head h2{margin:0}.receipt-detail{margin-top:18px;border:1px solid #e3eaf2;padding:20px;border-radius:12px;background:#fbfcfe}.receipt-action{border:1px solid #e2e8f1;border-radius:8px;background:#fff;padding:7px 11px;color:#456282;font-weight:750;font-size:12px}.receipt-metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:13px;font-size:12px;color:#63768d}.receipt-metrics strong{color:#24466e}.receipt-print-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.receipt-action{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;margin-inline-start:5px}
 .shift-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}.shift-metrics>div{min-height:95px;padding:18px;background:#f7f9fc;border:1px solid #e9edf3;border-radius:11px;display:flex;flex-direction:column;justify-content:space-between}.shift-metrics span{font-size:12px;color:#74849a}.shift-metrics strong{font-size:18px;color:#274871;direction:ltr;text-align:right}.shift-report{margin-top:18px;background:#f8fafc;border:1px solid #e4eaf1;padding:17px;border-radius:11px;font-size:13px}.shift-report dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.shift-report dt{color:#7a8ba0;font-size:12px;margin-bottom:5px}.shift-report dd{margin:0;font-weight:800}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid #edf1f5}.pager-info{font-size:13px;font-weight:800;color:#172b45;direction:ltr}
 [hidden]{display:none!important}
 </style>
 <link rel="stylesheet" href="./ui-global.css">
@@ -156,7 +157,13 @@ select option{color:#26384d}
 <button class="primary" type="submit">تۆمارکردن</button>
 </form>
 <div class="msg" id="stock-msg" role="status"></div>
+<div class="line"></div>
+<div class="formrow" style="margin-bottom:12px">
+<label class="field">گەڕان لە کۆگا<input id="stock-search" maxlength="120" autocomplete="off" placeholder="ناو یان بارکۆد"></label>
+<button type="button" class="secondary" id="stock-refresh">نوێکردنەوە</button>
+</div>
 <div id="stock-list"></div>
+<div class="pager" id="stock-pagination" hidden><button type="button" class="secondary" id="stock-prev">پێشوو</button><span class="pager-info" id="stock-page-info">0 / 0</span><button type="button" class="secondary" id="stock-next">دواتر</button></div>
 </section>
 <section id="staff-panel" class="surface" hidden>
 <h2>کارمەندان</h2>

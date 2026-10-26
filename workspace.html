@@ -23,6 +23,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 .table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:right;padding:14px;border-bottom:1px solid #edf1f5}.table th{background:#fbfcfe;color:#677990;font-weight:800}
 .price{direction:ltr;unicode-bidi:embed;display:inline-block}.blank{border:1px dashed #e0e8ef;background:#fafbfd;color:#8a9cad;text-align:center;padding:38px;border-radius:12px;margin-top:15px;font-size:13px}
 .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px}.toolbar h2{margin:0}.input-search{height:40px;border:1px solid #dce4ee;border-radius:9px;padding:10px 12px;min-width:235px;background:#fff;color:#223650}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid #edf1f5}.pager-info{font-size:13px;font-weight:800;color:#172b45;direction:ltr}
 [hidden]{display:none!important}
 </style>
 <link rel="stylesheet" href="./ui-global.css">
@@ -61,7 +62,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <p class="message" id="store-message" role="status"></p>
 </section>
 <section id="products-panel" hidden>
-<div class="tabs"><button class="tab" type="button" data-tab="new">کاڵای نوێ</button><button class="tab" type="button" data-tab="list">لیستی کاڵاکان</button></div>
+<div class="tabs"><button class="tab" type="button" data-tab="new">کاڵای نوێ</button><button class="tab" type="button" data-tab="list">لیستی کاڵاکان</button><button class="tab" type="button" data-tab="prices">نرخەکان</button><button class="tab" type="button" data-tab="barcodes">بارکۆدەکان</button></div>
 <div class="surface" id="new-panel">
 <h2 id="product-form-title">کاڵای نوێ</h2>
 <form id="product-form" class="form">
@@ -99,7 +100,25 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <div class="surface" id="list-panel" hidden>
 <div class="toolbar"><h2>کاڵاکان</h2><div style="display:flex;gap:9px"><input id="search" class="input-search" placeholder="گەڕان" aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
 <div id="results"><div class="blank">هیچ کاڵایەک نییە</div></div>
+<div class="pager" id="list-pagination" hidden><button type="button" class="secondary" id="list-prev">پێشوو</button><span class="pager-info" id="list-page-info">0 / 0</span><button type="button" class="secondary" id="list-next">دواتر</button></div>
 <div id="list-message" class="message" role="status"></div>
+</div>
+<div class="surface" id="prices-panel" hidden>
+<div class="toolbar"><h2>پشکنینی نرخەکان</h2><div style="display:flex;gap:9px"><input id="prices-search" class="input-search" placeholder="گەڕان بە ناو یان بارکۆد" aria-label="گەڕان لە نرخەکان"><button type="button" class="secondary" id="prices-refresh">نوێکردنەوە</button></div></div>
+<div id="prices-results"><div class="blank">هیچ کاڵایەک نییە</div></div>
+<div class="pager" id="prices-pagination" hidden><button type="button" class="secondary" id="prices-prev">پێشوو</button><span class="pager-info" id="prices-page-info">0 / 0</span><button type="button" class="secondary" id="prices-next">دواتر</button></div>
+<div id="prices-message" class="message" role="status"></div>
+</div>
+<div class="surface" id="barcodes-panel" hidden>
+<div class="toolbar"><h2>پشکنینی بارکۆدەکان</h2><div style="display:flex;gap:9px"><input id="barcodes-search" class="input-search" placeholder="گەڕان لە بارکۆدەکان" aria-label="گەڕان لە بارکۆدەکان"><button type="button" class="secondary" id="barcodes-refresh">نوێکردنەوە</button></div></div>
+<form id="barcode-inspect-form" class="form" style="margin-bottom:16px">
+<label class="form-col">بارکۆد<input id="barcode-inspect-input" name="code" maxlength="60" autocomplete="off" placeholder="سکانی بارکۆد بۆ پشکنینی خێرا"></label>
+<button type="submit" class="primary" id="barcode-inspect-btn">پشکنین</button>
+</form>
+<div id="barcode-inspect-result" hidden style="margin-bottom:16px"></div>
+<div id="barcodes-results"><div class="blank">هیچ بارکۆدێک نییە</div></div>
+<div class="pager" id="barcodes-pagination" hidden><button type="button" class="secondary" id="barcodes-prev">پێشوو</button><span class="pager-info" id="barcodes-page-info">0 / 0</span><button type="button" class="secondary" id="barcodes-next">دواتر</button></div>
+<div id="barcodes-message" class="message" role="status"></div>
 </div>
 </section>
 <div id="system-message" class="message" role="alert"></div>

@@ -28,7 +28,6 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  // Parse URL
   const parsedUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   let pathname = decodeURIComponent(parsedUrl.pathname);
 
@@ -36,11 +35,9 @@ const server = http.createServer((req, res) => {
     pathname = "/index.html";
   }
 
-  // Prevent directory traversal
   const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
   let filePath = path.join(__dirname, safePath);
 
-  // If path is a directory, look for index.html
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
     filePath = path.join(filePath, "index.html");
   }
