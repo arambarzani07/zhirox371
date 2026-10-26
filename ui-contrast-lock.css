@@ -1,0 +1,103 @@
+/* Locked PC contrast layer: typography/colors only. No layout/spacing/animations.
+   Use explicit opaque colors to prevent iOS/host theme inheritance bleaching
+   card headings on white backgrounds. Retain per-module SVG accent colors. */
+@media screen {
+  html, body, body > .viewport, body > .viewport > .desktop,
+  body > .viewport > .desktop > main {
+    color-scheme: light !important;
+  }
+
+  body .market-banner {
+    background-color: #203e66 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  body .market-banner *,
+  body > .viewport > .desktop > header :is(.brand,.brand span) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    font-weight: 900 !important;
+  }
+  body > .viewport > .desktop > header :is(.brand i,.mark) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  body > .viewport > .desktop > main :is(.module,.sub,.drawer,.page,.surface,.panel,.metric,.test,.testcase) {
+    opacity: 1 !important;
+    filter: none !important;
+    color-scheme: light !important;
+  }
+  body > .viewport > .desktop > main :is(
+    .module .name,
+    .sub .sub-name,
+    .drawerhead strong,
+    h1,h2,h3,h4,h5,h6,
+    .card-title,.module-title,.page-title,.section-title
+  ) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    font-weight: 900 !important;
+    text-shadow: none !important;
+    filter: none !important;
+  }
+  body > .viewport > .desktop > main :is(
+    .field,.form-col,.form-col>span,
+    label,.empty,.blank,th,td,
+    .sub-arrow,.chev,.caption,.note,.hint,.smallinfo,
+    .metric span,.totals span,.due span
+  ) {
+    color: #30465f !important;
+    -webkit-text-fill-color: #30465f !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+  }
+  body > .viewport > .desktop > main :is(input,textarea,select) {
+    background-color: #ffffff !important;
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+  }
+  body > .viewport > .desktop > main :is(input,textarea)::placeholder {
+    color: #40566e !important;
+    -webkit-text-fill-color: #40566e !important;
+    opacity: 1 !important;
+  }
+  body > .viewport > .desktop > main :is(
+    button:not(.primary):not(.active):not([aria-selected="true"]):not(:disabled),
+    .tab:not(.active),.nav button:not(.active),.receipt-action
+  ) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+  }
+  body > .viewport > .desktop > main :is(
+    button.primary,.tab.active,.nav button.active,.filter.active
+  ),
+  body > .viewport > .desktop > main :is(
+    button.primary,.tab.active,.nav button.active,.filter.active
+  ) :is(span,strong,b) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    opacity: 1 !important;
+  }
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).error {
+    color: #913d36 !important;
+    -webkit-text-fill-color: #913d36 !important;
+  }
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).success {
+    color: #13694e !important;
+    -webkit-text-fill-color: #13694e !important;
+  }
+  /* Dark/white text colors must not recolor duotone icons. */
+  body > .viewport > .desktop > main :is(.icon,.sub-icon) {
+    color: var(--color) !important;
+    -webkit-text-fill-color: var(--color) !important;
+  }
+}

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>سیستەمی کاشێر</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fa;color:#213149;font-family:system-ui,"Segoe UI",Tahoma,sans-serif}button,input{font:inherit}button{cursor:pointer}
+.viewport{overflow-x:auto;min-height:100vh}.desktop{min-width:1020px;min-height:100vh}
+header{background:#fff;height:75px;padding:0 42px;border-bottom:1px solid #e7ecf2;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:13px;font-size:19px;font-weight:800}.brand i{width:43px;height:43px;border-radius:12px;background:#243d60;color:#fff;display:grid;place-items:center;font-style:normal;font-size:25px}
+.home{width:38px;height:38px;border-radius:10px;border:1px solid #e5eaf0;background:#f7f9fc;color:#556a84}
+main{padding:39px 44px 60px;max-width:1500px;margin:auto}h1{font-size:23px;margin:0 0 27px;font-weight:800}h2{font-size:21px;margin:0}
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:15px}
+.module{min-height:153px;border:1px solid #e2e8ef;background:#fff;border-radius:16px;padding:19px;text-align:right;display:flex;flex-direction:column;justify-content:space-between;align-items:start;color:#26374e;box-shadow:0 5px 17px #1b385008}
+.module:hover,.module[aria-expanded=true]{border-color:var(--color);box-shadow:0 7px 19px #20415b12}
+.icon{width:49px;height:49px;border-radius:13px;background:var(--light);color:var(--color);display:grid;place-items:center}
+.end{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px}.name{font-size:15px;font-weight:800}.chev{color:#8798ad;font-size:20px}.module[aria-expanded=true] .chev{transform:rotate(180deg);color:var(--color)}
+.drawer{background:white;border:1px solid #e3e8ef;border-radius:15px;padding:19px;margin:0 0 16px;animation:slide .16s ease-out}@keyframes slide{from{opacity:.3;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.drawerhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:17px}.drawerhead strong{font-size:15px}.close{border:0;background:#f2f5f8;color:#64758d;border-radius:8px;width:32px;height:32px}
+.subgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.sub{min-height:77px;border:1px solid #e5eaf1;border-radius:11px;background:#f9fafc;color:#273a54;padding:14px;text-align:right;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:750}.sub:hover{background:#eff5fc;border-color:#a6bddb}
+.page{background:white;border:1px solid #e5eaf0;border-radius:15px;padding:25px;min-height:430px}.pagehead{display:flex;align-items:center;gap:12px;margin-bottom:22px}.back{border:1px solid #e1e8f0;border-radius:9px;background:#f7f9fc;color:#506784;width:35px;height:35px}
+.inputs{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{font-size:12px;color:#62758e;display:flex;flex-direction:column;gap:7px;flex:1;min-width:160px}.field input{border:1px solid #dce5ee;border-radius:9px;padding:12px;min-height:43px;color:#213149}
+.primary{background:#244673;color:white;border:0;border-radius:9px;padding:12px 20px;font-weight:700;min-height:43px}.plain{background:#f3f6fa;color:#536985;border:1px solid #e4ebf1;border-radius:9px;padding:10px 15px}
+.empty{padding:34px;border:1px dashed #e1e7ee;border-radius:12px;margin-top:20px;text-align:center;color:#8a9bae;font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:22px;font-size:13px}th,td{padding:13px;border-bottom:1px solid #edf0f5;text-align:right}th{background:#fbfcfd;color:#718299}
+.pos{display:grid;grid-template-columns:1.8fr .8fr;gap:16px}.panel{border:1px solid #e8edf2;border-radius:12px;padding:16px}.total{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #edf0f4;margin-top:25px;padding-top:20px}.total strong{font-size:21px;color:#254779;direction:ltr}
+.qty{border:1px solid #e2e9f1;border-radius:7px;background:#f2f5f8;padding:5px 10px}.feedback{min-height:26px;padding-top:12px;font-size:12px;color:#b25b4e}
+</style>
+<link rel="stylesheet" href="./ui-global.css">
+<link rel="stylesheet" href="./ui-fixed-pc.css">
+<link rel="stylesheet" href="./card-icons.css">
+</head>
+<body>
+<div class="market-banner">سوپەرمارکێتی کانی چنار</div><div class="viewport"><div class="desktop">
+<header><div class="brand"><i>◈</i><span>سیستەمی کاشێر</span></div><button class="home" id="home" title="سەرەتا" aria-label="سەرەتا">⌂</button></header>
+<main id="app"></main></div></div>
+<script src="./card-icons.js"></script>
+<script>
+(()=>{
+"use strict";
+const app=document.getElementById("app");
+const specs=[
+["کاشێر و فرۆشتن","#4c6dcc","#edf2ff","▣",["فرۆشتنی نوێ","پسووڵەکان","پارەدان","گەڕاندنەوە"]],
+["کاڵاکان","#15987c","#e7f7f0","⬡",["کاڵای نوێ","لیستی کاڵاکان","نرخەکان","بارکۆدەکان"]],
+["کۆگا","#d18b34","#fff2e2","▤",["دۆخی کۆگا","کاڵای کەم","بەسەرچوون","هاتووچۆ"]],
+["کڕیاران و حسابەکان","#9565cb","#f2ebfd","◎",["کڕیاران","قەرزەکان","مێژووی کڕین","پارەدانەکان"]],
+["کڕین و دابینکەران","#168db7","#e6f5fd","▧",["داواکاری","دابینکەران","وەرگرتنی کاڵا","حسابەکان"]],
+["دارایی","#bd7953","#fff1e7","◇",["سندووق","داهات","خەرجی","جووڵەی پارە"]],
+["ڕاپۆرت و شیکاری","#5577bc","#edf2fb","▥",["فرۆشتن","قازانج","ڕاپۆرتی کۆگا","شیکاریی زیرەک"]],
+["ڕێکخستنەکان","#74849a","#eff2f6","⚙",["بەکارهێنەران","دەسەڵاتەکان","ئامێرەکان","سیستەم"]],
+["ئافەر و داشکاندن","#cf6d96","#fcecf2","♧",["ئافەری نوێ","داشکاندن","کوپۆن","کەمپەین"]],
+["لیبڵ و چاپکردن","#0f9c9d","#e5f7f7","▦",["لیبڵی نرخ","بارکۆد","چاپی کۆمەڵەیی","قاڵبی چاپ"]],
+["شێفت و کارمەندان","#a67d45","#fbf1e3","▤",["شێفتەکان","ئامادەبوون","کاتی کار","هەڵسەنگاندن"]],
+["چاودێری و مۆڵەتەکان","#745dc5","#eeeafd","♢",["ئاگادارییەکان","داوای مۆڵەت","گۆڕانکارییەکان","پشکنینی مامەڵە"]]
+];
+const cardIcons=window.RetailCardIcons;
+const state={open:-1,page:null,products:[],cart:[],msg:""};
+const money=n=>n.toLocaleString("en-US")+" IQD";
+/* Contrast-critical labels: bind opaque dark ink to the text node itself.
+   Inline important declarations outrank theme styles, including iOS Safari overrides. */
+function makeReadableLabel(node){
+ for(const [key,value] of [
+   ["color","#172b45"],
+   ["-webkit-text-fill-color","#172b45"],
+   ["opacity","1"],
+   ["font-weight","900"],
+   ["text-shadow","none"],
+   ["visibility","visible"]
+ ])node.style.setProperty(key,value,"important");
+ node.dataset.contrastLabel="true";
+ return node;
+}
+
+function focusModule(index){
+ if(index<0)return;
+ const button=app.querySelector('[data-module="'+index+'"]');
+ if(button)button.focus({preventScroll:true});
+}
+function closeSubmenu(restoreFocus=true){
+ const previouslyOpen=state.open;
+ if(previouslyOpen<0)return;
+ state.open=-1;
+ draw();
+ if(restoreFocus)focusModule(previouslyOpen);
+}
+function back(){state.page=null;state.msg="";draw()}
+function draw(){
+ if(state.page){drawPage();return}
+ app.replaceChildren();
+ const h=document.createElement("h1");h.textContent="بەشە سەرەکییەکان";app.append(h);
+ for(let r=0;r<3;r++){
+  const row=document.createElement("div");row.className="row";
+  for(let c=0;c<4;c++){
+   const i=r*4+c,s=specs[i];
+   const b=document.createElement("button");b.type="button";b.className="module";b.dataset.module=i;b.setAttribute("aria-expanded",String(i===state.open));if(i===state.open)b.setAttribute("aria-controls","market-card-submenu");
+   b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);
+   b.innerHTML='<span class="icon"></span><span class="end"><span class="name"></span><span class="chev">⌄</span></span>';
+   b.querySelector(".icon").innerHTML=cardIcons.svg(cardIcons.main[i]);const mainLabel=makeReadableLabel(b.querySelector(".name"));mainLabel.textContent=s[0];row.append(b);
+  }
+  app.append(row);
+  if(Math.floor(state.open/4)===r&&state.open>=0){
+   const s=specs[state.open],drawer=document.createElement("div");drawer.className="drawer";drawer.id="market-card-submenu";drawer.setAttribute("role","region");drawer.setAttribute("aria-label",s[0]);
+   drawer.innerHTML='<div class="drawerhead"><strong></strong><button class="close" data-close aria-label="داخستن">✕</button></div><div class="subgrid"></div>';
+   makeReadableLabel(drawer.querySelector(".drawerhead strong")).textContent=s[0];
+   s[4].forEach((label,j)=>{const b=document.createElement("button");b.className="sub";b.dataset.sub=j;b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);b.innerHTML='<span class="sub-icon"></span><span class="sub-footer"><span class="sub-name"></span><span class="sub-arrow">↖</span></span>';b.querySelector(".sub-icon").innerHTML=cardIcons.svg(cardIcons.sub[state.open][j]);makeReadableLabel(b.querySelector(".sub-name")).textContent=label;drawer.querySelector(".subgrid").append(b)});
+   app.append(drawer);
+  }
+ }
+}
+function layout(title){
+ app.innerHTML='<section class="page"><div class="pagehead"><button class="back" data-back aria-label="گەڕانەوە">→</button><h2></h2></div><div id="body"></div></section>';
+ app.querySelector("h2").textContent=title;return app.querySelector("#body");
+}
+function drawPage(){
+ const title=state.page.label,b=layout(title);
+ if(state.page.module===1){
+  if(title==="کاڵای نوێ"){
+   b.innerHTML='<form id="add" class="inputs"><label class="field">ناوی کاڵا<input name="name" required maxlength="160"></label><label class="field">بارکۆد<input name="code" required maxlength="60"></label><label class="field">نرخ (IQD)<input name="price" type="number" min="0" step="1" required></label><button class="primary">زیادکردن</button></form><div class="feedback" id="feedback"></div>';
+   b.querySelector("#feedback").textContent=state.msg;
+  }else if(title==="لیستی کاڵاکان"&&state.products.length){
+   const t=document.createElement("table");t.innerHTML='<thead><tr><th>کاڵا</th><th>بارکۆد</th><th>نرخ</th></tr></thead><tbody></tbody>';
+   state.products.forEach(p=>{const tr=document.createElement("tr");for(const v of [p.name,p.code,money(p.price)]){const td=document.createElement("td");td.textContent=v;tr.append(td)}t.tBodies[0].append(tr)});b.append(t);
+  }else b.innerHTML='<div class="empty">هیچ کاڵایەک نییە</div>';
+  return;
+ }
+ if(state.page.module===0&&title==="فرۆشتنی نوێ"){
+  b.innerHTML='<div class="pos"><div class="panel"><form class="inputs" id="scan"><label class="field">بارکۆد<input name="code" required autocomplete="off"></label><button class="primary">زیادکردن</button></form><div class="feedback" id="feedback"></div><div id="lines"></div></div><div class="panel"><strong>پسووڵە</strong><div class="total"><span>کۆی گشتی</span><strong id="total"></strong></div><p><button class="plain" data-clear>پاککردنەوە</button></p></div></div>';
+  b.querySelector("#feedback").textContent=state.msg;b.querySelector("#total").textContent=money(state.cart.reduce((n,x)=>n+x.price*x.qty,0));
+  const area=b.querySelector("#lines");
+  if(!state.cart.length)area.innerHTML='<div class="empty">سەبەتە بەتاڵە</div>';
+  else{const table=document.createElement("table");table.innerHTML='<thead><tr><th>کاڵا</th><th>نرخ</th><th>بڕ</th><th>کۆ</th></tr></thead><tbody></tbody>';
+    state.cart.forEach((x,i)=>{const tr=document.createElement("tr");for(const val of [x.name,money(x.price),"",money(x.qty*x.price)]){const td=document.createElement("td");td.textContent=val;tr.append(td)}tr.children[2].innerHTML='<button class="qty" data-qty="'+i+'" data-delta="-1">−</button> '+x.qty+' <button class="qty" data-qty="'+i+'" data-delta="1">+</button>';table.tBodies[0].append(tr)});
+    area.append(table)}return;
+ }
+ b.innerHTML='<div class="empty">هێشتا ئامادە نییە</div>';
+}
+app.addEventListener("click",e=>{
+ const mod=e.target.closest("[data-module]");if(mod){const i=Number(mod.dataset.module);state.open=state.open===i?-1:i;draw();focusModule(i);return}
+ if(e.target.closest("[data-close]")){closeSubmenu();return}
+ const sub=e.target.closest("[data-sub]");if(sub){const tab=Number(sub.dataset.sub);if(state.open===1&&(tab===0||tab===1)){window.location.assign("./workspace.html?view="+(tab===0?"new":"list"));return;}if(state.open===11&&tab===3){window.location.assign("./qa.html");return;}if((state.open===7&&tab===2)||(state.open===9&&tab===3)){window.location.assign("./diagnostics.html");return;}if((state.open===0&&(tab===0||tab===1))||(state.open===2&&tab===0)||(state.open===5&&tab===0)||(state.open===10&&tab===0)||(state.open===7&&tab===0)||(state.open===11&&tab===2)){const mode=state.open===0?(tab===1?"receipts":"cash"):state.open===2?"stock":(state.open===5||state.open===10)?"shift":state.open===7?"staff":"audit";window.location.assign("./operations.html?view="+mode);return;}state.page={module:state.open,label:specs[state.open][4][tab]};state.msg="";draw();return}
+ if(!state.page&&state.open>=0&&e.target.closest(".drawer")&&!e.target.closest("[data-sub]")){closeSubmenu();return}
+ if(!state.page&&state.open>=0&&!e.target.closest(".drawer")&&!e.target.closest("[data-module]")){closeSubmenu();return}
+ if(e.target.closest("[data-back]")){back();return}
+ if(e.target.closest("[data-clear]")){state.cart=[];draw();return}
+ const q=e.target.closest("[data-qty]");if(q){const i=Number(q.dataset.qty);state.cart[i].qty+=Number(q.dataset.delta);if(!state.cart[i].qty)state.cart.splice(i,1);draw()}
+});
+app.addEventListener("submit",e=>{
+ if(e.target.id==="add"){e.preventDefault();const f=new FormData(e.target),name=String(f.get("name")||"").trim(),code=String(f.get("code")||"").trim(),price=Number(f.get("price"));
+ if(!name||!code||!Number.isSafeInteger(price)||price<0){state.msg="زانیاری نادروستە";draw();return}
+ if(state.products.some(x=>x.code===code)){state.msg="بارکۆد دووبارەیە";draw();return}
+ state.products.push({name,code,price});state.msg="زیادکرا";draw();}
+ if(e.target.id==="scan"){e.preventDefault();const code=String(new FormData(e.target).get("code")||"").trim(),p=state.products.find(x=>x.code===code);
+ if(!p){state.msg="بارکۆدەکە نەدۆزرایەوە";draw();return}
+ const x=state.cart.find(x=>x.code===code);if(x)x.qty++;else state.cart.push({...p,qty:1});state.msg="";draw();}
+});
+document.getElementById("home").addEventListener("click",()=>{state.open=-1;back()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(state.page)back();else if(state.open>=0){e.preventDefault();closeSubmenu();}}});
+document.addEventListener("pointerdown",e=>{if(state.open<0||state.page||app.contains(e.target)||e.target.closest("#home"))return;closeSubmenu(false);});
+draw();
+})();
+</script></body></html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>کاشێر و کۆگا — سیستەمی کاشێر</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f5f7fa;color:#213149;font-family:system-ui,"Segoe UI",Tahoma,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #99b7e9;outline-offset:2px}
+.viewport{overflow-x:auto;min-height:100vh}.desktop{min-width:1020px;min-height:100vh}
+header{background:#fff;height:75px;padding:0 42px;border-bottom:1px solid #e7ecf2;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:13px;font-size:19px;font-weight:800;text-decoration:none;color:#253850}
+.brand i{width:43px;height:43px;border-radius:12px;background:#243d60;color:#fff;display:grid;place-items:center;font-size:25px;font-style:normal}
+.head-actions{display:flex;align-items:center;gap:11px}
+.smallinfo{font-size:12px;color:#8393a6}
+.home{height:38px;width:38px;background:#f7f9fc;color:#536985;border:1px solid #e4eaf1;border-radius:10px;text-decoration:none;display:grid;place-items:center;font-size:20px}
+main{padding:38px 44px 58px;max-width:1490px;margin:auto}
+h1{font-size:23px;margin:0 0 24px;font-weight:850}h2{font-size:18px;margin:0 0 21px}h3{font-size:14px;margin:0 0 16px}
+.surface{background:#fff;border:1px solid #e6ebf1;border-radius:16px;padding:23px}
+.narrow{max-width:550px;margin:40px auto}
+.nav{display:flex;gap:8px;margin-bottom:18px}
+.nav button{padding:10px 18px;border:1px solid #e0e6ef;border-radius:10px;background:#fff;color:#62768c;font-size:13px;font-weight:750}
+.nav button.active{color:white;background:#284973;border-color:#284973}
+.grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,.8fr);gap:17px}
+.field{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#6e8094;flex:1;min-width:160px}
+.field input,.field select{height:43px;padding:10px 12px;border:1px solid #dce4ed;border-radius:9px;color:#26384d;background:#fff}
+.formrow{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+.primary{height:43px;padding:0 20px;border:0;border-radius:9px;background:#284973;color:#fff;font-size:13px;font-weight:750}
+.secondary{height:43px;padding:0 16px;border:1px solid #e1e8f0;border-radius:9px;background:#f5f7fa;color:#5b7087;font-size:13px;font-weight:700}
+button:disabled{opacity:.55;cursor:not-allowed}
+.msg{font-size:12px;color:#4f6886;min-height:22px;margin-top:12px}
+.msg.error{color:#bc584b}.msg.success{color:#137d68}
+.line{height:1px;background:#edf0f4;margin:21px 0}
+.totals{display:flex;align-items:center;justify-content:space-between;margin:16px 0;font-size:13px}
+.totals strong{font-size:23px;color:#244a77;direction:ltr}
+.due{display:flex;align-items:center;justify-content:space-between;color:#667a92;font-size:12px;margin-top:12px}
+.due strong{font-size:16px;color:#253c58;direction:ltr}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:15px}
+td,th{padding:12px;border-bottom:1px solid #edf1f5;text-align:right}
+th{background:#fafbfd;color:#74849a;font-weight:800}
+.qty{display:inline-flex;align-items:center;gap:7px}
+.qty button{border:1px solid #e0e7ef;border-radius:7px;background:#f4f6fa;color:#456180;width:29px;height:29px}
+.blank{padding:35px;text-align:center;border:1px dashed #e1e8ef;border-radius:11px;background:#fbfcfd;font-size:13px;color:#8a99aa;margin-top:18px}
+.footer-actions{display:flex;gap:9px;margin-top:18px}
+select option{color:#26384d}
+.receipt-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.receipt-head h2{margin:0}.receipt-detail{margin-top:18px;border:1px solid #e3eaf2;padding:20px;border-radius:12px;background:#fbfcfe}.receipt-action{border:1px solid #e2e8f1;border-radius:8px;background:#fff;padding:7px 11px;color:#456282;font-weight:750;font-size:12px}.receipt-metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:13px;font-size:12px;color:#63768d}.receipt-metrics strong{color:#24466e}.receipt-print-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.receipt-action{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;margin-inline-start:5px}
+.shift-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}.shift-metrics>div{min-height:95px;padding:18px;background:#f7f9fc;border:1px solid #e9edf3;border-radius:11px;display:flex;flex-direction:column;justify-content:space-between}.shift-metrics span{font-size:12px;color:#74849a}.shift-metrics strong{font-size:18px;color:#274871;direction:ltr;text-align:right}.shift-report{margin-top:18px;background:#f8fafc;border:1px solid #e4eaf1;padding:17px;border-radius:11px;font-size:13px}.shift-report dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.shift-report dt{color:#7a8ba0;font-size:12px;margin-bottom:5px}.shift-report dd{margin:0;font-weight:800}
+[hidden]{display:none!important}
+</style>
+<link rel="stylesheet" href="./ui-global.css">
+<link rel="stylesheet" href="./ui-fixed-pc.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+<script src="./config.js"></script>
+<script src="./operations.js" defer></script>
+<link rel="stylesheet" href="./ui-contrast-lock.css">
+</head>
+<body>
+<div class="market-banner">سوپەرمارکێتی کانی چنار</div>
+<div class="viewport"><div class="desktop">
+<header>
+<a href="./index.html" class="brand"><i>◈</i><span>سیستەمی کاشێر</span></a>
+<div class="head-actions"><span class="smallinfo" id="who"></span><button id="logout" type="button" class="secondary" hidden>دەرچوون</button><a class="home" href="./index.html" aria-label="سەرەتا">⌂</a></div>
+</header>
+<main>
+<h1>کاشێر</h1>
+<section class="surface narrow" id="login-panel" hidden>
+<h2>چوونەژوورەوە</h2>
+<form id="login-form" class="formrow">
+<label class="field">ئیمەیڵ<input type="email" name="email" required autocomplete="username"></label>
+<label class="field">وشەی نهێنی<input type="password" name="password" required autocomplete="current-password"></label>
+<button class="primary" type="submit">چوونەژوورەوە</button>
+</form>
+<p><a href="./workspace.html" style="color:#4c6e9e;font-size:12px">هەژماری نوێ</a></p>
+<div class="msg" id="login-msg" role="status"></div>
+</section>
+<section id="operations-panel" hidden>
+<nav class="nav" id="tabs">
+<button data-tab="cash" type="button">فرۆشتن</button>
+<button data-tab="shift" type="button">شێفت</button>
+<button data-tab="receipts" type="button">پسووڵەکان</button>
+<button data-tab="stock" type="button">کۆگا</button>
+<button data-tab="staff" type="button">کارمەندان</button>
+<button data-tab="audit" type="button">چاودێری</button>
+</nav>
+<section class="grid" id="cash-panel" hidden>
+<div class="surface">
+<h2>فرۆشتنی نوێ</h2>
+<form id="scan-form" class="formrow">
+<label class="field">بارکۆد<input name="barcode" id="barcode" maxlength="60" autocomplete="off" required autofocus></label>
+<button type="submit" hidden tabindex="-1" aria-hidden="true">سکان</button>
+</form>
+<div id="scan-msg" class="msg" role="status"></div>
+<div id="cart-list"></div>
+</div>
+<aside class="surface">
+<h2>پسووڵە</h2>
+<div class="totals"><span>کۆی گشتی</span><strong id="total">0 IQD</strong></div>
+<div class="line"></div>
+<form id="checkout-form">
+<label class="field">وەرگیراو (IQD)<input id="cash" name="cash" type="number" min="0" max="9999999999999" step="1" required></label>
+<div class="due"><span>پارەی گەڕاوە</span><strong id="change">0 IQD</strong></div>
+<div class="footer-actions"><button class="primary" type="submit" id="finish-sale">تەواوکردن</button><button class="secondary" type="button" id="retry-checkout" hidden>پشکنینەوە</button><button class="secondary" type="button" id="clear-cart">پاککردنەوە</button></div>
+</form>
+<div class="msg" id="checkout-msg" role="status"></div>
+</aside>
+</section>
+<section id="shift-panel" class="surface" hidden>
+<div class="receipt-head"><h2>شێفت</h2><button class="secondary" id="shift-refresh" type="button">نوێکردنەوە</button></div>
+<div id="shift-current" class="shift-info" hidden>
+<div class="shift-metrics">
+<div><span>پارەی سەرەتا</span><strong id="shift-opening">0 IQD</strong></div>
+<div><span>کۆی فرۆشتن</span><strong id="shift-sales">0 IQD</strong></div>
+<div><span>جووڵەی پارە</span><strong id="shift-moves">0 IQD</strong></div>
+<div><span>پارەی چاوەڕوانکراو</span><strong id="shift-expected">0 IQD</strong></div>
+</div>
+</div>
+<form id="shift-open-form" class="formrow">
+<label class="field">پارەی سەرەتا (IQD)<input type="number" name="opening" min="0" max="9999999999999" step="1" required></label>
+<button class="primary" type="submit">کردنەوە</button>
+</form>
+<div id="shift-active-forms" hidden>
+<div class="line"></div>
+<h2>جووڵەی پارە</h2>
+<form id="shift-movement-form" class="formrow">
+<label class="field">جۆر<select name="kind"><option value="cash_in">پارەی هاتوو</option><option value="cash_out">پارەی دەرچوو</option></select></label>
+<label class="field">بڕ (IQD)<input name="amount" type="number" min="1" max="9999999999999" step="1" required></label>
+<label class="field">هۆکار<input name="note" maxlength="160" required autocomplete="off"></label>
+<button class="primary" type="submit">تۆمارکردن</button>
+</form>
+<div class="footer-actions"><button class="secondary" id="movement-retry" type="button" hidden>پشکنینەوە</button></div>
+<div class="line"></div>
+<h2>داخستنی شێفت</h2>
+<form id="shift-close-form" class="formrow">
+<label class="field">پارەی ژمێردراو (IQD)<input name="counted" type="number" min="0" max="9999999999999" step="1" required></label>
+<button class="primary" type="submit">داخستن</button>
+</form>
+</div>
+<div class="msg" id="shift-msg" role="status"></div>
+<div id="shift-report" class="shift-report" hidden></div>
+<div id="shift-history"></div>
+</section>
+<section id="stock-panel" class="surface" hidden>
+<h2>هاتنی کاڵا</h2>
+<form id="stock-form" class="formrow">
+<label class="field">کاڵا<select id="stock-product" name="product" required></select></label>
+<label class="field">یەکە<select id="stock-mode" name="mode"><option value="unit">دانە</option><option value="carton">کارتۆن</option><option value="both">دانە و کارتۆن</option></select></label>
+<label class="field">بارکۆد<select id="stock-barcode" name="barcode" required></select></label>
+<label class="field">بڕ<input id="stock-quantity" name="quantity" type="number" step="1" min="1" max="1000000" required></label>
+<label class="field">کۆی دانە<input id="stock-base-total" readonly tabindex="-1" aria-label="کۆی دانە"></label>
+<div id="stock-both-fields" class="formrow" hidden>
+<label class="field">بارکۆدی کارتۆن<select id="stock-mixed-carton" name="mixed_carton"></select></label>
+<label class="field">بڕی کارتۆن<input id="stock-mixed-qty" name="mixed_qty" type="number" min="1" max="1000000" step="1"></label>
+</div>
+<label class="field">جۆری هاتن<select name="reason"><option value="opening">سەرەتای کۆگا</option><option value="purchase">کڕین</option></select></label>
+<button class="primary" type="submit">تۆمارکردن</button>
+</form>
+<div class="msg" id="stock-msg" role="status"></div>
+<div id="stock-list"></div>
+</section>
+<section id="staff-panel" class="surface" hidden>
+<h2>کارمەندان</h2>
+<form id="staff-form" class="formrow">
+<label class="field">ناسنامەی کارمەند (UUID)<input name="user" required maxlength="36" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>
+<label class="field">ڕۆڵ<select name="role"><option value="cashier">کاشێر</option><option value="manager">بەڕێوەبەر</option></select></label>
+<label class="field">دۆخ<select name="active"><option value="true">چالاک</option><option value="false">ناچالاک</option></select></label>
+<button type="submit" class="primary">پاشەکەوتکردن</button>
+</form>
+<div class="msg" id="staff-msg" role="status"></div><div id="staff-list"></div>
+</section>
+<section id="audit-panel" class="surface" hidden>
+<h2>چاودێری</h2><div id="audit-list"></div>
+</section>
+<section id="receipts-panel" class="surface" hidden>
+<div class="receipt-head"><h2>پسووڵەکان</h2><button class="secondary" id="receipts-refresh" type="button">نوێکردنەوە</button></div>
+<div id="receipts-list"></div>
+<div class="msg" id="receipts-msg" role="status"></div>
+<div class="receipt-detail" id="receipt-detail" hidden></div>
+</section>
+</section>
+<div id="system-msg" class="msg" role="alert"></div>
+</main>
+</div></div>
+</body></html>

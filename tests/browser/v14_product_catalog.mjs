@@ -1,0 +1,95 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {resolve,dirname} from "node:path";
+import {fileURLToPath} from "node:url";
+import {chromium} from "playwright";
+const root=resolve(dirname(fileURLToPath(import.meta.url)),"../..");
+const fixture=readFileSync(resolve(root,"tests/browser/qa_supabase_fixture.js"),"utf8");
+const browser=await chromium.launch({headless:true});
+const page=await browser.newPage({viewport:{width:1110,height:820},colorScheme:"dark"});
+const origin=process.env.PC_PREVIEW_ORIGIN||"http://127.0.0.1:8765";
+const pageErrors=[];page.on("pageerror",e=>pageErrors.push(e.message));
+await page.route("https://cdn.jsdelivr.net/**",r=>r.fulfill({status:200,contentType:"application/javascript",body:"/* isolated QA client */"}));
+await page.addInitScript({content:fixture});
+const input=name=>page.locator('#product-form [name="'+name+'"]');
+async function fillAdvanced(){
+ await input("name").fill("شیری تاقیکردنەوە");
+ await input("sku").fill("MILK-101");
+ await input("plu").fill("0000020");
+ await input("barcode").fill("6260001112223");
+ await input("extra_barcodes").fill("6260001112247\n6260001112254");
+ await input("price").fill("1000");
+ await input("purchase_price").fill("750");
+ await page.locator('#product-form [name="sale_mode"][value="both"]').check();
+ await input("carton_name").fill("کارتۆنی شیر");
+ await input("carton_barcode").fill("6260001112230");
+ await input("extra_carton_barcodes").fill("6260001112261\n6260001112278");
+ await input("units_per_carton").fill("12");
+ await input("carton_purchase_price").fill("8500");
+ await input("carton_price").fill("11000");
+}
+async function numRpc(name){return page.evaluate(n=>window.__retailQA.called.filter(x=>x.name===n).length,name);}
+try {
+ await page.goto(origin+"/workspace.html?view=new",{waitUntil:"load"});
+ await page.locator("#new-panel").waitFor({state:"visible"});
+ const fields=["sku","plu","barcode","extra_barcodes","price","purchase_price","carton_name","carton_barcode","units_per_carton","carton_purchase_price","carton_price","extra_carton_barcodes"];
+ for(const f of fields)assert.equal(await input(f).count(),1,"Product form missing "+f);
+ assert.equal(await page.locator(".market-banner").evaluate(el=>Math.round(el.getBoundingClientRect().top)),0);
+ await fillAdvanced();
+ await input("extra_carton_barcodes").fill("6260001112247\n6260001112278");
+ await page.locator("#save-product").click();
+ assert.match(await page.locator("#product-message").innerText(),/دووبارە/);
+ assert.equal(await numRpc("retail_register_product_v14"),0);
+ await input("extra_carton_barcodes").fill("6260001112261\n6260001112278");
+ await input("carton_barcode").fill("6260001112247");
+ await page.locator("#save-product").click();
+ assert.match(await page.locator("#product-message").innerText(),/دووبارە/);
+ assert.equal(await numRpc("retail_register_product_v14"),0,"invalid input unexpectedly wrote");
+ await input("carton_barcode").fill("6260001112230");
+ await input("units_per_carton").fill("1");
+ assert.equal(await page.locator("#product-form").evaluate(form=>form.checkValidity()),false,
+   "browser blocks carton quantity below minimum before submitting");
+ await page.locator("#save-product").click();
+ assert.equal(await numRpc("retail_register_product_v14"),0);
+ await input("units_per_carton").fill("12");
+ await page.locator("#save-product").click();
+ await page.waitForFunction(()=>window.__retailQA.advancedCatalogs.length===1);
+ assert.equal(await numRpc("retail_create_product"),0);
+ const received=await page.evaluate(()=>window.__retailQA.called.find(x=>x.name==="retail_register_product_v14")?.args);
+ assert.equal(received.p_catalog.unit_purchase_price_iqd,750);
+ assert.equal(received.p_catalog.unit_sale_price_iqd,1000);
+ assert.equal(received.p_catalog.carton.purchase_price_iqd,8500);
+ assert.equal(received.p_catalog.carton.sale_price_iqd,11000);
+ assert.equal(received.p_catalog.carton.units_per_carton,12);
+ assert.deepEqual(received.p_catalog.carton.alias_barcodes,["6260001112261","6260001112278"]);
+ assert.deepEqual(received.p_catalog.unit_alias_barcodes,["6260001112247","6260001112254"]);
+ assert.equal(await page.evaluate(()=>window.__retailQA.barcodes.filter(x=>x.product_id!=="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb").length),6);
+ assert.equal(await page.evaluate(()=>window.__retailQA.products.length),2);
+ assert.match(await page.locator("#product-message").innerText(),/تۆمارکرا/);
+ const cartons=await page.evaluate(()=>window.__retailQA.barcodes.filter(x=>x.unit_type==="carton"));
+ assert.equal(cartons.length,3);
+ assert.ok(cartons.every(x=>x.units_per_scan===12&&x.product_id===cartons[0].product_id));
+ console.log("PASS V14: 6 product barcodes (3 carton) share one product, identical carton size and single carton price");
+
+ await page.locator('[data-tab="list"]').click();
+ await page.locator("#results table tbody tr").first().waitFor();
+ await page.locator("#search").fill("6260001112230");
+ assert.equal(await page.locator("#results table tbody tr").count(),1);
+ await page.locator("#search").fill("6260001112278");
+ assert.equal(await page.locator("#results table tbody tr").count(),1);
+ await page.locator("#search").fill("6260001112254");
+ assert.equal(await page.locator("#results table tbody tr").count(),1);
+ await page.locator("#search").fill("");
+ await page.locator('[data-tab="new"]').click();
+ await fillAdvanced();
+ // Server function unavailable: absolutely no silent partial old-RPC write.
+ await page.evaluate(()=>{window.__retailQA.advancedRpcEnabled=false;});
+ const oldProducts=await page.evaluate(()=>window.__retailQA.products.length);
+ const beforeLegacy=await numRpc("retail_create_product");
+ await page.locator("#save-product").click();
+ assert.match(await page.locator("#product-message").innerText(),/چالاک نییە/);
+ assert.equal(await page.evaluate(()=>window.__retailQA.products.length),oldProducts);
+ assert.equal(await numRpc("retail_create_product"),beforeLegacy);
+ console.log("PASS V14: carton/alias searchable; missing production RPC blocks all advanced fields without partial or misleading save");
+ assert.deepEqual(pageErrors,[]);
+}finally{await browser.close();}

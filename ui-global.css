@@ -1,0 +1,198 @@
+/* Shared accessible typography and persistent supermarket header.
+   Applies to all desktop screens; receipts/diagnostic test strips print untouched. */
+:root {
+  --market-banner-height: 70px;
+  --market-ink: #1b2e47;
+  --market-secondary-ink: #41546b;
+}
+@media screen {
+  html { scroll-padding-top: calc(var(--market-banner-height) + 14px); }
+  body {
+    padding-top: var(--market-banner-height) !important;
+    color: var(--market-ink);
+    font-family: "Noto Sans Arabic","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    font-weight: 700;
+  }
+  .market-banner {
+    position: fixed;
+    z-index: 10000;
+    top: 0;
+    inset-inline: 0;
+    width: 100%;
+    min-height: var(--market-banner-height);
+    padding: 12px 24px;
+    margin: 0;
+    background: #203e66;
+    color: #fff !important;
+    border-bottom: 3px solid #759bd0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Noto Sans Arabic","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    font-size: 28px;
+    font-weight: 900 !important;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-align: center;
+    text-shadow: 0 1px 1px #15294466;
+    white-space: nowrap;
+    direction: rtl;
+  }
+  /* Stronger but still legible text, without flattening module accent colors. */
+  body :is(button,input,select,textarea,label,th,td,p,small,a) { font-weight: 700; }
+  body :is(h1,h2,h3,h4,h5,h6,strong,b,.brand,.name,.drawerhead strong) {
+    font-weight: 850 !important;
+  }
+  body :is(.field,.hint,.muted,.smallinfo,.who,.note,.notice,.empty,.blank,.caption,.status,th,.detail p,.detail .tip,.metric span,.metric dt,.shift-metrics span,.rowline span) {
+    color: var(--market-secondary-ink) !important;
+    font-weight: 700;
+  }
+  body :is(input,select,textarea) {
+    color: var(--market-ink) !important;
+    font-weight: 700 !important;
+  }
+  body :is(input,textarea)::placeholder { color: #566981 !important; opacity: 1; }
+  body :is(.module,.sub,.tab:not(.active),.secondary,.plain,.test,.testcase,.back,.home) {
+    color: var(--market-ink);
+  }
+  body :is(.feedback,.msg,.status)[role="alert"],
+  body :is(.feedback,.msg).error { color: #913d36 !important; }
+  body :is(.feedback,.msg).success { color: #13694e !important; }
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {
+    outline: 3px solid #5386c4;
+    outline-offset: 2px;
+  }
+}
+/* Force readable ink on LIGHT cards and their own nested labels.
+   Some host themes assign pale colors directly to <strong>/<span>; inheritance
+   from .module is not enough. Scope carefully to white surfaces only. */
+@media screen {
+  body :is(.module,.sub,.subgrid button,.drawer,.drawerhead,.page,.surface,.panel,.pane,.test,.testcase,.metric) {
+    color-scheme: light;
+  }
+  body :is(.module,.sub,.subgrid button,.drawerhead,.test,.testcase) {
+    color: #172b45 !important;
+  }
+  body .module :is(.name,.end .name,.module-label strong,.modbottom span),
+  body .module :is(.name,.end .name,.module-label strong,.modbottom span) *,
+  body .drawerhead strong,
+  body .sub :is(span,strong,b),
+  body .subgrid button :is(span,strong,b),
+  body .subcards button :is(span,strong,b),
+  body .testcase :is(span,strong,b),
+  body .test :is(.name,span,strong,b) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 850 !important;
+    text-shadow: none !important;
+  }
+  body .module .name {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+  }
+  body :is(.sub,.subgrid button,.subcards button) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+  }
+  /* Do not repaint colored module icons or white-on-navy primary actions. */
+  body .module :is(.icon,.symbol,.modicon) {
+    -webkit-text-fill-color: currentColor;
+  }
+  body :is(.primary,.tab.active,.filter.active) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  .market-banner {
+    font-size: clamp(17px, 3.3vw, 28px);
+    white-space: normal;
+    overflow-wrap: normal;
+    max-width: 100vw;
+  }
+}
+
+@media print {
+  .market-banner { display: none !important; }
+  body { padding-top: 0 !important; }
+}
+
+/* Contrast gate V10: ensure EVERY visible heading and field label on white PC
+ * surfaces is readable; the previous card-only fix did not cover page headings.
+ * Keep active navy buttons/banner white and preserve thermal receipt printing. */
+@media screen {
+  body > .viewport > .desktop > main,
+  body > .viewport > .desktop > main :is(.surface,.panel,.page,.detail,.metric,.blank,.empty,.formrow,.toolbar) {
+    color-scheme: light;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  body > .viewport > .desktop > main :is(h1,h2,h3,h4,h5,h6),
+  body > .viewport > .desktop > main :is(h1,h2,h3,h4,h5,h6) :is(span,strong,b),
+  body > .viewport > .desktop > main :is(.section-title,.page-title,.card-title,.heading,.form-title,.toolbar h2,.receipt-head h2) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+    font-weight: 900 !important;
+  }
+
+  body > .viewport > .desktop > main :is(.field,.form-col,label,.blank,.empty,.smallinfo,.hint,.note,.notice,.caption,.muted,.who,.metric span,.shift-metrics span,.totals span,.due span),
+  body > .viewport > .desktop > main :is(.field,.form-col,label,.blank,.empty,.smallinfo,.hint,.note,.notice,.caption,.muted,.who,.metric span,.shift-metrics span,.totals span,.due span) :is(span,strong,b) {
+    color: #30465f !important;
+    -webkit-text-fill-color: #30465f !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+  }
+
+  body > .viewport > .desktop > main :is(input,textarea,select) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+  }
+  body > .viewport > .desktop > main :is(input,textarea)::placeholder {
+    color: #41566f !important;
+    -webkit-text-fill-color: #41566f !important;
+    opacity: 1 !important;
+  }
+  body > .viewport > .desktop > main :is(.nav button:not(.active),.tab:not(.active),.secondary,.receipt-action) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 850 !important;
+  }
+
+  /* Primary and active tabs intentionally use white text on navy. */
+  body > .viewport > .desktop > main :is(.primary,.nav button.active,.tab.active,.filter.active),
+  body > .viewport > .desktop > main :is(.primary,.nav button.active,.tab.active,.filter.active) :is(span,strong,b) {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    font-weight: 850 !important;
+  }
+  /* Messages still convey actionable errors/success distinctly. */
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).error,
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status)[role="alert"] {
+    color: #913d36 !important;
+    -webkit-text-fill-color: #913d36 !important;
+  }
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).success {
+    color: #13694e !important;
+    -webkit-text-fill-color: #13694e !important;
+  }
+  /* Do not use text transparency to indicate disabled controls. */
+  body > .viewport > .desktop > main button:disabled {
+    opacity: 1 !important;
+    color: #41566f !important;
+    -webkit-text-fill-color: #41566f !important;
+    background-color: #e4ebf3 !important;
+    border-color: #b9c9dc !important;
+    cursor: not-allowed;
+  }
+}

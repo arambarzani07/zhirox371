@@ -1,0 +1,130 @@
+/* Fixed PC screens — owner-requested, design-lock-safe layout behavior.
+   The desktop layout remains >=1020px with the same 12 cards / 3x4 grid.
+   Only internal content scrolls. Receipt thermal paper printing is unaffected. */
+@media screen {
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+  body {
+    margin: 0 !important;
+    padding-top: var(--market-banner-height) !important;
+  }
+
+  /* The permanent supermarket banner is already position: fixed. */
+  .market-banner {
+    position: fixed !important;
+    top: 0 !important;
+    inset-inline: 0 !important;
+    z-index: 10000 !important;
+    height: var(--market-banner-height);
+    min-height: var(--market-banner-height);
+    max-height: var(--market-banner-height);
+  }
+
+  /* An outer desktop viewport can pan horizontally on narrow devices,
+     but MUST NOT move vertically along with the page. */
+  body > .viewport {
+    width: 100%;
+    height: calc(100vh - var(--market-banner-height));
+    height: calc(100dvh - var(--market-banner-height));
+    min-height: 0 !important;
+    max-height: calc(100dvh - var(--market-banner-height));
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior: contain;
+  }
+  body > .viewport > .desktop {
+    min-width: 1020px;
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+
+  body > .viewport > .desktop > header {
+    flex: 0 0 75px;
+    height: 75px;
+    min-height: 75px;
+    width: 100%;
+    z-index: 5;
+  }
+  body > .viewport > .desktop > main {
+    flex: 1 1 0%;
+    min-height: 0 !important;
+    width: 100%;
+    margin: 0 auto !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    overflow-anchor: none;
+    scrollbar-gutter: stable;
+    scroll-behavior: auto !important;
+  }
+
+  /* Subcards appear directly beneath their selected row but float above
+     later rows. Opening/closing them never pushes the other 12 cards.
+     The original Home's CSS/labels/order remain unchanged. */
+  #app { position: relative; }
+  #app > .drawer {
+    position: absolute !important;
+    inset-inline: 0;
+    width: 100%;
+    margin: 0 !important;
+    z-index: 12;
+    max-height: min(265px, 52dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-shadow: 0 12px 35px #20395430;
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  #app > .row,
+  #app > .row > .module {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  #app .module[aria-expanded="true"] .chev {
+    transform: none !important;
+  }
+
+  /* PC product workspace / cashier / QA and device pages share this
+     locked shell without moving the header when long tables grow. */
+  body > .viewport > .desktop > main :is(.surface, .page, .card, .panel) {
+    scroll-margin-top: 12px;
+  }
+
+  /* The separate receipt view has its own fixed viewport and independently
+     scrollable print preview; never modify the printable ticket. */
+  body > .shell {
+    height: calc(100vh - var(--market-banner-height));
+    height: calc(100dvh - var(--market-banner-height));
+    min-height: 0 !important;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    overscroll-behavior: auto !important;
+  }
+  .market-banner { display: none !important; }
+  body { padding-top: 0 !important; }
+  body > .shell {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

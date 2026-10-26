@@ -1,0 +1,190 @@
+/* Approved icon-only change: main/child pictograms, no changes to the desktop grid,
+   card order, existing module accent colors or Sorani labels. */
+@media screen {
+  .module .icon svg {
+    display: block;
+    width: 29px;
+    height: 29px;
+    stroke: var(--color);
+    fill: none;
+    flex-shrink: 0;
+  }
+  .subgrid .sub {
+    min-height: 112px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 9px;
+    text-align: right;
+    font-weight: 850;
+  }
+  .subgrid .sub-icon {
+    display: grid;
+    place-items: center;
+    width: 39px;
+    height: 39px;
+    background: var(--light);
+    border-radius: 10px;
+    flex: none;
+    color: var(--color) !important;
+    -webkit-text-fill-color: var(--color) !important;
+  }
+  .subgrid .sub-icon svg {
+    display: block;
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: var(--color);
+  }
+  .subgrid .sub-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+  .subgrid .sub-footer .sub-name {
+    display: block;
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    font-weight: 850 !important;
+    line-height: 1.6;
+    font-size: 13px;
+  }
+  .subgrid .sub-footer .sub-arrow {
+    color: #415a78 !important;
+    -webkit-text-fill-color: #415a78 !important;
+    flex: none;
+  }
+  .subgrid .sub:hover .sub-icon,
+  .subgrid .sub:focus-visible .sub-icon {
+    outline: 1px solid var(--color);
+    outline-offset: 1px;
+  }
+}
+
+
+/* Readability gate: no transient faded cards or drawer labels, including on mobile
+   browsers viewing the original fixed-width PC layout. */
+@media screen {
+  body .module,
+  body .subgrid .sub,
+  body .drawer,
+  body .drawerhead {
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  body .drawer { animation: none !important; }
+  body .module .name,
+  body .drawerhead strong,
+  body .subgrid .sub-footer .sub-name {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 900 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+  }
+  /* Preserve individual module SVG colors instead of tinting icons dark. */
+  body .module .icon svg,
+  body .subgrid .sub-icon svg {
+    stroke: var(--color) !important;
+    opacity: 1 !important;
+  }
+}
+
+/* V11 · Premium icon system — owner-authorized visual refinement.
+ * No reflow, animations, card replacement, font fading, or responsive grid.
+ * Individual color tokens (--color, --light) remain sourced from the 12 modules. */
+@media screen {
+  body .module .icon,
+  body .subgrid .sub-icon {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    flex: none;
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color) 18%, white) 0%,
+      var(--light) 58%,
+      color-mix(in srgb, var(--light) 82%, white) 100%
+    ) !important;
+    border: 1px solid color-mix(in srgb, var(--color) 22%, white) !important;
+    box-shadow:
+      inset 0 1px 0 #ffffffec,
+      inset 0 -2px 4px color-mix(in srgb, var(--color) 7%, transparent),
+      0 5px 11px color-mix(in srgb, var(--color) 12%, transparent);
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  body .module .icon { border-radius: 14px !important; }
+  body .subgrid .sub-icon { border-radius: 11px !important; }
+  body .module .icon::before,
+  body .subgrid .sub-icon::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 77%;
+    height: 65%;
+    top: -31%;
+    left: -18%;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #fffdf8c9, #ffffff00);
+    pointer-events: none;
+  }
+  body .module .icon::after,
+  body .subgrid .sub-icon::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color) 60%, white);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  body .module .icon svg,
+  body .subgrid .sub-icon svg {
+    display: block;
+    position: relative;
+    z-index: 1;
+    width: 30px;
+    height: 30px;
+    color: var(--color) !important;
+    stroke: var(--color) !important;
+    stroke-width: 2.1px;
+    fill: none;
+    opacity: 1 !important;
+    filter: drop-shadow(0 1px 0 #ffffffb3);
+    transition: none !important;
+  }
+  body .subgrid .sub-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  body .module .icon .pictogram-halo,
+  body .subgrid .sub-icon .pictogram-halo {
+    stroke: none !important;
+    fill: var(--color) !important;
+    opacity: 0.13 !important;
+  }
+  body .module .icon .pictogram-lines,
+  body .subgrid .sub-icon .pictogram-lines {
+    stroke: var(--color) !important;
+    stroke-width: 2.1px;
+  }
+  /* CSS decorations must never recolor the text in labels, buttons or headers. */
+  body .module .name,
+  body .subgrid .sub-footer .sub-name {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 900 !important;
+  }
+}
