@@ -556,6 +556,67 @@ assert.equal(changedRetired.error.code,"23505");
 assert.equal(localSQL("select count(*) from public.retail_stock_events where product_id='"+milkId+"' and delta=24 and reason='purchase'"),"1");
 passed("V17 completed request remains idempotent after barcode retirement; new receipt and altered replay denied");
 
+
+const mixedRequestId=code();
+const mixedArgs={
+ p_store:storeA.id,p_request:mixedRequestId,
+ p_lines:[
+  {barcode:"8394000011011",packages:3,expected_units:1},
+  {barcode:"8394000012010",packages:2,expected_units:12}
+ ],p_reason:"purchase"
+};
+const mixedStock=ok(await manager.rpc("retail_receive_mixed_v171",mixedArgs),
+ "manager atomically receives 2 cartons plus 3 units");
+assert.equal(Number(mixedStock),99);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"99.000");
+assert.equal(localSQL("select base_units from public.retail_stock_mixed_receipts_v171 where request_id='"+mixedRequestId+"'"),"27.000");
+assert.equal(localSQL("select count(*) from public.retail_stock_events where product_id='"+milkId+"' and delta=27 and reason='purchase'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_audit_events where action='stock.receive_mixed_v171' and details->>'request_id'='"+mixedRequestId+"'"),"1");
+assert.equal(Number(ok(await manager.rpc("retail_receive_mixed_v171",mixedArgs),
+ "identical two-package receipt replay")),99);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"99.000");
+passed("V17.1 manager receives 2 cartons and 3 loose units as one idempotent 27-base-unit transaction");
+
+fail(await cashier.rpc("retail_receive_mixed_v171",{...mixedArgs,p_request:code()}),
+ "cashier cannot receive combined packages");
+fail(await outsider.rpc("retail_receive_mixed_v171",{...mixedArgs,p_request:code()}),
+ "outside store cannot receive combined packages");
+const crossProduct={...mixedArgs,p_request:code(),p_lines:[
+  mixedArgs.p_lines[0],
+  {barcode:"8394000022010",packages:1,expected_units:12}
+]};
+fail(await manager.rpc("retail_receive_mixed_v171",crossProduct),
+ "mixing two different products must be rejected");
+fail(await manager.rpc("retail_receive_mixed_v171",{...mixedArgs,p_request:code(),
+ p_lines:[mixedArgs.p_lines[0],mixedArgs.p_lines[0]]}),
+ "duplicate unit lines forbidden");
+fail(await manager.rpc("retail_receive_mixed_v171",{...mixedArgs,p_request:code(),
+ p_lines:[mixedArgs.p_lines[0],{...mixedArgs.p_lines[1],expected_units:1}]}),
+ "carton size forgery must roll back whole receipt");
+fail(await manager.rpc("retail_receive_mixed_v171",{...mixedArgs,p_request:code(),
+ p_lines:[mixedArgs.p_lines[0],{...mixedArgs.p_lines[1],barcode:"8394000012011"}]}),
+ "retired alias must not create new stock receipt");
+const tamper=await manager.rpc("retail_receive_mixed_v171",{
+ ...mixedArgs,p_lines:[{...mixedArgs.p_lines[0],packages:4},mixedArgs.p_lines[1]]
+});
+fail(tamper,"reusing mixed request UUID with changed quantity forbidden");
+assert.equal(tamper.error.code,"23505");
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"99.000");
+passed("V17.1 manager-only, tenant guard, one-product, live barcode and request-payload checks reject invalid changes");
+
+const concurrentId=code(),sameMixed={...mixedArgs,p_request:concurrentId,
+ p_lines:[{...mixedArgs.p_lines[0],packages:1},
+  {...mixedArgs.p_lines[1],packages:1}]};
+const parallelMixed=await Promise.all([
+ manager.rpc("retail_receive_mixed_v171",sameMixed),
+ manager.rpc("retail_receive_mixed_v171",sameMixed)
+]);
+assert.deepEqual(parallelMixed.map(x=>Number(ok(x,"parallel same mixed receipt"))),[112,112]);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"112.000");
+assert.equal(localSQL("select count(*) from public.retail_stock_mixed_receipts_v171 where request_id='"+concurrentId+"'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_audit_events where action='stock.receive_mixed_v171' and details->>'request_id'='"+concurrentId+"'"),"1");
+passed("V17.1 concurrent identical mixed receipts commit once and preserve one stock balance");
+
 console.log("V17 local QA: four real GoTrue, audit and stock-receipt groups passed. No hosted DB mutation.");
 
 
