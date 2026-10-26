@@ -111,7 +111,7 @@ BEGIN
    jsonb_build_object('request_id',p_request,'lines',p_lines,
        'base_units',v_base,'total_stock',v_total));
  RETURN v_total;
-END
+END;
 $mixed$;
 REVOKE ALL ON FUNCTION public.retail_receive_mixed_v171(uuid,uuid,jsonb,text)
  FROM PUBLIC,anon;
