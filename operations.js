@@ -520,7 +520,8 @@ $("stock-form").addEventListener("submit",async e=>{
    const result=await db.rpc("retail_receive_packs_v17",{...args,p_request:stockAttempt.id});
    if(result.error)throw result.error;
    stockAttempt=null;e.target.reset();
-   await loadInventory();msg("stock-msg","بڕی کۆگا تۆمارکرا","success");
+   try{await loadInventory();msg("stock-msg","بڕی کۆگا تۆمارکرا","success");}
+   catch(refreshError){msg("stock-msg","بڕی کۆگا تۆمارکرا؛ لیستەکە نوێ نەکرایەوە","success");}
  }catch(err){
    // Only the known missing-RPC case can safely use the pre-V17 unit-only path.
    if(["PGRST202","42883"].includes(err?.code)&&mode==="unit"){
