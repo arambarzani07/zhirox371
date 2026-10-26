@@ -10,7 +10,7 @@ test("V17 permits single-stock receiving through verified item barcode and pack 
  assert.match(sql,/CREATE FUNCTION public\.retail_receive_packs_v17/);
  assert.match(sql,/retail_internal\.has_role\(p_store,array\['manager'\]\)/);
  assert.match(sql,/b\.store_id=p_store AND b\.code=p_barcode AND b\.active/);
- assert.match(sql,/v_expected_units<>v_units/);
+ assert.match(sql,/p_expected_units<>v_units/);
  assert.match(sql,/v_increment=p_packages::numeric\*v_units/);
  assert.match(sql,/v_total=retail_internal\.receive_stock/);
  assert.match(sql,/stock\.receive_packs_v17/);
