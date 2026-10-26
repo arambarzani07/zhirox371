@@ -46,6 +46,8 @@ test("V16 backend owns all pack prices, enforces base-unit stock and replay requ
  assert.match(sql,/ON CONFLICT\(store_id,request_id\) DO NOTHING/);
  assert.match(sql,/v_prior_payload IS DISTINCT FROM v_request_payload/);
  assert.match(sql,/package_type,package_barcode,units_per_package,base_units/);
+ assert.match(sql,/CREATE TRIGGER retail_guard_unit_sale_v16/);
+ assert.match(sql,/Unit sale not enabled for this product/);
  assert.match(ops,/stockUsed\(p\.id\)\+units>stock/);
  assert.match(ops,/retail_checkout_packs_v16/);
  assert.match(ops,/expected_price_minor:x\.price/);
