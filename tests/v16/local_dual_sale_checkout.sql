@@ -6,6 +6,9 @@ ALTER TABLE public.retail_sale_items
   ADD COLUMN units_per_package integer NOT NULL DEFAULT 1 CHECK(units_per_package>=1),
   ADD COLUMN base_units numeric(14,3);
 
+-- The tiny V12 QA fixture lacks the production-created timestamp; add locally.
+ALTER TABLE public.retail_products ADD COLUMN created_at timestamptz NOT NULL DEFAULT now();
+
 -- Column-level protection: the regular Auth Data API must not expose unit
 -- purchase costs. The owner-only snapshot RPC remains the safe cost reader.
 REVOKE SELECT ON TABLE public.retail_products FROM authenticated;
