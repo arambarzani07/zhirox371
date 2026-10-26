@@ -36,6 +36,7 @@ function viewPanel(name){
  $("who").textContent=user?user.email||"":"";
 }
 function selectTab(next){
+ if(next!=="cash")clearTimeout(scanIdleTimer);
  if(next==="staff"&&role!=="owner")next="cash";
  if((next==="stock"||next==="audit")&&!canManage())next="cash";
  tab=next;
@@ -45,7 +46,7 @@ function selectTab(next){
    x.hidden=(x.dataset.tab==="staff"&&role!=="owner") ||
       (["stock","audit"].includes(x.dataset.tab)&&!canManage());
  });
- if(next==="cash"){$("barcode").focus();renderCart();}
+ if(next==="cash"){renderCart();focusScanner();}
  if(next==="stock")renderStock();
  if(next==="staff")void refreshStaff();
  if(next==="audit")void refreshAudit();
@@ -397,6 +398,22 @@ document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()
 // HID scanners ending with Enter submit at once. No-Enter scanners submit
 // only when a FULL, non-prefix catalog barcode has settled for 160ms.
 let scanIdleTimer=null;
+// Keep keyboard-wedge scanners pointed at the ONE visible barcode field.
+// Never steal focus from amount entry or other editable forms.
+function focusScanner(){
+ const input=$("barcode");
+ if(tab==="cash"&&!busy&&!pendingCheckout&&!input.disabled&&
+    !document.hidden&&!$("cash-panel").hidden)input.focus();
+}
+document.addEventListener("keydown",e=>{
+ if(e.key==="F2"&&tab==="cash"&&!busy&&!pendingCheckout){
+   e.preventDefault();focusScanner();$("barcode").select();
+ }
+ if(e.key==="Escape"&&tab==="cash"&&document.activeElement===$("barcode")){
+   clearTimeout(scanIdleTimer);scanIdleTimer=null;
+   $("barcode").value="";msg("scan-msg","");
+ }
+});
 $("barcode").addEventListener("input",()=>{
  clearTimeout(scanIdleTimer);
  const code=$("barcode").value.trim();
@@ -415,7 +432,7 @@ $("scan-form").addEventListener("submit",e=>{
  if(pendingCheckout||busy){msg("scan-msg","فرۆشتنی پێشوو هێشتا یەکلا نەبووە.","error");return}
  const code=String(new FormData(e.target).get("barcode")||"").trim();
  const b=barcodes.find(x=>x.code===code);
- if(!b){msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");return}
+ if(!b){e.target.reset();msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");focusScanner();return}
  if(!["unit","carton"].includes(b.unit_type)||
     (b.unit_type==="unit"&&Number(b.units_per_scan)!==1)||
     (b.unit_type==="carton"&&!Number.isSafeInteger(Number(b.price_minor)))){
@@ -432,7 +449,7 @@ $("scan-form").addEventListener("submit",e=>{
  const current=cart.find(x=>x.id===p.id&&x.mode===mode);
  if(current)current.qty++;
  else cart.push({id:p.id,name:p.name,barcode:b.code,mode,price,units,available:stock,qty:1});
- e.target.reset();msg("scan-msg");cartChanged();$("barcode").focus();
+ e.target.reset();msg("scan-msg");cartChanged();focusScanner();
 });
 $("cart-list").addEventListener("click",e=>{
  const btn=e.target.closest("[data-line]");if(!btn||busy||pendingCheckout)return;
@@ -440,10 +457,10 @@ $("cart-list").addEventListener("click",e=>{
  const qty=line.qty+Number(btn.dataset.delta);
  if(stockUsed(line.id,i)+Math.max(0,qty)*line.units>line.available){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
  if(qty<=0)cart.splice(i,1);else line.qty=qty;
- cartChanged();
+ cartChanged();focusScanner();
 });
 $("cash").addEventListener("input",()=>{if(pendingCheckout)return;if(cart.length)cartChanged();else renderCart()});
-$("clear-cart").onclick=()=>{if(pendingCheckout||busy)return;cart=[];requestId=null;$("cash").value="";msg("checkout-msg");renderCart()};
+$("clear-cart").onclick=()=>{if(pendingCheckout||busy)return;cart=[];requestId=null;$("cash").value="";msg("checkout-msg");renderCart();focusScanner()};
 async function commitCheckout(){
  if(!db||!store||busy||!pendingCheckout)return;
  lock(true);msg("checkout-msg");
@@ -477,7 +494,7 @@ async function commitCheckout(){
      syncPending();
      msg("checkout-msg",safe(err)+" — هەمان داواکاری دووبارە پشکنەوە","error");
    }
- }finally{lock(false)}
+ }finally{lock(false);focusScanner()}
 }
 $("checkout-form").addEventListener("submit",async e=>{
  e.preventDefault();if(!db||!store||busy||!cart.length||pendingCheckout)return;
