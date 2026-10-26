@@ -78,6 +78,9 @@ try{
  assert.ok(state.lines.some(x=>x.package_type==="unit"&&x.quantity===3&&x.base_units===3&&x.unit_price_minor===1000));
  assert.equal(state.requests.length,1);
  console.log("PASS V16 PC Cashier: 2 cartons+3 units posted, 27 base-unit deduction");
+ await page.waitForFunction(()=>document.activeElement?.id==="barcode" && !document.querySelector("#barcode").disabled);
+ assert.equal(await page.locator("#barcode").inputValue(),"");
+ console.log("PASS V16 PC Cashier: barcode focus automatically returns after committed checkout");
  await page.locator('[data-tab="stock"]').click();
  assert.match(await page.locator("#stock-list").innerText(),/33 دانە \(2 کارتۆن \+ 9 دانە\)/);
  await page.locator('[data-tab="cash"]').click();
