@@ -17,11 +17,11 @@ test("V15 product form includes edit/cancel/history without adding overlay guida
  assert.match(app,/retail_product_history_v15/);
  assert.match(app,/p_expected_version:editing.version/);
  assert.match(app,/owner_user_id/);
- assert.match(app,/product\.update_v15/);
+ assert.match(sql,/product\.update_v15/);
 });
 test("V15 database edits lock and version a single record while preserving old barcodes",()=>{
  assert.match(sql,/FOR UPDATE/);
- assert.match(sql,/catalog_version<>p_expected_version/);
+ assert.match(sql,/v_actual_version<>p_expected_version/);
  assert.match(sql,/errcode='40001'/);
  assert.match(sql,/SET active=false/);
  assert.doesNotMatch(sql,/DELETE FROM public\.retail_barcodes/i);
@@ -40,9 +40,9 @@ test("V15 keeps dangerous functions owner-only and QA environment offline",()=>{
  assert.match(workflow,/node tests\/browser\/v15_product_editor\.mjs/);
 });
 test("retired barcode aliases cannot resolve at cashier; existing hosted schema still supported",()=>{
- assert.match(cash,/select\("product_id,code,unit_type,units_per_scan,active"\)/);
- assert.match(cash,/\.filter\(b=>b\.active!==false\)/);
- assert.match(cash,/PGRST204/);
- assert.match(cash,/unit_type!=="unit"/);
- assert.doesNotMatch(cash,/retail_update_product_v15/);
+ assert.match(cashier,/select\("product_id,code,unit_type,units_per_scan,active"\)/);
+ assert.match(cashier,/\.filter\(b=>b\.active!==false\)/);
+ assert.match(cashier,/PGRST204/);
+ assert.match(cashier,/unit_type!=="unit"/);
+ assert.doesNotMatch(cashier,/retail_update_product_v15/);
 });
