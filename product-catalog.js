@@ -20,8 +20,13 @@
   const get=name=>f.get(name);
   const name=text(get("name"));
   if(!name||name.length>160)fail("ناوی کاڵا نادروستە");
-  const unit=barcode(get("barcode"),true);
-  const unitPrice=price(get("price"),true,"نرخی فرۆشتنی دانە");
+  const incoming=text(get("sale_mode"));
+  const requestedMode=incoming||((text(get("carton_barcode"))||text(get("extra_carton_barcodes"))||text(get("units_per_carton"))||text(get("carton_price")))?"both":"unit");
+  if(!["unit","carton","both"].includes(requestedMode))fail("شێوازی فرۆشتن نادروستە");
+  const unitEnabled=requestedMode!=="carton",cartonEnabled=requestedMode!=="unit";
+  const unit=barcode(get("barcode"),unitEnabled);
+  if(!unitEnabled&&unit)fail("بارکۆدی دانە لەم شێوازەدا چالاک نییە");
+  const unitPrice=price(get("price"),unitEnabled,"نرخی فرۆشتنی دانە");
   const unitCost=price(get("purchase_price"),false,"نرخی کڕینی دانە");
   const cartonCost=price(get("carton_purchase_price"),false,"نرخی کڕینی کارتۆن");
   const cartonPrice=price(get("carton_price"),false,"نرخی فرۆشتنی کارتۆن");
@@ -32,20 +37,22 @@
   const unitAliases=rawExtra?rawExtra.split(/[\n,،;]+/u).map(x=>barcode(x)).filter(Boolean):[];
   const rawCartonExtra=text(get("extra_carton_barcodes"));
   const cartonAliases=rawCartonExtra?rawCartonExtra.split(/[\n,،;]+/u).map(x=>barcode(x)).filter(Boolean):[];
+  if(!unitEnabled&&(unitAliases.length||unitCost!==null))fail("خانەکانی دانە لەم شێوازەدا چالاک نین");
+  if(!cartonEnabled&&(cartonAliases.length||cartonCode||cartonName||text(get("units_per_carton"))||cartonCost!==null||cartonPrice!==null))fail("خانەکانی کارتۆن لەم شێوازەدا چالاک نین");
   if(unitAliases.length>30||cartonAliases.length>30)fail("ژمارەی بارکۆدەکان لە سنوور زیاترە");
-  const codes=[unit,...unitAliases,...(cartonCode?[cartonCode]:[]),...cartonAliases];
+  const codes=[...(unit?[unit]:[]),...unitAliases,...(cartonCode?[cartonCode]:[]),...cartonAliases];
   if(new Set(codes).size!==codes.length)fail("بارکۆدی دووبارە لە هەمان کاڵا هەیە");
   const rawUnits=text(get("units_per_carton"));
-  const cartonRequested=Boolean(cartonCode||cartonName||rawUnits||cartonCost!==null||cartonPrice!==null||cartonAliases.length);
+  const cartonRequested=cartonEnabled;
   let units=null;
   if(cartonRequested){
    if(!cartonCode||!rawUnits||cartonPrice===null)fail("بارکۆد، بڕی دانە و نرخی فرۆشتنی کارتۆن پێویستن");
    units=Number(rawUnits);
    if(!Number.isSafeInteger(units)||units<2||units>100000)fail("ژمارەی دانەی کارتۆن نادروستە");
   }
-  const advanced=Boolean(unitAliases.length||cartonRequested||unitCost!==null||sku||plu);
+  const advanced=Boolean(requestedMode!=="unit"||unitAliases.length||cartonRequested||unitCost!==null||sku||plu);
   return Object.freeze({
-   advanced,
+   advanced, sale_mode:requestedMode,
    name, sku:sku||null, plu:plu||null,
    unit_barcode:unit,
    unit_purchase_price_iqd:unitCost,
