@@ -28,7 +28,7 @@ async function checkText(locator,background,label,expected="#172b45"){
  });
  assert.ok(o.text,label+" blank");
  assert.ok(o.width>0&&o.height>0,label+" off-screen/zero size");
- assert.equal(o.color,expected==="white"?"rgb(255, 255, 255)":"rgb(23, 43, 69)",label+" ink");
+ assert.equal(o.color,expected==="white"?"rgb(255, 255, 255)":expected==="original"?"rgb(27, 46, 71)":"rgb(23, 43, 69)",label+" ink");
  assert.equal(o.fill,o.color,label+" iOS WebKit fill");
  assert.ok(o.weight>=800||expected==="white",label+" font too light");
  for(const p of o.parent){assert.equal(p.opacity,"1",label+" faded by ancestor");assert.equal(p.filter,"none",label+" ancestor filter");}
@@ -45,7 +45,7 @@ try{
   assert.equal(await page.locator('link[href="./ui-contrast-lock.css"]').count(),0);
   assert.equal(await page.locator(".module").count(),12);
   await checkText(page.locator("main h1"),"rgb(245, 247, 250)","home title");
-  await checkText(page.locator(".brand span"),"rgb(255, 255, 255)","PC header brand");
+  await checkText(page.locator(".brand span"),"rgb(255, 255, 255)","PC header brand","original");
   for(let i=0;i<12;i++){
     await checkText(page.locator(".module .name").nth(i),"rgb(255, 255, 255)","main "+i);
     await page.locator(".module").nth(i).evaluate(el=>el.click());
