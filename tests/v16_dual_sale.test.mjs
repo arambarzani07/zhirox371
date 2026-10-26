@@ -51,3 +51,14 @@ test("V16 backend owns all pack prices, enforces base-unit stock and replay requ
  assert.match(ops,/expected_price_minor:x\.price/);
  assert.doesNotMatch(sql,/UPDATE public\.retail_products SET/);
 });
+
+test("V16 receipts preserve original unit/carton price and pack-size snapshot with compatibility fallback",()=>{
+ const printer=read("receipt-print.js"),cashier=read("operations.js");
+ assert.match(printer,/product_name_snapshot,package_type,package_barcode,units_per_package,base_units/);
+ assert.match(printer,/Number\(item\.base_units\)!==quantity\*Number\(item\.units_per_package\)/);
+ assert.match(printer,/String\(qty\)\+" کارتۆن × "\+String\(unitsPerPack\)/);
+ assert.match(printer,/PGRST204/);
+ assert.match(cashier,/String\(line\.quantity\)\+" کارتۆن × "\+String\(line\.units_per_package\)/);
+ assert.match(cashier,/PGRST204/);
+ assert.match(read(".github/workflows/pc-foundation.yml"),/tests\/browser\/v16_receipt_packs\.mjs/);
+});
