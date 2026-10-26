@@ -143,7 +143,10 @@ select option{color:#26384d}
 <h2>هاتنی کاڵا</h2>
 <form id="stock-form" class="formrow">
 <label class="field">کاڵا<select id="stock-product" name="product" required></select></label>
-<label class="field">بڕ<input name="quantity" type="number" step="0.001" min="0.001" max="1000000" required></label>
+<label class="field">یەکە<select id="stock-mode" name="mode"><option value="unit">دانە</option><option value="carton">کارتۆن</option></select></label>
+<label class="field">بارکۆد<select id="stock-barcode" name="barcode" required></select></label>
+<label class="field">بڕ<input id="stock-quantity" name="quantity" type="number" step="1" min="1" max="1000000" required></label>
+<label class="field">کۆی دانە<input id="stock-base-total" readonly tabindex="-1" aria-label="کۆی دانە"></label>
 <label class="field">جۆری هاتن<select name="reason"><option value="opening">سەرەتای کۆگا</option><option value="purchase">کڕین</option></select></label>
 <button class="primary" type="submit">تۆمارکردن</button>
 </form>
