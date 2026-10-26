@@ -447,6 +447,13 @@ const cartonOnlyStock=ok(await manager.rpc("retail_receive_stock",{
  p_store:storeA.id,p_product:cartonOnlyId,p_quantity:24,p_reason:"opening"
 }),"receive two cartons of carton-only product as 24 base units");
 assert.equal(Number(cartonOnlyStock),24);
+const blockedLegacy=await cashier.rpc("retail_checkout_cash",{
+ p_store:storeA.id,p_request:code(),
+ p_items:[{product_id:cartonOnlyId,quantity:1}],p_cash_received:0
+});
+fail(blockedLegacy,"legacy unit-only RPC must reject carton-only product at zero IQD");
+assert.equal(blockedLegacy.error.code,"22023");
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+cartonOnlyId+"'"),"24.000");
 const oneCarton=ok(await cashier.rpc("retail_checkout_packs_v16",{
  p_store:storeA.id,p_request:code(),p_items:[
   {barcode:"8394000022011",quantity:1,expected_price_minor:11000,expected_units:12}
