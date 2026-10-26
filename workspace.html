@@ -18,7 +18,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:18px}
 .tabs{display:flex;gap:8px;margin-bottom:20px}.tab{border:1px solid #e0e7ef;background:#fff;color:#65768d;padding:11px 19px;border-radius:10px;font-size:13px;font-weight:750}.tab.active{background:#274871;color:white;border-color:#274871}
 .message{min-height:20px;margin-top:16px;font-size:12px;color:#5a758a}.message.error{color:#ad4b45}.message.success{color:#087c60}
-.catalog-fields{width:100%;display:grid;gap:18px}.catalog-group{border:1px solid #e3eaf2;border-radius:13px;padding:17px;background:#fff}.catalog-group h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catalog-row .form-col{min-width:0}.catalog-group textarea{min-height:80px;resize:vertical;border:1px solid #dce4ee;border-radius:10px;padding:11px 13px;background:#fff;color:#172b45;font:inherit;font-size:13px}.catalog-group :is(input,textarea){font-weight:800;color:#172b45}.catalog-buttons{display:flex;gap:10px;align-items:center;margin-top:3px}
+.catalog-fields{width:100%;display:grid;gap:18px}.catalog-group{border:1px solid #e3eaf2;border-radius:13px;padding:17px;background:#fff}.catalog-group h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.catalog-row .form-col{min-width:0}.catalog-group textarea{min-height:80px;resize:vertical;border:1px solid #dce4ee;border-radius:10px;padding:11px 13px;background:#fff;color:#172b45;font:inherit;font-size:13px}.catalog-group :is(input,textarea){font-weight:800;color:#172b45}.catalog-buttons{display:flex;gap:10px;align-items:center;margin-top:3px}.catalog-history{margin-top:18px;padding:18px;border:1px solid #dce4ee;border-radius:12px;background:#fff}.catalog-history h3{margin:0 0 13px;color:#172b45;font-weight:900}.catalog-table-btn{height:33px;padding:0 13px;border:1px solid #cbd7e5;border-radius:8px;background:#f2f6fa;color:#172b45;font-size:12px;font-weight:900}
 .sep{height:1px;background:#edf0f4;margin:24px 0}
 .table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:right;padding:14px;border-bottom:1px solid #edf1f5}.table th{background:#fbfcfe;color:#677990;font-weight:800}
 .price{direction:ltr;unicode-bidi:embed;display:inline-block}.blank{border:1px dashed #e0e8ef;background:#fafbfd;color:#8a9cad;text-align:center;padding:38px;border-radius:12px;margin-top:15px;font-size:13px}
@@ -62,7 +62,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <section id="products-panel" hidden>
 <div class="tabs"><button class="tab" type="button" data-tab="new">کاڵای نوێ</button><button class="tab" type="button" data-tab="list">لیستی کاڵاکان</button></div>
 <div class="surface" id="new-panel">
-<h2>کاڵای نوێ</h2>
+<h2 id="product-form-title">کاڵای نوێ</h2>
 <form id="product-form" class="form">
 <div class="catalog-fields">
 <section class="catalog-group"><h3>ناسنامەی کاڵا</h3>
@@ -90,8 +90,9 @@ main{padding:38px 44px 58px;max-width:1440px;margin:0 auto}h1{font-size:23px;mar
 <label class="form-col">فرەبارکۆدی کارتۆن<textarea name="extra_carton_barcodes" maxlength="2000" autocomplete="off"></textarea></label>
 </div></section>
 </div>
-<div class="catalog-buttons"><button type="submit" class="primary" id="save-product">زیادکردن</button></div>
+<div class="catalog-buttons"><button type="submit" class="primary" id="save-product">زیادکردن</button><button type="button" id="cancel-edit" class="secondary" hidden>هەڵوەشاندنەوە</button><button type="button" id="history-product" class="secondary" hidden>مێژووی گۆڕانکاری</button></div>
 </form><div id="product-message" class="message" role="status"></div>
+<section class="catalog-history" id="product-history" hidden><h3>مێژووی گۆڕانکاری</h3><div id="product-history-list"></div></section>
 </div>
 <div class="surface" id="list-panel" hidden>
 <div class="toolbar"><h2>کاڵاکان</h2><div style="display:flex;gap:9px"><input id="search" class="input-search" placeholder="گەڕان" aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
