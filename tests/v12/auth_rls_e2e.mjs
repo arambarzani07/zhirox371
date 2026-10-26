@@ -206,7 +206,7 @@ const newCatalog={
   advanced:true,name:"شیر و تاقیکردنەوە",sku:"MILK-101",plu:"0000020",
   unit_barcode:"6260001112223",unit_purchase_price_iqd:750,unit_sale_price_iqd:1000,
   unit_alias_barcodes:["6260001112247","6260001112254"],
-  carton:{name:"کارتۆنی شیر",barcode:"6260001112230",units_per_carton:12,
+  carton:{name:"کارتۆنی شیر",barcode:"6260001112230",alias_barcodes:["6260001112261","6260001112278"],units_per_carton:12,
           purchase_price_iqd:8500,sale_price_iqd:11000},currency:"IQD"
 };
 const productCountBefore=Number(localSQL("select count(*) from public.retail_products"));
@@ -214,11 +214,12 @@ const v14Id=ok(await owner.rpc("retail_register_product_v14",{p_store_id:storeA.
     "owner registers advanced product atomically in LOCAL QA");
 assert.ok(v14Id,"Advanced product ID missing");
 assert.equal(Number(localSQL("select count(*) from public.retail_products")),productCountBefore+1);
-assert.equal(Number(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"'")),4);
-assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"' and unit_type='carton' and units_per_scan=12"),"1");
+assert.equal(Number(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"'")),6);
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"' and unit_type='carton' and units_per_scan=12"),"3");
+assert.equal(localSQL("select count(distinct units_per_scan) from public.retail_barcodes where product_id='"+v14Id+"' and unit_type='carton'"),"1");
 assert.equal(localSQL("select price_minor||':'||purchase_price_minor from public.retail_products where id='"+v14Id+"'"),"1000:750");
 assert.equal(localSQL("select sale_price_minor||':'||purchase_price_minor from public.retail_product_cartons where product_id='"+v14Id+"'"),"11000:8500");
-passed("V14 local owner registration: one item, four barcodes, true carton size and distinct unit/carton costs and prices");
+passed("V14 local owner registration: one item, six barcodes (three cartons), true shared pack size and distinct unit/carton costs and prices");
 
 fail(await manager.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:{
   ...newCatalog,unit_barcode:"8299944000011",unit_alias_barcodes:[],carton:null
@@ -237,19 +238,40 @@ const duplicate=await owner.rpc("retail_register_product_v14",{p_store_id:storeA
 fail(duplicate,"cross-product alias collision must abort transaction");
 assert.equal(duplicate.error.code,"23505");
 assert.equal(Number(localSQL("select count(*) from public.retail_products")),productCountBefore+1,"Duplicate RPC partially created product");
+const duplicateCartonAlias={...newCatalog,sku:"MILK-104",unit_barcode:"8299944000023",
+  unit_alias_barcodes:[],carton:{...newCatalog.carton,barcode:"8299944000024",
+  alias_barcodes:["6260001112278"]}};
+const cartonConflict=await owner.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:duplicateCartonAlias});
+fail(cartonConflict,"cross-product duplicate carton alias must abort transaction");
+assert.equal(cartonConflict.error.code,"23505");
+const sameItemDup={...newCatalog,sku:"MILK-105",unit_barcode:"8299944000025",
+  unit_alias_barcodes:[],carton:{...newCatalog.carton,barcode:"8299944000026",
+  alias_barcodes:["8299944000026"]}};
+fail(await owner.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:sameItemDup}),
+ "carton alias identical to own primary barcode must abort transaction");
+const badAliasType={...newCatalog,sku:"MILK-106",unit_barcode:"8299944000027",
+  unit_alias_barcodes:[],carton:{...newCatalog.carton,barcode:"8299944000028",
+  alias_barcodes:"not-an-array"}};
+fail(await owner.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:badAliasType}),
+ "server must reject malformed carton alias data");
+assert.equal(Number(localSQL("select count(*) from public.retail_products")),productCountBefore+1,
+ "carton collisions/invalid alias payload partially created products");
 const badSize={...newCatalog,sku:"MILK-103",unit_barcode:"8299944000021",
   unit_alias_barcodes:[],carton:{...newCatalog.carton,barcode:"8299944000022",units_per_carton:1}};
 fail(await owner.rpc("retail_register_product_v14",{p_store_id:storeA.id,p_catalog:badSize}),"invalid carton size must be rejected");
 assert.equal(Number(localSQL("select count(*) from public.retail_products")),productCountBefore+1);
-passed("V14 duplicate multi-barcode and invalid carton are fully atomic; no partial rows");
+passed("V14 duplicate unit/carton aliases, cross-product collisions and malformed carton arrays roll back atomically");
 
 const managerCarton=ok(await manager.from("retail_product_cartons").select("product_id,purchase_price_minor,sale_price_minor"),"manager pack price read");
 assert.ok(managerCarton.some(x=>x.product_id===v14Id&&Number(x.purchase_price_minor)===8500));
 assert.equal(ok(await cashier.from("retail_product_cartons").select("product_id,purchase_price_minor"),"cashier purchase cost RLS read").length,0);
 assert.equal(ok(await outsider.from("retail_product_cartons").select("product_id"),"outsider carton RLS read").length,0);
-assert.ok(ok(await cashier.from("retail_barcodes").select("code,unit_type"),"cashier barcode lookup").some(x=>x.code==="6260001112230"&&x.unit_type==="carton"));
-passed("V14 manager sees pack purchase costs; cashier cannot read costs but may look up carton barcode");
-console.log("V14 local QA: 4 security/product registration groups passed. Carton checkout is still disabled in the existing unit-only cashier contract. No hosted DB modifications.");
+const scannedCartons=ok(await cashier.from("retail_barcodes").select("code,product_id,unit_type,units_per_scan"),"cashier readonly barcode lookup")
+ .filter(x=>["6260001112230","6260001112261","6260001112278"].includes(x.code));
+assert.equal(scannedCartons.length,3);
+assert.ok(scannedCartons.every(x=>x.product_id===v14Id&&x.unit_type==="carton"&&Number(x.units_per_scan)===12));
+passed("V14 manager sees pack purchase costs; cashier can resolve 3 carton barcodes but cannot read costs");
+console.log("V14 local QA: 4 security/product registration groups passed with carton multi-barcodes. Carton checkout is still disabled in the existing unit-only cashier contract. No hosted DB modifications.");
 
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
