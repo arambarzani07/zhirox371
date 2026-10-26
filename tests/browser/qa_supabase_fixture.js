@@ -54,6 +54,17 @@
     };
     return query;
   }
+  function editorSnapshot(id){
+    const p=state.products.find(x=>x.id===id);
+    if(!p)return null;
+    const existing=state.advancedCatalogs.find(x=>x.id===id);
+    const version=p.catalog_version||1;
+    if(existing)return structuredClone({...existing,version});
+    const first=state.barcodes.find(x=>x.product_id===id&&x.unit_type==="unit"&&x.active!==false);
+    return {id,version,advanced:false,name:p.name,sku:null,plu:null,
+      unit_barcode:first?.code||"",unit_purchase_price_iqd:null,
+      unit_sale_price_iqd:p.price_minor,unit_alias_barcodes:[],carton:null,currency:"IQD"};
+  }
   function rpc(name,args){
     state.called.push({name,args});
     if(state.forceRpcError){const err=state.forceRpcError;state.forceRpcError=null;return Promise.resolve({data:null,error:err});}
@@ -74,12 +85,56 @@
         if(state.barcodes.some(x=>allCodes.includes(x.code)))err=error("23505","duplicate barcode");
         else{
           const id="cccccccc-cccc-4ccc-8ccc-"+String(++state.nextProduct).padStart(12,"0");
-          state.products.push({id,store_id:store.id,name:catalog.name,price_minor:catalog.unit_sale_price_iqd,active:true,currency:"IQD"});
+          state.products.push({id,store_id:store.id,name:catalog.name,price_minor:catalog.unit_sale_price_iqd,active:true,currency:"IQD",catalog_version:1});
           for(const code of [catalog.unit_barcode,...catalog.unit_alias_barcodes])
             state.barcodes.push({store_id:store.id,product_id:id,code,unit_type:"unit",units_per_scan:1});
           if(catalog.carton)for(const code of [catalog.carton.barcode,...(catalog.carton.alias_barcodes||[])])state.barcodes.push({store_id:store.id,product_id:id,code,unit_type:"carton",units_per_scan:catalog.carton.units_per_carton});
           state.advancedCatalogs.push({id,...catalog});
           data=id;
+        }
+      }
+    }else if(name==="retail_product_snapshot_v15"){
+      if(!state.advancedRpcEnabled)err=error("PGRST202","Function not found");
+      else data=editorSnapshot(args.p_product_id);
+    }else if(name==="retail_product_history_v15"){
+      if(!state.advancedRpcEnabled)err=error("PGRST202","Function not found");
+      else data=state.audit.filter(x=>x.subject_id===args.p_product_id)
+        .slice().reverse().slice(0,50).map(x=>structuredClone(x));
+    }else if(name==="retail_update_product_v15"){
+      if(!state.advancedRpcEnabled)err=error("PGRST202","Function not found");
+      else{
+        const p=state.products.find(x=>x.id===args.p_product_id);
+        if(!p)err=error("22023","Product not found");
+        else if((p.catalog_version||1)!==args.p_expected_version)
+          err=error("40001","Stale catalog revision");
+        else{
+          const c=args.p_catalog,all=[c.unit_barcode,...c.unit_alias_barcodes,
+            ...(c.carton?[c.carton.barcode,...c.carton.alias_barcodes]:[])];
+          if(new Set(all).size!==all.length||state.barcodes.some(x=>x.product_id!==p.id&&all.includes(x.code)))
+            err=error("23505","duplicate barcode");
+          else{
+            const old=editorSnapshot(p.id);
+            p.name=c.name;p.price_minor=c.unit_sale_price_iqd;p.catalog_version=(p.catalog_version||1)+1;
+            for(const barcode of state.barcodes.filter(x=>x.product_id===p.id))barcode.active=false;
+            for(const code of [c.unit_barcode,...c.unit_alias_barcodes]){
+              const existing=state.barcodes.find(x=>x.product_id===p.id&&x.code===code);
+              if(existing){existing.active=true;existing.unit_type="unit";existing.units_per_scan=1;}
+              else state.barcodes.push({store_id:store.id,product_id:p.id,code,unit_type:"unit",units_per_scan:1,active:true});
+            }
+            if(c.carton)for(const code of [c.carton.barcode,...c.carton.alias_barcodes]){
+              const existing=state.barcodes.find(x=>x.product_id===p.id&&x.code===code);
+              if(existing){existing.active=true;existing.unit_type="carton";existing.units_per_scan=c.carton.units_per_carton;}
+              else state.barcodes.push({store_id:store.id,product_id:p.id,code,unit_type:"carton",units_per_scan:c.carton.units_per_carton,active:true});
+            }
+            const idx=state.advancedCatalogs.findIndex(x=>x.id===p.id);
+            if(idx>=0)state.advancedCatalogs[idx]={id:p.id,...structuredClone(c)};
+            else state.advancedCatalogs.push({id:p.id,...structuredClone(c)});
+            data=editorSnapshot(p.id);
+            state.audit.push({id:"eeeeeeee-eeee-4eee-8eee-"+String(state.audit.length+1).padStart(12,"0"),
+              store_id:store.id,subject_id:p.id,actor_id:account.id,action:"product.update_v15",
+              created_at:new Date().toISOString(),
+              details:{before:old,after:structuredClone(data),old_version:old.version,new_version:data.version}});
+          }
         }
       }
     }else if(name==="retail_shift_open"){
