@@ -25,7 +25,7 @@ test("V17 PC unit/carton control adds only functional form controls",()=>{
  assert.match(ops,/function updateStockBaseTotal\(/);
  assert.match(ops,/retail_receive_packs_v17/);
  assert.match(ops,/p_expected_units:units/);
- assert.match(ops,/p_packages:amount/);
+ assert.match(ops,/p_packages:qty/);
  assert.match(ops,/stockAttempt\.fingerprint!==fingerprint/);
  assert.match(ops,/mode==="unit"/);
  assert.match(read(".github/workflows/pc-foundation.yml"),/tests\/browser\/v17_stock_receiving\.mjs/);
