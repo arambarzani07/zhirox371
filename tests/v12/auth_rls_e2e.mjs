@@ -351,6 +351,108 @@ passed("V15 cross-item and cross-unit/carton duplicates roll back all edits and 
 console.log("V15 local QA: 4 product-edit groups passed; older sale receipts remain immutable. No hosted DB modifications.");
 
 
+
+const milkV16={...newCatalog,sale_mode:"both",name:"Milk full carton and unit",
+  unit_barcode:"8394000011010",unit_alias_barcodes:["8394000011011"],
+  unit_purchase_price_iqd:750,unit_sale_price_iqd:1000,
+  carton:{...newCatalog.carton,barcode:"8394000012010",alias_barcodes:["8394000012011"],
+    units_per_carton:12,purchase_price_iqd:9000,sale_price_iqd:11000}};
+const milkId=ok(await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,p_catalog:milkV16
+}),"owner registers BOTH unit and carton one-item catalog");
+assert.ok(milkId);
+assert.equal(localSQL("select count(*) from public.retail_products where id='"+milkId+"'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+milkId+"'"),"4");
+const cartonOnly={...milkV16,name:"Carton-only registered item",sale_mode:"carton",
+ unit_barcode:"",unit_alias_barcodes:[],unit_purchase_price_iqd:null,unit_sale_price_iqd:null,
+ carton:{...milkV16.carton,barcode:"8394000022010",alias_barcodes:["8394000022011"]}};
+const cartonOnlyId=ok(await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,p_catalog:cartonOnly
+}),"owner registers carton-only item with NO phantom unit barcode");
+assert.ok(cartonOnlyId);
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+cartonOnlyId+"' and unit_type='unit'"),"0");
+assert.equal(localSQL("select price_minor from public.retail_products where id='"+cartonOnlyId+"'"),"0");
+const cartonOnlySnapshot=ok(await owner.rpc("retail_product_snapshot_v15",{
+ p_store_id:storeA.id,p_product_id:cartonOnlyId
+}),"owner loads carton-only item");
+assert.equal(cartonOnlySnapshot.sale_mode,"carton");
+assert.equal(cartonOnlySnapshot.unit_sale_price_iqd,null);
+passed("V16 registers both or carton-only as one product, without counterfeit unit barcodes");
+
+const scanCatalog=ok(await cashier.rpc("retail_scan_catalog_v16",{p_store:storeA.id}),
+ "cashier reads server-priced scan catalog without purchase costs");
+assert.ok(scanCatalog.some(x=>x.code==="8394000011011"&&x.unit_type==="unit"&&x.price_minor===1000&&x.units_per_scan===1));
+assert.ok(scanCatalog.some(x=>x.code==="8394000012011"&&x.unit_type==="carton"&&x.price_minor===11000&&x.units_per_scan===12));
+assert.ok(scanCatalog.some(x=>x.code==="8394000022011"&&x.unit_type==="carton"&&x.units_per_scan===12));
+assert.ok(scanCatalog.every(x=>!Object.hasOwn(x,"purchase_price_minor")));
+assert.ok(!scanCatalog.some(x=>x.code==="6260001112261"),"Retired V15 carton alias must never scan");
+fail(await outsider.rpc("retail_scan_catalog_v16",{p_store:storeA.id}),
+ "other store may not access scan prices");
+const unauthScan=await anonClient.rpc("retail_scan_catalog_v16",{p_store:storeA.id});
+fail(unauthScan,"anonymous may not access barcode prices");
+passed("V16 cashier scans primary and extra carton/unit codes with server prices; retired and outside access denied");
+
+const qtyAfterLoad=ok(await manager.rpc("retail_receive_stock",{
+ p_store:storeA.id,p_product:milkId,p_quantity:60,p_reason:"opening"
+}),"manager receives five cartons as 60 base units");
+assert.equal(Number(qtyAfterLoad),60);
+const orderV16=[
+ {barcode:"8394000012011",quantity:2,expected_price_minor:11000,expected_units:12},
+ {barcode:"8394000011011",quantity:3,expected_price_minor:1000,expected_units:1}
+];
+const checkoutKey=code();
+const packSale=ok(await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:checkoutKey,p_items:orderV16,p_cash_received:30000
+}),"cashier checks out 2 cartons and 3 units in same receipt");
+assert.ok(packSale);
+assert.equal(localSQL("select total_minor||':'||change_due_minor from public.retail_sales where id='"+packSale+"'"),"25000:5000");
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"33.000");
+assert.equal(localSQL("select count(*) from public.retail_sale_items where sale_id='"+packSale+"'"),"2");
+assert.equal(localSQL("select string_agg(package_type||':'||quantity||':'||units_per_package||':'||base_units||':'||unit_price_minor,',' order by package_type) from public.retail_sale_items where sale_id='"+packSale+"'"),"carton:2.000:12:24.000:11000,unit:3.000:1:3.000:1000");
+assert.equal(localSQL("select count(*) from public.retail_stock_events where sale_id='"+packSale+"' and delta=-27"),"1");
+const saleCountAfter=localSQL("select count(*) from public.retail_sales where store_id='"+storeA.id+"'");
+const again=ok(await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:checkoutKey,p_items:orderV16,p_cash_received:30000
+}),"retry identical payment payload");
+assert.equal(again,packSale);
+assert.equal(localSQL("select count(*) from public.retail_sales where store_id='"+storeA.id+"'"),saleCountAfter);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"33.000");
+passed("V16 posts 2 cartons + 3 units at 25000 IQD and decrements 27 base units exactly once");
+
+const wrongPrice=await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:code(),p_items:[{...orderV16[0],expected_price_minor:1000}],p_cash_received:11000
+});
+fail(wrongPrice,"cannot forge price from client");
+const wrongPack=await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:code(),p_items:[{...orderV16[0],expected_units:1}],p_cash_received:11000
+});
+fail(wrongPack,"cannot forge carton as one base unit");
+const unavailable=await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:code(),p_items:[{...orderV16[0],quantity:3}],p_cash_received:50000
+});
+fail(unavailable,"insufficient 33 base units for 36 required");
+fail(await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:checkoutKey,p_items:[{...orderV16[0],quantity:1}],p_cash_received:30000
+}),"request ID reused with different payload must be rejected");
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"33.000");
+assert.equal(localSQL("select count(*) from public.retail_sales where store_id='"+storeA.id+"'"),saleCountAfter);
+passed("V16 forged price, forged carton size, insufficient combined stock and mismatched retry all roll back");
+
+const cartonOnlyStock=ok(await manager.rpc("retail_receive_stock",{
+ p_store:storeA.id,p_product:cartonOnlyId,p_quantity:24,p_reason:"opening"
+}),"receive two cartons of carton-only product as 24 base units");
+assert.equal(Number(cartonOnlyStock),24);
+const oneCarton=ok(await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:code(),p_items:[
+  {barcode:"8394000022011",quantity:1,expected_price_minor:11000,expected_units:12}
+ ],p_cash_received:11000
+}),"cashier sells carton-only code");
+assert.ok(oneCarton);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+cartonOnlyId+"'"),"12.000");
+passed("V16 carton-only product sells a real carton at independent price, stock decremented by 12");
+
+console.log("V16 local QA: five mode, scan and checkout groups passed; no hosted DB modifications.");
+
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
 console.log("V12/V13 result: "+tests.length+" local real-GoTrue/JWT/PostgREST/PostgreSQL RLS test groups passed. SECURITY RELEASE GATE BLOCKED by TRUNCATE privilege. No hosted project accessed.");
