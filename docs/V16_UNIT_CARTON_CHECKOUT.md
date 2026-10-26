@@ -30,3 +30,13 @@
 
 ## Production release gate
 These are QA features; the hosted DB still lacks the V14/V15/V16 schema/RPC and purchase-cost protections. Existing hosted TRUNCATE privilege exposure is a separate production blocker. Require explicit user authorization for any production migration plus backup, privilege review and hardware checkout tests. Do not use as a real till yet. Frozen 12-card/48-subcard PC design and no-extra-copy restriction remain unchanged.
+
+## Single-field cashier scanner (V16.1)
+- **One** visible barcode input, no `Add`, `Scan unit` or `Scan carton` buttons. The full registered barcode resolves its unit/carton type and exact pack size from the product catalog; no mode toggle in cashier.
+- HID keyboard scanners which send Enter submit instantly. Scanners without Enter submit a complete registered, non-prefix code after a 160 ms idle window. Any ambiguous shorter barcode which prefixes a longer registered code must be confirmed with Enter, not sold prematurely.
+- Repeat scans of the same product/package increment only that basket line; unit and carton remain separate lines with one shared base-unit stock ceiling. Retired or unknown codes never sell.
+- After successful scans, quantity +/- controls, clearing a basket and successful checkout, focus returns to the barcode field if the cashier tab is visible and checkout is not blocked. Focus is never forcibly stolen from the cash amount input. `F2` focuses/selects the scan field, `Escape` clears only an unfinished scan; no help text on screen.
+- Unknown code submitted with Enter is cleared so the next scanner burst cannot append to an old invalid value. During a pending/ambiguous checkout the input remains disabled.
+- `tests/browser/v16_auto_scan.mjs` verifies primary/alias unit and carton recognition, one-field layout, prefix protection, HID Enter once, inactive barcode denial, F2/Escape, quantity/clear focus.
+- `tests/browser/v16_units_cartons.mjs` verifies that the focus also returns after a committed 2-carton + 3-unit sale.
+
