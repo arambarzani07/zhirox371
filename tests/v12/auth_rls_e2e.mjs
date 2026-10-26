@@ -273,6 +273,79 @@ assert.ok(scannedCartons.every(x=>x.product_id===v14Id&&x.unit_type==="carton"&&
 passed("V14 manager sees pack purchase costs; cashier can resolve 3 carton barcodes but cannot read costs");
 console.log("V14 local QA: 4 security/product registration groups passed with carton multi-barcodes. Carton checkout is still disabled in the existing unit-only cashier contract. No hosted DB modifications.");
 
+const v15Snapshot=ok(await owner.rpc("retail_product_snapshot_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id}),"owner reads cost-safe product editor snapshot");
+assert.equal(v15Snapshot.version,1);
+assert.equal(v15Snapshot.unit_barcode,newCatalog.unit_barcode);
+assert.deepEqual(v15Snapshot.carton.alias_barcodes,["6260001112261","6260001112278"]);
+fail(await cashier.rpc("retail_product_snapshot_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id}),"cashier cannot see confidential product editor snapshot");
+fail(await manager.rpc("retail_product_history_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id}),"manager cannot retrieve owner-only cost history");
+passed("V15 owner-only editor snapshot + cost history, strict cashier and manager denial");
+const previousSales=localSQL("select count(*)||':'||coalesce(sum(total_minor),0) from public.retail_sales");
+const changedV15={...newCatalog,name:"شیری گۆڕدراو",unit_sale_price_iqd:1250,
+ unit_alias_barcodes:["6260001112254","9999000098001"],
+ carton:{...newCatalog.carton,sale_price_iqd:11500,
+          alias_barcodes:["6260001112278","9999000098002"]}};
+const edited=ok(await owner.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id,p_expected_version:1,p_catalog:changedV15}),
+ "owner updates the existing item atomically");
+assert.equal(edited.id,v14Id);
+assert.equal(edited.version,2);
+assert.equal(edited.unit_sale_price_iqd,1250);
+assert.equal(edited.carton.sale_price_iqd,11500);
+assert.equal(edited.carton.units_per_carton,12);
+assert.equal(localSQL("select count(*) from public.retail_products where id='"+v14Id+"'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"' and active"),"6");
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"' and not active"),"2");
+assert.equal(localSQL("select active::text from public.retail_barcodes where store_id='"+storeA.id+"' and code='6260001112261'"),"false");
+assert.equal(localSQL("select active::text from public.retail_barcodes where store_id='"+storeA.id+"' and code='9999000098002'"),"true");
+assert.equal(localSQL("select count(distinct units_per_scan) from public.retail_barcodes where product_id='"+v14Id+"' and unit_type='carton' and active"),"1");
+assert.equal(localSQL("select sale_price_minor from public.retail_product_cartons where product_id='"+v14Id+"'"),"11500");
+assert.equal(localSQL("select count(*)||':'||coalesce(sum(total_minor),0) from public.retail_sales"),previousSales,
+ "historical receipts must not change during product price updates");
+passed("V15 real local atomic edit: same product id, version 2, 2 retired aliases, 6 current codes and unchanged historical sale");
+const auditHistory=ok(await owner.rpc("retail_product_history_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id}),"owner reads immutable audit");
+const change=auditHistory.find(x=>x.action==="product.update_v15");
+assert.ok(change&&change.actor_id===accounts.owner.id);
+assert.equal(change.details.before.unit_sale_price_iqd,1000);
+assert.equal(change.details.after.unit_sale_price_iqd,1250);
+assert.equal(change.details.old_version,1);
+assert.equal(change.details.new_version,2);
+assert.ok(change.details.before.carton.alias_barcodes.includes("6260001112261"));
+assert.ok(!change.details.after.carton.alias_barcodes.includes("6260001112261"));
+fail(await owner.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id,p_expected_version:1,p_catalog:changedV15}),
+ "stale revision cannot overwrite newer price");
+fail(await cashier.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id,p_expected_version:2,p_catalog:changedV15}),
+ "cashier cannot update product");
+fail(await manager.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id,p_expected_version:2,p_catalog:changedV15}),
+ "manager cannot update product");
+assert.equal(localSQL("select catalog_version from public.retail_products where id='"+v14Id+"'"),"2");
+assert.equal(localSQL("select count(*) from public.retail_audit_events where subject_id='"+v14Id+"' and action='product.update_v15'"),"1");
+passed("V15 immutable before/after audit and optimistic stale-version rejection; nonowners blocked");
+
+const conflictingEdit={...changedV15,unit_alias_barcodes:["4006381333931"]};
+const badEdit=await owner.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id,p_expected_version:2,p_catalog:conflictingEdit});
+fail(badEdit,"barcode of another product blocked");
+assert.equal(badEdit.error.code,"23505");
+const ownDuplicate={...changedV15,carton:{...changedV15.carton,alias_barcodes:[changedV15.unit_barcode]}};
+fail(await owner.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:v14Id,p_expected_version:2,p_catalog:ownDuplicate}),
+ "unit code repeated as carton barcode blocked");
+assert.equal(localSQL("select catalog_version from public.retail_products where id='"+v14Id+"'"),"2");
+assert.equal(localSQL("select count(*) from public.retail_audit_events where subject_id='"+v14Id+"' and action='product.update_v15'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+v14Id+"' and active"),"6");
+passed("V15 cross-item and cross-unit/carton duplicates roll back all edits and audit");
+
+console.log("V15 local QA: 4 product-edit groups passed; older sale receipts remain immutable. No hosted DB modifications.");
+
+
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
 console.log("V12/V13 result: "+tests.length+" local real-GoTrue/JWT/PostgREST/PostgreSQL RLS test groups passed. SECURITY RELEASE GATE BLOCKED by TRUNCATE privilege. No hosted project accessed.");
