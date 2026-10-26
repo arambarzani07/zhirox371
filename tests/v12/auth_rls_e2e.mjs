@@ -527,7 +527,36 @@ assert.equal(localSQL("select count(*) from public.retail_stock_receipt_requests
 assert.equal(localSQL("select count(*) from public.retail_audit_events where subject_id='"+milkId+"' and action='stock.receive_packs_v17'"),"2");
 passed("V17 RBAC, tenant, inactive alias, forged units and changed-payload retry all rejected");
 
-console.log("V17 local QA: two real GoTrue, audit and stock-receipt groups passed. No hosted DB mutation.");
+const concurrentReceiptId=code();
+const concurrentReceive={
+ p_store:storeA.id,p_request:concurrentReceiptId,p_barcode:"8394000012010",
+ p_packages:1,p_expected_units:12,p_reason:"purchase"};
+const concurrentReceipts=await Promise.all([
+ manager.rpc("retail_receive_packs_v17",concurrentReceive),
+ manager.rpc("retail_receive_packs_v17",concurrentReceive)
+]);
+assert.deepEqual(concurrentReceipts.map(x=>Number(ok(x,"identical parallel manager receipt"))),[72,72]);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"72.000");
+assert.equal(localSQL("select count(*) from public.retail_stock_receipt_requests_v17 where request_id='"+concurrentReceiptId+"'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_audit_events where action='stock.receive_packs_v17' and details->>'request_id'='"+concurrentReceiptId+"'"),"1");
+passed("V17 two simultaneous identical stock receipts post exactly once and return the same resulting balance");
+
+// The original successful stock transaction must remain replayable after
+// the barcode it used has been retired. Existing finished receipts are
+// immutable; only the deliberately disposable QA barcode is changed here.
+localSQL("update public.retail_barcodes set active=false where store_id='"+storeA.id+"' and code='8394000012011'");
+assert.equal(Number(ok(await manager.rpc("retail_receive_packs_v17",cartonReceive),
+ "retry a completed receipt after its barcode became inactive")),57);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"72.000");
+fail(await manager.rpc("retail_receive_packs_v17",{...cartonReceive,p_request:code()}),
+ "new stock receipt cannot use retired barcode");
+const changedRetired=await manager.rpc("retail_receive_packs_v17",{...cartonReceive,p_reason:"opening"});
+fail(changedRetired,"replayed retired barcode cannot change reason");
+assert.equal(changedRetired.error.code,"23505");
+assert.equal(localSQL("select count(*) from public.retail_stock_events where product_id='"+milkId+"' and delta=24 and reason='purchase'"),"1");
+passed("V17 completed request remains idempotent after barcode retirement; new receipt and altered replay denied");
+
+console.log("V17 local QA: four real GoTrue, audit and stock-receipt groups passed. No hosted DB mutation.");
 
 
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
