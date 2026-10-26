@@ -30,11 +30,13 @@
   const cartonCode=barcode(get("carton_barcode"));
   const rawExtra=text(get("extra_barcodes"));
   const unitAliases=rawExtra?rawExtra.split(/[\n,،;]+/u).map(x=>barcode(x)).filter(Boolean):[];
-  if(unitAliases.length>30)fail("ژمارەی بارکۆدەکان لە سنوور زیاترە");
-  const codes=[unit,...unitAliases,...(cartonCode?[cartonCode]:[])];
+  const rawCartonExtra=text(get("extra_carton_barcodes"));
+  const cartonAliases=rawCartonExtra?rawCartonExtra.split(/[\n,،;]+/u).map(x=>barcode(x)).filter(Boolean):[];
+  if(unitAliases.length>30||cartonAliases.length>30)fail("ژمارەی بارکۆدەکان لە سنوور زیاترە");
+  const codes=[unit,...unitAliases,...(cartonCode?[cartonCode]:[]),...cartonAliases];
   if(new Set(codes).size!==codes.length)fail("بارکۆدی دووبارە لە هەمان کاڵا هەیە");
   const rawUnits=text(get("units_per_carton"));
-  const cartonRequested=Boolean(cartonCode||cartonName||rawUnits||cartonCost!==null||cartonPrice!==null);
+  const cartonRequested=Boolean(cartonCode||cartonName||rawUnits||cartonCost!==null||cartonPrice!==null||cartonAliases.length);
   let units=null;
   if(cartonRequested){
    if(!cartonCode||!rawUnits||cartonPrice===null)fail("بارکۆد، بڕی دانە و نرخی فرۆشتنی کارتۆن پێویستن");
@@ -50,7 +52,7 @@
    unit_sale_price_iqd:unitPrice,
    unit_alias_barcodes:unitAliases,
    carton:cartonRequested?{
-    name:cartonName||null,barcode:cartonCode,units_per_carton:units,
+    name:cartonName||null,barcode:cartonCode,alias_barcodes:cartonAliases,units_per_carton:units,
     purchase_price_iqd:cartonCost,sale_price_iqd:cartonPrice
    }:null,
    currency:"IQD"
