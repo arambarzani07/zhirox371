@@ -102,6 +102,8 @@ jobs:
         run: node tests/browser/v15_product_editor.mjs
       - name: Verify V16 unit/carton/both PC flow with base-stock checkout in Chromium
         run: node tests/browser/v16_units_cartons.mjs
+      - name: Verify V16 carton/unit receipt history and 58/80 mm printing in Chromium
+        run: node tests/browser/v16_receipt_packs.mjs
   v12-real-auth-rls:
     name: V12 — Real local Supabase Auth / JWT / PostgREST / RLS
     runs-on: ubuntu-latest
