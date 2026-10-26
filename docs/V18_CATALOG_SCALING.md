@@ -21,8 +21,11 @@ Stage V18 removes the previous client-side catalog retrieval ceilings (`limit(20
    - Strictly recognizes the verified `27` + 5-digit PLU (`00001`) + 5-digit weight in grams (`00480` = `0.480` kg) + EAN-13 check digit (`6`) format only after checking ordinary registered unit/carton barcodes first.
    - Calculates authoritative server-side sale total (`round(price_minor * weight_grams / 1000.0)` = `600` IQD for `تەماتە` at `1,250` IQD/kg) and deducts fractional stock in kilograms (`0.480` kg).
    - Does not assume other unverified scale prefixes share this structure.
+6. **Sales Return Financial Integrity & Idempotent Retry (`public.retail_return_sale_v19`)**:
+   - Every sales return atomically executes a `cash_out` movement in `public.retail_cash_movements`, restores exact base-unit or fractional-kilogram quantities in `public.retail_stock_balances`, records an immutable correlated positive stock movement (`delta > 0`, `reason = 'sale_return'`, `sale_id = p_sale`) in `public.retail_stock_events`, marks `public.retail_sales` as `refunded = true` with `return_request_id`, and writes an immutable `sale.return_v19` audit entry in `public.retail_audit_events`.
+   - Refund requests are safely retryable using a stable request UUID (`p_request`) across ambiguous network failures, returning the original refund summary (`idempotent = true`) without duplicating cash payouts, stock restoration, stock events, or audit rows.
 
 ## Mandatory Production Release Gate
 
-- Hosted production Supabase was **not** modified during V18 development.
+- Hosted production Supabase was **not** modified during V18/V19 development.
 - The documented `TRUNCATE` privilege on `public.retail_customers` (and other `retail_*` tables) for `authenticated` remains an active **mandatory production release blocker** (V12/V13 gate) until revoked in a separately approved maintenance window.

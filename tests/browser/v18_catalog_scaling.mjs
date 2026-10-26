@@ -222,16 +222,38 @@ try{
   await page.waitForFunction(()=>document.querySelector("#total")?.textContent==="0 IQD");
   assert.equal(await page.evaluate(()=>window.__retailQA.stock[0].quantity),4.52,"Stock of تەماتە must deduct 0.480 kg (5 -> 4.52 kg)");
 
-  // Switch to Receipts tab and return the newly posted sale
+  // Switch to Receipts tab and test V19 Sales Return (گەڕاندنەوە) including ambiguous network failure retry with stable request UUID
   await page.locator('[data-tab="receipts"]').click();
   await page.locator("#receipts-panel").waitFor({state:"visible"});
   assert.match(await page.locator("#receipt-detail").innerText(),/داشکاندن: 100 IQD/);
   assert.match(await page.locator("#receipt-detail").innerText(),/تەماتە \(0\.480 کگم\)/);
+
+  // Simulate an ambiguous network failure on the first refund click
+  await page.evaluate(()=>{window.__retailQA.forceRpcError={code:"NETWORK_TIMEOUT",message:"Failed to fetch"};});
+  await page.locator('#receipts-list [data-return-sale]').first().click();
+  await page.waitForFunction(()=>document.querySelector("#receipts-msg")?.textContent?.includes("هەمان داواکاری دووبارە بکەرەوە"));
+
+  // Retry clicking return on the same receipt; must reuse the exact same p_request UUID and succeed
   await page.locator('#receipts-list [data-return-sale]').first().click();
   await page.waitForFunction(()=>document.querySelector("#receipts-list")?.textContent?.includes("گەڕاوە"));
   assert.match(await page.locator("#receipt-detail").innerText(),/ئەم پسوولەیە گەڕێندراوەتەوە/);
   assert.equal(await page.evaluate(()=>window.__retailQA.stock[0].quantity),5,"Returning sale must restore 0.480 kg back to 5 kg");
-  console.log("PASS V18/V19 Cashier Hybrid Scanner, Verified Real Scale Barcode 2700001004806 (0.480 kg = 600 IQD), Discount, Multi-Slot Park, and Sales Return verified");
+  const returnCheck=await page.evaluate(()=>{
+    const q=window.__retailQA;
+    const calls=q.called.filter(c=>c.name==="retail_return_sale_v19");
+    const posEvents=q.stockEvents.filter(e=>e.reason==="sale_return"&&e.delta>0);
+    return {
+      callCount:calls.length,
+      sameRequestUuid:calls.length===2&&calls[0].args.p_request===calls[1].args.p_request,
+      tomatoReturnDelta:posEvents.find(e=>e.product_id===q.products[0].id)?.delta??0,
+      posEventCount:posEvents.length
+    };
+  });
+  assert.equal(returnCheck.callCount,2);
+  assert.equal(returnCheck.sameRequestUuid,true,"Retry after ambiguous network failure must reuse identical p_request UUID");
+  assert.equal(returnCheck.tomatoReturnDelta,0.48,"Sales return must record +0.480 kg in retail_stock_events");
+  assert.ok(returnCheck.posEventCount>=2,"All returned products must record positive movements in retail_stock_events");
+  console.log("PASS V18/V19 Cashier Hybrid Scanner, Verified Real Scale Barcode 2700001004806 (0.480 kg = 600 IQD), Discount, Multi-Slot Park, and Idempotent Sales Return verified");
 
   // 5. Paginated Stock panel in operations.html + V19 low/out-of-stock filter + quick row pick
   await page.locator('[data-tab="stock"]').click();

@@ -483,6 +483,15 @@ GRANT EXECUTE ON FUNCTION public.retail_barcode_page_v18(uuid, text, integer, in
 -- 5. Transactional Receipt Return RPC & Verified 27 Scale Barcode Checkout (V18/V19)
 ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS refunded boolean NOT NULL DEFAULT false;
 ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS discount_minor bigint NOT NULL DEFAULT 0;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS return_request_id uuid;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS return_session_id uuid;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS return_actor_id uuid;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS refunded_at timestamptz;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS restored_units numeric(14,3);
+
+CREATE UNIQUE INDEX IF NOT EXISTS retail_sales_store_return_request_idx
+  ON public.retail_sales(store_id, return_request_id)
+  WHERE return_request_id IS NOT NULL;
 
 CREATE OR REPLACE FUNCTION retail_internal.guard_unit_sale_v16()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
@@ -754,60 +763,162 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $$
 DECLARE
   v_actor uuid := (SELECT auth.uid());
+  v_existing record;
   v_sale record;
   v_item record;
   v_restored numeric(14,3) := 0;
   v_base numeric(14,3) := 0;
+  v_shift_status text;
+  v_shift_cashier uuid;
 BEGIN
   IF v_actor IS NULL OR NOT retail_internal.has_role(p_store, array['manager','cashier']) THEN
     RAISE EXCEPTION 'Cashier permission required' USING errcode = '42501';
   END IF;
+  IF p_store IS NULL OR p_sale IS NULL OR p_session IS NULL OR p_request IS NULL THEN
+    RAISE EXCEPTION 'Invalid sale return request' USING errcode = '22023';
+  END IF;
 
-  SELECT id, receipt_no, total_minor, status, refunded
+  -- Check completed return request BEFORE locking the active shift so an ambiguous
+  -- network retry succeeds idempotently even if the shift was subsequently closed.
+  SELECT id, receipt_no, total_minor, status, refunded, return_request_id, return_session_id, return_actor_id, restored_units
+  INTO v_existing
+  FROM public.retail_sales
+  WHERE store_id = p_store AND return_request_id = p_request;
+
+  IF FOUND THEN
+    IF v_existing.id IS DISTINCT FROM p_sale
+       OR v_existing.return_session_id IS DISTINCT FROM p_session
+       OR v_existing.return_actor_id IS DISTINCT FROM v_actor
+    THEN
+      RAISE EXCEPTION 'Return request reused with changed actor or payload' USING errcode = '23505';
+    END IF;
+    RETURN jsonb_build_object(
+      'sale_id', v_existing.id,
+      'receipt_no', v_existing.receipt_no,
+      'refunded_minor', v_existing.total_minor,
+      'restored_units', coalesce(v_existing.restored_units, 0),
+      'request_id', p_request,
+      'idempotent', true
+    );
+  END IF;
+
+  SELECT id, receipt_no, total_minor, status, refunded, return_request_id, return_session_id, return_actor_id, restored_units
   INTO v_sale
   FROM public.retail_sales
   WHERE store_id = p_store AND id = p_sale
   FOR UPDATE;
 
-  IF NOT FOUND OR v_sale.status <> 'posted' OR v_sale.refunded THEN
+  IF NOT FOUND OR v_sale.status <> 'posted' THEN
     RAISE EXCEPTION 'Receipt cannot be refunded' USING errcode = '22023';
   END IF;
 
+  -- Re-check after acquiring row lock on retail_sales to serialize concurrent identical retries.
+  IF v_sale.refunded THEN
+    IF v_sale.return_request_id = p_request THEN
+      IF v_sale.return_session_id IS DISTINCT FROM p_session
+         OR v_sale.return_actor_id IS DISTINCT FROM v_actor
+      THEN
+        RAISE EXCEPTION 'Return request reused with changed actor or payload' USING errcode = '23505';
+      END IF;
+      RETURN jsonb_build_object(
+        'sale_id', v_sale.id,
+        'receipt_no', v_sale.receipt_no,
+        'refunded_minor', v_sale.total_minor,
+        'restored_units', coalesce(v_sale.restored_units, 0),
+        'request_id', p_request,
+        'idempotent', true
+      );
+    END IF;
+    RAISE EXCEPTION 'Receipt cannot be refunded' USING errcode = '22023';
+  END IF;
+
+  -- Prevent hijacking a pre-existing unrelated cash movement UUID for a new sale return.
+  IF EXISTS (
+    SELECT 1 FROM public.retail_cash_movements
+    WHERE store_id = p_store AND request_id = p_request
+  ) THEN
+    RAISE EXCEPTION 'Return request reused with changed actor or payload' USING errcode = '23505';
+  END IF;
+
+  IF v_sale.total_minor > 0 THEN
+    PERFORM public.retail_cash_movement(
+      p_store,
+      p_session,
+      p_request,
+      'cash_out',
+      v_sale.total_minor,
+      'گەڕاندنەوەی پسووڵە #' || lpad(v_sale.receipt_no::text, 6, '0')
+    );
+  ELSE
+    SELECT status, cashier_id INTO v_shift_status, v_shift_cashier
+    FROM public.retail_cash_sessions
+    WHERE id = p_session AND store_id = p_store
+    FOR UPDATE;
+    IF NOT FOUND OR v_shift_status <> 'open' OR v_shift_cashier <> v_actor THEN
+      RAISE EXCEPTION 'Shift not open for user' USING errcode = '42501';
+    END IF;
+  END IF;
+
+  -- Restore stock in deterministic product_id order and record an immutable,
+  -- correlated positive stock movement in public.retail_stock_events.
   FOR v_item IN
-    SELECT product_id, quantity, coalesce(base_units, quantity * coalesce(units_per_package, 1))::numeric(14,3) AS units_to_restore
+    SELECT
+      product_id,
+      round(sum(coalesce(base_units, quantity * coalesce(units_per_package, 1)))::numeric, 3) AS units_to_restore
     FROM public.retail_sale_items
     WHERE store_id = p_store AND sale_id = p_sale
+    GROUP BY product_id
+    ORDER BY product_id
   LOOP
     v_base := round(v_item.units_to_restore, 3);
+    IF v_base <= 0 THEN
+      RAISE EXCEPTION 'Invalid sale item units for return' USING errcode = '22023';
+    END IF;
     INSERT INTO public.retail_stock_balances(store_id, product_id, quantity)
     VALUES (p_store, v_item.product_id, v_base)
     ON CONFLICT (store_id, product_id)
-    DO UPDATE SET quantity = round(public.retail_stock_balances.quantity + EXCLUDED.quantity, 3), updated_at = now();
+    DO UPDATE SET
+      quantity = round(public.retail_stock_balances.quantity + EXCLUDED.quantity, 3),
+      updated_at = now();
+
+    INSERT INTO public.retail_stock_events(store_id, product_id, delta, reason, sale_id)
+    VALUES (p_store, v_item.product_id, v_base, 'sale_return', p_sale);
+
     v_restored := round(v_restored + v_base, 3);
   END LOOP;
 
-  UPDATE public.retail_sales SET refunded = true WHERE store_id = p_store AND id = p_sale;
+  IF v_restored <= 0 THEN
+    RAISE EXCEPTION 'Receipt cannot be refunded' USING errcode = '22023';
+  END IF;
 
-  PERFORM public.retail_cash_movement(
-    p_store,
-    p_session,
-    p_request,
-    'cash_out',
-    v_sale.total_minor,
-    'گەڕاندنەوەی پسووڵە #' || lpad(v_sale.receipt_no::text, 6, '0')
-  );
+  UPDATE public.retail_sales
+  SET refunded = true,
+      return_request_id = p_request,
+      return_session_id = p_session,
+      return_actor_id = v_actor,
+      refunded_at = now(),
+      restored_units = v_restored
+  WHERE store_id = p_store AND id = p_sale;
 
   INSERT INTO public.retail_audit_events(store_id, actor_id, subject_id, action, details)
   VALUES (
     p_store, v_actor, p_sale, 'sale.return_v19',
-    jsonb_build_object('receipt_no', v_sale.receipt_no, 'refunded_minor', v_sale.total_minor, 'restored_units', v_restored)
+    jsonb_build_object(
+      'receipt_no', v_sale.receipt_no,
+      'refunded_minor', v_sale.total_minor,
+      'restored_units', v_restored,
+      'request_id', p_request,
+      'session_id', p_session
+    )
   );
 
   RETURN jsonb_build_object(
     'sale_id', v_sale.id,
     'receipt_no', v_sale.receipt_no,
     'refunded_minor', v_sale.total_minor,
-    'restored_units', v_restored
+    'restored_units', v_restored,
+    'request_id', p_request,
+    'idempotent', false
   );
 END;
 $$;

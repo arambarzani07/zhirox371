@@ -11,7 +11,7 @@
     products:[seed],
     barcodes:[{store_id:store.id,product_id:seed.id,code:"4006381333931",unit_type:"unit",units_per_scan:1}],
     stock:[{store_id:store.id,product_id:seed.id,quantity:2}],
-    sessions:[],movements:[],sales:[],saleItems:[],memberships:[],audit:[],
+    sessions:[],movements:[],sales:[],saleItems:[],stockEvents:[],memberships:[],audit:[],
     called:[],stockReceipts:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[],indexVersion:0
   };
   const error=(code,message)=>({code,message});
@@ -65,6 +65,7 @@
     if(name==="retail_memberships")return state.memberships;
     if(name==="retail_audit_events")return state.audit;
     if(name==="retail_sale_items")return state.saleItems;
+    if(name==="retail_stock_events")return state.stockEvents;
     throw Error("Unknown QA table "+name);
   }
   function from(table){
@@ -460,12 +461,16 @@
         else if([...needs].some(([id,n])=>Number((idx.stockByProductId.get(id)?.quantity||0).toFixed(3))<n))
           err=error("22023","Insufficient stock");
         else{
-          for(const [id,n] of needs){
-            const stockRow=idx.stockByProductId.get(id);
+          const id="ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0");
+          for(const [prodId,n] of [...needs.entries()].sort((a,b)=>a[0].localeCompare(b[0]))){
+            const stockRow=idx.stockByProductId.get(prodId);
             stockRow.quantity=Number((stockRow.quantity-n).toFixed(3));
+            state.stockEvents.push({
+              id:"eeeeeeee-0000-4000-8000-"+String(state.stockEvents.length+1).padStart(12,"0"),
+              store_id:store.id,product_id:prodId,delta:-n,reason:"sale",sale_id:id
+            });
           }
           state.indexVersion=(state.indexVersion||0)+1;
-          const id="ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0");
           state.sales.push({id,store_id:store.id,receipt_no:state.nextReceipt,
             total_minor:total,discount_minor:discount,cash_received_minor:args.p_cash_received,
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,
@@ -476,37 +481,87 @@
         }
       }
     }else if(name==="retail_return_sale_v19"){
-      const shift=state.sessions.find(x=>x.status==="open");
-      const sale=state.sales.find(x=>x.id===args.p_sale&&x.store_id===store.id);
-      if(!shift)err=error("22023","No open cash shift");
-      else if(!sale||sale.status!=="posted"||sale.refunded)err=error("22023","پسووڵەکە پێشتر گەڕاوەتەوە یان نادروستە");
-      else{
-        const idx=getIndex();
-        const items=state.saleItems.filter(x=>x.sale_id===sale.id);
-        let restoredUnits=0;
-        for(const item of items){
-          const baseUnits=Number(Number(item.base_units??(Number(item.quantity)*Number(item.units_per_package||1))).toFixed(3));
-          let row=idx.stockByProductId.get(item.product_id);
-          if(row)row.quantity=Number((row.quantity+baseUnits).toFixed(3));
-          else{row={store_id:store.id,product_id:item.product_id,quantity:baseUnits};state.stock.push(row);}
-          restoredUnits=Number((restoredUnits+baseUnits).toFixed(3));
+      if(!args.p_store||!args.p_sale||!args.p_session||!args.p_request){
+        err=error("22023","Invalid sale return request");
+      }else{
+        const existingByReq=state.sales.find(x=>x.store_id===store.id&&x.return_request_id===args.p_request);
+        if(existingByReq){
+          if(existingByReq.id!==args.p_sale||existingByReq.return_session_id!==args.p_session||existingByReq.return_actor_id!==account.id){
+            err=error("23505","Return request reused with changed actor or payload");
+          }else{
+            data={
+              sale_id:existingByReq.id,receipt_no:existingByReq.receipt_no,
+              refunded_minor:existingByReq.total_minor,restored_units:existingByReq.restored_units||0,
+              request_id:args.p_request,idempotent:true
+            };
+          }
+        }else{
+          const sale=state.sales.find(x=>x.id===args.p_sale&&x.store_id===store.id);
+          const shift=state.sessions.find(x=>x.id===args.p_session&&x.status==="open");
+          if(!sale||sale.status!=="posted"||sale.refunded){
+            err=error("22023","پسووڵەکە پێشتر گەڕاوەتەوە یان نادروستە");
+          }else if(state.movements.some(x=>x.store_id===store.id&&x.request_id===args.p_request)){
+            err=error("23505","Return request reused with changed actor or payload");
+          }else if(!shift){
+            err=error("42501","Shift not open for user");
+          }else{
+            const shiftSales=state.sales.filter(x=>x.cash_session_id===shift.id&&x.status==="posted").reduce((n,x)=>n+x.total_minor,0);
+            const shiftMoves=state.movements.filter(x=>x.session_id===shift.id).reduce((n,x)=>n+(x.kind==="cash_in"?x.amount_minor:-x.amount_minor),0);
+            const drawerCash=shift.opening_cash_minor+shiftSales+shiftMoves;
+            if(sale.total_minor>0&&drawerCash<sale.total_minor){
+              err=error("22023","Insufficient cash in drawer");
+            }else{
+              const idx=getIndex();
+              const items=state.saleItems.filter(x=>x.sale_id===sale.id);
+              const restoreByProduct=new Map();
+              for(const item of items){
+                const baseUnits=Number(Number(item.base_units??(Number(item.quantity)*Number(item.units_per_package||1))).toFixed(3));
+                restoreByProduct.set(item.product_id,Number(((restoreByProduct.get(item.product_id)||0)+baseUnits).toFixed(3)));
+              }
+              let restoredUnits=0;
+              for(const [productId,baseUnits] of [...restoreByProduct.entries()].sort((a,b)=>a[0].localeCompare(b[0]))){
+                let row=idx.stockByProductId.get(productId);
+                if(row)row.quantity=Number((row.quantity+baseUnits).toFixed(3));
+                else{row={store_id:store.id,product_id:productId,quantity:baseUnits};state.stock.push(row);}
+                state.stockEvents.push({
+                  id:"eeeeeeee-1111-4000-8000-"+String(state.stockEvents.length+1).padStart(12,"0"),
+                  store_id:store.id,product_id:productId,delta:baseUnits,reason:"sale_return",sale_id:sale.id
+                });
+                restoredUnits=Number((restoredUnits+baseUnits).toFixed(3));
+              }
+              sale.refunded=true;
+              sale.return_request_id=args.p_request;
+              sale.return_session_id=shift.id;
+              sale.return_actor_id=account.id;
+              sale.refunded_at=new Date().toISOString();
+              sale.restored_units=restoredUnits;
+              if(sale.total_minor>0){
+                const movId="eeeeeeee-eeee-4eee-8eee-"+String(state.movements.length+1).padStart(12,"0");
+                state.movements.push({
+                  id:movId,
+                  store_id:store.id,session_id:shift.id,actor_id:account.id,
+                  request_id:args.p_request,kind:"cash_out",amount_minor:sale.total_minor,
+                  note:"گەڕاندنەوەی پسووڵە #"+String(sale.receipt_no).padStart(6,"0"),
+                  created_at:new Date().toISOString()
+                });
+                state.audit.push({
+                  id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
+                  store_id:store.id,subject_id:movId,actor_id:account.id,
+                  action:"cash.movement",created_at:new Date().toISOString(),
+                  details:{session:shift.id,kind:"cash_out",amount_iqd:sale.total_minor}
+                });
+              }
+              state.audit.push({
+                id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
+                store_id:store.id,subject_id:sale.id,actor_id:account.id,
+                action:"sale.return_v19",created_at:new Date().toISOString(),
+                details:{receipt_no:sale.receipt_no,refunded_minor:sale.total_minor,restored_units:restoredUnits,request_id:args.p_request,session_id:shift.id}
+              });
+              state.indexVersion=(state.indexVersion||0)+1;
+              data={sale_id:sale.id,receipt_no:sale.receipt_no,refunded_minor:sale.total_minor,restored_units:restoredUnits,request_id:args.p_request,idempotent:false};
+            }
+          }
         }
-        sale.refunded=true;
-        state.movements.push({
-          id:"eeeeeeee-eeee-4eee-8eee-"+String(state.movements.length+1).padStart(12,"0"),
-          store_id:store.id,session_id:shift.id,actor_id:account.id,
-          request_id:args.p_request,kind:"cash_out",amount_minor:sale.total_minor,
-          note:"گەڕاندنەوەی پسووڵە #"+String(sale.receipt_no).padStart(6,"0"),
-          created_at:new Date().toISOString()
-        });
-        state.audit.push({
-          id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
-          store_id:store.id,subject_id:sale.id,actor_id:account.id,
-          action:"sale.return_v19",created_at:new Date().toISOString(),
-          details:{receipt_no:sale.receipt_no,refunded_minor:sale.total_minor,restored_units:restoredUnits}
-        });
-        state.indexVersion=(state.indexVersion||0)+1;
-        data={sale_id:sale.id,receipt_no:sale.receipt_no,refunded_minor:sale.total_minor,restored_units:restoredUnits};
       }
     }else if(name==="retail_shift_close"){
       const session=state.sessions.find(s=>s.id===args.p_session&&s.status==="open");

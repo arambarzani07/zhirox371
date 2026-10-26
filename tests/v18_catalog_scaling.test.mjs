@@ -26,6 +26,10 @@ test("V18 SQL contract defines indexed server-side barcode resolution and 50-ite
   assert.match(sql,/v_clean ~ '\^27\[0-9\]\{11\}\$'/);
   assert.doesNotMatch(sql,/WHEN substring\(v_clean FROM 1 FOR 2\) IN \('25','26'\)/);
   assert.match(sql,/CREATE OR REPLACE FUNCTION public\.retail_return_sale_v19/);
+  assert.match(sql,/CREATE UNIQUE INDEX IF NOT EXISTS retail_sales_store_return_request_idx/);
+  assert.match(sql,/INSERT INTO public\.retail_stock_events\(store_id, product_id, delta, reason, sale_id\)/);
+  assert.match(sql,/VALUES \(p_store, v_item\.product_id, v_base, 'sale_return', p_sale\)/);
+  assert.match(sql,/Return request reused with changed actor or payload/);
   assert.match(sql,/REVOKE ALL ON FUNCTION public\.retail_return_sale_v19\(uuid, uuid, uuid, uuid\) FROM PUBLIC, anon/);
   // Purchase cost columns must never be selected or returned by V18 read RPCs
   const strippedComments=sql.replace(/--.*$/gm,"");
@@ -34,6 +38,7 @@ test("V18 SQL contract defines indexed server-side barcode resolution and 50-ite
   assert.match(doc,/50,000/);
   assert.match(doc,/150,000/);
   assert.match(doc,/2700001004806/);
+  assert.match(doc,/sale_return/);
   assert.match(doc,/TRUNCATE/);
 });
 
@@ -76,6 +81,8 @@ test("V18 workspace and operations integrate server pagination, price/barcode in
   assert.match(opsJs,/retail_resolve_barcode_v18/);
   assert.match(opsJs,/retail_catalog_page_v18/);
   assert.match(opsJs,/retail_return_sale_v19/);
+  assert.match(opsJs,/returnAttempt/);
+  assert.match(opsJs,/persistReturnAttempt/);
   assert.match(opsJs,/isValidEan13/);
   assert.match(opsJs,/parseScaleBarcode/);
   assert.match(opsJs,/prefixCache/);
@@ -86,7 +93,7 @@ test("V18 workspace and operations integrate server pagination, price/barcode in
   assert.match(ci,/tests\/browser\/v18_catalog_scaling\.mjs/);
 });
 
-test("V18 scale benchmark & verified real scale barcode 2700001004806 (تەماتە, 1,250 IQD/kg, 0.480 kg = 600 IQD): 50,000 products, 150,000 barcodes, fractional stock deduction, and receipt refund",async()=>{
+test("V18 scale benchmark & verified real scale barcode 2700001004806 (تەماتە, 1,250 IQD/kg, 0.480 kg = 600 IQD): 50,000 products, 150,000 barcodes, fractional stock deduction, positive return stock events, and idempotent refund retry",async()=>{
   const window={};
   new Function("window",read("tests/browser/qa_supabase_fixture.js"))(window);
   const qa=window.__retailQA;
@@ -260,7 +267,8 @@ test("V18 scale benchmark & verified real scale barcode 2700001004806 (تەما�
   assert.equal(ordinary27.data.is_scale,false,"Registered ordinary barcode starting with 27 must not be confused with scale label");
   assert.equal(ordinary27.data.product_id,lastId);
 
-  // Verify checkout of verified scale barcode 2700001004806, fractional stock deduction (5.000 -> 4.520 kg), and receipt return
+  // Verify checkout of verified scale barcode 2700001004806, fractional stock deduction (5.000 -> 3.520 kg),
+  // positive correlated stock event on return, and safe idempotent refund retry
   const shiftRes=await client.rpc("retail_shift_open",{p_store:storeId,p_opening:50000});
   assert.equal(shiftRes.error,null);
 
@@ -285,18 +293,60 @@ test("V18 scale benchmark & verified real scale barcode 2700001004806 (تەما�
   });
   assert.equal(saleRes.error,null);
   assert.equal(qa.stock[0].quantity,3.52,"5.000 kg minus 0.480 kg scale bag and 1.000 kg unit must equal 3.520 kg");
+  const saleEvents=qa.stockEvents.filter(e=>e.sale_id===saleRes.data&&e.reason==="sale");
+  assert.equal(saleEvents.length,1);
+  assert.equal(saleEvents[0].delta,-1.48);
 
+  const returnReqId="19000000-0000-4000-8000-000000000002";
   const retRes=await client.rpc("retail_return_sale_v19",{
     p_store:storeId,
     p_sale:saleRes.data,
     p_session:shiftRes.data,
-    p_request:"19000000-0000-4000-8000-000000000002"
+    p_request:returnReqId
   });
   assert.equal(retRes.error,null);
   assert.equal(retRes.data.refunded_minor,1600);
   assert.equal(retRes.data.restored_units,1.48);
+  assert.equal(retRes.data.request_id,returnReqId);
+  assert.equal(retRes.data.idempotent,false);
   assert.equal(qa.stock[0].quantity,5,"Returning sale must restore exact 1.480 kg back to 5.000 kg");
 
+  // Verify immutable, correlated positive stock movement in retail_stock_events
+  const returnEvents=qa.stockEvents.filter(e=>e.sale_id===saleRes.data&&e.reason==="sale_return");
+  assert.equal(returnEvents.length,1,"Return must record a correlated positive stock movement in retail_stock_events");
+  assert.equal(returnEvents[0].product_id,qa.products[0].id);
+  assert.equal(returnEvents[0].delta,1.48,"Return stock event delta must be +1.480 kg");
+  const movementsAfterFirstReturn=qa.movements.length;
+  const auditsAfterFirstReturn=qa.audit.filter(a=>a.action==="sale.return_v19"&&a.subject_id===saleRes.data).length;
+  assert.equal(auditsAfterFirstReturn,1);
+
+  // Idempotent retry with the SAME request UUID must return the original refund summary without double-mutating
+  const retrySameReq=await client.rpc("retail_return_sale_v19",{
+    p_store:storeId,
+    p_sale:saleRes.data,
+    p_session:shiftRes.data,
+    p_request:returnReqId
+  });
+  assert.equal(retrySameReq.error,null,"Retry with identical request UUID must succeed idempotently");
+  assert.equal(retrySameReq.data.sale_id,saleRes.data);
+  assert.equal(retrySameReq.data.refunded_minor,1600);
+  assert.equal(retrySameReq.data.restored_units,1.48);
+  assert.equal(retrySameReq.data.idempotent,true);
+  assert.equal(qa.stock[0].quantity,5,"Idempotent retry must not restore stock a second time");
+  assert.equal(qa.stockEvents.filter(e=>e.sale_id===saleRes.data&&e.reason==="sale_return").length,1,"Idempotent retry must not add duplicate retail_stock_events");
+  assert.equal(qa.movements.length,movementsAfterFirstReturn,"Idempotent retry must not add duplicate cash_out movement");
+  assert.equal(qa.audit.filter(a=>a.action==="sale.return_v19"&&a.subject_id===saleRes.data).length,1,"Idempotent retry must not add duplicate audit event");
+
+  // Reusing the SAME request UUID with a different sale must be rejected with 23505
+  const reusedWrongSale=await client.rpc("retail_return_sale_v19",{
+    p_store:storeId,
+    p_sale:"19000000-0000-4000-8000-000000000999",
+    p_session:shiftRes.data,
+    p_request:returnReqId
+  });
+  assert.equal(reusedWrongSale.error?.code,"23505","Reusing return request UUID for a different sale must be rejected with 23505");
+
+  // Attempting to return an already-returned sale with a NEW request UUID must be rejected with 22023
   const dupRet=await client.rpc("retail_return_sale_v19",{
     p_store:storeId,
     p_sale:saleRes.data,

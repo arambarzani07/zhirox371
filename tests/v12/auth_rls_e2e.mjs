@@ -707,7 +707,56 @@ const scaleSaleId=ok(await cashier.rpc("retail_checkout_packs_v16",{
 assert.equal(localSQL("select total_minor||':'||change_due_minor from public.retail_sales where id='"+scaleSaleId+"'"),"600:400");
 assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+tomatoId+"'"),"4.520");
 assert.equal(localSQL("select base_units from public.retail_sale_items where sale_id='"+scaleSaleId+"'"),"0.480");
+assert.equal(localSQL("select count(*) from public.retail_stock_events where sale_id='"+scaleSaleId+"' and product_id='"+tomatoId+"' and delta=-0.480 and reason='sale'"),"1");
 passed("V18/V19 verified real scale barcode 2700001004806 resolves تەماتە (0.480 kg = 600 IQD) and deducts 0.480 kg from PostgreSQL stock");
+
+// V19 Sales Return Financial Integrity: atomic cash refund, stock restoration, positive correlated retail_stock_events, audit, and idempotent request UUID retry
+const returnReqId=code();
+fail(await outsider.rpc("retail_return_sale_v19",{
+ p_store:storeA.id,p_sale:scaleSaleId,p_session:session,p_request:code()
+}),"outsider cannot refund store A receipt");
+
+const [retA,retB]=await Promise.all([
+ cashier.rpc("retail_return_sale_v19",{p_store:storeA.id,p_sale:scaleSaleId,p_session:session,p_request:returnReqId}),
+ cashier.rpc("retail_return_sale_v19",{p_store:storeA.id,p_sale:scaleSaleId,p_session:session,p_request:returnReqId})
+]);
+const retDataA=ok(retA,"first concurrent return call succeeds");
+const retDataB=ok(retB,"second concurrent identical return call succeeds idempotently");
+assert.equal(retDataA.sale_id,scaleSaleId);
+assert.equal(Number(retDataA.refunded_minor),600);
+assert.equal(Number(retDataA.restored_units),0.48);
+assert.equal(retDataB.sale_id,scaleSaleId);
+assert.equal(Number(retDataB.refunded_minor),600);
+assert.equal(Number(retDataB.restored_units),0.48);
+
+// Verify post-commit retry with the exact same request UUID returns idempotent=true without double mutation
+const retRetry=ok(await cashier.rpc("retail_return_sale_v19",{
+ p_store:storeA.id,p_sale:scaleSaleId,p_session:session,p_request:returnReqId
+}),"retrying completed refund with same request UUID succeeds idempotently");
+assert.equal(retRetry.idempotent,true);
+assert.equal(Number(retRetry.refunded_minor),600);
+assert.equal(Number(retRetry.restored_units),0.48);
+
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+tomatoId+"'"),"5.000");
+assert.equal(localSQL("select status||':'||refunded::text||':'||return_request_id||':'||restored_units from public.retail_sales where id='"+scaleSaleId+"'"),"posted:true:"+returnReqId+":0.480");
+assert.equal(localSQL("select count(*) from public.retail_stock_events where sale_id='"+scaleSaleId+"' and product_id='"+tomatoId+"' and delta=0.480 and reason='sale_return'"),"1");
+assert.equal(localSQL("select coalesce(sum(delta),0) from public.retail_stock_events where sale_id='"+scaleSaleId+"' and product_id='"+tomatoId+"'"),"0.000");
+assert.equal(localSQL("select count(*) from public.retail_cash_movements where store_id='"+storeA.id+"' and request_id='"+returnReqId+"' and kind='cash_out' and amount_minor=600"),"1");
+assert.equal(localSQL("select count(*) from public.retail_audit_events where store_id='"+storeA.id+"' and subject_id='"+scaleSaleId+"' and action='sale.return_v19' and details->>'request_id'='"+returnReqId+"'"),"1");
+
+const reusedDiffSale=await cashier.rpc("retail_return_sale_v19",{
+ p_store:storeA.id,p_sale:oneCarton,p_session:session,p_request:returnReqId
+});
+fail(reusedDiffSale,"reusing return request UUID for another sale must fail");
+assert.equal(reusedDiffSale.error.code,"23505");
+
+const doubleReturnNewUuid=await cashier.rpc("retail_return_sale_v19",{
+ p_store:storeA.id,p_sale:scaleSaleId,p_session:session,p_request:code()
+});
+fail(doubleReturnNewUuid,"returning an already-refunded sale with a new request UUID must fail");
+assert.equal(doubleReturnNewUuid.error.code,"22023");
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+tomatoId+"'"),"5.000");
+passed("V19 sales return atomically refunds cash, restores 0.480 kg stock, records correlated positive retail_stock_events, writes audit, and enforces idempotent request UUID retry");
 
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
