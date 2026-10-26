@@ -43,6 +43,7 @@ test("retired barcode aliases cannot resolve at cashier; existing hosted schema 
  assert.match(cashier,/select\("product_id,code,unit_type,units_per_scan,active"\)/);
  assert.match(cashier,/\.filter\(b=>b\.active!==false\)/);
  assert.match(cashier,/PGRST204/);
- assert.match(cashier,/unit_type!=="unit"/);
+ assert.match(cashier,/retail_scan_catalog_v16/);
+ assert.match(cashier,/b\.active!==false/);
  assert.doesNotMatch(cashier,/retail_update_product_v15/);
 });
