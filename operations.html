@@ -86,8 +86,8 @@ select option{color:#26384d}
 <div class="surface">
 <h2>فرۆشتنی نوێ</h2>
 <form id="scan-form" class="formrow">
-<label class="field">بارکۆد<input name="barcode" id="barcode" maxlength="60" autocomplete="off" required></label>
-<button class="primary" type="submit">زیادکردن</button>
+<label class="field">بارکۆد<input name="barcode" id="barcode" maxlength="60" autocomplete="off" inputmode="none" required autofocus></label>
+<button type="submit" hidden tabindex="-1" aria-hidden="true">سکان</button>
 </form>
 <div id="scan-msg" class="msg" role="status"></div>
 <div id="cart-list"></div>
