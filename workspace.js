@@ -2,7 +2,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   const config = window.RETAIL_CONFIG;
-  let db, user = null, store = null, products = [], currentTab = "new";
+  let db, user = null, store = null, products = [], currentTab = "new", editing = null;
   const requestedTab = new URLSearchParams(window.location.search).get("view");
 
   function show(id) {
@@ -42,11 +42,18 @@
       const el = document.createElement("div"); el.className = "blank"; el.textContent = "هیچ کاڵایەک نەدۆزرایەوە"; results.append(el); return;
     }
     const table = document.createElement("table"); table.className = "table";
-    table.innerHTML = "<thead><tr><th>کاڵا</th><th>بارکۆد</th><th>نرخ</th><th>دۆخ</th></tr></thead><tbody></tbody>";
+    table.innerHTML = "<thead><tr><th>کاڵا</th><th>بارکۆد</th><th>نرخ</th><th>دۆخ</th><th></th></tr></thead><tbody></tbody>";
     for (const p of filtered) {
       const row = document.createElement("tr");
       const cells = [p.name, p.barcodes.join("، ") || "—", Number(p.price_minor).toLocaleString("en-US") + " IQD", p.active ? "چالاک" : "ناچالاک"];
       cells.forEach(value => { const td = document.createElement("td"); td.textContent = String(value); row.append(td); });
+      const actionCell=document.createElement("td");
+      if(user?.id===store?.owner_user_id){
+        const editBtn=document.createElement("button");
+        editBtn.type="button";editBtn.className="catalog-table-btn";editBtn.textContent="دەستکاری";
+        editBtn.addEventListener("click",()=>void beginEdit(p.id));actionCell.append(editBtn);
+      }
+      row.append(actionCell);
       table.tBodies[0].append(row);
     }
     results.append(table);
@@ -72,10 +79,83 @@
     if (base.length >= 200 || (barcodesResult.data || []).length >= 1000)
       message("list-message", "تەنها بەشێک لە کاڵاکان پیشان دەدرێت؛ پەڕەبەندی لە قۆناغی داهاتوو زیاد دەکرێت");
   }
+  function resetEditor() {
+    editing=null;
+    $("product-form").reset();
+    $("product-form-title").textContent="کاڵای نوێ";
+    $("save-product").textContent="زیادکردن";
+    $("cancel-edit").hidden=true;$("history-product").hidden=true;
+    $("product-history").hidden=true;
+    $("product-history-list").replaceChildren();
+    message("product-message","");
+  }
+  function fillEditor(c) {
+    const form=$("product-form"),assign=(key,value)=>{
+      const input=form.elements.namedItem(key);
+      if(input)input.value=value===null||value===undefined?"":String(value);
+    };
+    for(const [input,key] of [
+      ["name","name"],["sku","sku"],["plu","plu"],["barcode","unit_barcode"],
+      ["purchase_price","unit_purchase_price_iqd"],["price","unit_sale_price_iqd"]])
+      assign(input,c[key]);
+    assign("extra_barcodes",(c.unit_alias_barcodes||[]).join("\n"));
+    const carton=c.carton;
+    assign("carton_name",carton?.name);assign("carton_barcode",carton?.barcode);
+    assign("units_per_carton",carton?.units_per_carton);
+    assign("carton_purchase_price",carton?.purchase_price_iqd);
+    assign("carton_price",carton?.sale_price_iqd);
+    assign("extra_carton_barcodes",(carton?.alias_barcodes||[]).join("\n"));
+  }
+  async function beginEdit(productId) {
+    if(!db||!store||!user||user.id!==store.owner_user_id)return;
+    message("list-message","");
+    const {data,error}=await db.rpc("retail_product_snapshot_v15",{
+      p_store_id:store.id,p_product_id:productId
+    });
+    if(error){message("list-message",explain(error),"error");return;}
+    if(!data||!Number.isInteger(Number(data.version))){message("list-message","کاڵاکە نەدۆزرایەوە","error");return;}
+    resetEditor();editing={id:productId,version:Number(data.version)};
+    fillEditor(data);
+    $("product-form-title").textContent="دەستکاریکردنی کاڵا";
+    $("save-product").textContent="پاشەکەوتکردن";
+    $("cancel-edit").hidden=false;$("history-product").hidden=false;
+    setTab("new");
+  }
+  async function showProductHistory() {
+    if(!editing||!db||!store)return;
+    const result=await db.rpc("retail_product_history_v15",{
+      p_store_id:store.id,p_product_id:editing.id
+    });
+    if(result.error){message("product-message",explain(result.error),"error");return;}
+    const container=$("product-history-list");container.replaceChildren();
+    const table=document.createElement("table");table.className="table";
+    table.innerHTML="<thead><tr><th>کات</th><th>کارمەند</th><th>گۆڕانکاری</th></tr></thead><tbody></tbody>";
+    for(const ev of result.data||[]){
+      const row=document.createElement("tr");
+      const before=ev.details?.before,after=ev.details?.after;
+      const labels=[];
+      if(before&&after){
+        for(const [label,key] of [["ناو","name"],["نرخی فرۆشتنی دانە","unit_sale_price_iqd"],
+          ["نرخی کڕینی دانە","unit_purchase_price_iqd"],["بارکۆدی دانە","unit_barcode"]]){
+          if(before[key]!==after[key])labels.push(label);
+        }
+        if(JSON.stringify(before.unit_alias_barcodes)!==JSON.stringify(after.unit_alias_barcodes))
+          labels.push("فرەبارکۆدی دانە");
+        if(JSON.stringify(before.carton)!==JSON.stringify(after.carton))
+          labels.push("کارتۆن و فرەبارکۆد");
+      }
+      const details=labels.join("، ")||(ev.action==="product.register_v14"?"زیادکردن":"دەستکاری");
+      for(const cell of [new Date(ev.created_at).toLocaleString("en-GB"),ev.actor_id,details]){
+        const td=document.createElement("td");td.textContent=cell;row.append(td);
+      }
+      table.tBodies[0].append(row);
+    }
+    container.append(table);$("product-history").hidden=false;
+  }
   async function loadStore() {
     if (!db || !user) return;
     const {data,error} = await db.from("retail_stores")
-      .select("id,name,currency").order("created_at",{ascending:true}).limit(1).maybeSingle();
+      .select("id,name,currency,owner_user_id").order("created_at",{ascending:true}).limit(1).maybeSingle();
     if (error) {show("auth-panel");message("auth-message", explain(error), "error");return;}
     store = data;
     if (!store) {show("store-panel");return;}
@@ -151,21 +231,34 @@
       // Product definitions, costs and pack barcodes belong exclusively here,
       // NEVER in cashier. The legacy RPC only supports one unit barcode and price.
       // Full details are sent atomically ONLY if the advanced server RPC is ready.
-      const result=catalog.advanced?
-        await db.rpc("retail_register_product_v14",{p_store_id:store.id,p_catalog:catalog}):
-        await db.rpc("retail_create_product",{
-          p_store_id:store.id,p_name:catalog.name,
-          p_barcode:catalog.unit_barcode,p_price_minor:catalog.unit_sale_price_iqd
-        });
+      const result=editing?
+        await db.rpc("retail_update_product_v15",{
+          p_store_id:store.id,p_product_id:editing.id,
+          p_expected_version:editing.version,p_catalog:catalog
+        }):
+        catalog.advanced?
+          await db.rpc("retail_register_product_v14",{p_store_id:store.id,p_catalog:catalog}):
+          await db.rpc("retail_create_product",{
+            p_store_id:store.id,p_name:catalog.name,
+            p_barcode:catalog.unit_barcode,p_price_minor:catalog.unit_sale_price_iqd
+          });
       if(result.error){
-        if(catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
+        if(editing&&result.error.code==="40001")
+          throw new Error("کاڵاکە لەلایەن بەکارهێنەرێکی تر گۆڕدراوە؛ دووبارە بیکەرەوە");
+        if(editing&&["PGRST202","42883"].includes(result.error.code))
+          throw new Error("دەستکاریکردنی کاڵا لە داتابەیس چالاک نییە");
+        if(!editing&&catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
           throw new Error("تۆمارکردنی فرەبارکۆد و کارتۆن هێشتا لە داتابەیس چالاک نییە");
         throw result.error;
       }
-      event.target.reset();message("product-message","کاڵاکە بە سەرکەوتوویی تۆمارکرا","success");
+      const wasEditing=!!editing;
+      resetEditor();message("product-message",wasEditing?"کاڵاکە نوێ کرایەوە":"کاڵاکە بە سەرکەوتوویی تۆمارکرا","success");
+      if(wasEditing)await loadProducts();
     }catch(error){message("product-message",explain(error),"error");}
     finally{busy(btn,false);}
   });
+  $("cancel-edit").addEventListener("click",resetEditor);
+  $("history-product").addEventListener("click",()=>void showProductHistory());
   $("refresh").addEventListener("click",()=>void loadProducts());
   $("search").addEventListener("input",renderProducts);
   document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
