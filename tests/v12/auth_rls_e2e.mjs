@@ -329,7 +329,12 @@ assert.equal(localSQL("select catalog_version from public.retail_products where 
 assert.equal(localSQL("select count(*) from public.retail_audit_events where subject_id='"+v14Id+"' and action='product.update_v15'"),"1");
 passed("V15 immutable before/after audit and optimistic stale-version rejection; nonowners blocked");
 
-const conflictingEdit={...changedV15,unit_alias_barcodes:["4006381333931"]};
+const otherCode="8299944000911";
+const otherProduct=ok(await owner.rpc("retail_create_product",{
+ p_store_id:storeA.id,p_name:"Other product conflict fixture",p_barcode:otherCode,p_price_minor:400
+}),"owner creates a distinct local product to test inter-product barcode collision");
+assert.ok(otherProduct&&otherProduct!==v14Id);
+const conflictingEdit={...changedV15,unit_alias_barcodes:[otherCode]};
 const badEdit=await owner.rpc("retail_update_product_v15",{
  p_store_id:storeA.id,p_product_id:v14Id,p_expected_version:2,p_catalog:conflictingEdit});
 fail(badEdit,"barcode of another product blocked");
