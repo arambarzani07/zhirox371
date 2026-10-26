@@ -192,12 +192,15 @@ async function refreshReceipts(){
 }
 async function showReceipt(saleId){
  if(!db||!store)return;
- const [head,items]=await Promise.all([
+ let [head,items]=await Promise.all([
    db.from("retail_sales").select("id,receipt_no,total_minor,cash_received_minor,change_due_minor,created_at,cashier_id")
      .eq("store_id",store.id).eq("id",saleId).eq("status","posted").single(),
-   db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot")
+   db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot,package_type,package_barcode,units_per_package,base_units")
      .eq("store_id",store.id).eq("sale_id",saleId).limit(200)
  ]);
+ if(["42703","PGRST204","PGRST205"].includes(items.error?.code))
+   items=await db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot")
+     .eq("store_id",store.id).eq("sale_id",saleId).limit(200);
  if(head.error||items.error){msg("receipts-msg",safe(head.error||items.error),"error");return}
  const sale=head.data;
  const box=$("receipt-detail");box.replaceChildren();box.hidden=false;
@@ -216,7 +219,11 @@ async function showReceipt(saleId){
  const table=document.createElement("table");table.innerHTML="<thead><tr><th>کاڵا</th><th>بڕ</th><th>نرخ</th><th>کۆ</th></tr></thead><tbody></tbody>";
  for(const line of items.data||[]){
    const tr=document.createElement("tr"),p=products.find(x=>x.id===line.product_id);
-   for(const v of [line.product_name_snapshot||p?.name||line.product_id,String(line.quantity),money(line.unit_price_minor),money(Number(line.quantity)*Number(line.unit_price_minor))]){
+   const unitInfo=line.package_type==="carton"&&Number(line.units_per_package)>=2?
+     " — "+String(line.quantity)+" کارتۆن × "+String(line.units_per_package)+" دانە":
+     line.package_type==="unit"?" — "+String(line.quantity)+" دانە":"";
+   for(const v of [(line.product_name_snapshot||p?.name||line.product_id)+unitInfo,
+      String(line.quantity),money(line.unit_price_minor),money(Number(line.quantity)*Number(line.unit_price_minor))]){
      const td=document.createElement("td");td.textContent=v;tr.append(td);
    }table.tBodies[0].append(tr);
  }t.append(table);
