@@ -6,6 +6,29 @@ ALTER TABLE public.retail_sale_items
   ADD COLUMN units_per_package integer NOT NULL DEFAULT 1 CHECK(units_per_package>=1),
   ADD COLUMN base_units numeric(14,3);
 
+-- The older per-product unit-only checkout RPC remains callable for legitimate
+-- unit sales. Prevent an adversarial direct RPC call from selling a carton-only
+-- product as an imaginary ZERO-IQD unit without any active unit barcode.
+-- The trigger is database-side and applies to all item insert paths.
+CREATE FUNCTION retail_internal.guard_unit_sale_v16()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $
+BEGIN
+ IF NEW.package_type='unit' AND NOT EXISTS(
+   SELECT 1 FROM public.retail_barcodes b
+   WHERE b.store_id=NEW.store_id AND b.product_id=NEW.product_id
+     AND b.unit_type='unit' AND b.active AND b.units_per_scan=1
+ ) THEN
+   RAISE EXCEPTION 'Unit sale not enabled for this product' USING errcode='22023';
+ END IF;
+ RETURN NEW;
+END;
+$;
+REVOKE ALL ON FUNCTION retail_internal.guard_unit_sale_v16() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER retail_guard_unit_sale_v16
+ BEFORE INSERT ON public.retail_sale_items FOR EACH ROW
+ EXECUTE FUNCTION retail_internal.guard_unit_sale_v16();
+
 -- The tiny V12 QA fixture lacks the production-created timestamp; add locally.
 ALTER TABLE public.retail_products ADD COLUMN created_at timestamptz NOT NULL DEFAULT now();
 
