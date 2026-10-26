@@ -102,6 +102,8 @@ jobs:
         run: node tests/browser/v15_product_editor.mjs
       - name: Verify V16 unit/carton/both PC flow with base-stock checkout in Chromium
         run: node tests/browser/v16_units_cartons.mjs
+      - name: Verify V17 PC stock receiving of unit and carton aliases
+        run: node tests/browser/v17_stock_receiving.mjs
       - name: Verify automatic one-field scan of primary and multiple unit/carton barcodes
         run: node tests/browser/v16_auto_scan.mjs
       - name: Verify V16 carton/unit receipt history and 58/80 mm printing in Chromium
