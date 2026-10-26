@@ -489,6 +489,47 @@ passed("V16 concurrent cashier/manager last-carton race posts exactly one receip
 
 console.log("V16 local QA: six mode, scan and checkout groups passed; no hosted DB modifications.");
 
+const stockReq=code();
+const cartonReceive={
+ p_store:storeA.id,p_request:stockReq,p_barcode:"8394000012011",
+ p_packages:2,p_expected_units:12,p_reason:"purchase"};
+const stocked=ok(await manager.rpc("retail_receive_packs_v17",cartonReceive),
+ "manager receives two cartons via alias, server converts to base units");
+assert.equal(Number(stocked),57); // previous V16 mixed sale: 60 -> 33; +24 = 57
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"57.000");
+assert.equal(localSQL("select count(*) from public.retail_stock_receipt_requests_v17 where request_id='"+stockReq+"'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_stock_events where product_id='"+milkId+"' and delta=24 and reason='purchase'"),"1");
+const retry=ok(await manager.rpc("retail_receive_packs_v17",cartonReceive),
+ "identical manager request retries without receiving stock again");
+assert.equal(Number(retry),57);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"57.000");
+const unitReceive=ok(await manager.rpc("retail_receive_packs_v17",{
+ p_store:storeA.id,p_request:code(),p_barcode:"8394000011011",
+ p_packages:3,p_expected_units:1,p_reason:"purchase"
+}),"manager receives three loose units with unit alias");
+assert.equal(Number(unitReceive),60);
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"60.000");
+passed("V17 receiving 2 cartons + 3 units adds 27 base units exactly once; alias, audit and retry verified");
+
+fail(await cashier.rpc("retail_receive_packs_v17",{...cartonReceive,p_request:code()}),
+ "cashier must never be able to increase inventory");
+fail(await outsider.rpc("retail_receive_packs_v17",{...cartonReceive,p_request:code()}),
+ "outside tenant cannot add inventory");
+fail(await manager.rpc("retail_receive_packs_v17",{...cartonReceive,p_request:code(),p_expected_units:1}),
+ "manager cannot forge carton=one base unit");
+fail(await manager.rpc("retail_receive_packs_v17",{...cartonReceive,p_request:code(),p_barcode:"6260001112261"}),
+ "retired carton alias cannot increase inventory");
+const mismatched=await manager.rpc("retail_receive_packs_v17",{...cartonReceive,p_packages:1});
+fail(mismatched,"reused request cannot change incoming carton quantity");
+assert.equal(mismatched.error.code,"23505");
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+milkId+"'"),"60.000");
+assert.equal(localSQL("select count(*) from public.retail_stock_receipt_requests_v17 where request_id='"+stockReq+"'"),"1");
+assert.equal(localSQL("select count(*) from public.retail_audit_events where subject_id='"+milkId+"' and action='stock.receive_packs_v17'"),"2");
+passed("V17 RBAC, tenant, inactive alias, forged units and changed-payload retry all rejected");
+
+console.log("V17 local QA: two real GoTrue, audit and stock-receipt groups passed. No hosted DB mutation.");
+
+
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
 console.log("V12/V13 result: "+tests.length+" local real-GoTrue/JWT/PostgREST/PostgreSQL RLS test groups passed. SECURITY RELEASE GATE BLOCKED by TRUNCATE privilege. No hosted project accessed.");
