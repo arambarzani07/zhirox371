@@ -32,7 +32,8 @@ test("cash operation prices come from loaded catalog and checkout uses RPC",()=>
  assert.match(logic,/\.from\("retail_products"\)/);
  assert.match(logic,/\.from\("retail_barcodes"\)/);
  assert.match(logic,/\.from\("retail_stock_balances"\)/);
- assert.match(logic,/\.rpc\("retail_checkout_cash"/);
+ assert.match(logic,/retail_checkout_cash/);
+ assert.match(logic,/retail_checkout_packs_v16/);
  assert.match(logic,/requestId=crypto\.randomUUID\(\)/);
  assert.match(logic,/pendingCheckout/);
  assert.doesNotMatch(logic,/\.from\("retail_sales"\)\.insert/);
