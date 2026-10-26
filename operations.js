@@ -106,7 +106,18 @@ function renderStock(){
  const selector=$("stock-product"),old=selector.value;selector.replaceChildren();
  for(const p of products){const opt=document.createElement("option");opt.value=p.id;opt.textContent=p.name;selector.append(opt)}
  if(products.some(p=>p.id===old))selector.value=old;
- renderTable("stock-list",["کاڵا","بڕی کۆگا"],products.map(p=>[p.name,(balances.get(p.id)||0).toLocaleString("en-US")]));
+ renderTable("stock-list",["کاڵا","بڕی کۆگا"],products.map(p=>{
+   const units=Number(balances.get(p.id)||0);
+   const pack=barcodes.find(b=>b.product_id===p.id&&b.unit_type==="carton");
+   const perPack=Number(pack?.units_per_scan||0);
+   const whole=perPack>=2?Math.floor(units/perPack):0;
+   const loose=perPack>=2?Number((units-whole*perPack).toFixed(3)):0;
+   const display=perPack>=2?
+     units.toLocaleString("en-US")+" دانە ("+whole.toLocaleString("en-US")+
+     " کارتۆن + "+loose.toLocaleString("en-US")+" دانە)":
+     units.toLocaleString("en-US")+" دانە";
+   return [p.name,display];
+ }));
 }
 function cartChanged(){if(pendingCheckout){syncPending();return}requestId=null;msg("checkout-msg","");renderCart()}
 function stockUsed(productId,excludeIndex=-1){return cart.reduce((n,line,i)=>n+(i===excludeIndex||line.id!==productId?0:line.qty*line.units),0)}
