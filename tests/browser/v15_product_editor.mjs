@@ -29,7 +29,7 @@ try{
  await page.locator('[data-tab="list"]').click();
  const line=page.locator("#results tbody tr").filter({hasText:"شیر"});
  await line.locator(".catalog-table-btn").click();
- await page.locator("#product-form-title").getByText("دەستکاریکردنی کاڵا").waitFor();
+ await page.waitForFunction(()=>document.querySelector("#product-form-title")?.textContent==="دەستکاریکردنی کاڵا");
  assert.equal(await field("extra_carton_barcodes").inputValue(),"6260001112261\n6260001112278");
  assert.equal(await field("carton_price").inputValue(),"11000");
  assert.equal(await page.locator("#cancel-edit").isVisible(),true);
