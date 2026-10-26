@@ -85,5 +85,30 @@ try {
  assert.match(await page.locator("#scan-msg").innerText(),/نەدۆزرایەوە/);
  assert.equal(await page.locator("#total").innerText(),"26,000 IQD");
  console.log("PASS retired barcode: neither input auto-scan nor Enter can sell inactive alias");
+
+ // Unknown Enter scans clear the input, so the NEXT scanner burst cannot be
+ // concatenated with an old bad code. Basket remains unchanged.
+ assert.equal(await page.locator("#barcode").inputValue(),"");
+ assert.equal(await page.evaluate(()=>document.activeElement?.id),"barcode");
+ await page.locator("#cash").fill("32000");
+ await page.locator("#cash").press("F2");
+ assert.equal(await page.evaluate(()=>document.activeElement?.id),"barcode");
+ await page.locator("#barcode").fill("unrecognized");
+ await page.locator("#barcode").press("Escape");
+ assert.equal(await page.locator("#barcode").inputValue(),"");
+ assert.equal(await page.locator("#total").innerText(),"26,000 IQD");
+ console.log("PASS PC keys: F2 restores one scan input; Escape discards only partial scan");
+
+ await page.locator('#cart-list [data-delta="1"]').first().click();
+ assert.equal(await page.locator("#total").innerText(),"29,000 IQD");
+ assert.equal(await page.evaluate(()=>document.activeElement?.id),"barcode");
+ await page.locator('#cart-list [data-delta="-1"]').first().click();
+ assert.equal(await page.locator("#total").innerText(),"26,000 IQD");
+ assert.equal(await page.evaluate(()=>document.activeElement?.id),"barcode");
+ await page.locator("#clear-cart").click();
+ assert.equal(await page.locator("#total").innerText(),"0 IQD");
+ assert.equal(await page.evaluate(()=>document.activeElement?.id),"barcode");
+ console.log("PASS continuous scan focus: plus/minus quantity and clear cart restore barcode focus without extra buttons");
+
  assert.deepEqual(failures,[]);
 }finally{await browser.close()}
