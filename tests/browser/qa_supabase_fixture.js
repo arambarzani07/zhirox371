@@ -12,7 +12,7 @@
     barcodes:[{store_id:store.id,product_id:seed.id,code:"4006381333931",unit_type:"unit",units_per_scan:1}],
     stock:[{store_id:store.id,product_id:seed.id,quantity:2}],
     sessions:[],movements:[],sales:[],saleItems:[],memberships:[],audit:[],
-    called:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[]
+    called:[],stockReceipts:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[]
   };
   const error=(code,message)=>({code,message});
   function tableRows(name){
@@ -233,6 +233,35 @@
         const expected=session.opening_cash_minor+sales+moves;
         session.status="closed";session.variance_minor=args.p_counted-expected;
         data={opening:session.opening_cash_minor,sales,movements:moves,expected,counted:args.p_counted,variance:session.variance_minor};
+      }
+    }else if(name==="retail_receive_packs_v17"){
+      const previous=state.stockReceipts.find(x=>x.request===args.p_request);
+      const b=state.barcodes.find(x=>x.code===args.p_barcode&&x.active!==false);
+      const item=state.products.find(x=>x.id===b?.product_id);
+      const carton=state.advancedCatalogs.find(x=>x.id===b?.product_id)?.carton;
+      const valid=b&&item&&b.units_per_scan===args.p_expected_units&&
+        (b.unit_type==="unit"&&b.units_per_scan===1||
+         b.unit_type==="carton"&&b.units_per_scan>=2&&carton?.units_per_carton===b.units_per_scan);
+      const change=args.p_packages*args.p_expected_units;
+      if(!valid||!Number.isSafeInteger(args.p_packages)||args.p_packages<1||change>1000000||
+         !["opening","purchase"].includes(args.p_reason))
+        err=error("22023","Inactive or changed pack barcode");
+      else if(previous){
+        if(previous.code!==args.p_barcode||previous.packages!==args.p_packages||
+            previous.reason!==args.p_reason||previous.units!==args.p_expected_units)
+          err=error("23505","Stock receipt request reused");
+        else data=previous.total;
+      }else{
+        const row=state.stock.find(x=>x.product_id===item.id);
+        if(row)row.quantity+=change;
+        else state.stock.push({store_id:store.id,product_id:item.id,quantity:change});
+        data=state.stock.find(x=>x.product_id===item.id).quantity;
+        state.stockReceipts.push({request:args.p_request,code:args.p_barcode,packages:args.p_packages,
+          units:args.p_expected_units,reason:args.p_reason,base_units:change,total:data});
+        state.audit.push({id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
+          store_id:store.id,subject_id:item.id,actor_id:account.id,
+          action:"stock.receive_packs_v17",created_at:new Date().toISOString(),
+          details:{barcode:args.p_barcode,package_type:b.unit_type,base_units:change,total_stock:data}});
       }
     }else if(name==="retail_receive_stock"){
       const row=state.stock.find(x=>x.product_id===args.p_product);
