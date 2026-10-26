@@ -657,6 +657,58 @@ fail(await outsider.rpc("retail_resolve_barcode_v18",{p_store:storeA.id,p_code:"
  "outsider cannot resolve store A barcode");
 passed("V18 paginated catalog, barcode directory, and exact barcode lookup enforce tenant RBAC and hide purchase costs");
 
+// V18/V19 Verified Real Scale Barcode Format: 2700001004806 (Prefix 27 + PLU 00001 تەماتە + 00480g = 0.480 kg + EAN-13 check 6)
+const tomatoId=ok(await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,
+ p_catalog:{
+  advanced:true,sale_mode:"unit",name:"تەماتە",sku:"VEG-00001",plu:"00001",
+  unit_barcode:"6260000000015",unit_purchase_price_iqd:900,unit_sale_price_iqd:1250,
+  unit_alias_barcodes:[],carton:null,currency:"IQD"
+ }
+}),"owner registers weighted product تەماتە with PLU 00001 at 1,250 IQD/kg");
+ok(await manager.rpc("retail_receive_stock",{
+ p_store:storeA.id,p_product:tomatoId,p_quantity:5,p_reason:"opening"
+}),"manager receives 5.000 kg of تەماتە");
+
+const resolvedTomato=ok(await cashier.rpc("retail_resolve_barcode_v18",{
+ p_store:storeA.id,p_code:"2700001004806"
+}),"cashier resolves real scale barcode 2700001004806");
+assert.equal(resolvedTomato.found,true);
+assert.equal(resolvedTomato.product_id,tomatoId);
+assert.equal(resolvedTomato.product_name,"تەماتە");
+assert.equal(resolvedTomato.plu,"00001");
+assert.equal(resolvedTomato.is_scale,true);
+assert.equal(Number(resolvedTomato.scale_grams),480);
+assert.equal(Number(resolvedTomato.scale_weight_kg),0.48);
+assert.equal(Number(resolvedTomato.unit_price_minor),1250);
+assert.equal(Number(resolvedTomato.price_minor),600);
+
+const badChecksumTomato=ok(await cashier.rpc("retail_resolve_barcode_v18",{
+ p_store:storeA.id,p_code:"2700001004805"
+}),"invalid EAN-13 check digit returns found=false");
+assert.equal(badChecksumTomato.found,false);
+
+const unverifiedPrefixTomato=ok(await cashier.rpc("retail_resolve_barcode_v18",{
+ p_store:storeA.id,p_code:"2100001004804"
+}),"unverified scale prefix 21 returns found=false");
+assert.equal(unverifiedPrefixTomato.found,false);
+
+fail(await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:code(),
+ p_items:[{barcode:"2700001004806",quantity:1,expected_price_minor:500,expected_units:1}],
+ p_cash_received:1000
+}),"server rejects tampered client price on scale barcode 2700001004806");
+
+const scaleSaleId=ok(await cashier.rpc("retail_checkout_packs_v16",{
+ p_store:storeA.id,p_request:code(),
+ p_items:[{barcode:"2700001004806",quantity:1,expected_price_minor:600,expected_units:1}],
+ p_cash_received:1000
+}),"cashier completes sale of 2700001004806 at 600 IQD");
+assert.equal(localSQL("select total_minor||':'||change_due_minor from public.retail_sales where id='"+scaleSaleId+"'"),"600:400");
+assert.equal(localSQL("select quantity from public.retail_stock_balances where product_id='"+tomatoId+"'"),"4.520");
+assert.equal(localSQL("select base_units from public.retail_sale_items where sale_id='"+scaleSaleId+"'"),"0.480");
+passed("V18/V19 verified real scale barcode 2700001004806 resolves تەماتە (0.480 kg = 600 IQD) and deducts 0.480 kg from PostgreSQL stock");
+
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
 console.log("V12/V13 result: "+tests.length+" local real-GoTrue/JWT/PostgREST/PostgreSQL RLS test groups passed. SECURITY RELEASE GATE BLOCKED by TRUNCATE privilege. No hosted project accessed.");

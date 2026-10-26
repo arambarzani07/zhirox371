@@ -10,6 +10,11 @@ const origin=process.env.PC_PREVIEW_ORIGIN||"http://127.0.0.1:8765";
 
 const seed50k=String.raw`(() => {
   const q=window.__retailQA,storeId=q.store.id;
+  q.products[0].name="تەماتە";
+  q.products[0].plu="00001";
+  q.products[0].price_minor=1250;
+  q.stock[0].quantity=5;
+  q.sessions.push({id:"dddddddd-dddd-4ddd-8ddd-dddddddddddd",store_id:storeId,cashier_id:q.account.id,opening_cash_minor:100000,opened_at:new Date().toISOString(),status:"open",variance_minor:null});
   for(let i=1;i<=50000;i++){
     const id="18000000-0000-4000-8000-"+String(i).padStart(12,"0");
     const pad=String(i).padStart(6,"0");
@@ -36,7 +41,7 @@ const seed50k=String.raw`(() => {
       {store_id:storeId,product_id:id,code:c1,unit_type:"carton",units_per_scan:12,active:true},
       {store_id:storeId,product_id:id,code:alias,unit_type:i%2===0?"unit":"carton",units_per_scan:i%2===0?1:12,active:true}
     );
-    q.stock.push({store_id:storeId,product_id:id,quantity:120});
+    q.stock.push({store_id:storeId,product_id:id,quantity:i===49998?0:i===49997?3:120});
   }
   const lastId="18000000-0000-4000-8000-000000050000";
   q.barcodes.push(
@@ -80,7 +85,7 @@ try{
   assert.match(await page.locator("#results tbody tr").first().innerText(),/کاڵای ژمارە 50000/);
   console.log(`PASS V18 Workspace Catalog: 50-item pagination and server search across 50,001 products (${loadListMs}ms initial load)`);
 
-  // 2. Price Inspection tab (نرخەکان)
+  // 2. Price Inspection tab (نرخەکان) + V19 Thermal Barcode Label Preview
   await page.locator('[data-tab="prices"]').click();
   await page.locator("#prices-panel").waitFor({state:"visible"});
   assert.equal(await page.locator("#prices-results tbody tr").count(),50);
@@ -94,7 +99,16 @@ try{
   assert.match(priceRowText,/10,000 IQD/);
   assert.match(priceRowText,/12 دانە/);
   assert.doesNotMatch(priceRowText,/800/,"Purchase cost must never appear in price inspection");
-  console.log("PASS V18 Workspace Price Inspection: unit/carton prices, pack size, and shared stock verified without cost exposure");
+
+  // Click V19 label button to open thermal shelf/barcode sticker preview
+  await page.locator("#prices-results .catalog-label-btn").first().click();
+  await page.locator("#barcode-label-box").waitFor({state:"visible"});
+  assert.match(await page.locator("#label-product-name").innerText(),/کاڵای ژمارە 50000/);
+  assert.match(await page.locator("#label-price-text").innerText(),/1,000 IQD/);
+  assert.equal(await page.locator("#label-code-text").innerText(),"626105000001");
+  assert.ok((await page.locator("#label-barcode-svg rect").count())>15,"SVG barcode bars must be rendered");
+  await page.locator("#label-close-btn").click();
+  console.log("PASS V18/V19 Workspace Price Inspection & Shelf Label: unit/carton prices, pack size, and SVG thermal label preview verified");
 
   // 3. Barcode Inspection tab (بارکۆدەکان)
   await page.locator('[data-tab="barcodes"]').click();
@@ -102,7 +116,16 @@ try{
   assert.equal(await page.locator("#barcodes-results tbody tr").count(),50);
   assert.equal(await page.locator("#barcodes-page-info").innerText(),"1–50 / 150,002");
 
-  // Exact barcode inspection via #barcode-inspect-form
+  // Exact barcode inspection via #barcode-inspect-form (including verified scale barcode 2700001004806)
+  await page.locator("#barcode-inspect-input").fill("2700001004806");
+  await page.locator('#barcode-inspect-form button[type="submit"]').click();
+  await page.locator("#barcode-inspect-result").waitFor({state:"visible"});
+  const scaleInspectText=await page.locator("#barcode-inspect-result").innerText();
+  assert.match(scaleInspectText,/2700001004806/);
+  assert.match(scaleInspectText,/تەماتە/);
+  assert.match(scaleInspectText,/0\.480 کگم/);
+  assert.match(scaleInspectText,/600 IQD/);
+
   await page.locator("#barcode-inspect-input").fill("626305000003");
   await page.locator('#barcode-inspect-form button[type="submit"]').click();
   await page.locator("#barcode-inspect-result").waitFor({state:"visible"});
@@ -120,9 +143,9 @@ try{
   assert.match(barcodeRowText,/کارتۆن/);
   assert.match(barcodeRowText,/12 دانە/);
   assert.match(barcodeRowText,/فرەبارکۆد/);
-  console.log("PASS V18 Workspace Barcode Inspection: 150,002-barcode directory and exact unit/carton alias inspector verified");
+  console.log("PASS V18 Workspace Barcode Inspection: 150,002-barcode directory, scale barcode 2700001004806, and exact unit/carton alias inspector verified");
 
-  // 4. Cashier Hybrid Auto-Scan on 50,000-product / 150,000-barcode catalog
+  // 4. Cashier Hybrid Auto-Scan on 50,000-product / 150,000-barcode catalog + Verified Real Scale Barcode 2700001004806
   await page.goto(origin+"/operations.html?view=cash",{waitUntil:"load"});
   await page.locator("#cash-panel").waitFor({state:"visible"});
 
@@ -155,25 +178,82 @@ try{
   await page.waitForFunction(()=>document.querySelector("#total")?.textContent==="44,500 IQD");
   assert.equal(await page.locator("#barcode").inputValue(),"");
 
-  // Retired barcode must be rejected by both auto-scan and Enter
-  await page.locator("#barcode").fill("6269999999999");
-  await page.waitForTimeout(320);
-  assert.equal(await page.locator("#total").innerText(),"44,500 IQD");
-  await page.locator("#barcode").press("Enter");
-  assert.match(await page.locator("#scan-msg").innerText(),/نەدۆزرایەوە/);
-  assert.equal(await page.locator("#total").innerText(),"44,500 IQD");
-  console.log("PASS V18 Cashier Hybrid Scanner: uncached unit/carton aliases auto-scan via RPC, prefix guard waits for Enter, retired barcode blocked");
+  // Retired barcode, invalid EAN-13 scale checksum (2700001004805), and unverified prefix (2100001004804) must be rejected
+  for(const badCode of ["6269999999999","2700001004805","2100001004804"]){
+    await page.locator("#barcode").fill(badCode);
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator("#total").innerText(),"44,500 IQD");
+    await page.locator("#barcode").press("Enter");
+    assert.match(await page.locator("#scan-msg").innerText(),/نەدۆزرایەوە/);
+    assert.equal(await page.locator("#total").innerText(),"44,500 IQD");
+  }
 
-  // 5. Paginated Stock panel in operations.html
+  // Scan Verified Real Scale Barcode (2700001004806 -> Prefix 27, PLU 00001 تەماتە, Weight 00480 = 0.480 kg, Check 6, Price 1,250 IQD/kg -> 600 IQD)
+  await page.locator("#barcode").fill("2700001004806");
+  await page.waitForFunction(()=>document.querySelector("#total")?.textContent==="45,100 IQD");
+  const cartText=await page.locator("#cart-body").innerText();
+  assert.match(cartText,/تەماتە \(0\.480 کگم\)/);
+  assert.match(cartText,/600 IQD/);
+
+  // Apply Cashier Discount of 100 IQD -> Net Total becomes 45,000 IQD
+  await page.locator("#discount").fill("100");
+  assert.equal(await page.locator("#total").innerText(),"45,000 IQD");
+
+  // Verify Quick Tender button (exact cash) and F4 Hold/Resume Cart workflow
+  await page.locator('#quick-cash-row [data-tender="exact"]').click();
+  assert.equal(await page.locator("#cash").inputValue(),"45000");
+  assert.equal(await page.locator("#change").innerText(),"0 IQD");
+  await page.locator('#quick-cash-row [data-tender="5000"]').click();
+  assert.equal(await page.locator("#cash").inputValue(),"50000");
+  assert.equal(await page.locator("#change").innerText(),"5,000 IQD");
+
+  // Park current cart with F4, verify basket clears and parked-bar slot button appears, then resume
+  await page.keyboard.press("F4");
+  assert.equal(await page.locator("#total").innerText(),"0 IQD");
+  assert.equal(await page.locator("#parked-bar").isVisible(),true);
+  assert.match(await page.locator("#parked-bar").innerText(),/45,000 IQD/);
+  await page.locator('#parked-bar [data-resume-slot="0"]').click();
+  assert.equal(await page.locator("#total").innerText(),"45,000 IQD");
+  assert.equal(await page.locator("#parked-bar").isVisible(),false);
+
+  // Set exact cash (45,000 IQD), complete sale, verify fractional stock deduction (5 -> 4.52 kg), and test V19 Sales Return (گەڕاندنەوە)
+  await page.locator('#quick-cash-row [data-tender="exact"]').click();
+  await page.locator('#checkout-form button[type="submit"]').click();
+  await page.waitForFunction(()=>document.querySelector("#total")?.textContent==="0 IQD");
+  assert.equal(await page.evaluate(()=>window.__retailQA.stock[0].quantity),4.52,"Stock of تەماتە must deduct 0.480 kg (5 -> 4.52 kg)");
+
+  // Switch to Receipts tab and return the newly posted sale
+  await page.locator('[data-tab="receipts"]').click();
+  await page.locator("#receipts-panel").waitFor({state:"visible"});
+  assert.match(await page.locator("#receipt-detail").innerText(),/داشکاندن: 100 IQD/);
+  assert.match(await page.locator("#receipt-detail").innerText(),/تەماتە \(0\.480 کگم\)/);
+  await page.locator('#receipts-list [data-return-sale]').first().click();
+  await page.waitForFunction(()=>document.querySelector("#receipts-list")?.textContent?.includes("گەڕاوە"));
+  assert.match(await page.locator("#receipt-detail").innerText(),/ئەم پسوولەیە گەڕێندراوەتەوە/);
+  assert.equal(await page.evaluate(()=>window.__retailQA.stock[0].quantity),5,"Returning sale must restore 0.480 kg back to 5 kg");
+  console.log("PASS V18/V19 Cashier Hybrid Scanner, Verified Real Scale Barcode 2700001004806 (0.480 kg = 600 IQD), Discount, Multi-Slot Park, and Sales Return verified");
+
+  // 5. Paginated Stock panel in operations.html + V19 low/out-of-stock filter + quick row pick
   await page.locator('[data-tab="stock"]').click();
   await page.locator("#stock-panel").waitFor({state:"visible"});
   assert.equal(await page.locator("#stock-pagination").isVisible(),true);
   assert.match(await page.locator("#stock-page-info").innerText(),/50,001/);
-  await page.locator("#stock-search").fill("SKU-050000");
+
+  // Filter by Out-of-Stock (تەواوبوو (0)) -> only product #49998 has 0 stock
+  await page.locator("#stock-filter").selectOption("out");
   await page.waitForFunction(()=>document.querySelectorAll("#stock-list tbody tr").length===1);
-  assert.match(await page.locator("#stock-list").innerText(),/کاڵای ژمارە 50000/);
-  assert.match(await page.locator("#stock-list").innerText(),/120 دانە \(10 کارتۆن \+ 0 دانە\)/);
-  console.log("PASS V18 Stock Pagination: 50-item stock table and server search across 50,001 products verified");
+  assert.match(await page.locator("#stock-list").innerText(),/کاڵای ژمارە 49998/);
+  assert.match(await page.locator("#stock-list").innerText(),/تەواوبوو/);
+
+  // Reset filter to all and search by SKU-049997 (low stock = 3)
+  await page.locator("#stock-filter").selectOption("all");
+  await page.locator("#stock-search").fill("SKU-049997");
+  await page.waitForFunction(()=>document.querySelectorAll("#stock-list tbody tr").length===1);
+  assert.match(await page.locator("#stock-list").innerText(),/کاڵای ژمارە 49997/);
+  assert.match(await page.locator("#stock-list").innerText(),/کەمبووە/);
+  await page.locator("#stock-list .stock-pick-btn").first().click();
+  assert.equal(await page.locator("#stock-product").inputValue(),"18000000-0000-4000-8000-000000049997");
+  console.log("PASS V18/V19 Stock Pagination, Low/Out-of-Stock Filter & Quick Pick verified");
 
   assert.deepEqual(failures,[]);
 }finally{

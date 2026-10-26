@@ -15,6 +15,45 @@
     called:[],stockReceipts:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[],indexVersion:0
   };
   const error=(code,message)=>({code,message});
+  function isValidEan13(code){
+    const clean=String(code||"").trim();
+    if(!/^\d{13}$/.test(clean))return false;
+    let sum=0;
+    for(let i=0;i<12;i++){
+      const d=clean.charCodeAt(i)-48;
+      sum+=(i%2===0)?d:d*3;
+    }
+    const check=(10-(sum%10))%10;
+    return check===(clean.charCodeAt(12)-48);
+  }
+  function resolveScale27(code,idx){
+    const clean=String(code||"").trim();
+    if(!/^27\d{11}$/.test(clean)||!isValidEan13(clean))return null;
+    const pluRaw=clean.slice(2,7);
+    const grams=Number(clean.slice(7,12));
+    if(pluRaw==="00000"||!Number.isSafeInteger(grams)||grams<=0)return null;
+    const matches=state.products.filter(sp=>{
+      if(sp.active===false||sp.currency!=="IQD"||!(Number(sp.price_minor)>0))return false;
+      const sc=idx.catalogById.get(sp.id);
+      if(sc?.sale_mode==="carton")return false;
+      const spPlu=String(sc?.plu??sp.plu??"").trim();
+      return spPlu&&(spPlu===pluRaw||(/^\d{1,5}$/.test(spPlu)&&spPlu.padStart(5,"0")===pluRaw));
+    });
+    if(matches.length!==1)return null;
+    const product=matches[0];
+    const priceMinor=Math.round((Number(product.price_minor)*grams)/1000);
+    if(priceMinor<=0)return null;
+    const weightKg=Number((grams/1000).toFixed(3));
+    return {
+      product,
+      catalog:idx.catalogById.get(product.id)||null,
+      pluRaw,
+      grams,
+      weightKg,
+      priceMinor,
+      scaleLabel:weightKg.toFixed(3)+" کگم"
+    };
+  }
   function tableRows(name){
     if(name==="retail_stores")return state.store?[state.store]:[];
     if(name==="retail_products")return state.products;
@@ -187,9 +226,7 @@
           const price=b?.unit_type==="carton"?cat?.carton?.sale_price_iqd:p?.price_minor;
           const validUnit=b?.unit_type==="unit"&&Number(b.units_per_scan)===1&&cat?.sale_mode!=="carton"&&Number.isSafeInteger(price);
           const validCarton=b?.unit_type==="carton"&&Number(b.units_per_scan)>=2&&cat?.carton&&Number(b.units_per_scan)===Number(cat.carton.units_per_carton)&&Number.isSafeInteger(price);
-          if(!b||!p||p.active===false||p.currency!=="IQD"||(!validUnit&&!validCarton)){
-            data={found:false,code:clean,has_longer_prefix:hasLonger};
-          }else{
+          if(b&&p&&p.active!==false&&p.currency==="IQD"&&(validUnit||validCarton)){
             const sibs=(idx.barcodesByProductId.get(p.id)||[]).filter(x=>x.active!==false).map(x=>({
               code:x.code,product_id:p.id,unit_type:x.unit_type,units_per_scan:x.units_per_scan,
               price_minor:x.unit_type==="carton"?(cat?.carton?.sale_price_iqd??null):p.price_minor
@@ -198,6 +235,7 @@
               found:true,code:b.code,product_id:p.id,product_name:p.name,
               sku:cat?.sku??p.sku??null,plu:cat?.plu??p.plu??null,
               unit_type:b.unit_type,units_per_scan:b.units_per_scan,
+              is_scale:false,scale_grams:null,scale_weight_kg:null,scale_label:null,
               price_minor:price,unit_price_minor:cat?.sale_mode==="carton"?null:p.price_minor,
               carton_price_minor:cat?.carton?.sale_price_iqd??null,
               units_per_carton:cat?.carton?.units_per_carton??null,
@@ -206,6 +244,32 @@
               stock_quantity:idx.stockByProductId.get(p.id)?.quantity??0,
               has_longer_prefix:hasLonger,product_barcodes:sibs
             };
+          }else{
+            const scale=resolveScale27(clean,idx);
+            if(scale){
+              const scaleProd=scale.product;
+              const sc=scale.catalog;
+              data={
+                found:true,code:clean,product_id:scaleProd.id,product_name:scaleProd.name,
+                sku:sc?.sku??scaleProd.sku??null,plu:sc?.plu??scaleProd.plu??null,
+                unit_type:"unit",units_per_scan:1,
+                is_scale:true,scale_grams:scale.grams,scale_weight_kg:scale.weightKg,scale_label:scale.scaleLabel,
+                price_minor:scale.priceMinor,unit_price_minor:scaleProd.price_minor,
+                carton_price_minor:sc?.carton?.sale_price_iqd??null,
+                units_per_carton:sc?.carton?.units_per_carton??null,
+                carton_name:sc?.carton?.name??null,
+                currency:scaleProd.currency||"IQD",
+                stock_quantity:idx.stockByProductId.get(scaleProd.id)?.quantity??0,
+                has_longer_prefix:hasLonger,
+                product_barcodes:[{
+                  code:clean,product_id:scaleProd.id,unit_type:"unit",
+                  units_per_scan:1,price_minor:scale.priceMinor,
+                  is_scale:true,scale_grams:scale.grams,scale_weight_kg:scale.weightKg,scale_label:scale.scaleLabel
+                }]
+              };
+            }else{
+              data={found:false,code:clean,has_longer_prefix:hasLonger};
+            }
           }
         }
       }
@@ -213,12 +277,17 @@
       if(!state.advancedRpcEnabled)err=error("PGRST202","Function not found");
       else{
         const q=String(args.p_search??args.p_query??"").trim().toLowerCase();
+        const stockFilter=String(args.p_stock_filter||"all");
         const off=Math.max(Number(args.p_offset)||0,0);
         const lim=Math.min(Math.max(Number(args.p_limit)||50,1),100);
         const idx=getIndex();
         let matched=state.products;
-        if(q){
+        if(q||stockFilter!=="all"){
           matched=state.products.filter(p=>{
+            const qty=Number(idx.stockByProductId.get(p.id)?.quantity??0);
+            if(stockFilter==="low"&&qty>5)return false;
+            if(stockFilter==="out"&&qty>0)return false;
+            if(!q)return true;
             if(String(p.name||"").toLowerCase().includes(q))return true;
             const cat=idx.catalogById.get(p.id);
             if(String(cat?.sku||p.sku||"").toLowerCase().includes(q))return true;
@@ -323,16 +392,25 @@
         else{
           for(const x of items)idx.stockByProductId.get(x.product_id).quantity-=x.quantity;
           state.indexVersion=(state.indexVersion||0)+1;
-          const sale={id:"ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0"),store_id:store.id,
+          const id="ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0");
+          const sale={id,store_id:store.id,
             receipt_no:state.nextReceipt,total_minor:total,cash_received_minor:args.p_cash_received,
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,cashier_id:account.id,status:"posted",
             created_at:new Date().toISOString()};
-          state.sales.push(sale);data=sale.id;
+          state.sales.push(sale);
+          for(const x of items){
+            const p=idx.productById.get(x.product_id);
+            state.saleItems.push({store_id:store.id,sale_id:id,product_id:x.product_id,quantity:x.quantity,
+              unit_price_minor:p?.price_minor||0,package_type:"unit",units_per_package:1,base_units:x.quantity,
+              product_name_snapshot:p?.name||""});
+          }
+          data=sale.id;
         }
       }
     }else if(name==="retail_checkout_packs_v16"){
+      const discount=Math.max(0,Number(args.p_discount||0));
       const previous=state.sales.find(x=>x.request_id===args.p_request);
-      const payload=JSON.stringify({items:args.p_items,cash:args.p_cash_received});
+      const payload=JSON.stringify({items:args.p_items,cash:args.p_cash_received,discount});
       const shift=state.sessions.find(x=>x.status==="open");
       if(previous){
         if(previous.request_payload!==payload)err=error("23505","request reused with changed payload");
@@ -340,40 +418,95 @@
       }else if(!shift)err=error("22023","No open cash shift");
       else{
         const idx=getIndex();
-        let total=0,invalid=false,needs=new Map();
+        let subtotal=0,invalid=false,needs=new Map();
         const saleLines=[];
         for(const line of args.p_items){
           const code=String(line.barcode);
-          const b=idx.activeBarcodeByCode.get(code);
-          const p=b?idx.productById.get(b.product_id):null;
-          const catalog=b?idx.catalogById.get(b.product_id):null;
-          const price=b?.unit_type==="carton"?catalog?.carton?.sale_price_iqd:p?.price_minor;
+          let b=idx.activeBarcodeByCode.get(code);
+          let p=b?idx.productById.get(b.product_id):null;
+          let catalog=b?idx.catalogById.get(b.product_id):null;
+          let price=b?.unit_type==="carton"?catalog?.carton?.sale_price_iqd:p?.price_minor;
+          let unitsPerScan=b?.units_per_scan;
+          let unitType=b?.unit_type;
+          let stockUnitsPerQty=unitsPerScan;
+          let snapshotLabel=unitType==="carton"?" (کارتۆن)":" (دانە)";
+          if(!b){
+            const scale=resolveScale27(code,idx);
+            if(scale){
+              p=scale.product;
+              price=scale.priceMinor;
+              unitsPerScan=1;
+              stockUnitsPerQty=scale.weightKg;
+              unitType="unit";
+              snapshotLabel=" ("+scale.scaleLabel+")";
+              b={code,unit_type:"unit",units_per_scan:1,is_scale:true,scale_weight_kg:scale.weightKg};
+            }
+          }
+          const expectedUnitsOk=b?.is_scale?(line.expected_units===1||line.expected_units===stockUnitsPerQty):line.expected_units===unitsPerScan;
           if(!b||!p||!Number.isSafeInteger(line.quantity)||line.quantity<1||
-             line.expected_price_minor!==price||line.expected_units!==b.units_per_scan){
+             line.expected_price_minor!==price||!expectedUnitsOk){
             invalid=true;break;
           }
-          total+=price*line.quantity;
-          needs.set(p.id,(needs.get(p.id)||0)+line.quantity*b.units_per_scan);
+          subtotal+=price*line.quantity;
+          const lineBaseUnits=Number((line.quantity*stockUnitsPerQty).toFixed(3));
+          needs.set(p.id,Number(((needs.get(p.id)||0)+lineBaseUnits).toFixed(3)));
           saleLines.push({product_id:p.id,quantity:line.quantity,unit_price_minor:price,
-            package_type:b.unit_type,package_barcode:b.code,units_per_package:b.units_per_scan,
-            base_units:line.quantity*b.units_per_scan,product_name_snapshot:p.name});
+            package_type:unitType,package_barcode:code,units_per_package:unitsPerScan,
+            base_units:lineBaseUnits,product_name_snapshot:p.name+snapshotLabel});
         }
-        if(invalid)err=error("22023","Barcode price/pack changed or inactive");
+        const total=subtotal-discount;
+        if(invalid||discount<0||discount>subtotal)err=error("22023","Barcode price/pack changed or inactive");
         else if(args.p_cash_received<total)err=error("22023","Cash amount is below total");
-        else if([...needs].some(([id,n])=>(idx.stockByProductId.get(id)?.quantity||0)<n))
+        else if([...needs].some(([id,n])=>Number((idx.stockByProductId.get(id)?.quantity||0).toFixed(3))<n))
           err=error("22023","Insufficient stock");
         else{
-          for(const [id,n] of needs)idx.stockByProductId.get(id).quantity-=n;
+          for(const [id,n] of needs){
+            const stockRow=idx.stockByProductId.get(id);
+            stockRow.quantity=Number((stockRow.quantity-n).toFixed(3));
+          }
           state.indexVersion=(state.indexVersion||0)+1;
           const id="ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0");
           state.sales.push({id,store_id:store.id,receipt_no:state.nextReceipt,
-            total_minor:total,cash_received_minor:args.p_cash_received,
+            total_minor:total,discount_minor:discount,cash_received_minor:args.p_cash_received,
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,
-            cashier_id:account.id,status:"posted",request_id:args.p_request,
+            cashier_id:account.id,status:"posted",refunded:false,request_id:args.p_request,
             request_payload:payload,created_at:new Date().toISOString()});
           for(const entry of saleLines)state.saleItems.push({...entry,store_id:store.id,sale_id:id});
           data=id;
         }
+      }
+    }else if(name==="retail_return_sale_v19"){
+      const shift=state.sessions.find(x=>x.status==="open");
+      const sale=state.sales.find(x=>x.id===args.p_sale&&x.store_id===store.id);
+      if(!shift)err=error("22023","No open cash shift");
+      else if(!sale||sale.status!=="posted"||sale.refunded)err=error("22023","پسووڵەکە پێشتر گەڕاوەتەوە یان نادروستە");
+      else{
+        const idx=getIndex();
+        const items=state.saleItems.filter(x=>x.sale_id===sale.id);
+        let restoredUnits=0;
+        for(const item of items){
+          const baseUnits=Number(Number(item.base_units??(Number(item.quantity)*Number(item.units_per_package||1))).toFixed(3));
+          let row=idx.stockByProductId.get(item.product_id);
+          if(row)row.quantity=Number((row.quantity+baseUnits).toFixed(3));
+          else{row={store_id:store.id,product_id:item.product_id,quantity:baseUnits};state.stock.push(row);}
+          restoredUnits=Number((restoredUnits+baseUnits).toFixed(3));
+        }
+        sale.refunded=true;
+        state.movements.push({
+          id:"eeeeeeee-eeee-4eee-8eee-"+String(state.movements.length+1).padStart(12,"0"),
+          store_id:store.id,session_id:shift.id,actor_id:account.id,
+          request_id:args.p_request,kind:"cash_out",amount_minor:sale.total_minor,
+          note:"گەڕاندنەوەی پسووڵە #"+String(sale.receipt_no).padStart(6,"0"),
+          created_at:new Date().toISOString()
+        });
+        state.audit.push({
+          id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
+          store_id:store.id,subject_id:sale.id,actor_id:account.id,
+          action:"sale.return_v19",created_at:new Date().toISOString(),
+          details:{receipt_no:sale.receipt_no,refunded_minor:sale.total_minor,restored_units:restoredUnits}
+        });
+        state.indexVersion=(state.indexVersion||0)+1;
+        data={sale_id:sale.id,receipt_no:sale.receipt_no,refunded_minor:sale.total_minor,restored_units:restoredUnits};
       }
     }else if(name==="retail_shift_close"){
       const session=state.sessions.find(s=>s.id===args.p_session&&s.status==="open");

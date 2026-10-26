@@ -86,6 +86,11 @@
         editBtn.type = "button"; editBtn.className = "catalog-table-btn"; editBtn.textContent = "دەستکاری";
         editBtn.addEventListener("click", () => void beginEdit(p.id)); actionCell.append(editBtn);
       }
+      const stockLink = document.createElement("a");
+      stockLink.className = "catalog-stock-btn";
+      stockLink.href = "./operations.html?view=stock&product=" + encodeURIComponent(p.id) + "&q=" + encodeURIComponent(p.name || "");
+      stockLink.textContent = "+ کۆگا";
+      actionCell.append(stockLink);
       row.append(actionCell);
       table.tBodies[0].append(row);
     }
@@ -151,6 +156,46 @@
     listTotal = res.total;
     renderProducts(false);
   }
+  function buildBarcodeSvg(code) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.id = "label-barcode-svg";
+    svg.setAttribute("height", "34");
+    const clean = String(code || "000000").trim();
+    const widths = [2, 1, 2, 1];
+    for (let i = 0; i < clean.length; i++) {
+      const ch = clean.charCodeAt(i);
+      widths.push(1 + (ch % 3), 1 + ((ch >> 2) % 2), 1 + ((ch >> 3) % 3), 1);
+    }
+    widths.push(2, 1, 2);
+    let x = 4;
+    for (let i = 0; i < widths.length; i++) {
+      const w = widths[i];
+      if (i % 2 === 0) {
+        const rect = document.createElementNS(ns, "rect");
+        rect.setAttribute("x", String(x));
+        rect.setAttribute("y", "2");
+        rect.setAttribute("width", String(w));
+        rect.setAttribute("height", "30");
+        rect.setAttribute("fill", "#172b45");
+        svg.append(rect);
+      }
+      x += w;
+    }
+    svg.setAttribute("width", String(Math.min(Math.max(x + 4, 120), 210)));
+    svg.setAttribute("viewBox", "0 0 " + (x + 4) + " 34");
+    return svg;
+  }
+  function openLabelPreview(item) {
+    const box = $("barcode-label-box");
+    if (!box || !item) return;
+    $("label-product-name").textContent = item.name + (item.unitLabel ? " (" + item.unitLabel + ")" : "");
+    $("label-price-text").textContent = fmtIqd(item.priceMinor);
+    $("label-code-text").textContent = item.code || "—";
+    const holder = $("label-barcode-holder");
+    holder.replaceChildren(buildBarcodeSvg(item.code || "0"));
+    box.hidden = false;
+  }
   function renderPrices() {
     const root = $("prices-results");
     root.replaceChildren();
@@ -177,6 +222,21 @@
         editBtn.type = "button"; editBtn.className = "catalog-table-btn"; editBtn.textContent = "دەستکاری";
         editBtn.addEventListener("click", () => void beginEdit(p.id)); actionCell.append(editBtn);
       }
+      const stockLink = document.createElement("a");
+      stockLink.className = "catalog-stock-btn";
+      stockLink.href = "./operations.html?view=stock&product=" + encodeURIComponent(p.id) + "&q=" + encodeURIComponent(p.name || "");
+      stockLink.textContent = "+ کۆگا";
+      actionCell.append(stockLink);
+      const labelBtn = document.createElement("button");
+      labelBtn.type = "button"; labelBtn.className = "catalog-label-btn"; labelBtn.dataset.printLabel = (p.barcodes && p.barcodes[0]) || p.id;
+      labelBtn.textContent = "لەیبڵ";
+      labelBtn.addEventListener("click", () => openLabelPreview({
+        code: (p.barcodes && p.barcodes[0]) || p.sku || p.plu || "000000",
+        name: p.name,
+        priceMinor: p.sale_mode === "carton" && p.carton_price_minor != null ? p.carton_price_minor : p.price_minor,
+        unitLabel: p.sale_mode === "carton" ? "کارتۆن" : "دانە"
+      }));
+      actionCell.append(labelBtn);
       tr.append(actionCell);
       table.tBodies[0].append(tr);
     }
@@ -202,7 +262,7 @@
       return;
     }
     const table = document.createElement("table"); table.className = "table";
-    table.innerHTML = "<thead><tr><th>بارکۆد</th><th>کاڵا</th><th>یەکە</th><th>بڕی دانە</th><th>نرخی فرۆشتن</th><th>جۆری بارکۆد</th></tr></thead><tbody></tbody>";
+    table.innerHTML = "<thead><tr><th>بارکۆد</th><th>کاڵا</th><th>یەکە</th><th>بڕی دانە</th><th>نرخی فرۆشتن</th><th>جۆری بارکۆد</th><th></th></tr></thead><tbody></tbody>";
     for (const b of barcodeItems) {
       const tr = document.createElement("tr");
       const unitLabel = b.unit_type === "carton" ? "کارتۆن" : "دانە";
@@ -217,6 +277,18 @@
       ]) {
         const td = document.createElement("td"); td.textContent = String(val); tr.append(td);
       }
+      const actionTd = document.createElement("td");
+      const labelBtn = document.createElement("button");
+      labelBtn.type = "button"; labelBtn.className = "catalog-label-btn"; labelBtn.dataset.printLabel = b.code;
+      labelBtn.textContent = "لەیبڵ";
+      labelBtn.addEventListener("click", () => openLabelPreview({
+        code: b.code,
+        name: b.product_name || "کاڵا",
+        priceMinor: b.price_minor,
+        unitLabel
+      }));
+      actionTd.append(labelBtn);
+      tr.append(actionTd);
       table.tBodies[0].append(tr);
     }
     root.append(table);
@@ -277,18 +349,30 @@
     const d = res.data;
     const table = document.createElement("table");
     table.className = "table";
-    table.innerHTML = "<thead><tr><th>بارکۆد</th><th>کاڵا</th><th>یەکە</th><th>دانە لە پاکەت</th><th>نرخی فرۆشتن</th><th>بڕی کۆگا</th></tr></thead><tbody><tr></tr></tbody>";
+    table.innerHTML = "<thead><tr><th>بارکۆد</th><th>کاڵا</th><th>یەکە</th><th>دانە لە پاکەت</th><th>نرخی فرۆشتن</th><th>بڕی کۆگا</th><th></th></tr></thead><tbody><tr></tr></tbody>";
     const tr = table.tBodies[0].rows[0];
     for (const val of [
       d.code,
       d.product_name,
       d.unit_type === "carton" ? "کارتۆن" : "دانە",
-      String(d.units_per_scan) + " دانە",
+      d.scale_label || (String(d.units_per_scan) + " دانە"),
       fmtIqd(d.price_minor),
       Number(d.stock_quantity || 0).toLocaleString("en-US") + " دانە"
     ]) {
       const td = document.createElement("td"); td.textContent = String(val); tr.append(td);
     }
+    const actionTd = document.createElement("td");
+    const labelBtn = document.createElement("button");
+    labelBtn.type = "button"; labelBtn.className = "catalog-label-btn"; labelBtn.dataset.printLabel = d.code;
+    labelBtn.textContent = "لەیبڵ";
+    labelBtn.addEventListener("click", () => openLabelPreview({
+      code: d.code,
+      name: d.product_name,
+      priceMinor: d.price_minor,
+      unitLabel: d.unit_type === "carton" ? "کارتۆن" : "دانە"
+    }));
+    actionTd.append(labelBtn);
+    tr.append(actionTd);
     target.append(table);
     target.hidden = false;
   }
@@ -390,6 +474,11 @@
     store = data;
     if (!store) {show("store-panel");return;}
     show("products-panel");
+    const editId = new URLSearchParams(window.location.search).get("edit");
+    if (editId && user.id === store.owner_user_id) {
+      await beginEdit(editId);
+      return;
+    }
     setTab(["new","list","prices","barcodes"].includes(requestedTab) ? requestedTab : currentTab);
   }
   async function initialize() {
@@ -529,7 +618,31 @@
     e.preventDefault();
     void inspectExactBarcode($("barcode-inspect-input").value);
   });
+  if($("label-size")){
+    $("label-size").addEventListener("change",()=>{
+      $("label-card")?.classList.toggle("size-small",$("label-size").value==="38x25");
+    });
+  }
+  if($("label-print-btn")){
+    $("label-print-btn").addEventListener("click",()=>{window.print();});
+  }
+  if($("label-close-btn")){
+    $("label-close-btn").addEventListener("click",()=>{
+      if($("barcode-label-box"))$("barcode-label-box").hidden=true;
+    });
+  }
   document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+  document.addEventListener("keydown",e=>{
+    if(e.key==="F1"){e.preventDefault();window.location.href="./operations.html?view=cash";}
+    if(e.key==="F3"){e.preventDefault();window.location.href="./operations.html?view=stock";}
+    if(e.key==="F2"){
+      e.preventDefault();
+      if(currentTab==="list")$("search")?.focus();
+      else if(currentTab==="prices")$("prices-search")?.focus();
+      else if(currentTab==="barcodes")$("barcode-inspect-input")?.focus();
+      else $("product-form")?.querySelector('input[name="name"]')?.focus();
+    }
+  });
   $("logout").addEventListener("click",async()=>{
     if(db) await db.auth.signOut();
     user=null;store=null;products=[];show("auth-panel");message("auth-message","");

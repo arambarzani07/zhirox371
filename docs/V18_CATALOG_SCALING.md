@@ -17,6 +17,10 @@ Stage V18 removes the previous client-side catalog retrieval ceilings (`limit(20
 4. **Price & Barcode Inspection Tabs (`workspace.html` / `workspace.js`)**:
    - Adds `نرخەکان` (`data-tab="prices"`) and `بارکۆدەکان` (`data-tab="barcodes"`) inside `workspace.html` alongside `کاڵای نوێ` and `لیستی کاڵاکان`.
    - Includes an exact barcode inspector (`#barcode-inspect-form`) and 50-item server-side pagination (`#list-pagination`, `#prices-pagination`, `#barcodes-pagination`, `#stock-pagination`).
+5. **Verified Supermarket Scale Barcode Format (`2700001004806`)**:
+   - Strictly recognizes the verified `27` + 5-digit PLU (`00001`) + 5-digit weight in grams (`00480` = `0.480` kg) + EAN-13 check digit (`6`) format only after checking ordinary registered unit/carton barcodes first.
+   - Calculates authoritative server-side sale total (`round(price_minor * weight_grams / 1000.0)` = `600` IQD for `تەماتە` at `1,250` IQD/kg) and deducts fractional stock in kilograms (`0.480` kg).
+   - Does not assume other unverified scale prefixes share this structure.
 
 ## Mandatory Production Release Gate
 
