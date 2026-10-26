@@ -46,6 +46,7 @@ DECLARE
  v_carton_cost numeric;
  v_carton_name text;
  v_aliases jsonb;
+ v_carton_aliases jsonb;
 BEGIN
  IF v_actor IS NULL OR NOT EXISTS(
    SELECT 1 FROM public.retail_stores WHERE id=p_store_id AND owner_user_id=v_actor)
@@ -83,6 +84,10 @@ BEGIN
   IF jsonb_typeof(v_carton)<>'object' OR jsonb_typeof(v_carton->'units_per_carton')<>'number'
      OR jsonb_typeof(v_carton->'sale_price_iqd')<>'number'
   THEN RAISE EXCEPTION 'Invalid carton definition' USING errcode='22023';END IF;
+  v_carton_aliases=coalesce(v_carton->'alias_barcodes','[]'::jsonb);
+  IF jsonb_typeof(v_carton_aliases)<>'array'
+     OR jsonb_array_length(v_carton_aliases)>30
+  THEN RAISE EXCEPTION 'Invalid carton aliases' USING errcode='22023';END IF;
   v_carton_code=nullif(btrim(v_carton->>'barcode'),'');
   v_carton_name=nullif(btrim(v_carton->>'name'),'');
   v_carton_units=(v_carton->>'units_per_carton')::numeric;
@@ -122,10 +127,21 @@ BEGIN
     store_id,product_id,carton_name,barcode,units_per_carton,purchase_price_minor,sale_price_minor)
    VALUES(p_store_id,v_product,v_carton_name,v_carton_code,
           v_carton_units::integer,v_carton_cost::bigint,v_carton_price::bigint);
+   -- Carton aliases share the SAME product, pack size and pack price.
+   FOR v_alias IN SELECT value FROM jsonb_array_elements_text(v_carton_aliases)
+   LOOP
+     IF v_alias IS NULL OR length(v_alias)<1 OR length(v_alias)>60
+        OR v_alias~'[[:space:],;]'
+     THEN RAISE EXCEPTION 'Invalid carton alias barcode' USING errcode='22023';END IF;
+     INSERT INTO public.retail_barcodes(store_id,product_id,code,unit_type,units_per_scan)
+     VALUES(p_store_id,v_product,v_alias,'carton',v_carton_units::integer);
+   END LOOP;
  END IF;
  INSERT INTO public.retail_audit_events(store_id,actor_id,action,subject_id,details)
  VALUES(p_store_id,v_actor,'product.register_v14',v_product,
-        jsonb_build_object('barcodes',1+jsonb_array_length(v_aliases)+(v_carton_code IS NOT NULL)::int));
+        jsonb_build_object('barcodes',1+jsonb_array_length(v_aliases)
+       +(v_carton_code IS NOT NULL)::int
+       +CASE WHEN v_carton_code IS NOT NULL THEN jsonb_array_length(v_carton_aliases) ELSE 0 END));
  RETURN v_product;
 END;
 $fn$;
