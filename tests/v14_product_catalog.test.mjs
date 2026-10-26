@@ -66,7 +66,7 @@ test("cost and selling prices must be safe, nonnegative whole IQD amounts",()=>{
  const zero=new Map(valid);zero.set("price","0");assert.equal(parse(zero).unit_sale_price_iqd,0);
  const blank=new Map(valid);blank.set("price","");assert.throws(()=>parse(blank),/پێویستە/);
 });
-test("product form owns barcode definitions; cashier remains read-only scan and blocks carton checkout",()=>{
+test("product form owns barcode definitions; cashier remains read-only and uses server carton pricing",()=>{
  const html=read("workspace.html"),owner=read("workspace.js"),cash=read("operations.js");
  for(const n of ["sku","plu","name","barcode","extra_barcodes","carton_barcode",
   "units_per_carton","purchase_price","price","carton_purchase_price","carton_price","extra_carton_barcodes"])
@@ -75,7 +75,9 @@ test("product form owns barcode definitions; cashier remains read-only scan and 
  assert.match(owner,/retail_register_product_v14/);
  assert.match(owner,/PGRST202/);
  assert.match(owner,/retail_create_product/);
- assert.match(cash,/if\(b\.unit_type!=="unit"\|\|Number\(b\.units_per_scan\)!==1\)/);
+ assert.match(cash,/retail_scan_catalog_v16/);
+ assert.match(cash,/retail_checkout_packs_v16/);
+ assert.match(cash,/b\.unit_type==="carton"/);
  assert.doesNotMatch(cash,/retail_register_product_v14|retail_create_product/);
  assert.match(cash,/retail_checkout_cash/);
 });
