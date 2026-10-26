@@ -40,7 +40,9 @@ try{
  for(const width of [1100,390]){
   await page.setViewportSize({width,height:760});
   await page.goto(root+"/index.html",{waitUntil:"load"});
-  assert.equal(await page.locator('link[href="./ui-contrast-lock.css"]').count(),1);
+  // Owner-locked Home remains byte-identical; existing shared CSS already
+  // forces the right opaque ink without loading the new auxiliary stylesheet.
+  assert.equal(await page.locator('link[href="./ui-contrast-lock.css"]').count(),0);
   assert.equal(await page.locator(".module").count(),12);
   await checkText(page.locator("main h1"),"rgb(245, 247, 250)","home title");
   await checkText(page.locator(".brand span"),"rgb(255, 255, 255)","PC header brand");
