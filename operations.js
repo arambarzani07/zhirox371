@@ -64,14 +64,18 @@ async function loadInventory(){
    .eq("store_id",store.id).eq("active",true)
    .order("name").limit(400);
  if(pres.error)throw pres.error;
- const bres=await db.from("retail_barcodes")
-   .select("product_id,code,unit_type,units_per_scan")
+ let bres=await db.from("retail_barcodes")
+   .select("product_id,code,unit_type,units_per_scan,active")
    .eq("store_id",store.id).limit(2000);
+ if(["42703","PGRST204","PGRST205"].includes(bres.error?.code))
+   bres=await db.from("retail_barcodes")
+     .select("product_id,code,unit_type,units_per_scan")
+     .eq("store_id",store.id).limit(2000);
  if(bres.error)throw bres.error;
  const sres=await db.from("retail_stock_balances")
    .select("product_id,quantity").eq("store_id",store.id).limit(2000);
  if(sres.error)throw sres.error;
- products=pres.data||[];barcodes=bres.data||[];
+ products=pres.data||[];barcodes=(bres.data||[]).filter(b=>b.active!==false);
  balances=new Map((sres.data||[]).map(x=>[x.product_id,Number(x.quantity)]));
  cart=cart.map(x=>{const p=products.find(p=>p.id===x.id);
    return p?{...x,name:p.name,price:Number(p.price_minor),available:balances.get(x.id)||0}:null;
