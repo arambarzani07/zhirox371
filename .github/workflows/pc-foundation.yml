@@ -106,6 +106,8 @@ jobs:
         run: node tests/browser/v16_units_cartons.mjs
       - name: Verify V17 PC stock receiving of unit and carton aliases
         run: node tests/browser/v17_stock_receiving.mjs
+      - name: Verify V17.1 single-transaction mixed unit and carton receiving
+        run: node tests/browser/v171_mixed_stock_receiving.mjs
       - name: Verify automatic one-field scan of primary and multiple unit/carton barcodes
         run: node tests/browser/v16_auto_scan.mjs
       - name: Verify V16 carton/unit receipt history and 58/80 mm printing in Chromium
@@ -141,6 +143,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v15/local_product_editor.sql
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v16/local_dual_sale_checkout.sql
           psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v17/local_receive_packs.sql
+          psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f tests/v17/local_receive_mixed_v171.sql
       - name: Install pinned Supabase JS client (temporary QA dependency)
         run: npm install --no-save --no-package-lock @supabase/supabase-js@2.118.0
       - name: Real signup, JWT, RBAC, tenant RLS and local-only TRUNCATE regression test
