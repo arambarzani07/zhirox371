@@ -41,7 +41,9 @@ test("cash operation prices come from loaded catalog and checkout uses RPC",()=>
 test("role permissions and audit read from Supabase",()=>{
  assert.match(logic,/\.from\("retail_memberships"\)/);
  assert.match(logic,/\.rpc\("retail_assign_staff"/);
- assert.match(logic,/retail_receive_packs_v17/);\n assert.match(logic,/retail_receive_mixed_v171/);\n assert.doesNotMatch(logic,/\.rpc\("retail_receive_stock"/);
+ assert.match(logic,/retail_receive_packs_v17/);
+ assert.match(logic,/retail_receive_mixed_v171/);
+ assert.doesNotMatch(logic,/\.rpc\("retail_receive_stock"/);
  assert.match(logic,/\.from\("retail_audit_events"\)/);
  assert.match(logic,/role==="owner"/);
 });
