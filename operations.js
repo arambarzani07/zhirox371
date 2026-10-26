@@ -104,30 +104,48 @@ async function loadInventory(){
  }
 }
 function updateStockUnits(){
- const chosen=$("stock-product").value,mode=$("stock-mode").value,barcode=$("stock-barcode"),old=barcode.value;
+ const product=$("stock-product").value,mode=$("stock-mode").value;
+ const unitType=mode==="both"?"unit":mode;
+ const barcode=$("stock-barcode"),old=barcode.value;
  barcode.replaceChildren();
- for(const b of barcodes.filter(b=>b.product_id===chosen&&b.unit_type===mode&&
-    (mode==="unit"?Number(b.units_per_scan)===1:Number(b.units_per_scan)>=2))){
+ for(const b of barcodes.filter(b=>b.product_id===product&&b.unit_type===unitType&&
+   (unitType==="unit"?Number(b.units_per_scan)===1:Number(b.units_per_scan)>=2))){
    const option=document.createElement("option");option.value=b.code;option.textContent=b.code;
    barcode.append(option);
  }
  if([...barcode.options].some(o=>o.value===old))barcode.value=old;
- const hasUnit=barcodes.some(b=>b.product_id===chosen&&b.unit_type==="unit"&&Number(b.units_per_scan)===1);
- const hasCarton=barcodes.some(b=>b.product_id===chosen&&b.unit_type==="carton"&&Number(b.units_per_scan)>=2);
- const modeSelect=$("stock-mode");
- for(const option of modeSelect.options)option.disabled=option.value==="unit"?!hasUnit:!hasCarton;
- if(barcode.options.length===0 && (hasUnit||hasCarton)){
-   modeSelect.value=hasUnit?"unit":"carton";
-   updateStockUnits();return;
+ const hasUnit=barcodes.some(b=>b.product_id===product&&b.unit_type==="unit"&&Number(b.units_per_scan)===1);
+ const hasCarton=barcodes.some(b=>b.product_id===product&&b.unit_type==="carton"&&Number(b.units_per_scan)>=2);
+ const modes=$("stock-mode");
+ for(const option of modes.options)
+   option.disabled=option.value==="unit"?!hasUnit:option.value==="carton"?!hasCarton:!(hasUnit&&hasCarton);
+ if(barcode.options.length===0&&(hasUnit||hasCarton)){
+   modes.value=hasUnit?"unit":"carton";updateStockUnits();return;
  }
+ const mixed=$("stock-both-fields");mixed.hidden=mode!=="both";
+ const carton=$("stock-mixed-carton"),previous=carton.value;carton.replaceChildren();
+ for(const b of barcodes.filter(b=>b.product_id===product&&b.unit_type==="carton"&&Number(b.units_per_scan)>=2)){
+   const option=document.createElement("option");option.value=b.code;option.textContent=b.code;carton.append(option);
+ }
+ if([...carton.options].some(x=>x.value===previous))carton.value=previous;
+ $("stock-mixed-qty").required=mode==="both";
  updateStockBaseTotal();
 }
 function updateStockBaseTotal(){
- const selected=barcodes.find(b=>b.product_id===$("stock-product").value&&b.code===$("stock-barcode").value);
+ const product=$("stock-product").value,mode=$("stock-mode").value;
+ const unit=barcodes.find(b=>b.product_id===product&&b.code===$("stock-barcode").value);
  const qty=Number($("stock-quantity").value);
- const units=Number(selected?.units_per_scan||0);
- $("stock-base-total").value=Number.isSafeInteger(qty)&&qty>0&&Number.isSafeInteger(units)&&units>0?
-   String(qty*units):"";
+ let amount=qty*Number(unit?.units_per_scan||0);
+ let valid=Number.isSafeInteger(qty)&&qty>=1&&qty<=1000000&&Number.isSafeInteger(amount)&&amount>0;
+ if(mode==="both"){
+   const pack=barcodes.find(b=>b.product_id===product&&b.code===$("stock-mixed-carton").value&&b.unit_type==="carton");
+   const count=Number($("stock-mixed-qty").value);
+   const cartonBase=count*Number(pack?.units_per_scan||0);
+   valid=valid&&unit?.unit_type==="unit"&&Number(unit.units_per_scan)===1&&
+     Number.isSafeInteger(count)&&count>=1&&Number.isSafeInteger(cartonBase)&&cartonBase>0;
+   amount+=cartonBase;
+ }
+ $("stock-base-total").value=valid&&Number.isSafeInteger(amount)&&amount<=1000000?String(amount):"";
 }
 function renderStock(){
  const selector=$("stock-product"),old=selector.value;selector.replaceChildren();
@@ -517,44 +535,58 @@ $("stock-product").addEventListener("change",updateStockUnits);
 $("stock-mode").addEventListener("change",updateStockUnits);
 $("stock-barcode").addEventListener("change",updateStockBaseTotal);
 $("stock-quantity").addEventListener("input",updateStockBaseTotal);
+$("stock-mixed-carton").addEventListener("change",updateStockBaseTotal);
+$("stock-mixed-qty").addEventListener("input",updateStockBaseTotal);
 $("stock-form").addEventListener("submit",async e=>{
  e.preventDefault();if(!canManage()||busy||!store)return;
- const f=new FormData(e.target),amount=Number(f.get("quantity")),reason=String(f.get("reason")||"");
- const product=String(f.get("product")||""),code=String(f.get("barcode")||""),mode=String(f.get("mode")||"");
- const barcode=barcodes.find(b=>b.product_id===product&&b.code===code&&b.unit_type===mode);
- const units=Number(barcode?.units_per_scan);
- if(!barcode||!Number.isSafeInteger(amount)||amount<1||amount>1000000||
-    !Number.isSafeInteger(units)||units<1||amount*units>1000000||
-    !["unit","carton"].includes(mode)||!["opening","purchase"].includes(reason)){
+ const f=new FormData(e.target),reason=String(f.get("reason")||"");
+ const product=String(f.get("product")||""),code=String(f.get("barcode")||""),
+   mode=String(f.get("mode")||""),qty=Number(f.get("quantity"));
+ const first=barcodes.find(b=>b.product_id===product&&b.code===code&&
+   b.unit_type===(mode==="both"?"unit":mode));
+ const units=Number(first?.units_per_scan);
+ const mix=barcodes.find(b=>b.product_id===product&&b.code===String(f.get("mixed_carton")||"")&&b.unit_type==="carton");
+ const mixedQty=Number(f.get("mixed_qty"));
+ const mixed=mode==="both";
+ const total=qty*units+(mixed?mixedQty*Number(mix?.units_per_scan||0):0);
+ if(!first||!Number.isSafeInteger(qty)||qty<1||qty>1000000||
+   !Number.isSafeInteger(units)||units<1||mode==="unit"&&units!==1||
+   mode==="carton"&&units<2||mixed&&(
+      !mix||!Number.isSafeInteger(mixedQty)||mixedQty<1||mixedQty>1000000||
+      first.unit_type!=="unit"||units!==1||Number(mix.units_per_scan)<2
+   )||!Number.isSafeInteger(total)||total<1||total>1000000||
+   !["unit","carton","both"].includes(mode)||!["opening","purchase"].includes(reason)){
    msg("stock-msg","بڕ یان بارکۆدی کۆگا نادروستە","error");return;
  }
- const args={p_store:store.id,p_barcode:code,p_packages:amount,p_expected_units:units,p_reason:reason};
- const fingerprint=JSON.stringify(args);
+ const args=mixed?
+   {p_store:store.id,p_lines:[
+      {barcode:first.code,packages:qty,expected_units:1},
+      {barcode:mix.code,packages:mixedQty,expected_units:Number(mix.units_per_scan)}
+    ],p_reason:reason}:
+   {p_store:store.id,p_barcode:code,p_packages:qty,p_expected_units:units,p_reason:reason};
+ const fingerprint=JSON.stringify({rpc:mixed?"mixed":"single",...args});
+ if(stockAttempt?.uncertain&&stockAttempt.fingerprint!==fingerprint){
+   msg("stock-msg","ئەنجامی وەرگرتنی پێشوو دیار نییە؛ هەمان داواکاری دووبارە بکەرەوە","error");return;
+ }
  if(!stockAttempt||stockAttempt.fingerprint!==fingerprint)
-   stockAttempt={fingerprint,id:crypto.randomUUID()};
+   stockAttempt={fingerprint,id:crypto.randomUUID(),uncertain:false};
  lock(true);msg("stock-msg");
  try{
-   const result=await db.rpc("retail_receive_packs_v17",{...args,p_request:stockAttempt.id});
-   if(result.error)throw result.error;
+   const {error}=await db.rpc(mixed?"retail_receive_mixed_v171":"retail_receive_packs_v17",
+     {...args,p_request:stockAttempt.id});
+   if(error)throw error;
    stockAttempt=null;e.target.reset();
    try{await loadInventory();msg("stock-msg","بڕی کۆگا تۆمارکرا","success");}
    catch(refreshError){msg("stock-msg","بڕی کۆگا تۆمارکرا؛ لیستەکە نوێ نەکرایەوە","success");}
  }catch(err){
-   // Only the known missing-RPC case can safely use the pre-V17 unit-only path.
-   if(["PGRST202","42883"].includes(err?.code)&&mode==="unit"){
-     try{
-       const legacy=await db.rpc("retail_receive_stock",{
-         p_store:store.id,p_product:product,p_quantity:amount,p_reason:reason
-       });
-       if(legacy.error)throw legacy.error;
-       stockAttempt=null;e.target.reset();await loadInventory();
-       msg("stock-msg","بڕی کۆگا تۆمارکرا","success");
-     }catch(e2){msg("stock-msg",safe(e2),"error");}
+   // Never fall back to non-idempotent legacy receive_stock.
+   // A network timeout may follow a successful COMMIT; retry with the SAME UUID.
+   if(/Failed to fetch|NetworkError|timeout/i.test(err?.message||"")){
+     stockAttempt.uncertain=true;
+     msg("stock-msg","ئەنجامی وەرگرتن دیار نییە؛ هەمان کردار دووبارە بکەرەوە","error");
    }else if(["PGRST202","42883"].includes(err?.code)){
      stockAttempt=null;
-     msg("stock-msg","وەرگرتنی کارتۆن لە سێرڤەر چالاک نییە","error");
-   }else if(/Failed to fetch|NetworkError/i.test(err?.message||"")){
-     msg("stock-msg","ئەنجامی وەرگرتن دیار نییە؛ هەمان کردار دووبارە بکەرەوە","error");
+     msg("stock-msg","وەرگرتنی دانە و کارتۆن لە سێرڤەر چالاک نییە","error");
    }else{stockAttempt=null;msg("stock-msg",safe(err),"error");}
  }finally{lock(false)}
 });
