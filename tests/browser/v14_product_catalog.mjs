@@ -22,6 +22,7 @@ async function fillAdvanced(){
  await input("purchase_price").fill("750");
  await input("carton_name").fill("کارتۆنی شیر");
  await input("carton_barcode").fill("6260001112230");
+ await input("extra_carton_barcodes").fill("6260001112261\n6260001112278");
  await input("units_per_carton").fill("12");
  await input("carton_purchase_price").fill("8500");
  await input("carton_price").fill("11000");
@@ -30,10 +31,15 @@ async function numRpc(name){return page.evaluate(n=>window.__retailQA.called.fil
 try {
  await page.goto(origin+"/workspace.html?view=new",{waitUntil:"load"});
  await page.locator("#new-panel").waitFor({state:"visible"});
- const fields=["sku","plu","barcode","extra_barcodes","price","purchase_price","carton_name","carton_barcode","units_per_carton","carton_purchase_price","carton_price"];
+ const fields=["sku","plu","barcode","extra_barcodes","price","purchase_price","carton_name","carton_barcode","units_per_carton","carton_purchase_price","carton_price","extra_carton_barcodes"];
  for(const f of fields)assert.equal(await input(f).count(),1,"Product form missing "+f);
  assert.equal(await page.locator(".market-banner").evaluate(el=>Math.round(el.getBoundingClientRect().top)),0);
  await fillAdvanced();
+ await input("extra_carton_barcodes").fill("6260001112247\n6260001112278");
+ await page.locator("#save-product").click();
+ assert.match(await page.locator("#product-message").innerText(),/دووبارە/);
+ assert.equal(await numRpc("retail_register_product_v14"),0);
+ await input("extra_carton_barcodes").fill("6260001112261\n6260001112278");
  await input("carton_barcode").fill("6260001112247");
  await page.locator("#save-product").click();
  assert.match(await page.locator("#product-message").innerText(),/دووبارە/);
@@ -54,15 +60,21 @@ try {
  assert.equal(received.p_catalog.carton.purchase_price_iqd,8500);
  assert.equal(received.p_catalog.carton.sale_price_iqd,11000);
  assert.equal(received.p_catalog.carton.units_per_carton,12);
+ assert.deepEqual(received.p_catalog.carton.alias_barcodes,["6260001112261","6260001112278"]);
  assert.deepEqual(received.p_catalog.unit_alias_barcodes,["6260001112247","6260001112254"]);
- assert.equal(await page.evaluate(()=>window.__retailQA.barcodes.filter(x=>x.product_id!=="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb").length),4);
+ assert.equal(await page.evaluate(()=>window.__retailQA.barcodes.filter(x=>x.product_id!=="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb").length),6);
  assert.equal(await page.evaluate(()=>window.__retailQA.products.length),2);
  assert.match(await page.locator("#product-message").innerText(),/تۆمارکرا/);
- console.log("PASS V14: full Sorani RTL product form, invalid input denied, atomic fixture call, 4 product barcodes and distinct unit/carton prices");
+ const cartons=await page.evaluate(()=>window.__retailQA.barcodes.filter(x=>x.unit_type==="carton"));
+ assert.equal(cartons.length,3);
+ assert.ok(cartons.every(x=>x.units_per_scan===12&&x.product_id===cartons[0].product_id));
+ console.log("PASS V14: 6 product barcodes (3 carton) share one product, identical carton size and single carton price");
 
  await page.locator('[data-tab="list"]').click();
  await page.locator("#results table tbody tr").first().waitFor();
  await page.locator("#search").fill("6260001112230");
+ assert.equal(await page.locator("#results table tbody tr").count(),1);
+ await page.locator("#search").fill("6260001112278");
  assert.equal(await page.locator("#results table tbody tr").count(),1);
  await page.locator("#search").fill("6260001112254");
  assert.equal(await page.locator("#results table tbody tr").count(),1);
