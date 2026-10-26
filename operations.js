@@ -365,8 +365,28 @@ $("logout").onclick=async()=>{
  msg("login-msg");
 };
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{if(!busy)selectTab(b.dataset.tab)}));
+// A single field accepts unit primary, unit aliases, carton primary and
+// carton aliases; barcode metadata determines its pack automatically.
+// HID scanners ending with Enter submit at once. No-Enter scanners submit
+// only when a FULL, non-prefix catalog barcode has settled for 160ms.
+let scanIdleTimer=null;
+$("barcode").addEventListener("input",()=>{
+ clearTimeout(scanIdleTimer);
+ const code=$("barcode").value.trim();
+ if(tab!=="cash"||busy||pendingCheckout||!code)return;
+ if(!barcodes.some(b=>b.code===code))return;
+ // A valid short barcode could be the start of a longer barcode.
+ // Wait for explicit Enter rather than silently selling the wrong item.
+ if(barcodes.some(b=>b.code.length>code.length&&b.code.startsWith(code)))return;
+ scanIdleTimer=setTimeout(()=>{
+   if(tab==="cash"&&!busy&&!pendingCheckout&&$("barcode").value.trim()===code)
+     $("scan-form").requestSubmit();
+ },160);
+});
 $("scan-form").addEventListener("submit",e=>{
- e.preventDefault();if(pendingCheckout||busy){msg("scan-msg","فرۆشتنی پێشوو هێشتا یەکلا نەبووە.","error");return}const code=String(new FormData(e.target).get("barcode")||"").trim();
+ e.preventDefault();clearTimeout(scanIdleTimer);scanIdleTimer=null;
+ if(pendingCheckout||busy){msg("scan-msg","فرۆشتنی پێشوو هێشتا یەکلا نەبووە.","error");return}
+ const code=String(new FormData(e.target).get("barcode")||"").trim();
  const b=barcodes.find(x=>x.code===code);
  if(!b){msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");return}
  if(!["unit","carton"].includes(b.unit_type)||
