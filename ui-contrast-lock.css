@@ -31,9 +31,6 @@
     filter: none !important;
     color-scheme: light !important;
   }
-  body > .viewport > .desktop > main :is(.module,.sub) {
-    background: #ffffff !important;
-  }
   body > .viewport > .desktop > main :is(
     .module .name,
     .sub .sub-name,
