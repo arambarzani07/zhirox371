@@ -67,7 +67,7 @@ try{
    await page.goto(root+"/"+name,{waitUntil:"domcontentloaded"});
    assert.equal(await page.locator('link[href="./ui-contrast-lock.css"]').count(),1);
    await checkText(page.locator("main h1"),"rgb(245, 247, 250)",name+" title");
-   await checkText(page.locator(".brand span").count()?page.locator(".brand span"):page.locator(".brand"),"rgb(255, 255, 255)",name+" brand");
+   await checkText(page.locator(".brand span:last-child"),"rgb(255, 255, 255)",name+" brand");
  }
  console.log("PASS 5 PC pages use the same last-loaded locked high-contrast ink layer; receipt print excluded");
 }finally{await browser.close();}
