@@ -8,6 +8,8 @@ const money=n=>Number(n).toLocaleString("en-US")+" IQD";
 const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نییە":
  /no open cash shift|shift not open/i.test(e?.message||"")?"شێفتی کاشێر نەکراوەتەوە":
  /insufficient cash in drawer/i.test(e?.message||"")?"پارەی سندووق بەش ناکات":
+ /barcode price\/pack changed|inactive/i.test(e?.message||"")?"نرخ یان بارکۆدی کاڵا گۆڕدراوە":
+ /function .*not found/i.test(e?.message||"")||["PGRST202","42883"].includes(e?.code)?"فرۆشتنی کارتۆن لە سێرڤەر چالاک نییە":
  /insufficient stock/i.test(e?.message||"")?"بڕی کۆگا بەش ناکات":
  /cash amount is below/i.test(e?.message||"")?"پارەی وەرگیراو کەمترە لە کۆی فرۆشتن":
  /invalid checkout/i.test(e?.message||"")?"زانیاری فرۆشتن هەڵەیە":
@@ -20,7 +22,11 @@ function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").
 function pendingKey(){return store&&user?"retail_pending_checkout_"+store.id+"_"+user.id:null}
 function persistPending(){const key=pendingKey();if(!key)return;try{if(pendingCheckout)sessionStorage.setItem(key,JSON.stringify(pendingCheckout));else sessionStorage.removeItem(key);}catch(e){msg("system-msg","پاراستنی هەوڵی فرۆشتن لە بیرگەی وێبگەڕدا سەرکەوتوو نەبوو","error")}}
 function syncPending(){const pending=!!pendingCheckout;for(const id of ["barcode","cash"])$(id).disabled=pending||busy;$("clear-cart").disabled=pending||busy;$("finish-sale").disabled=pending||busy||!shiftSession;$("retry-checkout").hidden=!pending;$("retry-checkout").disabled=busy;}
-function restorePending(){const key=pendingKey();if(!key)return;try{const val=JSON.parse(sessionStorage.getItem(key)||"null");if(!val||!val.id||!Array.isArray(val.items)||!Number.isSafeInteger(val.cash))return;pendingCheckout=val;requestId=val.id;cart=val.items.map(x=>{const p=products.find(p=>p.id===x.product_id);return p?{id:p.id,name:p.name,price:Number(p.price_minor),available:balances.get(p.id)||0,qty:x.quantity}:null}).filter(Boolean);$("cash").value=val.cash;msg("checkout-msg","ئەنجامی فرۆشتن دیار نییە؛ هەمان داواکاری پشکنەوە.","error");renderCart();syncPending();}catch(e){msg("system-msg","هەوڵی پارێزراوی پێشوو نەتوانرا بخوێندرێتەوە","error")}}
+function restorePending(){const key=pendingKey();if(!key)return;try{const val=JSON.parse(sessionStorage.getItem(key)||"null");if(!val||!val.id||!Array.isArray(val.items)||!Number.isSafeInteger(val.cash))return;pendingCheckout=val;requestId=val.id;cart=val.items.map(x=>{const b=val.v16?barcodes.find(b=>b.code===x.barcode):barcodes.find(b=>b.product_id===x.product_id&&b.unit_type==="unit");
+ const p=products.find(p=>p.id===(b?.product_id||x.product_id));
+ return p&&b?{id:p.id,name:p.name,barcode:b.code,mode:b.unit_type,
+   price:Number(x.expected_price_minor??b.price_minor??p.price_minor),
+   units:Number(x.expected_units??b.units_per_scan),available:balances.get(p.id)||0,qty:x.quantity}:null}).filter(Boolean);$("cash").value=val.cash;msg("checkout-msg","ئەنجامی فرۆشتن دیار نییە؛ هەمان داواکاری پشکنەوە.","error");renderCart();syncPending();}catch(e){msg("system-msg","هەوڵی پارێزراوی پێشوو نەتوانرا بخوێندرێتەوە","error")}}
 function unlockPending(){pendingCheckout=null;requestId=null;persistPending();syncPending();}
 function canManage(){return role==="owner"||role==="manager";}
 function viewPanel(name){
@@ -64,13 +70,20 @@ async function loadInventory(){
    .eq("store_id",store.id).eq("active",true)
    .order("name").limit(400);
  if(pres.error)throw pres.error;
- let bres=await db.from("retail_barcodes")
-   .select("product_id,code,unit_type,units_per_scan,active")
-   .eq("store_id",store.id).limit(2000);
- if(["42703","PGRST204","PGRST205"].includes(bres.error?.code))
+ let packCatalog=await db.rpc("retail_scan_catalog_v16",{p_store:store.id});
+ let bres;
+ if(!packCatalog.error){
+   bres={data:packCatalog.data,error:null};
+ }else if(["PGRST202","42883"].includes(packCatalog.error.code)){
+   // Hosted instances without V16 keep prior unit-only checkout unchanged.
    bres=await db.from("retail_barcodes")
-     .select("product_id,code,unit_type,units_per_scan")
+     .select("product_id,code,unit_type,units_per_scan,active")
      .eq("store_id",store.id).limit(2000);
+   if(["42703","PGRST204","PGRST205"].includes(bres.error?.code))
+     bres=await db.from("retail_barcodes")
+       .select("product_id,code,unit_type,units_per_scan")
+       .eq("store_id",store.id).limit(2000);
+ }else throw packCatalog.error;
  if(bres.error)throw bres.error;
  const sres=await db.from("retail_stock_balances")
    .select("product_id,quantity").eq("store_id",store.id).limit(2000);
@@ -78,7 +91,10 @@ async function loadInventory(){
  products=pres.data||[];barcodes=(bres.data||[]).filter(b=>b.active!==false);
  balances=new Map((sres.data||[]).map(x=>[x.product_id,Number(x.quantity)]));
  cart=cart.map(x=>{const p=products.find(p=>p.id===x.id);
-   return p?{...x,name:p.name,price:Number(p.price_minor),available:balances.get(x.id)||0}:null;
+   const scan=barcodes.find(b=>b.code===x.barcode);
+   if(!p||!scan||scan.unit_type!==x.mode)return null;
+   return {...x,name:p.name,price:Number(scan.price_minor??p.price_minor),
+     units:Number(scan.units_per_scan),available:balances.get(x.id)||0};
  }).filter(Boolean);
  const old=document.activeElement;
  if(tab==="stock")renderStock();else if(tab==="cash")renderCart();
@@ -93,6 +109,8 @@ function renderStock(){
  renderTable("stock-list",["کاڵا","بڕی کۆگا"],products.map(p=>[p.name,(balances.get(p.id)||0).toLocaleString("en-US")]));
 }
 function cartChanged(){if(pendingCheckout){syncPending();return}requestId=null;msg("checkout-msg","");renderCart()}
+function stockUsed(productId,excludeIndex=-1){return cart.reduce((n,line,i)=>n+(i===excludeIndex||line.id!==productId?0:line.qty*line.units),0)}
+function saleLabel(line){return line.name+(line.mode==="carton"?" (کارتۆن)":" (دانە)")}
 function renderCart(){
  const total=cart.reduce((sum,item)=>sum+item.price*item.qty,0);
  $("total").textContent=money(total);
@@ -104,7 +122,7 @@ function renderCart(){
  table.innerHTML="<thead><tr><th>کاڵا</th><th>نرخ</th><th>بڕ</th><th>کۆ</th></tr></thead><tbody></tbody>";
  cart.forEach((it,i)=>{
   const row=document.createElement("tr");
-  for(const x of [it.name,money(it.price),"",money(it.qty*it.price)]){const td=document.createElement("td");td.textContent=x;row.append(td)}
+  for(const x of [saleLabel(it),money(it.price),"",money(it.qty*it.price)]){const td=document.createElement("td");td.textContent=x;row.append(td)}
   const cell=row.children[2],wrap=document.createElement("span");wrap.className="qty";
   const minus=document.createElement("button");minus.type="button";minus.dataset.line=i;minus.dataset.delta="-1";minus.textContent="−";
   const plus=document.createElement("button");plus.type="button";plus.dataset.line=i;plus.dataset.delta="1";plus.textContent="+";
@@ -333,21 +351,29 @@ $("scan-form").addEventListener("submit",e=>{
  e.preventDefault();if(pendingCheckout||busy){msg("scan-msg","فرۆشتنی پێشوو هێشتا یەکلا نەبووە.","error");return}const code=String(new FormData(e.target).get("barcode")||"").trim();
  const b=barcodes.find(x=>x.code===code);
  if(!b){msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");return}
- if(b.unit_type!=="unit"||Number(b.units_per_scan)!==1){
-   msg("scan-msg","ئەم وەشانە تەنها بارکۆدی تاک پشتگیری دەکات","error");return
+ if(!["unit","carton"].includes(b.unit_type)||
+    (b.unit_type==="unit"&&Number(b.units_per_scan)!==1)||
+    (b.unit_type==="carton"&&!Number.isSafeInteger(Number(b.price_minor)))){
+   msg("scan-msg","شێوازی فرۆشتن پشتگیری ناکرێت","error");return;
  }
  const p=products.find(x=>x.id===b.product_id);
  if(!p||p.currency!=="IQD"){msg("scan-msg","کاڵا بۆ فرۆشتن بەردەست نییە","error");return}
- const current=cart.find(x=>x.id===p.id),stock=balances.get(p.id)||0;
- if((current?.qty||0)+1>stock){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
- if(current)current.qty++;else cart.push({id:p.id,name:p.name,price:Number(p.price_minor),available:stock,qty:1});
+ const mode=b.unit_type,units=Number(b.units_per_scan),price=Number(b.price_minor??p.price_minor);
+ if(!Number.isSafeInteger(price)||price<0||!Number.isSafeInteger(units)||units<1){
+   msg("scan-msg","نرخ یان یەکەی کاڵا نادروستە","error");return;
+ }
+ const stock=balances.get(p.id)||0;
+ if(stockUsed(p.id)+units>stock){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
+ const current=cart.find(x=>x.id===p.id&&x.mode===mode);
+ if(current)current.qty++;
+ else cart.push({id:p.id,name:p.name,barcode:b.code,mode,price,units,available:stock,qty:1});
  e.target.reset();msg("scan-msg");cartChanged();$("barcode").focus();
 });
 $("cart-list").addEventListener("click",e=>{
  const btn=e.target.closest("[data-line]");if(!btn||busy||pendingCheckout)return;
  const i=Number(btn.dataset.line),line=cart[i];if(!line)return;
  const qty=line.qty+Number(btn.dataset.delta);
- if(qty>line.available){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
+ if(stockUsed(line.id,i)+Math.max(0,qty)*line.units>line.available){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
  if(qty<=0)cart.splice(i,1);else line.qty=qty;
  cartChanged();
 });
@@ -357,7 +383,8 @@ async function commitCheckout(){
  if(!db||!store||busy||!pendingCheckout)return;
  lock(true);msg("checkout-msg");
  try{
-   const {data,error}=await db.rpc("retail_checkout_cash",{
+   const {data,error}=await db.rpc(pendingCheckout.v16?
+      "retail_checkout_packs_v16":"retail_checkout_cash",{
      p_store:store.id,p_request:pendingCheckout.id,
      p_items:pendingCheckout.items,p_cash_received:pendingCheckout.cash
    });
@@ -378,7 +405,7 @@ async function commitCheckout(){
    }catch(inventoryError){msg("system-msg","فرۆشتن تۆمارکرا؛ نوێکردنەوەی کۆگا سەرکەوتوو نەبوو","error")}
  }catch(err){
    // Keep ambiguous requests frozen for retry with the identical request UUID and payload.
-   if(["22023","42501","22P02","23514"].includes(err?.code)){
+   if(["22023","42501","22P02","23514","PGRST202","42883"].includes(err?.code)){
      unlockPending();
      msg("checkout-msg",safe(err),"error");
    }else{
@@ -394,7 +421,12 @@ $("checkout-form").addEventListener("submit",async e=>{
    msg("checkout-msg","پارەی وەرگیراو نادروستە","error");return;
  }
  requestId=crypto.randomUUID();
- pendingCheckout={id:requestId,items:cart.map(x=>({product_id:x.id,quantity:x.qty})),cash};
+ const packs=cart.some(x=>x.mode==="carton");
+ pendingCheckout={id:requestId,
+   v16:packs,
+   items:packs?cart.map(x=>({barcode:x.barcode,quantity:x.qty,
+       expected_price_minor:x.price,expected_units:x.units})):
+      cart.map(x=>({product_id:x.id,quantity:x.qty})),cash};
  persistPending();syncPending();
  await commitCheckout();
 });
