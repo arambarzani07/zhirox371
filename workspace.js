@@ -392,7 +392,8 @@
     form.elements.namedItem("extra_barcodes").disabled=isScale||mode==="carton";
     const plu=form.elements.namedItem("plu");
     plu.required=isScale;
-    plu.pattern=isScale?"[0-9]{5}":"";
+    if(isScale)plu.setAttribute("pattern","[0-9]{5}");
+    else plu.removeAttribute("pattern");
     plu.maxLength=isScale?5:30;
     $("unit-fields-title").textContent=isScale?"تەرازوو":"دانە";
     $("purchase-price-label").textContent=isScale?"نرخی کڕینی کیلۆگرام (IQD)":"نرخی کڕینی دانە (IQD)";
