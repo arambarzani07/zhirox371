@@ -30,10 +30,20 @@ try{
  await page.locator("#sheet").waitFor({state:"visible"});
  assert.equal(await page.locator("#print").isDisabled(),false);
  assert.equal(await page.locator("#paper").inputValue(),"58");
- assert.equal(await page.locator("#receipt-lines .line").count(),2);
- const receiptText=await page.locator("#receipt-lines").innerText();
- assert.match(receiptText,/2 کارتۆن × 12 دانە/);
- assert.match(receiptText,/3 دانە/);
+ // Modern thermal print is six ruled table columns, not stacked .line blocks.
+ assert.equal(await page.locator("#receipt-lines tr").count(),2);
+ const grid=page.locator(".receipt-items");
+ assert.deepEqual(await grid.locator("thead th").allTextContents(),
+   ["ژمارە","ناوی کاڵا","یەکە","نرخ","بڕ","کۆ"]);
+ const rows=grid.locator("tbody tr");
+ assert.equal(await rows.nth(0).locator("td").nth(2).innerText(),"کارتۆن\\n12 دانە");
+ assert.equal(await rows.nth(0).locator("td").nth(3).innerText(),"11,000");
+ assert.equal(await rows.nth(0).locator("td").nth(4).innerText(),"2");
+ assert.equal(await rows.nth(0).locator("td").nth(5).innerText(),"22,000");
+ assert.equal(await rows.nth(1).locator("td").nth(2).innerText(),"دانە");
+ assert.equal(await rows.nth(1).locator("td").nth(3).innerText(),"1,000");
+ assert.equal(await rows.nth(1).locator("td").nth(4).innerText(),"3");
+ assert.equal(await rows.nth(1).locator("td").nth(5).innerText(),"3,000");
  assert.equal(await page.locator("#total").innerText(),"25,000 IQD");
  assert.equal(await page.locator("#change").innerText(),"5,000 IQD");
  await page.locator("#paper").selectOption("80");
