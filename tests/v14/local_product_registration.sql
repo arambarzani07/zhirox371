@@ -26,6 +26,9 @@ CREATE POLICY retail_carton_owner_manager_view ON public.retail_product_cartons 
  USING(retail_internal.has_role(store_id,array['manager']));
 -- Never expose pack purchase costs to cashiers via direct SELECT.
 
+CREATE UNIQUE INDEX retail_products_store_scale_plu_unique ON public.retail_products(store_id,plu)
+ WHERE plu ~ '^[0-9]{5}$';
+
 CREATE OR REPLACE FUNCTION public.retail_register_product_v14(p_store_id uuid,p_catalog jsonb)
 RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
@@ -61,9 +64,11 @@ BEGIN
   RAISE EXCEPTION 'Invalid sale mode' USING errcode='22023';END IF;
  v_name=nullif(btrim(p_catalog->>'name'),'');
  v_unit_code=nullif(btrim(p_catalog->>'unit_barcode'),'');
- IF v_name IS NULL OR length(v_name)>160 OR (v_sale_mode<>'carton' AND v_unit_code IS NULL)
+ IF v_name IS NULL OR length(v_name)>160 OR (v_sale_mode<>'carton' AND v_unit_code IS NULL AND NOT (v_sale_mode='unit' AND coalesce(p_catalog->>'plu','') ~ '^[0-9]{5}$'))
     OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item name or barcode' USING errcode='22023';END IF;
+ IF v_unit_code IS NOT NULL AND coalesce(p_catalog->>'plu','') ~ '^[0-9]{5}$' AND v_unit_code='27'||(p_catalog->>'plu')
+ THEN RAISE EXCEPTION 'Incomplete scale prefix cannot be unit barcode' USING errcode='22023';END IF;
  IF v_sale_mode='carton' THEN
   IF v_unit_code IS NOT NULL OR jsonb_array_length(coalesce(p_catalog->'unit_alias_barcodes','[]'::jsonb))>0
      OR (p_catalog->'unit_purchase_price_iqd' IS NOT NULL AND jsonb_typeof(p_catalog->'unit_purchase_price_iqd')<>'null')
@@ -90,6 +95,8 @@ BEGIN
  IF v_aliases IS NULL OR jsonb_typeof(v_aliases)<>'array'
     OR jsonb_array_length(v_aliases)>30
  THEN RAISE EXCEPTION 'Invalid unit aliases' USING errcode='22023';END IF;
+ IF v_sale_mode='unit' AND v_unit_code IS NULL AND jsonb_array_length(v_aliases)>0
+ THEN RAISE EXCEPTION 'Scale-only product cannot have unit aliases' USING errcode='22023';END IF;
  v_carton=p_catalog->'carton';
  IF (v_sale_mode='unit' AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
     OR (v_sale_mode IN ('carton','both') AND (v_carton IS NULL OR jsonb_typeof(v_carton)='null'))
@@ -123,7 +130,7 @@ BEGIN
  VALUES(p_store_id,v_name,nullif(p_catalog->>'sku',''),nullif(p_catalog->>'plu',''),
         v_unit_price::bigint,v_cost,'IQD',true) RETURNING id INTO v_product;
 
- IF v_sale_mode<>'carton' THEN
+ IF v_sale_mode<>'carton' AND v_unit_code IS NOT NULL THEN
   INSERT INTO public.retail_barcodes(store_id,product_id,code,unit_type,units_per_scan)
   VALUES(p_store_id,v_product,v_unit_code,'unit',1);
  END IF;
@@ -155,7 +162,7 @@ BEGIN
  END IF;
  INSERT INTO public.retail_audit_events(store_id,actor_id,action,subject_id,details)
  VALUES(p_store_id,v_actor,'product.register_v14',v_product,
-        jsonb_build_object('barcodes',(v_sale_mode<>'carton')::int+jsonb_array_length(v_aliases)
+        jsonb_build_object('barcodes',(v_unit_code IS NOT NULL)::int+jsonb_array_length(v_aliases)
        +(v_carton_code IS NOT NULL)::int
        +CASE WHEN v_carton_code IS NOT NULL THEN jsonb_array_length(v_carton_aliases) ELSE 0 END));
  RETURN v_product;

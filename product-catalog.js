@@ -24,13 +24,19 @@
   const requestedMode=incoming||(text(get("carton_barcode"))||text(get("extra_carton_barcodes"))||text(get("units_per_carton"))||text(get("carton_price"))?"both":"unit");
   if(!["unit","carton","both"].includes(requestedMode))fail("شێوازی فرۆشتن نادروستە");
   const unitEnabled=requestedMode!=="carton",cartonEnabled=requestedMode!=="unit";
-  const unit=barcode(get("barcode"),unitEnabled);
+  const plu=text(get("plu"));
+  const scaleOnly=unitEnabled&&requestedMode==="unit"&&/^\d{5}$/.test(plu)&&!text(get("barcode"));
+  const unit=barcode(get("barcode"),unitEnabled&&!scaleOnly);
   if(!unitEnabled&&unit)fail("بارکۆدی دانە لەم شێوازەدا چالاک نییە");
+  // A 27+PLU prefix is NOT a complete barcode; the real scale will generate
+  // 27 + five-digit PLU + weight-in-grams + EAN13 check digit dynamically.
+  if(/^\d{5}$/.test(plu)&&unit==="27"+plu)
+    fail("کۆدی تەرازوو نابێت وەک بارکۆدی دانە تۆمار بکرێت");
   const unitPrice=price(get("price"),unitEnabled,"نرخی فرۆشتنی دانە");
   const unitCost=price(get("purchase_price"),false,"نرخی کڕینی دانە");
   const cartonCost=price(get("carton_purchase_price"),false,"نرخی کڕینی کارتۆن");
   const cartonPrice=price(get("carton_price"),false,"نرخی فرۆشتنی کارتۆن");
-  const sku=text(get("sku")),plu=text(get("plu")),cartonName=text(get("carton_name"));
+  const sku=text(get("sku")),cartonName=text(get("carton_name"));
   if(sku.length>80||plu.length>30||cartonName.length>100)fail("زانیارییەکانی کاڵا زۆر درێژن");
   const cartonCode=barcode(get("carton_barcode"));
   const rawExtra=text(get("extra_barcodes"));
@@ -39,6 +45,7 @@
   const cartonAliases=rawCartonExtra?rawCartonExtra.split(/[\n,،;]+/u).map(x=>barcode(x)).filter(Boolean):[];
   if(!unitEnabled&&(unitAliases.length||unitCost!==null))fail("خانەکانی دانە لەم شێوازەدا چالاک نین");
   if(!cartonEnabled&&(cartonAliases.length||cartonCode||cartonName||text(get("units_per_carton"))||cartonCost!==null||cartonPrice!==null))fail("خانەکانی کارتۆن لەم شێوازەدا چالاک نین");
+  if(scaleOnly&&unitAliases.length)fail("کۆدی تەرازوو بە تەنها تۆمار دەکرێت؛ فرەبارکۆدی دانە پێویست نییە");
   if(unitAliases.length>30||cartonAliases.length>30)fail("ژمارەی بارکۆدەکان لە سنوور زیاترە");
   const codes=[...(unit?[unit]:[]),...unitAliases,...(cartonCode?[cartonCode]:[]),...cartonAliases];
   if(new Set(codes).size!==codes.length)fail("بارکۆدی دووبارە لە هەمان کاڵا هەیە");
@@ -52,7 +59,7 @@
   }
   const advanced=Boolean(requestedMode!=="unit"||unitAliases.length||cartonRequested||unitCost!==null||sku||plu);
   return Object.freeze({
-   advanced, sale_mode:requestedMode,
+   advanced, sale_mode:requestedMode, scale_only:scaleOnly,
    name, sku:sku||null, plu:plu||null,
    unit_barcode:unit,
    unit_purchase_price_iqd:unitCost,
