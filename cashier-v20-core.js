@@ -29,8 +29,9 @@
    if(line.isScale&&cart.some(x=>x.isScale&&x.barcode===line.barcode))return fail("duplicate_scale");
    const at=line.isScale?-1:cart.findIndex(x=>!x.isScale&&x.id===line.id&&
       x.mode===line.mode&&x.price===line.price&&x.units===line.units&&
-      // Preserve distinct pricing and packaging for unrelated alias codes.
-      x.barcode===line.barcode);
+      // Unit/carton aliases with the same authoritative price and pack size
+      // are interchangeable; the original barcode stays in the checkout RPC.
+      true);
    const previous=at<0?0:cart[at].qty;
    const quantity=previous+1;
    if(quantity>100)return fail("limit");
