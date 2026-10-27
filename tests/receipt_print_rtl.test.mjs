@@ -127,3 +127,10 @@ test("six columns fit thermal paper with RTL item names and LTR numbers",()=>{
  assert.match(page,/width:var\(--receipt-paper\)!important/);
  assert.match(page,/<h1 id="store-name"><\/h1>/);
 });
+test("all six receipt columns and each product row have visible solid grid lines",()=>{
+ assert.match(page,/\.receipt-page \.receipt-items\{[^}]*border:1px solid #333/);
+ assert.match(page,/\.receipt-page \.receipt-items th,\.receipt-page \.receipt-items td\{[^}]*border:1px solid #333/);
+ assert.match(page,/@media print\{\.receipt-page \.receipt-items,\.receipt-page \.receipt-items th,\.receipt-page \.receipt-items td\{border-color:#000!important\}\}/);
+ assert.doesNotMatch(page,/\.receipt-items th,\.receipt-page \.receipt-items td\{[^}]*border-bottom:1px dotted/);
+ assert.match(page,/<tbody id="receipt-lines"><\/tbody>/);
+});
