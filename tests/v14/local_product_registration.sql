@@ -95,6 +95,8 @@ BEGIN
  IF v_aliases IS NULL OR jsonb_typeof(v_aliases)<>'array'
     OR jsonb_array_length(v_aliases)>30
  THEN RAISE EXCEPTION 'Invalid unit aliases' USING errcode='22023';END IF;
+ IF v_sale_mode='unit' AND v_unit_code IS NULL AND jsonb_array_length(v_aliases)>0
+ THEN RAISE EXCEPTION 'Scale-only product cannot have unit aliases' USING errcode='22023';END IF;
  v_carton=p_catalog->'carton';
  IF (v_sale_mode='unit' AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
     OR (v_sale_mode IN ('carton','both') AND (v_carton IS NULL OR jsonb_typeof(v_carton)='null'))
