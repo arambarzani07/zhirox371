@@ -9,6 +9,7 @@
  function msg(value) { $("message").textContent = value || ""; }
  function paper(value) {
    const size = value === "80" ? "80" : "58";
+   document.documentElement.setAttribute("data-paper",size);
    document.documentElement.style.setProperty("--receipt-paper", size + "mm");
    document.documentElement.style.setProperty("--receipt-content",size === "80" ? "70mm" : "48mm");
    $("paper").value = size;
@@ -19,23 +20,30 @@
    if(cls) node.className = cls;
    return node;
  }
+ const fmtQuantity = n => Number(n).toLocaleString("en-US",{maximumFractionDigits:3});
  function renderLine(root,name,qty,price,packType,unitsPerPack,baseUnits,baseUnit) {
-   const outer=el("div","","line");
+   const outer=el("section","","line");
    outer.append(el("div",name,"line-name"));
-   if(baseUnit==="kg"){
-     outer.append(el("div","کێش: "+qty.toFixed(3)+" کیلۆگرام — نرخی کیلۆ: "+fmt(price),"pack-detail"));
-   }else if(packType==="carton"&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
-     outer.append(el("div",String(qty)+" کارتۆن × "+String(unitsPerPack)+" دانە","pack-detail"));
-   }else if(baseUnits!=null&&Number(baseUnits)>0&&Number(baseUnits)!==qty){
-     const kgRate=Math.round(Number(price)/Number(baseUnits));
-     outer.append(el("div","کێش: "+Number(baseUnits).toFixed(3)+" کگم (نرخی ١ کگم: "+fmt(kgRate)+")","pack-detail"));
-   }else if(packType==="unit"){
-     outer.append(el("div",String(qty)+" دانە","pack-detail"));
+   // Units on old receipts are historical snapshots, not the current product settings.
+   if(packType==="carton"&&baseUnit!=="kg"&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
+     outer.append(el("div",fmtQuantity(qty)+" کارتۆن × "+fmtQuantity(unitsPerPack)+" دانە","line-note"));
    }
-   const data=el("div","","row");
-   data.append(el("span",(baseUnit==="kg"?qty.toFixed(3)+" kg":String(qty))+" × "+fmt(price)));
-   data.append(el("strong",fmt(Math.round(qty*price)),"money"));
-   outer.append(data);root.append(outer);
+   const details=el("div","","line-details");
+   let calculation;
+   if(baseUnit==="kg"){
+     calculation=qty.toFixed(3)+" kg × "+fmtQuantity(price)+" IQD/kg";
+   }else if(packType==="carton"){
+     calculation=fmtQuantity(qty)+" × "+fmtQuantity(price)+" IQD";
+   }else {
+     calculation=fmtQuantity(qty)+" × "+fmtQuantity(price)+" IQD";
+   }
+   const math=el("span",calculation,"line-calculation");
+   math.setAttribute("dir","ltr");
+   const amount=el("strong",fmt(Math.round(qty*price)),"line-total money");
+   amount.setAttribute("dir","ltr");
+   details.append(math,amount);
+   outer.append(details);
+   root.append(outer);
  }
  async function initialize() {
    if(!uuid.test(saleId||"")){msg("ناسنامەی پسووڵە نادروستە");return;}
