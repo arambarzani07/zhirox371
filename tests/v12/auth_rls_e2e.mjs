@@ -662,10 +662,26 @@ const tomatoId=ok(await owner.rpc("retail_register_product_v14",{
  p_store_id:storeA.id,
  p_catalog:{
   advanced:true,sale_mode:"unit",name:"تەماتە",sku:"VEG-00001",plu:"00001",
-  unit_barcode:"6260000000015",unit_purchase_price_iqd:900,unit_sale_price_iqd:1250,
+  unit_barcode:"",unit_purchase_price_iqd:900,unit_sale_price_iqd:1250,
   unit_alias_barcodes:[],carton:null,currency:"IQD"
  }
-}),"owner registers weighted product تەماتە with PLU 00001 at 1,250 IQD/kg");
+}),"owner registers scale-only تەماتە with PLU 00001, no invented unit barcode");
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+tomatoId+"'"),"0");
+const tomatoSnapshot=ok(await owner.rpc("retail_product_snapshot_v15",{
+ p_store_id:storeA.id,p_product_id:tomatoId
+}),"PLU-only product snapshot works");
+assert.equal(tomatoSnapshot.unit_barcode,"");
+assert.equal(tomatoSnapshot.plu,"00001");
+assert.equal(Number(tomatoSnapshot.unit_sale_price_iqd),1250);
+const tomatoEdit=ok(await owner.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:tomatoId,p_expected_version:tomatoSnapshot.version,
+ p_catalog:{advanced:true,sale_mode:"unit",scale_only:true,name:"تەماتە",sku:"VEG-00001",
+  plu:"00001",unit_barcode:"",unit_purchase_price_iqd:900,unit_sale_price_iqd:1250,
+  unit_alias_barcodes:[],carton:null,currency:"IQD"}
+}),"PLU-only V15 edit preserves kg price");
+assert.ok(tomatoEdit);
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+tomatoId+"'"),"0");
+passed("V14/V15: scale-only PLU 00001 registers and edits with no fake unit barcode, keeps unit/kg price");
 ok(await manager.rpc("retail_receive_stock",{
  p_store:storeA.id,p_product:tomatoId,p_quantity:5,p_reason:"opening"
 }),"manager receives 5.000 kg of تەماتە");
