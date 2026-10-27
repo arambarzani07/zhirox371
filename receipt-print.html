@@ -32,9 +32,9 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 .receipt-page .money,.receipt-page .latin{direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 .receipt-page .receipt-number{font-size:10px;font-weight:750}
 /* Six-column thermal table: natural RTL order, no horizontal scrolling or clipped sums. */
-.receipt-page .receipt-items{width:100%;table-layout:fixed;border-collapse:collapse;direction:rtl;font-size:7.2px;line-height:1.5}
-.receipt-page .receipt-items th,.receipt-page .receipt-items td{padding:4px 1px;vertical-align:top;border-bottom:1px dotted #aaa;text-align:center;overflow-wrap:anywhere}
-.receipt-page .receipt-items th{font-weight:800;border-top:1px solid #777;border-bottom:1px solid #777}
+.receipt-page .receipt-items{width:100%;table-layout:fixed;border-collapse:collapse;direction:rtl;font-size:7.2px;line-height:1.5;border:1px solid #333;margin:8px 0}
+.receipt-page .receipt-items th,.receipt-page .receipt-items td{padding:4px 1px;vertical-align:middle;border:1px solid #333;text-align:center;overflow-wrap:anywhere}
+.receipt-page .receipt-items th{font-weight:800;border-bottom:1.5px solid #222;background:white}
 .receipt-page .receipt-items th:nth-child(2),.receipt-page .receipt-items td:nth-child(2){text-align:right}
 .receipt-page .receipt-items td:nth-child(2){font-weight:700;line-height:1.55}
 .receipt-page .receipt-items .figure{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
@@ -52,6 +52,7 @@ html[data-paper="80"] .receipt-page .receipt h1{font-size:15px}
 html[data-paper="80"] .receipt-page .receipt-items{font-size:9.6px}
 html[data-paper="80"] .receipt-page .receipt-items th,html[data-paper="80"] .receipt-page .receipt-items td{padding:5px 2px}
 html[data-paper="80"] .receipt-page .receipt-items .pack-hint{font-size:8px}
+@media print{.receipt-page .receipt-items,.receipt-page .receipt-items th,.receipt-page .receipt-items td{border-color:#000!important}}
 [hidden]{display:none!important}
 @media print {
  @page{size:auto;margin:0}
@@ -89,13 +90,11 @@ html[data-paper="80"] .receipt-page .receipt-items .pack-hint{font-size:8px}
 <div class="rule"></div>
 <div class="receipt-row"><span>ژمارەی پسووڵە</span><strong id="receipt-number" class="money receipt-number"></strong></div>
 <div class="receipt-row"><span>بەروار و کات</span><span id="receipt-date" class="money"></span></div>
-<div class="rule"></div>
 <table class="receipt-items" aria-label="خشتەی کاڵاکانی پسووڵە">
 <colgroup><col style="width:8%"><col style="width:27%"><col style="width:12%"><col style="width:18%"><col style="width:15%"><col style="width:20%"></colgroup>
 <thead><tr><th scope="col">ژمارە</th><th scope="col">ناوی کاڵا</th><th scope="col">یەکە</th><th scope="col">نرخ</th><th scope="col">بڕ</th><th scope="col">کۆ</th></tr></thead>
 <tbody id="receipt-lines"></tbody>
 </table>
-<div class="rule"></div>
 <div class="totals">
 <div class="receipt-row grand-total"><span>کۆی گشتی</span><strong class="money" id="total"></strong></div>
 <div class="receipt-row"><span>پارەی وەرگیراو</span><span class="money" id="paid"></span></div>
