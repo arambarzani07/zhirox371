@@ -37,8 +37,8 @@ BEGIN
   'name',v_product.name,'sku',v_product.sku,'plu',v_product.plu,
   'unit_barcode',coalesce(v_unit_code,''),
   'unit_alias_barcodes',v_aliases,
-  'unit_purchase_price_iqd',CASE WHEN v_unit_code IS NULL THEN NULL ELSE v_product.purchase_price_minor END,
-  'unit_sale_price_iqd',CASE WHEN v_unit_code IS NULL THEN NULL ELSE v_product.price_minor END,'currency',v_product.currency,
+  'unit_purchase_price_iqd',CASE WHEN v_unit_code IS NULL AND v_carton.product_id IS NOT NULL THEN NULL ELSE v_product.purchase_price_minor END,
+  'unit_sale_price_iqd',CASE WHEN v_unit_code IS NULL AND v_carton.product_id IS NOT NULL THEN NULL ELSE v_product.price_minor END,'currency',v_product.currency,
   'carton',CASE WHEN v_carton.product_id IS NULL THEN 'null'::jsonb
     ELSE jsonb_build_object('name',v_carton.carton_name,'barcode',v_carton.barcode,
       'alias_barcodes',v_carton_aliases,
@@ -103,9 +103,18 @@ BEGIN
  v_sku=nullif(btrim(p_catalog->>'sku'),'');
  v_plu=nullif(btrim(p_catalog->>'plu'),'');
  v_unit_code=nullif(btrim(p_catalog->>'unit_barcode'),'');
+ IF v_sale_mode='unit' AND v_unit_code IS NULL THEN
+   IF v_plu IS NULL OR v_plu !~ '^[0-9]{1,5}$'
+   THEN RAISE EXCEPTION 'Scale item requires 1..5 digit PLU' USING errcode='22023';END IF;
+   IF v_plu::integer=0
+   THEN RAISE EXCEPTION 'Scale PLU 00000 is invalid' USING errcode='22023';END IF;
+   v_plu=lpad(v_plu,5,'0');
+ END IF;
+ IF v_unit_code ~ '^27[0-9]{5}$'
+ THEN RAISE EXCEPTION 'Incomplete scale barcode must not be a unit code' USING errcode='22023';END IF;
  IF v_name IS NULL OR length(v_name)>160
    OR length(coalesce(v_sku,''))>80 OR length(coalesce(v_plu,''))>30
-   OR (v_sale_mode<>'carton' AND v_unit_code IS NULL)
+   OR (v_sale_mode='both' AND v_unit_code IS NULL)
    OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item identity' USING errcode='22023';END IF;
  IF v_sale_mode='carton' THEN
@@ -132,7 +141,9 @@ BEGIN
   IF jsonb_array_length(v_unit_aliases)>0 OR (p_catalog->'unit_purchase_price_iqd' IS NOT NULL AND jsonb_typeof(p_catalog->'unit_purchase_price_iqd')<>'null')
   THEN RAISE EXCEPTION 'Unit aliases or cost not allowed' USING errcode='22023';END IF;
  ELSE
-  v_codes:=array_append(v_codes,v_unit_code);
+  IF v_unit_code IS NOT NULL THEN v_codes:=array_append(v_codes,v_unit_code);END IF;
+  IF v_unit_code IS NULL AND jsonb_array_length(v_unit_aliases)>0
+  THEN RAISE EXCEPTION 'Scale-only item cannot have unit aliases without primary' USING errcode='22023';END IF;
  END IF;
  FOR v_alias IN SELECT value FROM jsonb_array_elements_text(v_unit_aliases) LOOP
   IF v_alias IS NULL OR length(v_alias)<1 OR length(v_alias)>60
