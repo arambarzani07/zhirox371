@@ -51,7 +51,7 @@ async function receiptFixture({item,total,cash=total,paper="80"}){
  const window={
    RETAIL_CONFIG:{supabaseUrl:"https://example.supabase.co",publishableKey:"sample"},
    supabase:{createClient(){return db;}},
-   location:{assign(){}},
+   location:{search:"?sale="+saleId+"&paper="+paper,assign(){}},
    print(){}
  };
  const ctx={window,document,location:{search:"?sale="+saleId+"&paper="+paper},
