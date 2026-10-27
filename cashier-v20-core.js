@@ -27,11 +27,10 @@
    // Same 13-digit code on a second scan cannot prove a second physical package.
    // An operator must never accidentally charge a weighed label twice.
    if(line.isScale&&cart.some(x=>x.isScale&&x.barcode===line.barcode))return fail("duplicate_scale");
+   // Unit/carton aliases of the same product may share one line when
+   // server price and package size match. Never mix different pack/pricing.
    const at=line.isScale?-1:cart.findIndex(x=>!x.isScale&&x.id===line.id&&
-      x.mode===line.mode&&x.price===line.price&&x.units===line.units&&
-      // Unit/carton aliases with the same authoritative price and pack size
-      // are interchangeable; the original barcode stays in the checkout RPC.
-      true);
+      x.mode===line.mode&&x.price===line.price&&x.units===line.units);
    const previous=at<0?0:cart[at].qty;
    const quantity=previous+1;
    if(quantity>100)return fail("limit");
