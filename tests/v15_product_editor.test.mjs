@@ -12,7 +12,7 @@ test("V15 product form includes edit/cancel/history without adding overlay guida
  for(const id of ["product-form-title","cancel-edit","history-product","product-history","product-history-list"])
   assert.match(ui,new RegExp('id="'+id+'"'));
  assert.match(app,/async function beginEdit/);
- assert.match(app,/retail_product_snapshot_v15/);
+ assert.match(app,/retail_product_snapshot_v19/);
  assert.match(app,/retail_update_product_v15/);
  assert.match(app,/retail_product_history_v15/);
  assert.match(app,/p_expected_version:editing.version/);
