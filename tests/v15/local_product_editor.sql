@@ -112,7 +112,7 @@ BEGIN
    OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item identity' USING errcode='22023';END IF;
  IF v_sale_mode='scale' THEN
-  IF v_unit_code IS NOT NULL OR v_plu !~ '^[0-9]{5}$' OR v_plu='00000'
+  IF v_unit_code IS NOT NULL OR (coalesce(v_plu,'')) !~ '^[0-9]{5}$' OR v_plu='00000'
   THEN RAISE EXCEPTION 'Scale item needs five-digit PLU and no ordinary barcode' USING errcode='22023';END IF;
  END IF;
  IF v_sale_mode='carton' THEN
