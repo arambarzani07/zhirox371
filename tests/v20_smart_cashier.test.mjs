@@ -42,8 +42,11 @@ test("Unit and carton duplicates merge only when barcode, price and pack match",
  let r=core.add([],water(),40);r=core.add(r.cart,water(),40);
  assert.equal(r.ok,true);assert.equal(r.cart.length,1);assert.equal(r.cart[0].qty,2);
  const newAlias=core.add(r.cart,water("6290000000001","unit",1,500),40);
- assert.equal(newAlias.ok,true);assert.equal(newAlias.cart.length,2);
- const carton=core.add(newAlias.cart,water("6290000000010","carton",12,5100),40);
+ assert.equal(newAlias.ok,true);assert.equal(newAlias.cart.length,1);
+ assert.equal(newAlias.cart[0].qty,3);
+ const differentPrice=core.add(newAlias.cart,water("6290000000003","unit",1,750),40);
+ assert.equal(differentPrice.cart.length,2);
+ const carton=core.add(differentPrice.cart,water("6290000000010","carton",12,5100),40);
  assert.equal(carton.ok,true);assert.equal(carton.cart.length,3);
  const invalidStock=core.add(carton.cart,water("6290000000010","carton",12,5100),15);
  assert.equal(invalidStock.ok,false);assert.equal(invalidStock.reason,"stock");
