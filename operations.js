@@ -436,7 +436,8 @@ $("barcode").addEventListener("input",()=>{
  clearTimeout(scanIdleTimer);
  const code=$("barcode").value.trim();
  if(tab!=="cash"||busy||pendingCheckout||!code)return;
- if(!barcodes.some(b=>b.code===code))return;
+ const scale=window.ScaleBarcode?.inspect(code);
+ if(!barcodes.some(b=>b.code===code) && !scale?.valid)return;
  // A valid short barcode could be the start of a longer barcode.
  // Wait for explicit Enter rather than silently selling the wrong item.
  if(barcodes.some(b=>b.code.length>code.length&&b.code.startsWith(code)))return;
@@ -449,6 +450,26 @@ $("scan-form").addEventListener("submit",e=>{
  e.preventDefault();clearTimeout(scanIdleTimer);scanIdleTimer=null;
  if(pendingCheckout||busy){msg("scan-msg","فرۆشتنی پێشوو هێشتا یەکلا نەبووە.","error");return}
  const code=String(new FormData(e.target).get("barcode")||"").trim();
+ const scale=window.ScaleBarcode?.inspect(code);
+ if(scale){
+   e.target.reset();
+   if(!scale.valid){
+     msg("scan-msg","بارکۆدی تەرازوو نادروستە؛ کۆدی پشکنینی EAN-13 یان کێشەکە هەڵەیە","error");
+     focusScanner();return;
+   }
+   const base=barcodes.find(x=>x.code===scale.productCode);
+   const product=products.find(x=>x.id===base?.product_id);
+   if(!base||!product){
+     msg("scan-msg","کاڵای تەرازوو بە کۆدی "+scale.productCode+" نەدۆزرایەوە","error");
+     focusScanner();return;
+   }
+   // Recognize the REAL weight. Do not turn 245 grams into one unit
+   // or create a financial sale until the kg price/weighted checkout is configured.
+   msg("scan-msg",product.name+" — "+scale.kilograms.toFixed(3)+
+     " kg ("+scale.grams+" گرام) — کۆدی "+scale.productCode+
+     " خوێندرایەوە؛ بۆ فرۆشتن نرخی کیلۆ و کاشێری کێشی پێویستە، بە دانە تۆمار نەکرا.","error");
+   focusScanner();return;
+ }
  const b=barcodes.find(x=>x.code===code);
  if(!b){e.target.reset();msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");focusScanner();return}
  if(!["unit","carton"].includes(b.unit_type)||
