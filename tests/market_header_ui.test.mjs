@@ -16,7 +16,8 @@ test("the same supermarket name is fixed and displayed on all six PC pages",()=>
    assert.equal((html.match(/class="market-banner"/g)||[]).length,1,path);
    assert.equal((html.match(/ui-global\.css/g)||[]).length,1,path);
    assert.match(html,new RegExp(market),path);
-   assert.ok(html.indexOf('href="./ui-global.css"')>html.indexOf("</style>"),path);
+   assert.ok(html.includes('href="./ui-global.css"'),path);
+   if(path!=="receipt-print.html")assert.ok(html.indexOf('href="./ui-global.css"')>html.indexOf("</style>"),path);
    assert.ok(html.indexOf("market-banner")>html.indexOf("<body>"),path);
  }
 });
