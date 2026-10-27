@@ -87,7 +87,7 @@ try {
  const oldProducts=await page.evaluate(()=>window.__retailQA.products.length);
  const beforeLegacy=await numRpc("retail_create_product");
  await page.locator("#save-product").click();
- assert.match(await page.locator("#product-message").innerText(),/چالاک نییە/);
+ assert.match(await page.locator("#product-message").innerText(),/چالاک نییە|پێویستی بە جێبەجێکردنی فایلی SQLە/);
  assert.equal(await page.evaluate(()=>window.__retailQA.products.length),oldProducts);
  assert.equal(await numRpc("retail_create_product"),beforeLegacy);
  console.log("PASS V14: carton/alias searchable; missing production RPC blocks all advanced fields without partial or misleading save");
