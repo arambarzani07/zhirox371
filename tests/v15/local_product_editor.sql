@@ -130,6 +130,8 @@ BEGIN
  v_unit_aliases=p_catalog->'unit_alias_barcodes';
  IF jsonb_typeof(v_unit_aliases)<>'array' OR jsonb_array_length(v_unit_aliases)>30
  THEN RAISE EXCEPTION 'Invalid unit aliases' USING errcode='22023';END IF;
+ IF v_sale_mode='unit' AND v_unit_code IS NULL AND jsonb_array_length(v_unit_aliases)>0
+ THEN RAISE EXCEPTION 'Scale-only product cannot have unit aliases' USING errcode='22023';END IF;
  IF v_sale_mode='carton' THEN
   IF jsonb_array_length(v_unit_aliases)>0 OR (p_catalog->'unit_purchase_price_iqd' IS NOT NULL AND jsonb_typeof(p_catalog->'unit_purchase_price_iqd')<>'null')
   THEN RAISE EXCEPTION 'Unit aliases or cost not allowed' USING errcode='22023';END IF;
