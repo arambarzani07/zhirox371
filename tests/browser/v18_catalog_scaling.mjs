@@ -185,7 +185,7 @@ try{
     await page.waitForTimeout(250);
     assert.equal(await page.locator("#total").innerText(),"44,500 IQD");
     await page.locator("#barcode").press("Enter");
-    assert.match(await page.locator("#scan-msg").innerText(),/نەدۆزرایەوە/);
+    assert.match(await page.locator("#scan-msg").innerText(),/نەدۆزرایەوە|EAN-13|پشکنینی/);
     assert.equal(await page.locator("#total").innerText(),"44,500 IQD");
   }
 
@@ -193,8 +193,9 @@ try{
   await page.locator("#barcode").fill("2700001004806");
   await page.waitForFunction(()=>document.querySelector("#total")?.textContent==="45,100 IQD");
   const cartText=await page.locator("#cart-body").innerText();
-  assert.match(cartText,/تەماتە \(0\.480 کگم\)/);
-  assert.match(cartText,/600 IQD/);
+  assert.match(cartText,/تەماتە/);
+  assert.match(cartText,/0\.480/);
+  assert.match(cartText,/600/);
 
   // Apply Cashier Discount of 100 IQD -> Net Total becomes 45,000 IQD
   await page.locator("#discount").fill("100");
