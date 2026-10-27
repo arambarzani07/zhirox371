@@ -19,7 +19,13 @@
   }
   function explain(error) {
     if (!error) return "هەڵەیەکی نەناسراو ڕوویدا";
-    if (error.code === "23505") return "ئەم بارکۆدە پێشتر تۆمارکراوە";
+    if (error.code === "23505") {
+      const detail = String(error.message || "") + " " + String(error.details || "");
+      if (/retail_products_store_plu_unique/i.test(detail)) return "ئەم کۆدی تەرازووە پێشتر تۆمارکراوە";
+      if (/retail_products_store_id_sku_key/i.test(detail)) return "ئەم کۆدی ناوخۆییە پێشتر تۆمارکراوە";
+      return "ئەم بارکۆدە یان کۆدە پێشتر تۆمارکراوە";
+    }
+    if (error.code === "22023") return "زانیارییەکانی کاڵا، بارکۆد یان نرخەکان نادروستن";
     if (error.code === "42501" || error.code === "PGRST301") return "دەسەڵاتی ئەم کردارەت نییە";
     if (/Invalid login credentials/i.test(error.message || "")) return "ئیمەیڵ یان وشەی نهێنی هەڵەیە";
     if (/Email not confirmed/i.test(error.message || "")) return "سەرەتا ئیمەیڵەکەت پشتڕاست بکەرەوە";
@@ -276,7 +282,8 @@
       }
       const wasEditing=!!editing;
       resetEditor();message("product-message",wasEditing?"کاڵاکە نوێ کرایەوە":"کاڵاکە بە سەرکەوتوویی تۆمارکرا","success");
-      if(wasEditing)await loadProducts();
+      // Refresh the actual Supabase list after both a new insert and an edit.
+      await loadProducts();
     }catch(error){message("product-message",explain(error),"error");}
     finally{busy(btn,false);}
   });
