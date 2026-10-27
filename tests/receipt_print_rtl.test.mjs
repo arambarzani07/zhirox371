@@ -72,9 +72,9 @@ test("kg table has exactly six headers and a precise 0.245 kg line",async()=>{
  assert.equal(get("print").disabled,false);
  assert.equal(get("store-name").textContent,"سوپەرمارکێتی کانی چنار");
  assert.equal(get("total").textContent,"306 IQD");
- assert.match(get("receipt-date").textContent,/27\\/10\\/2026/);
+ assert.match(get("receipt-date").textContent,/27\/10\/2026/);
  assert.equal(document.documentElement.attrs["data-paper"],"80");
- assert.match(page,/<th scope="col">ژمارە<\\/th><th scope="col">ناوی کاڵا<\\/th><th scope="col">یەکە<\\/th><th scope="col">نرخ<\\/th><th scope="col">بڕ<\\/th><th scope="col">کۆ<\\/th>/);
+ assert.match(page,/<th scope="col">ژمارە<\/th><th scope="col">ناوی کاڵا<\/th><th scope="col">یەکە<\/th><th scope="col">نرخ<\/th><th scope="col">بڕ<\/th><th scope="col">کۆ<\/th>/);
  const rows=get("receipt-lines").children;
  assert.equal(rows.length,1);
  assert.equal(rows[0].tag,"tr");
@@ -119,11 +119,11 @@ test("multiple items receive sequential row numbers and sum is unchanged",async(
 
 test("six columns fit thermal paper with RTL item names and LTR numbers",()=>{
  assert.match(page,/--receipt-paper:58mm/);
- assert.match(page,/html\\[data-paper="80"\\]/);
- assert.match(page,/<colgroup><col style="width:8%"><col style="width:27%"><col style="width:12%"><col style="width:18%"><col style="width:15%"><col style="width:20%"><\\/colgroup>/);
+ assert.match(page,/html\[data-paper="80"\]/);
+ assert.match(page,/<colgroup><col style="width:8%"><col style="width:27%"><col style="width:12%"><col style="width:18%"><col style="width:15%"><col style="width:20%"><\/colgroup>/);
  assert.match(page,/table-layout:fixed;border-collapse:collapse;direction:rtl/);
- assert.match(page,/\\.market-banner,\\.receipt-page \\.toolbar,\\.receipt-page \\.status\\{display:none!important\\}/);
+ assert.match(page,/\.market-banner,\.receipt-page \.toolbar,\.receipt-page \.status\{display:none!important\}/);
  assert.match(page,/direction:ltr;unicode-bidi:isolate/);
- assert.match(page,/width:var\\(--receipt-paper\\)!important/);
- assert.match(page,/<h1 id="store-name"><\\/h1>/);
+ assert.match(page,/width:var\(--receipt-paper\)!important/);
+ assert.match(page,/<h1 id="store-name"><\/h1>/);
 });
