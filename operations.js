@@ -170,6 +170,7 @@ function upsertHotProduct(prod,barcodeList,stockQty){
    plu:prod.plu??existing?.plu??null,
    price_minor:Number(prod.price_minor??0),
    currency:prod.currency||"IQD",
+   base_unit:prod.base_unit||existing?.base_unit||"unit",
    active:prod.active!==false
  };
  if(pIdx>=0)products[pIdx]=normalized;
@@ -209,6 +210,7 @@ async function resolveBarcodeServer(code){
       if(res.data.found){
         const d=res.data;
         const isScale=Boolean(d.is_scale||Number(d.scale_grams)>0);
+        if(isScale && d.base_unit!=="kg")return null;
         const sibs=Array.isArray(d.product_barcodes)&&d.product_barcodes.length?d.product_barcodes.map(sb=>({
           ...sb,
           is_scale:sb.code===clean?isScale:Boolean(sb.is_scale),
@@ -228,7 +230,7 @@ async function resolveBarcodeServer(code){
           });
         }
         upsertHotProduct({
-          id:d.product_id,name:d.product_name,sku:d.sku,plu:d.plu,price_minor:d.unit_price_minor??d.price_minor,currency:d.currency||"IQD",active:true
+          id:d.product_id,name:d.product_name,sku:d.sku,plu:d.plu,base_unit:d.base_unit||"unit",price_minor:d.unit_price_minor??d.price_minor,currency:d.currency||"IQD",active:true
         },sibs,d.stock_quantity);
         return barcodes.find(x=>x.code===clean&&x.active!==false)||null;
       }
@@ -266,7 +268,7 @@ async function resolveBarcodeServer(code){
         }
         if(foundProdId){
           const prodFetch=await db.from("retail_products")
-            .select("id,name,price_minor,currency,active,sku,plu")
+            .select("id,name,price_minor,currency,active,sku,plu,base_unit")
             .eq("store_id",store.id).eq("id",foundProdId).single();
           if(prodFetch?.data&&prodFetch.data.active!==false&&Number(prodFetch.data.price_minor)>0){
             sp=prodFetch.data;
@@ -278,7 +280,7 @@ async function resolveBarcodeServer(code){
       }catch(_err){}
     }
 
-    if(sp){
+    if(sp?.base_unit==="kg"){
       const scalePrice=Math.round((Number(sp.price_minor)*scale.grams)/1000);
       if(scalePrice>0){
         upsertHotProduct(sp,[{
@@ -374,7 +376,7 @@ async function loadInventory(){
  }
  if(!["PGRST202","42883"].includes(v18.error?.code))throw v18.error;
  const pres=await db.from("retail_products")
-   .select("id,name,price_minor,currency,active")
+   .select("id,name,price_minor,currency,active,base_unit,sku,plu")
    .eq("store_id",store.id).eq("active",true)
    .order("name").limit(400);
  if(pres.error)throw pres.error;
@@ -484,7 +486,7 @@ function renderStock(){
      const whole=perPack>=2?Math.floor(units/perPack):0;
      const loose=perPack>=2?Number((units-whole*perPack).toFixed(3)):0;
      const statusBadge=units<=0?" (تەواوبوو)":units<=5?" (کەمبووە)":"";
-     const display=(perPack>=2?
+     const display=p.base_unit==="kg"?units.toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3})+" کیلۆگرام"+statusBadge:(perPack>=2?
        units.toLocaleString("en-US")+" دانە ("+whole.toLocaleString("en-US")+
        " کارتۆن + "+loose.toLocaleString("en-US")+" دانە)":
        units.toLocaleString("en-US")+" دانە")+statusBadge;
@@ -513,7 +515,7 @@ function renderStock(){
 }
 function cartChanged(){if(pendingCheckout){syncPending();return}requestId=null;msg("checkout-msg","");renderCart();renderParkedBar();syncPending();}
 function stockUsed(productId,excludeIndex=-1){return Number(cart.reduce((n,line,i)=>n+(i===excludeIndex||line.id!==productId?0:line.qty*line.units),0).toFixed(3))}
-function saleLabel(line){return line.name+(line.scaleLabel?" ("+line.scaleLabel+")":line.mode==="carton"?" (کارتۆن)":" (دانە)")}
+function saleLabel(line){return line.name+(line.scaleLabel?" ("+line.scaleLabel+")":line.mode==="carton"?" (کارتۆن)":products.find(p=>p.id===line.id)?.base_unit==="kg"?" (کیلۆگرام)":" (دانە)")}
 function renderCart(){
  const total=cartNetTotal();
  $("total").textContent=money(total);
@@ -943,6 +945,7 @@ $("scan-form").addEventListener("submit",async e=>{
  }
  const p=products.find(x=>x.id===b.product_id);
  if(!p||p.currency!=="IQD"){msg("scan-msg","کاڵا بۆ فرۆشتن بەردەست نییە","error");playScanBeep(false);return}
+ if(p.base_unit==="kg"&&!b.is_scale){form.reset();msg("scan-msg","ئەم کاڵایە بە کیلۆگرامە؛ بارکۆدی تەواوی تەرازوو بسکانە","error");playScanBeep(false);focusScanner();return;}
  const isScale=Boolean(b.is_scale&&Number(b.scale_grams)>0);
  const mode=b.unit_type,units=isScale?Number((Number(b.scale_grams)/1000).toFixed(3)):Number(b.units_per_scan),price=Number(b.price_minor??p.price_minor);
  if(!Number.isSafeInteger(price)||price<0||(isScale?!(units>0&&units<=99.999):(!Number.isSafeInteger(units)||units<1))){
@@ -950,7 +953,7 @@ $("scan-form").addEventListener("submit",async e=>{
  }
  const stock=balances.get(p.id)||0;
  if(stockUsed(p.id)+units>stock){msg("scan-msg","بڕی کۆگا بەش ناکات","error");playScanBeep(false);return}
-  const current=cart.find(x=>x.id===p.id&&x.mode===mode&&(isScale?x.barcode===b.code:!x.isScale));
+  const current=isScale?null:cart.find(x=>x.id===p.id&&x.mode===mode&&!x.isScale);
   if(current)current.qty++;
   else cart.push({id:p.id,name:p.name,barcode:b.code,mode,isScale,scaleGrams:isScale?Number(b.scale_grams):null,scaleLabel:b.scale_label||null,unitKgPrice:isScale?Number(b.scale_unit_price_minor??b.unit_price_minor??p.price_minor):null,price,units,available:stock,qty:1});
   form.reset();msg("scan-msg");playScanBeep(true);cartChanged();focusScanner();
@@ -1046,7 +1049,7 @@ async function commitCheckout(){
      p_items:pendingCheckout.items,p_cash_received:pendingCheckout.cash
    };
    if(Number(pendingCheckout.discount)>0)rpcArgs.p_discount=Number(pendingCheckout.discount);
-   const {data,error}=await db.rpc(pendingCheckout.v16?
+   const {data,error}=await db.rpc(pendingCheckout.v19?"retail_checkout_weight_v19":pendingCheckout.v16?
       "retail_checkout_packs_v16":"retail_checkout_cash",rpcArgs);
    if(error)throw error;
    const saleId=data;
@@ -1084,9 +1087,11 @@ $("checkout-form").addEventListener("submit",async e=>{
    msg("checkout-msg","پارەی وەرگیراو نادروستە","error");return;
  }
  requestId=crypto.randomUUID();
+ const hasKg=cart.some(x=>x.isScale);
  const packs=cart.some(x=>x.mode==="carton"||Boolean(x.scaleLabel)||Boolean(x.isScale))||discount>0;
  pendingCheckout={id:requestId,
    v16:packs,
+   v19:hasKg,
    discount,
    items:packs?cart.map(x=>({barcode:x.barcode,quantity:x.qty,
        expected_price_minor:x.price,expected_units:x.isScale?1:x.units})):
