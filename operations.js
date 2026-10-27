@@ -570,13 +570,30 @@ function renderCart(){
    row.append(td);
   }
   const cell=row.children[4],wrap=document.createElement("div");wrap.className="basket-quantity";
-  const count=document.createElement("span");count.className="basket-qty-value";
-  count.textContent=isKg?Number(it.units).toFixed(3):String(it.qty);
+  const count=document.createElement(isKg?"span":"input");
+  count.className=isKg?"basket-qty-value":"basket-qty-input";
+  if(isKg)count.textContent=Number(it.units).toFixed(3);
+  else{
+    count.type="number";count.min="1";count.max="100";count.step="1";
+    count.value=String(it.qty);count.dataset.quantityLine=String(i);
+    count.disabled=Boolean(busy||pendingCheckout);
+    count.setAttribute("aria-label","دەستکاریکردنی بڕی "+it.name);
+    count.title="ژمارەی دانە یان کارتۆن بنووسە";
+  }
   const actions=document.createElement("div");actions.className="basket-quantity-actions";
   const minus=document.createElement("button");minus.type="button";minus.dataset.line=i;minus.dataset.delta="-1";minus.textContent="−";minus.title="کەمکردنەوە";minus.setAttribute("aria-label","کەمکردنەوەی بڕی "+it.name);
   const plus=document.createElement("button");plus.type="button";plus.dataset.line=i;plus.dataset.delta="1";plus.textContent="+";plus.title="زیادکردن";plus.setAttribute("aria-label","زیادکردنی بڕی "+it.name);
   if(isKg){plus.disabled=true;plus.title="بۆ زیادکردنی پاکەتی کێشدار بارکۆدەکە بسکانە";}
-  actions.append(minus,plus);wrap.append(count,actions);cell.append(wrap);
+  const remove=document.createElement("button");
+  remove.type="button";remove.className="basket-remove";remove.dataset.removeLine=String(i);
+  remove.textContent="سڕینەوە";remove.title="سڕینەوەی ئەم ڕیزە";remove.setAttribute("aria-label","سڕینەوەی "+it.name);
+  actions.append(minus,plus);
+  wrap.append(count,actions,remove);cell.append(wrap);
+  if(it.outdated){
+    const warn=document.createElement("span");warn.className="basket-stale";
+    warn.textContent="نرخ یان بارکۆد گۆڕاوە — بسڕەوە و دووبارە بسکانە";
+    row.children[1].append(warn);
+  }
   tbody.append(row);
  });
  table.append(tbody);list.append(table);
@@ -1011,14 +1028,50 @@ $("scan-form").addEventListener("submit",async e=>{
    msg("scan-msg",safe(err)+" — پێش زیادکردن پشکنینی سێرڤەر پێویستە","error");playScanBeep(false);
  }finally{scanResolving=false;form.reset();focusScanner();}
 });
+function explainBasketRejection(reason){
+ return ({
+   stock:"بڕی کۆگا بەش ناکات",
+   quantity:"بڕ دەبێت ژمارەیەکی تەواو لە 1 تا 100 بێت",
+   scale_immutable:"کێشی پاکەتی تەرازوو دەستکاری ناکرێت؛ بۆ زیادکردن پاکەتی نوێ بسکانە",
+   invalid:"ڕیزی کاڵا نادروستە",
+   duplicate_scale:"ئەم لیبڵەی کێشدارە دووبارە هاتووەتە سەبەتە"
+ })[reason]||"دەستکاریی سەبەتە ڕەت کرایەوە";
+}
+function updateBasketQuantity(index,quantity){
+ const line=cart[index];if(!line)return;
+ if(line.outdated){msg("scan-msg","نرخ یان بارکۆد گۆڕاوە؛ ئەم ڕیزە بسڕەوە و دووبارە بسکانە","error");renderCart();return;}
+ const available=Number(balances.get(line.id));
+ const result=window.CashierV20.edit(cart,index,quantity,available);
+ if(!result.ok){msg("scan-msg",explainBasketRejection(result.reason),"error");renderCart();return;}
+ cart=result.cart;msg("scan-msg","");cartChanged();focusScanner();
+}
 $("cart-list").addEventListener("click",e=>{
- const btn=e.target.closest("[data-line]");if(!btn||busy||pendingCheckout)return;
- const i=Number(btn.dataset.line),line=cart[i];if(!line)return;
- if(line.isScale&&Number(btn.dataset.delta)>0)return;
- const qty=line.qty+Number(btn.dataset.delta);
- if(Number((stockUsed(line.id,i)+Math.max(0,qty)*line.units).toFixed(3))>line.available){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
- if(qty<=0)cart.splice(i,1);else line.qty=qty;
- cartChanged();focusScanner();
+ if(busy||pendingCheckout||scanResolving)return;
+ const remove=e.target.closest("[data-remove-line]");
+ if(remove){
+   const index=Number(remove.dataset.removeLine);
+   if(!cart[index])return;
+   // Removal is permitted even when that barcode has been retired.
+   cart=cart.filter((_,i)=>i!==index);
+   msg("scan-msg","ڕیزی کاڵا سڕایەوە","success");cartChanged();focusScanner();return;
+ }
+ const btn=e.target.closest("[data-line]");
+ if(!btn)return;
+ const index=Number(btn.dataset.line),line=cart[index];
+ if(!line||!["-1","1"].includes(btn.dataset.delta))return;
+ updateBasketQuantity(index,line.qty+Number(btn.dataset.delta));
+});
+$("cart-list").addEventListener("change",e=>{
+ if(busy||pendingCheckout||scanResolving)return;
+ const input=e.target.closest("[data-quantity-line]");
+ if(!input)return;
+ const index=Number(input.dataset.quantityLine);
+ if(!cart[index])return;
+ const raw=String(input.value||"");
+ if(!/^[0-9]{1,3}$/.test(raw)){
+   msg("scan-msg","بڕ دەبێت ژمارەیەکی تەواو لە 1 تا 100 بێت","error");renderCart();return;
+ }
+ updateBasketQuantity(index,Number(raw));
 });
 $("cash").addEventListener("input",()=>{if(pendingCheckout)return;if(cart.length)cartChanged();else renderCart()});
 if($("discount")){
