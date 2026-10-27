@@ -66,6 +66,7 @@ DECLARE
   v_escaped text;
   v_has_longer boolean := false;
   v_match record;
+  v_match_json jsonb;
   v_siblings jsonb := '[]'::jsonb;
   v_plu_raw text;
   v_weight_grams integer;
@@ -219,6 +220,10 @@ BEGIN
     END IF;
   END IF;
 
+  -- A PL/pgSQL RECORD may receive different SQL record descriptors between
+  -- exact EAN rows and dynamic 27-prefix scale rows. Materialize to JSONB
+  -- before building the API payload to avoid stale SPI field-type bindings.
+  v_match_json := to_jsonb(v_match);
   IF v_is_scale THEN
     v_siblings := jsonb_build_array(
       jsonb_build_object(
@@ -250,26 +255,12 @@ BEGIN
     ) sb;
   END IF;
 
-  RETURN jsonb_build_object(
+  RETURN v_match_json || jsonb_build_object(
     'found', true,
-    'code', v_match.code,
-    'product_id', v_match.product_id,
-    'product_name', v_match.product_name,
-    'sku', v_match.sku,
-    'plu', v_match.plu,
-    'unit_type', v_match.unit_type,
-    'units_per_scan', v_match.units_per_scan,
     'is_scale', v_is_scale,
-    'scale_grams', CASE WHEN v_is_scale THEN v_weight_grams ELSE null END,
-    'scale_weight_kg', CASE WHEN v_is_scale THEN v_weight_kg ELSE null END,
+    'scale_grams', CASE WHEN v_is_scale THEN v_weight_grams ELSE NULL END,
+    'scale_weight_kg', CASE WHEN v_is_scale THEN v_weight_kg ELSE NULL END,
     'scale_label', v_scale_label,
-    'price_minor', v_match.price_minor,
-    'unit_price_minor', v_match.unit_price_minor,
-    'carton_price_minor', v_match.carton_price_minor,
-    'units_per_carton', v_match.units_per_carton,
-    'carton_name', v_match.carton_name,
-    'currency', v_match.currency,
-    'stock_quantity', v_match.stock_quantity,
     'has_longer_prefix', v_has_longer,
     'product_barcodes', v_siblings
   );
