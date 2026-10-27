@@ -25,12 +25,12 @@
   if(!["unit","carton","both"].includes(requestedMode))fail("شێوازی فرۆشتن نادروستە");
   const unitEnabled=requestedMode!=="carton",cartonEnabled=requestedMode!=="unit";
   const plu=text(get("plu"));
-  const scaleOnly=unitEnabled&&requestedMode==="unit"&&/^\\d{5}$/.test(plu)&&!text(get("barcode"));
+  const scaleOnly=unitEnabled&&requestedMode==="unit"&&/^\d{5}$/.test(plu)&&!text(get("barcode"));
   const unit=barcode(get("barcode"),unitEnabled&&!scaleOnly);
   if(!unitEnabled&&unit)fail("بارکۆدی دانە لەم شێوازەدا چالاک نییە");
   // A 27+PLU prefix is NOT a complete barcode; the real scale will generate
   // 27 + five-digit PLU + weight-in-grams + EAN13 check digit dynamically.
-  if(/^\\d{5}$/.test(plu)&&unit==="27"+plu)
+  if(/^\d{5}$/.test(plu)&&unit==="27"+plu)
     fail("کۆدی تەرازوو نابێت وەک بارکۆدی دانە تۆمار بکرێت");
   const unitPrice=price(get("price"),unitEnabled,"نرخی فرۆشتنی دانە");
   const unitCost=price(get("purchase_price"),false,"نرخی کڕینی دانە");
