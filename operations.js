@@ -1184,6 +1184,38 @@ async function commitCheckout(){
    }
  }finally{lock(false);focusScanner()}
 }
+async function verifyCartAtServer(){
+ const local=window.CashierV20.validate(cart,id=>balances.get(id));
+ if(!local.ok)throw new Error(explainBasketRejection(local.reason));
+ if(cart.some(x=>x.outdated))throw new Error("نرخ یان بارکۆدی ڕیزێک گۆڕاوە؛ بسڕەوە و دووبارە بسکانە");
+ const latestStock=new Map();
+ for(const line of cart){
+   const {data,error}=await db.rpc("retail_resolve_barcode_v18",{
+     p_store:store.id,p_code:line.barcode
+   });
+   if(error)throw error;
+   const valid=Boolean(data?.found&&data.code===line.barcode&&data.product_id===line.id&&
+     data.currency==="IQD"&&data.unit_type===line.mode&&
+     Number(data.price_minor)===line.price);
+   const correctPack=line.isScale?
+     (data?.base_unit==="kg"&&data?.is_scale===true&&
+       Number(data.scale_grams)===Number(line.scaleGrams)&&
+       Number(data.scale_weight_kg)===Number(line.units)):
+     (data?.base_unit==="unit"&&!data?.is_scale&&
+       Number(data.units_per_scan)===Number(line.units));
+   if(!valid||!correctPack){
+     line.outdated=true;renderCart();
+     throw new Error("بارکۆد، نرخ یان یەکەی کاڵا گۆڕاوە؛ ڕیزەکە بسڕەوە و دووبارە بسکانە");
+   }
+   latestStock.set(line.id,Number(data.stock_quantity));
+ }
+ const remote=window.CashierV20.validate(cart,id=>latestStock.get(id));
+ if(!remote.ok)throw new Error(explainBasketRejection(remote.reason));
+ // Balance snapshots are only a UX guard; the checkout RPC performs the
+ // final atomic stock/price validation to prevent checkout-time races.
+ for(const [id,qty] of latestStock)balances.set(id,qty);
+ return true;
+}
 $("checkout-form").addEventListener("submit",async e=>{
  e.preventDefault();if(!db||!store||busy||!cart.length||pendingCheckout)return;
  const subtotal=cartSubtotal(),discount=cartDiscount(),total=cartNetTotal(),cash=Number($("cash").value);
@@ -1193,6 +1225,12 @@ $("checkout-form").addEventListener("submit",async e=>{
  if(!Number.isSafeInteger(cash)||cash<total||cash>9999999999999){
    msg("checkout-msg","پارەی وەرگیراو نادروستە","error");return;
  }
+ if(!shiftSession){msg("checkout-msg","سەرەتا شێفتی کاشێر بکەرەوە","error");return;}
+ lock(true);
+ try{await verifyCartAtServer();}
+ catch(err){msg("checkout-msg",safe(err)+" — هیچ فرۆشتنێک تۆمار نەکرا","error");return;}
+ finally{lock(false);}
+ // No checkout request UUID is created until every item is verified.
  requestId=crypto.randomUUID();
  const hasKg=cart.some(x=>x.isScale);
  const packs=cart.some(x=>x.mode==="carton"||Boolean(x.scaleLabel)||Boolean(x.isScale))||discount>0;
