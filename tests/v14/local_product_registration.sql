@@ -69,7 +69,7 @@ BEGIN
     OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item name or barcode' USING errcode='22023';END IF;
  IF v_sale_mode='scale' THEN
-  IF v_unit_code IS NOT NULL OR p_catalog->>'plu' !~ '^[0-9]{5}$'
+  IF v_unit_code IS NOT NULL OR (coalesce(p_catalog->>'plu','')) !~ '^[0-9]{5}$'
      OR p_catalog->>'plu' = '00000'
   THEN RAISE EXCEPTION 'Scale product requires a five-digit PLU and no ordinary barcode' USING errcode='22023';END IF;
  END IF;
