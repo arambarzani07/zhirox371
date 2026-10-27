@@ -30,6 +30,8 @@
     const clean=String(code||"").trim();
     if(!/^27\d{11}$/.test(clean)||!isValidEan13(clean))return null;
     const pluRaw=clean.slice(2,7);
+    const pluNum=String(Number(pluRaw));
+    const pluFull="27"+pluRaw;
     const grams=Number(clean.slice(7,12));
     if(pluRaw==="00000"||!Number.isSafeInteger(grams)||grams<=0)return null;
     const matches=state.products.filter(sp=>{
@@ -37,7 +39,11 @@
       const sc=idx.catalogById.get(sp.id);
       if(sc?.sale_mode==="carton")return false;
       const spPlu=String(sc?.plu??sp.plu??"").trim();
-      return spPlu&&(spPlu===pluRaw||(/^\d{1,5}$/.test(spPlu)&&spPlu.padStart(5,"0")===pluRaw));
+      const spSku=String(sc?.sku??sp.sku??"").trim();
+      if(spPlu&&(spPlu===pluRaw||spPlu===pluNum||spPlu===pluFull||(/^\d{1,5}$/.test(spPlu)&&spPlu.padStart(5,"0")===pluRaw)))return true;
+      if(spSku&&(spSku===pluRaw||spSku===pluNum||spSku===pluFull))return true;
+      const codes=idx.barcodesByProductId.get(sp.id)||[];
+      return codes.some(b=>b.active!==false&&(b.code===pluFull||b.code===pluRaw||b.code===pluNum));
     });
     if(matches.length!==1)return null;
     const product=matches[0];

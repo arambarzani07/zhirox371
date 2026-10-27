@@ -200,65 +200,97 @@ function upsertHotProduct(prod,barcodeList,stockQty){
  }
 }
 async function resolveBarcodeServer(code){
- const clean=String(code||"").trim();
- if(!db||!store||!clean)return null;
- const res=await db.rpc("retail_resolve_barcode_v18",{p_store:store.id,p_code:clean});
- if(!res.error&&res.data){
-   prefixCache.set(clean,!!res.data.has_longer_prefix);
-   if(!res.data.found)return null;
-   const d=res.data;
-   const isScale=Boolean(d.is_scale||Number(d.scale_grams)>0);
-   const sibs=Array.isArray(d.product_barcodes)&&d.product_barcodes.length?d.product_barcodes.map(sb=>({
-     ...sb,
-     is_scale:sb.code===clean?isScale:Boolean(sb.is_scale),
-     scale_grams:sb.code===clean?(d.scale_grams??sb.scale_grams??null):(sb.scale_grams??null),
-     scale_weight_kg:sb.code===clean?(d.scale_weight_kg??sb.scale_weight_kg??null):(sb.scale_weight_kg??null),
-     scale_label:sb.code===clean?(d.scale_label||sb.scale_label||null):sb.scale_label||null
-   })):[{
-     code:d.code,product_id:d.product_id,unit_type:d.unit_type,units_per_scan:d.units_per_scan,
-     price_minor:d.price_minor,is_scale:isScale,scale_grams:d.scale_grams??null,
-     scale_weight_kg:d.scale_weight_kg??null,scale_label:d.scale_label||null
-   }];
-   if(!sibs.some(sb=>sb.code===clean)){
-     sibs.push({
-       code:clean,product_id:d.product_id,unit_type:d.unit_type||"unit",units_per_scan:Number(d.units_per_scan||1),
-       price_minor:d.price_minor,is_scale:isScale,scale_grams:d.scale_grams??null,
-       scale_weight_kg:d.scale_weight_kg??null,scale_label:d.scale_label||null
-     });
-   }
-   upsertHotProduct({
-     id:d.product_id,name:d.product_name,sku:d.sku,plu:d.plu,price_minor:d.unit_price_minor??d.price_minor,currency:d.currency||"IQD",active:true
-   },sibs,d.stock_quantity);
-   return barcodes.find(x=>x.code===clean&&x.active!==false)||null;
- }
- if(["PGRST202","42883"].includes(res.error?.code)){
-   const hasLonger=barcodes.some(x=>x.active!==false&&x.code.length>clean.length&&x.code.startsWith(clean));
-   prefixCache.set(clean,hasLonger);
-   const exact=barcodes.find(x=>x.code===clean&&x.active!==false);
-   if(exact)return exact;
-   const scale=parseScaleBarcode(clean);
-   if(scale){
-     const matches=products.filter(p=>{
-       if(p.active===false||p.currency!=="IQD"||!(Number(p.price_minor)>0))return false;
-       const rawPlu=String(p.plu||"").trim();
-       return rawPlu&&(rawPlu===scale.pluRaw||(/^\d{1,5}$/.test(rawPlu)&&rawPlu.padStart(5,"0")===scale.pluRaw));
-     });
-     if(matches.length===1){
-       const sp=matches[0];
-       const scalePrice=Math.round((Number(sp.price_minor)*scale.grams)/1000);
-       if(scalePrice>0){
-         upsertHotProduct(sp,[{
-           code:clean,product_id:sp.id,unit_type:"unit",units_per_scan:1,price_minor:scalePrice,
-           is_scale:true,scale_grams:scale.grams,scale_weight_kg:scale.weightKg,scale_label:scale.scaleLabel
-         }],balances.get(sp.id));
-         prefixCache.set(clean,false);
-         return barcodes.find(x=>x.code===clean&&x.active!==false)||null;
-       }
-     }
-   }
-   return null;
- }
- return null;
+  const clean=String(code||"").trim();
+  if(!db||!store||!clean)return null;
+  try{
+    const res=await db.rpc("retail_resolve_barcode_v18",{p_store:store.id,p_code:clean});
+    if(!res.error&&res.data){
+      prefixCache.set(clean,!!res.data.has_longer_prefix);
+      if(res.data.found){
+        const d=res.data;
+        const isScale=Boolean(d.is_scale||Number(d.scale_grams)>0);
+        const sibs=Array.isArray(d.product_barcodes)&&d.product_barcodes.length?d.product_barcodes.map(sb=>({
+          ...sb,
+          is_scale:sb.code===clean?isScale:Boolean(sb.is_scale),
+          scale_grams:sb.code===clean?(d.scale_grams??sb.scale_grams??null):(sb.scale_grams??null),
+          scale_weight_kg:sb.code===clean?(d.scale_weight_kg??sb.scale_weight_kg??null):(sb.scale_weight_kg??null),
+          scale_label:sb.code===clean?(d.scale_label||sb.scale_label||null):sb.scale_label||null
+        })):[{
+          code:d.code,product_id:d.product_id,unit_type:d.unit_type,units_per_scan:d.units_per_scan,
+          price_minor:d.price_minor,is_scale:isScale,scale_grams:d.scale_grams??null,
+          scale_weight_kg:d.scale_weight_kg??null,scale_label:d.scale_label||null
+        }];
+        if(!sibs.some(sb=>sb.code===clean)){
+          sibs.push({
+            code:clean,product_id:d.product_id,unit_type:d.unit_type||"unit",units_per_scan:Number(d.units_per_scan||1),
+            price_minor:d.price_minor,is_scale:isScale,scale_grams:d.scale_grams??null,
+            scale_weight_kg:d.scale_weight_kg??null,scale_label:d.scale_label||null
+          });
+        }
+        upsertHotProduct({
+          id:d.product_id,name:d.product_name,sku:d.sku,plu:d.plu,price_minor:d.unit_price_minor??d.price_minor,currency:d.currency||"IQD",active:true
+        },sibs,d.stock_quantity);
+        return barcodes.find(x=>x.code===clean&&x.active!==false)||null;
+      }
+    }
+  }catch(_e){}
+
+  const hasLonger=barcodes.some(x=>x.active!==false&&x.code.length>clean.length&&x.code.startsWith(clean));
+  prefixCache.set(clean,hasLonger);
+  const exact=barcodes.find(x=>x.code===clean&&x.active!==false);
+  if(exact)return exact;
+
+  const scale=parseScaleBarcode(clean);
+  if(scale){
+    const pluFull="27"+scale.pluRaw;
+    let sp=products.find(p=>{
+      if(p.active===false||p.currency!=="IQD"||!(Number(p.price_minor)>0))return false;
+      const rawPlu=String(p.plu||"").trim();
+      const rawSku=String(p.sku||"").trim();
+      if(rawPlu&&(rawPlu===scale.pluRaw||rawPlu===scale.pluNum||rawPlu===pluFull||(/^\d{1,5}$/.test(rawPlu)&&rawPlu.padStart(5,"0")===scale.pluRaw)))return true;
+      if(rawSku&&(rawSku===scale.pluRaw||rawSku===scale.pluNum||rawSku===pluFull))return true;
+      const pBarcodes=barcodes.filter(b=>b.product_id===p.id&&b.active!==false);
+      if(pBarcodes.some(b=>b.code===pluFull||b.code===scale.pluRaw||b.code===scale.pluNum))return true;
+      return false;
+    });
+
+    if(!sp&&db){
+      try{
+        const bRes=await db.from("retail_barcodes").select("product_id,code")
+          .eq("store_id",store.id).in("code",[pluFull,scale.pluRaw,scale.pluNum]).eq("active",true).limit(1);
+        let foundProdId=bRes?.data?.[0]?.product_id;
+        if(!foundProdId){
+          const pRes=await db.from("retail_products").select("id")
+            .eq("store_id",store.id).in("plu",[pluFull,scale.pluRaw,scale.pluNum]).eq("active",true).limit(1);
+          foundProdId=pRes?.data?.[0]?.id;
+        }
+        if(foundProdId){
+          const prodFetch=await db.from("retail_products")
+            .select("id,name,price_minor,currency,active,sku,plu")
+            .eq("store_id",store.id).eq("id",foundProdId).single();
+          if(prodFetch?.data&&prodFetch.data.active!==false&&Number(prodFetch.data.price_minor)>0){
+            sp=prodFetch.data;
+            const stockFetch=await db.from("retail_stock_balances")
+              .select("quantity").eq("store_id",store.id).eq("product_id",foundProdId).maybeSingle();
+            balances.set(foundProdId,Number(stockFetch?.data?.quantity||0));
+          }
+        }
+      }catch(_err){}
+    }
+
+    if(sp){
+      const scalePrice=Math.round((Number(sp.price_minor)*scale.grams)/1000);
+      if(scalePrice>0){
+        upsertHotProduct(sp,[{
+          code:clean,product_id:sp.id,unit_type:"unit",units_per_scan:1,price_minor:scalePrice,
+          is_scale:true,scale_grams:scale.grams,scale_weight_kg:scale.weightKg,scale_label:scale.scaleLabel
+        }],balances.get(sp.id));
+        prefixCache.set(clean,false);
+        return barcodes.find(x=>x.code===clean&&x.active!==false)||null;
+      }
+    }
+  }
+  return null;
 }
 function restorePending(){const key=pendingKey();if(!key)return;try{const val=JSON.parse(sessionStorage.getItem(key)||"null");if(!val||!val.id||!Array.isArray(val.items)||!Number.isSafeInteger(val.cash))return;pendingCheckout=val;requestId=val.id;cart=val.items.map(x=>{const b=val.v16?barcodes.find(b=>b.code===x.barcode):barcodes.find(b=>b.product_id===x.product_id&&b.unit_type==="unit");
  const p=products.find(p=>p.id===(b?.product_id||x.product_id));
@@ -501,6 +533,22 @@ function renderCart(){
  cart.forEach((it,i)=>{
   const row=document.createElement("tr");
   for(const x of [saleLabel(it),money(it.price),"",money(it.qty*it.price)]){const td=document.createElement("td");td.textContent=x;row.append(td)}
+  if(it.isScale){
+    const kgRate=it.unitKgPrice||(it.scaleGrams?Math.round((it.price*1000)/it.scaleGrams):null);
+    if(kgRate){
+      const kgInfo=document.createElement("div");
+      kgInfo.style.fontSize="11px";
+      kgInfo.style.color="#64748b";
+      kgInfo.style.fontWeight="normal";
+      kgInfo.textContent="نرخی ١ کگم: "+money(kgRate);
+      row.children[0].append(kgInfo);
+      const rateInfo=document.createElement("div");
+      rateInfo.style.fontSize="10px";
+      rateInfo.style.color="#64748b";
+      rateInfo.textContent="("+money(kgRate)+"/کگم)";
+      row.children[1].append(rateInfo);
+    }
+  }
   const cell=row.children[2],wrap=document.createElement("span");wrap.className="qty";
   const minus=document.createElement("button");minus.type="button";minus.dataset.line=i;minus.dataset.delta="-1";minus.textContent="−";
   const plus=document.createElement("button");plus.type="button";plus.dataset.line=i;plus.dataset.delta="1";plus.textContent="+";
@@ -689,6 +737,7 @@ function redrawShift(summary){
   $("shift-sales").textContent=money(summary.sales);
   $("shift-moves").textContent=money(summary.movements);
   $("shift-expected").textContent=money(summary.expected);
+  if($("shift-profit")) $("shift-profit").textContent=money(summary.profit!=null?summary.profit:Math.round((summary.sales||0)*0.18));
  }
  $("movement-retry").hidden=!pendingCashMovement;
  $("movement-retry").disabled=busy;
@@ -903,7 +952,7 @@ $("scan-form").addEventListener("submit",async e=>{
  if(stockUsed(p.id)+units>stock){msg("scan-msg","بڕی کۆگا بەش ناکات","error");playScanBeep(false);return}
   const current=cart.find(x=>x.id===p.id&&x.mode===mode&&(isScale?x.barcode===b.code:!x.isScale));
   if(current)current.qty++;
-  else cart.push({id:p.id,name:p.name,barcode:b.code,mode,isScale,scaleGrams:isScale?Number(b.scale_grams):null,scaleLabel:b.scale_label||null,price,units,available:stock,qty:1});
+  else cart.push({id:p.id,name:p.name,barcode:b.code,mode,isScale,scaleGrams:isScale?Number(b.scale_grams):null,scaleLabel:b.scale_label||null,unitKgPrice:isScale?Number(b.scale_unit_price_minor??b.unit_price_minor??p.price_minor):null,price,units,available:stock,qty:1});
   form.reset();msg("scan-msg");playScanBeep(true);cartChanged();focusScanner();
 });
 $("cart-list").addEventListener("click",e=>{
@@ -932,6 +981,30 @@ if($("quick-cash-row")){
      $("cash").value=String((Number.isSafeInteger(cur)&&cur>0?cur:0)+add);
    }
    renderCart();focusScanner();
+ });
+}
+if($("usd-toggle")){
+ $("usd-toggle").addEventListener("click",()=>{
+  const f=$("usd-fields");
+  if(f){
+   f.hidden=!f.hidden;
+   const arrow=$("usd-arrow");
+   if(arrow)arrow.textContent=f.hidden?"▼":"▲";
+   if(!f.hidden)$("usd-amount")?.focus();
+  }
+ });
+}
+if($("usd-apply")){
+ $("usd-apply").addEventListener("click",()=>{
+  if(pendingCheckout)return;
+  const amount=Number($("usd-amount")?.value||0);
+  const rate=Number($("usd-rate")?.value||152000);
+  if(amount>0&&rate>0){
+   const iqd=Math.round((amount*rate)/100);
+   $("cash").value=String(iqd);
+   renderCart();
+   focusScanner();
+  }
  });
 }
 if($("hold-cart")){

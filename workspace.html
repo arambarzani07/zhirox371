@@ -108,7 +108,18 @@ main{padding:20px 36px 28px;max-width:1490px;margin:0 auto}h1{font-size:22px;mar
 <section class="catalog-history" id="product-history" hidden><h3>مێژووی گۆڕانکاری</h3><div id="product-history-list"></div></section>
 </div>
 <div class="surface" id="list-panel" hidden>
-<div class="toolbar"><h2>کاڵاکان</h2><div style="display:flex;gap:9px"><input id="search" class="input-search" placeholder="گەڕان" aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
+<div class="toolbar"><h2>کاڵاکان</h2><div style="display:flex;gap:9px"><button type="button" class="secondary" id="import-btn">📂 هاوردەکردن (CSV)</button><input id="search" class="input-search" placeholder="گەڕان" aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
+<div id="import-panel" hidden style="background:#f8fafc;border:1px dashed #94a3b8;border-radius:8px;padding:12px;margin-bottom:12px">
+<h3 style="font-size:13px;margin-bottom:6px">هاوردەکردنی بەکۆمەڵی کاڵاکان لە فایلی CSV یان نووسین</h3>
+<p style="font-size:11px;color:#64748b;margin-bottom:8px">فۆرمات: ناوی کاڵا, بارکۆد, نرخی فرۆشتن (لە هەر دێڕێکدا یەک دانە)</p>
+<textarea id="import-text" rows="4" style="width:100%;font-family:monospace;font-size:12px;padding:6px;border:1px solid #cbd5e1;border-radius:4px" placeholder="تەماتە, 2700001, 1250&#10;ڕۆنی زەیت, 8690504, 2500"></textarea>
+<div style="display:flex;gap:8px;margin-top:8px">
+<input type="file" id="import-file" accept=".csv,.txt" style="font-size:11px">
+<button type="button" class="primary" id="import-submit" style="padding:4px 12px;font-size:12px">دەستپێکردنی هاوردەکردن</button>
+<button type="button" class="secondary" id="import-cancel" style="padding:4px 10px;font-size:12px">داخستن</button>
+</div>
+<div id="import-status" class="message" role="status" style="margin-top:6px"></div>
+</div>
 <div id="results"><div class="blank">هیچ کاڵایەک نییە</div></div>
 <div class="pager" id="list-pagination" hidden><button type="button" class="secondary" id="list-prev">پێشوو</button><span class="pager-info" id="list-page-info">0 / 0</span><button type="button" class="secondary" id="list-next">دواتر</button></div>
 <div id="list-message" class="message" role="status"></div>

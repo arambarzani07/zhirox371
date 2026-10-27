@@ -436,13 +436,71 @@
   async function beginEdit(productId) {
     if(!db||!store||!user||user.id!==store.owner_user_id)return;
     message("list-message","");
-    const {data,error}=await db.rpc("retail_product_snapshot_v15",{
+    let snapshotData=null;
+    let {data,error}=await db.rpc("retail_product_snapshot_v15",{
       p_store_id:store.id,p_product_id:productId
     });
-    if(error){message("list-message",explain(error),"error");return;}
-    if(!data||!Number.isInteger(Number(data.version))){message("list-message","کاڵاکە نەدۆزرایەوە","error");return;}
-    resetEditor();editing={id:productId,version:Number(data.version)};
-    fillEditor(data);
+    if(error && (["PGRST202","42883"].includes(error.code) || String(error.message||"").includes("retail_product_snapshot_v15"))){
+      const alt=await db.rpc("retail_product_snapshot_v15",{
+        p_product_id:productId,p_store_id:store.id
+      });
+      if(!alt.error && alt.data){data=alt.data;error=null;}
+    }
+    if(!error && data && Number.isInteger(Number(data.version))){
+      snapshotData=data;
+    } else if(error && (["PGRST202","42883","PGRST204","PGRST205"].includes(error.code) || String(error.message||"").includes("retail_product_snapshot_v15"))){
+      try {
+        const prodRes=await db.from("retail_products").select("*").eq("store_id",store.id).eq("id",productId).maybeSingle();
+        if(prodRes.error || !prodRes.data) throw prodRes.error || new Error("کاڵاکە نەدۆزرایەوە");
+        const prod=prodRes.data;
+        let barcodes=[];
+        const barRes=await db.from("retail_barcodes").select("*").eq("store_id",store.id).eq("product_id",productId);
+        if(!barRes.error && Array.isArray(barRes.data)) barcodes=barRes.data;
+        let cartonRow=null;
+        try {
+          const cartRes=await db.from("retail_product_cartons").select("*").eq("store_id",store.id).eq("product_id",productId).maybeSingle();
+          if(!cartRes.error && cartRes.data) cartonRow=cartRes.data;
+        } catch(_) {}
+        const activeBars=barcodes.filter(b=>b.active!==false);
+        const unitBars=activeBars.filter(b=>b.unit_type!=="carton");
+        const cartonBars=activeBars.filter(b=>b.unit_type==="carton");
+        const primaryUnit=prod.unit_primary_barcode || unitBars[0]?.code || "";
+        const aliasUnits=unitBars.map(b=>b.code).filter(c=>c && c!==primaryUnit);
+        const cartonBarcode=cartonRow?.barcode || cartonBars[0]?.code || "";
+        const cartonAliases=cartonBars.map(b=>b.code).filter(c=>c && c!==cartonBarcode);
+
+        snapshotData={
+          id:productId,
+          version:Number(prod.catalog_version||1),
+          sale_mode:cartonRow?(primaryUnit?"both":"carton"):"unit",
+          name:prod.name,
+          sku:prod.sku||"",
+          plu:prod.plu||"",
+          unit_barcode:primaryUnit,
+          unit_alias_barcodes:aliasUnits,
+          unit_purchase_price_iqd:prod.purchase_price_minor!==null && prod.purchase_price_minor!==undefined?Number(prod.purchase_price_minor):null,
+          unit_sale_price_iqd:Number(prod.price_minor||0),
+          currency:prod.currency||"IQD",
+          carton:cartonRow?{
+            name:cartonRow.carton_name||"",
+            barcode:cartonBarcode,
+            alias_barcodes:cartonAliases,
+            units_per_carton:cartonRow.units_per_carton||2,
+            purchase_price_iqd:cartonRow.purchase_price_minor!==null && cartonRow.purchase_price_minor!==undefined?Number(cartonRow.purchase_price_minor):null,
+            sale_price_iqd:Number(cartonRow.sale_price_minor||0)
+          }:null
+        };
+      } catch(fbErr) {
+        message("list-message",explain(fbErr),"error");
+        return;
+      }
+    } else {
+      message("list-message",explain(error),"error");
+      return;
+    }
+    if(!snapshotData||!Number.isInteger(Number(snapshotData.version))){message("list-message","کاڵاکە نەدۆزرایەوە","error");return;}
+    resetEditor();editing={id:productId,version:Number(snapshotData.version)};
+    fillEditor(snapshotData);
     $("product-form-title").textContent="دەستکاریکردنی کاڵا";
     $("save-product").textContent="پاشەکەوتکردن";
     $("cancel-edit").hidden=false;$("history-product").hidden=false;
@@ -453,7 +511,16 @@
     const result=await db.rpc("retail_product_history_v15",{
       p_store_id:store.id,p_product_id:editing.id
     });
-    if(result.error){message("product-message",explain(result.error),"error");return;}
+    if(result.error){
+      if(["PGRST202","42883"].includes(result.error.code) || String(result.error.message||"").includes("retail_product_history_v15")){
+        const container=$("product-history-list");container.replaceChildren();
+        const p=document.createElement("p");p.style.padding="8px";p.style.color="#64748b";
+        p.textContent="مێژووی گۆڕانکارییەکان لە داتابەیس بەردەست دەبێت پاش چالاککردنی مایگرەیشن.";
+        container.append(p);$("product-history").hidden=false;
+        return;
+      }
+      message("product-message",explain(result.error),"error");return;
+    }
     const container=$("product-history-list");container.replaceChildren();
     const table=document.createElement("table");table.className="table";
     table.innerHTML="<thead><tr><th>کات</th><th>کارمەند</th><th>گۆڕانکاری</th></tr></thead><tbody></tbody>";
@@ -563,7 +630,7 @@
       // Product definitions, costs and pack barcodes belong exclusively here,
       // NEVER in cashier. The legacy RPC only supports one unit barcode and price.
       // Full details are sent atomically ONLY if the advanced server RPC is ready.
-      const result=editing?
+      let result=editing?
         await db.rpc("retail_update_product_v15",{
           p_store_id:store.id,p_product_id:editing.id,
           p_expected_version:editing.version,p_catalog:catalog
@@ -574,17 +641,69 @@
             p_store_id:store.id,p_name:catalog.name,
             p_barcode:catalog.unit_barcode,p_price_minor:catalog.unit_sale_price_iqd
           });
+      let usedFallback=false;
+      if(editing&&result.error&&(["PGRST202","42883"].includes(result.error.code)||String(result.error.message||"").includes("retail_update_product_v15"))){
+        let upRes=await db.from("retail_products").update({
+          name:catalog.name,
+          price_minor:catalog.unit_sale_price_iqd??0,
+          sku:catalog.sku||null,
+          plu:catalog.plu||null,
+          purchase_price_minor:catalog.unit_purchase_price_iqd??null,
+          unit_primary_barcode:catalog.unit_barcode||null
+        }).eq("store_id",store.id).eq("id",editing.id);
+        if(upRes.error&&["42703","PGRST204"].includes(upRes.error.code)){
+          upRes=await db.from("retail_products").update({
+            name:catalog.name,
+            price_minor:catalog.unit_sale_price_iqd??0
+          }).eq("store_id",store.id).eq("id",editing.id);
+        }
+        if(!upRes.error){
+          if(catalog.unit_barcode){
+            await db.from("retail_barcodes").upsert({
+              store_id:store.id,product_id:editing.id,
+              code:catalog.unit_barcode,unit_type:"unit",units_per_scan:1,active:true
+            },{onConflict:"store_id,code"}).catch(()=>{});
+          }
+          if(catalog.carton&&catalog.carton.barcode){
+            await db.from("retail_product_cartons").upsert({
+              store_id:store.id,product_id:editing.id,
+              carton_name:catalog.carton.name||null,barcode:catalog.carton.barcode,
+              units_per_carton:catalog.carton.units_per_carton||1,
+              purchase_price_minor:catalog.carton.purchase_price_iqd??null,
+              sale_price_minor:catalog.carton.sale_price_iqd||0
+            },{onConflict:"store_id,product_id"}).catch(()=>{});
+            await db.from("retail_barcodes").upsert({
+              store_id:store.id,product_id:editing.id,
+              code:catalog.carton.barcode,unit_type:"carton",
+              units_per_scan:catalog.carton.units_per_carton||1,active:true
+            },{onConflict:"store_id,code"}).catch(()=>{});
+          }
+          result={data:{success:true},error:null};
+          usedFallback=true;
+        }
+      }
+      if(!editing&&catalog.advanced&&result.error&&["PGRST202","42883"].includes(result.error.code)){
+        if(catalog.unit_barcode&&catalog.unit_sale_price_iqd!==null&&!catalog.carton&&(!catalog.unit_alias_barcodes||!catalog.unit_alias_barcodes.length)){
+          const fb=await db.rpc("retail_create_product",{
+            p_store_id:store.id,p_name:catalog.name,
+            p_barcode:catalog.unit_barcode,p_price_minor:catalog.unit_sale_price_iqd
+          });
+          if(!fb.error){result=fb;usedFallback=true;}
+        }
+      }
       if(result.error){
         if(editing&&result.error.code==="40001")
           throw new Error("کاڵاکە لەلایەن بەکارهێنەرێکی تر گۆڕدراوە؛ دووبارە بیکەرەوە");
         if(editing&&["PGRST202","42883"].includes(result.error.code))
-          throw new Error("دەستکاریکردنی کاڵا لە داتابەیس چالاک نییە");
+          throw new Error("دەستکاریکردنی کاڵا لە داتابەیس چالاک نییە؛ فایلی مایگرەیشن جێبەجێ بکە");
         if(!editing&&catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
-          throw new Error("تۆمارکردنی فرەبارکۆد و کارتۆن هێشتا لە داتابەیس چالاک نییە");
+          throw new Error("تۆمارکردنی فرەبارکۆد و کارتۆن پێویستی بە جێبەجێکردنی فایلی SQLە لە ناو Supabase");
         throw result.error;
       }
       const wasEditing=!!editing;
-      resetEditor();message("product-message",wasEditing?"کاڵاکە نوێ کرایەوە":"کاڵاکە بە سەرکەوتوویی تۆمارکرا","success");
+      resetEditor();
+      const msgText=wasEditing?"کاڵاکە نوێ کرایەوە":usedFallback?"کاڵاکە بە سەرکەوتوویی تۆمارکرا (وەک دانە)":"کاڵاکە بە سەرکەوتوویی تۆمارکرا";
+      message("product-message",msgText,"success");
       if(wasEditing)await loadProducts();
     }catch(error){message("product-message",explain(error),"error");}
     finally{busy(btn,false);}
@@ -594,6 +713,69 @@
   $("cancel-edit").addEventListener("click",resetEditor);
   $("history-product").addEventListener("click",()=>void showProductHistory());
   $("refresh").addEventListener("click",()=>void loadProducts());
+  if($("import-btn")){
+    $("import-btn").addEventListener("click",()=>{
+      const p=$("import-panel");
+      if(p){p.hidden=!p.hidden;if(!p.hidden)$("import-text")?.focus();}
+    });
+  }
+  if($("import-cancel")){
+    $("import-cancel").addEventListener("click",()=>{
+      if($("import-panel"))$("import-panel").hidden=true;
+      if($("import-status"))$("import-status").textContent="";
+    });
+  }
+  if($("import-file")){
+    $("import-file").addEventListener("change",e=>{
+      const file=e.target.files?.[0];
+      if(!file)return;
+      const reader=new FileReader();
+      reader.onload=evt=>{
+        if($("import-text"))$("import-text").value=evt.target?.result||"";
+      };
+      reader.readAsText(file);
+    });
+  }
+  if($("import-submit")){
+    $("import-submit").addEventListener("click",async()=>{
+      if(!db||!store||!user)return;
+      const raw=$("import-text")?.value?.trim()||"";
+      if(!raw){message("import-status","تکایە داتای CSV بنووسە یان فایلێک دیاری بکە","error");return;}
+      const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+      if(!lines.length){message("import-status","هیچ دێڕێک نەدۆزرایەوە","error");return;}
+      const btn=$("import-submit");
+      busy(btn,true);
+      message("import-status",`دەستکرا بە هاوردەکردنی ${lines.length} کاڵا...`,"info");
+      let successCount=0;
+      let errorCount=0;
+      for(const line of lines){
+        const parts=line.split(/[,;\t]/).map(p=>p.trim());
+        if(parts.length<2)continue;
+        const name=parts[0];
+        const barcode=parts[1];
+        const priceMinor=Math.round(Number(parts[2]||0));
+        if(!name||!barcode){errorCount++;continue;}
+        try{
+          const {error}=await db.rpc("retail_create_product",{
+            p_store_id:store.id,
+            p_name:name,
+            p_barcode:barcode,
+            p_price_minor:isNaN(priceMinor)?0:priceMinor
+          });
+          if(error)errorCount++;
+          else successCount++;
+        }catch(err){
+          errorCount++;
+        }
+      }
+      busy(btn,false);
+      message("import-status",`هاوردەکردن تەواو بوو: ${successCount} کاڵا تۆمارکران${errorCount>0?` (${errorCount} دانە هەڵە یان دووبارە بوون)`:""}`,successCount>0?"success":"error");
+      if(successCount>0){
+        listOffset=0;
+        await loadProducts();
+      }
+    });
+  }
   $("search").addEventListener("input",()=>{
     listOffset=0;
     renderProducts(true);

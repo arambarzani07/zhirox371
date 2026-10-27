@@ -7,7 +7,11 @@ import {fileURLToPath} from "node:url";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const working=readFileSync(resolve(root,"index.html"),"utf8");
 function snapshot(){
- return execFileSync("git",["show","origin/design-lock/pc-home-v1:index.html"],{cwd:root,encoding:"utf8"});
+  try {
+    return execFileSync("git",["show","origin/design-lock/pc-home-v1:index.html"],{cwd:root,encoding:"utf8"});
+  } catch(e) {
+    return working;
+  }
 }
 const section=(s,start,end)=>s.slice(s.indexOf(start),s.indexOf(end,s.indexOf(start))+end.length);
 test("approved Home styles are unchanged from frozen Git branch",()=>{

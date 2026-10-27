@@ -25,7 +25,8 @@
    if(packType==="carton"&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
      outer.append(el("div",String(qty)+" کارتۆن × "+String(unitsPerPack)+" دانە","pack-detail"));
    }else if(baseUnits!=null&&Number(baseUnits)>0&&Number(baseUnits)!==qty){
-     outer.append(el("div","کێش: "+Number(baseUnits).toFixed(3)+" kg × "+fmt(price),"pack-detail"));
+     const kgRate=Math.round(Number(price)/Number(baseUnits));
+     outer.append(el("div","کێش: "+Number(baseUnits).toFixed(3)+" کگم (نرخی ١ کگم: "+fmt(kgRate)+")","pack-detail"));
    }else if(packType==="unit"){
      outer.append(el("div",String(qty)+" دانە","pack-detail"));
    }
