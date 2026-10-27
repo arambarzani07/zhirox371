@@ -1,4 +1,5 @@
 /** Pure diagnostic helpers: no data storage and no network calls. */
+import "./scale-barcode.js";
 export function isValidEan13(value) {
   if (typeof value !== "string" || !/^[0-9]{13}$/.test(value)) return false;
   let sum = 0;
@@ -14,11 +15,13 @@ export function inspectBarcode(input) {
   const numeric13 = /^[0-9]{13}$/.test(code);
   const valid = numeric13 ? isValidEan13(code) : null;
   const scale = numeric13 && code.startsWith("27");
+  const parsed = scale ? globalThis.ScaleBarcode.inspect(code) : null;
   return Object.freeze({
     length: code.length,
     type: numeric13 ? "EAN-13" : /^[0-9]+$/.test(code) ? "ژمارەیی" : "ئەلفانوومێریک",
     checksum: numeric13 ? (valid ? "دروستە" : "نادروستە") : "پەیوەندی نییە",
-    scaleItemCode: scale ? code.slice(2, 9) : null,
+    scaleItemCode: parsed?.valid ? parsed.productCode : null,
+    scaleWeightKg: parsed?.valid ? parsed.kilograms : null,
     possibleScaleBarcode: scale,
     validEan13: valid
   });
