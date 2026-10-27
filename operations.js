@@ -419,7 +419,11 @@ async function loadInventory(){
  if(tab==="stock")renderStock();else if(tab==="cash")renderCart();
 }
 function updateStockUnits(){
- const product=$("stock-product").value,mode=$("stock-mode").value;
+ const product=$("stock-product").value;
+ const isKg=products.find(p=>p.id===product)?.base_unit==="kg";
+ if(isKg)$("stock-mode").value="unit";
+ const mode=$("stock-mode").value;
+ $("stock-quantity").step=isKg?"0.001":"1";$("stock-quantity").min=isKg?"0.001":"1";
  const unitType=mode==="both"?"unit":mode;
  const barcode=$("stock-barcode"),old=barcode.value;
  barcode.replaceChildren();
@@ -448,10 +452,12 @@ function updateStockUnits(){
 }
 function updateStockBaseTotal(){
  const product=$("stock-product").value,mode=$("stock-mode").value;
+ const isKg=products.find(p=>p.id===product)?.base_unit==="kg";
  const unit=barcodes.find(b=>b.product_id===product&&b.code===$("stock-barcode").value);
  const qty=Number($("stock-quantity").value);
  let amount=qty*Number(unit?.units_per_scan||0);
- let valid=Number.isSafeInteger(qty)&&qty>=1&&qty<=1000000&&Number.isSafeInteger(amount)&&amount>0;
+ let valid=isKg?(mode==="unit"&&Number.isFinite(qty)&&qty>=0.001&&qty<=1000000&&Math.abs(qty*1000-Math.round(qty*1000))<0.000001):
+   (Number.isSafeInteger(qty)&&qty>=1&&qty<=1000000&&Number.isSafeInteger(amount)&&amount>0);
  if(mode==="both"){
    const pack=barcodes.find(b=>b.product_id===product&&b.code===$("stock-mixed-carton").value&&b.unit_type==="carton");
    const count=Number($("stock-mixed-qty").value);
@@ -460,7 +466,7 @@ function updateStockBaseTotal(){
      Number.isSafeInteger(count)&&count>=1&&Number.isSafeInteger(cartonBase)&&cartonBase>0;
    amount+=cartonBase;
  }
- $("stock-base-total").value=valid&&Number.isSafeInteger(amount)&&amount<=1000000?String(amount):"";
+ $("stock-base-total").value=valid&&Number.isFinite(amount)&&amount<=1000000?String(Number(amount.toFixed(3))):"";
 }
 function renderStock(){
  const pageProducts=stockPageIds.length?stockPageIds.map(id=>products.find(p=>p.id===id)).filter(Boolean):products.slice(0,PAGE_SIZE);
@@ -554,7 +560,8 @@ function renderCart(){
   const cell=row.children[2],wrap=document.createElement("span");wrap.className="qty";
   const minus=document.createElement("button");minus.type="button";minus.dataset.line=i;minus.dataset.delta="-1";minus.textContent="−";
   const plus=document.createElement("button");plus.type="button";plus.dataset.line=i;plus.dataset.delta="1";plus.textContent="+";
-  const count=document.createElement("span");count.textContent=String(it.qty);
+  const count=document.createElement("span");count.textContent=it.isScale?it.units.toFixed(3)+" kg":String(it.qty);
+  if(it.isScale){plus.disabled=true;plus.title="بۆ زیادکردن پاکەتەکە دووبارە بسکانە";}
   wrap.append(minus,count,plus);cell.append(wrap);table.tBodies[0].append(row);
  });list.append(table);
 }
@@ -961,6 +968,7 @@ $("scan-form").addEventListener("submit",async e=>{
 $("cart-list").addEventListener("click",e=>{
  const btn=e.target.closest("[data-line]");if(!btn||busy||pendingCheckout)return;
  const i=Number(btn.dataset.line),line=cart[i];if(!line)return;
+ if(line.isScale&&Number(btn.dataset.delta)>0)return;
  const qty=line.qty+Number(btn.dataset.delta);
  if(Number((stockUsed(line.id,i)+Math.max(0,qty)*line.units).toFixed(3))>line.available){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
  if(qty<=0)cart.splice(i,1);else line.qty=qty;
@@ -1142,23 +1150,24 @@ $("stock-form").addEventListener("submit",async e=>{
  const mix=barcodes.find(b=>b.product_id===product&&b.code===String(f.get("mixed_carton")||"")&&b.unit_type==="carton");
  const mixedQty=Number(f.get("mixed_qty"));
  const mixed=mode==="both";
+ const isKg=products.find(p=>p.id===product)?.base_unit==="kg";
  const total=qty*units+(mixed?mixedQty*Number(mix?.units_per_scan||0):0);
- if(!first||!Number.isSafeInteger(qty)||qty<1||qty>1000000||
+ if(!first||(isKg?(mode!=="unit"||!Number.isFinite(qty)||qty<0.001||Math.abs(qty*1000-Math.round(qty*1000))>0.000001):!Number.isSafeInteger(qty)||qty<1)||qty>1000000||
    !Number.isSafeInteger(units)||units<1||mode==="unit"&&units!==1||
    mode==="carton"&&units<2||mixed&&(
       !mix||!Number.isSafeInteger(mixedQty)||mixedQty<1||mixedQty>1000000||
       first.unit_type!=="unit"||units!==1||Number(mix.units_per_scan)<2
-   )||!Number.isSafeInteger(total)||total<1||total>1000000||
+   )||(!(isKg)&&!Number.isSafeInteger(total))||total<(isKg?0.001:1)||total>1000000||
    !["unit","carton","both"].includes(mode)||!["opening","purchase"].includes(reason)){
    msg("stock-msg","بڕ یان بارکۆدی کۆگا نادروستە","error");return;
  }
- const args=mixed?
+ const args=isKg?{p_store:store.id,p_barcode:code,p_kg:qty,p_reason:reason}:mixed?
    {p_store:store.id,p_lines:[
       {barcode:first.code,packages:qty,expected_units:1},
       {barcode:mix.code,packages:mixedQty,expected_units:Number(mix.units_per_scan)}
     ],p_reason:reason}:
    {p_store:store.id,p_barcode:code,p_packages:qty,p_expected_units:units,p_reason:reason};
- const fingerprint=JSON.stringify({rpc:mixed?"mixed":"single",...args});
+ const fingerprint=JSON.stringify({rpc:isKg?"kg":mixed?"mixed":"single",...args});
  if(stockAttempt?.uncertain&&stockAttempt.fingerprint!==fingerprint){
    msg("stock-msg","ئەنجامی وەرگرتنی پێشوو دیار نییە؛ هەمان داواکاری دووبارە بکەرەوە","error");return;
  }
@@ -1166,7 +1175,7 @@ $("stock-form").addEventListener("submit",async e=>{
    stockAttempt={fingerprint,id:crypto.randomUUID(),uncertain:false};
  lock(true);msg("stock-msg");
  try{
-   const {error}=await db.rpc(mixed?"retail_receive_mixed_v171":"retail_receive_packs_v17",
+   const {error}=await db.rpc(isKg?"retail_receive_weight_v19":mixed?"retail_receive_mixed_v171":"retail_receive_packs_v17",
      {...args,p_request:stockAttempt.id});
    if(error)throw error;
    stockAttempt=null;e.target.reset();
