@@ -18,11 +18,11 @@ try {
  assert.equal(await page.locator("#unit-barcode-field").isVisible(),false);
  assert.equal(await page.locator("#unit-aliases-field").isVisible(),false);
  assert.equal(await page.locator("#carton-fields").isVisible(),false);
- assert.equal(await page.locator('[name="barcode"]').isDisabled(),true);
- await page.locator('[name="name"]').fill("تەماتە");
- await page.locator('[name="plu"]').fill("00001");
- await page.locator('[name="price"]').fill("1250");
- await page.locator('[name="purchase_price"]').fill("900");
+ assert.equal(await page.locator('#product-form [name="barcode"]').isDisabled(),true);
+ await page.locator('#product-form [name="name"]').fill("تەماتە");
+ await page.locator('#product-form [name="plu"]').fill("00001");
+ await page.locator('#product-form [name="price"]').fill("1250");
+ await page.locator('#product-form [name="purchase_price"]').fill("900");
  assert.equal(await page.locator("#product-form").evaluate(el=>el.checkValidity()),true);
  await page.locator("#save-product").click();
  await page.waitForFunction(()=>window.__retailQA.advancedCatalogs.length===1);
@@ -48,9 +48,9 @@ try {
  console.log("PASS PLU-only scale item; no fake unit barcode, sale 480g => 600 IQD");
 
  await page.locator('[name="sale_mode"][value="scale"]').check();
- await page.locator('[name="name"]').fill("دووبارەی تەماتە");
- await page.locator('[name="plu"]').fill("00001");
- await page.locator('[name="price"]').fill("1250");
+ await page.locator('#product-form [name="name"]').fill("دووبارەی تەماتە");
+ await page.locator('#product-form [name="plu"]').fill("00001");
+ await page.locator('#product-form [name="price"]').fill("1250");
  await page.locator("#save-product").click();
  await page.waitForFunction(()=>window.__retailQA.called.filter(x=>x.name==="retail_register_product_v14").length===2);
  assert.equal(await page.evaluate(()=>window.__retailQA.advancedCatalogs.length),1);
