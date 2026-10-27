@@ -156,9 +156,16 @@
       else{
         const allCodes=[...(catalog.unit_barcode?[catalog.unit_barcode]:[]),...catalog.unit_alias_barcodes,...(catalog.carton?[catalog.carton.barcode,...(catalog.carton.alias_barcodes||[])]:[])];
         if(state.barcodes.some(x=>allCodes.includes(x.code)))err=error("23505","duplicate barcode");
+        else if(catalog.sale_mode==="scale"&&(
+          !/^[0-9]{5}$/.test(catalog.plu||"")||catalog.plu==="00000"||
+          !!catalog.unit_barcode||catalog.unit_alias_barcodes.length||!!catalog.carton
+        ))err=error("22023","Invalid scale-only catalog");
+        else if(catalog.plu&&state.products.some(p=>p.active!==false&&
+           /^\d{1,5}$/.test(p.plu||"")&&p.plu.padStart(5,"0")===catalog.plu.padStart(5,"0")))
+          err=error("23505","Duplicate PLU");
         else{
           const id="cccccccc-cccc-4ccc-8ccc-"+String(++state.nextProduct).padStart(12,"0");
-          state.products.push({id,store_id:store.id,name:catalog.name,price_minor:catalog.unit_sale_price_iqd??0,active:true,currency:"IQD",catalog_version:1});
+          state.products.push({id,store_id:store.id,name:catalog.name,price_minor:catalog.unit_sale_price_iqd??0,sku:catalog.sku,plu:catalog.plu,active:true,currency:"IQD",catalog_version:1});
           for(const code of [...(catalog.unit_barcode?[catalog.unit_barcode]:[]),...catalog.unit_alias_barcodes])
             state.barcodes.push({store_id:store.id,product_id:id,code,unit_type:"unit",units_per_scan:1});
           if(catalog.carton)for(const code of [catalog.carton.barcode,...(catalog.carton.alias_barcodes||[])])state.barcodes.push({store_id:store.id,product_id:id,code,unit_type:"carton",units_per_scan:catalog.carton.units_per_carton});
@@ -184,11 +191,12 @@
         else{
           const c=args.p_catalog,all=[...(c.unit_barcode?[c.unit_barcode]:[]),...c.unit_alias_barcodes,
             ...(c.carton?[c.carton.barcode,...c.carton.alias_barcodes]:[])];
-          if(new Set(all).size!==all.length||state.barcodes.some(x=>x.product_id!==p.id&&all.includes(x.code)))
+          if(new Set(all).size!==all.length||state.barcodes.some(x=>x.product_id!==p.id&&all.includes(x.code))||
+             (c.plu&&state.products.some(x=>x.id!==p.id&&x.active!==false&&/^\d{1,5}$/.test(x.plu||"")&&x.plu.padStart(5,"0")===c.plu.padStart(5,"0"))))
             err=error("23505","duplicate barcode");
           else{
             const old=editorSnapshot(p.id);
-            p.name=c.name;p.price_minor=c.unit_sale_price_iqd??0;p.catalog_version=(p.catalog_version||1)+1;
+            p.name=c.name;p.sku=c.sku;p.plu=c.plu;p.price_minor=c.unit_sale_price_iqd??0;p.catalog_version=(p.catalog_version||1)+1;
             for(const barcode of state.barcodes.filter(x=>x.product_id===p.id))barcode.active=false;
             for(const code of [...(c.unit_barcode?[c.unit_barcode]:[]),...c.unit_alias_barcodes]){
               const existing=state.barcodes.find(x=>x.product_id===p.id&&x.code===code);

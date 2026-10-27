@@ -379,14 +379,30 @@
   function syncSellingMode(){
     const form=$("product-form");
     const mode=String(new FormData(form).get("sale_mode")||"unit");
-    for(const [section,enabled] of [["unit-fields",mode!=="carton"],["carton-fields",mode!=="unit"]]){
+    const isScale=mode==="scale";
+    for(const [section,enabled] of [["unit-fields",mode!=="carton"],["carton-fields",mode==="carton"||mode==="both"]]){
       const node=$(section);node.hidden=!enabled;
       node.querySelectorAll("input,textarea").forEach(field=>field.disabled=!enabled);
     }
+    // Scale-only products are identified by the five-digit PLU; they have no
+    // ordinary unit barcode. Never use a variable-weight label as a fixed alias.
+    $("unit-barcode-field").hidden=isScale;
+    $("unit-aliases-field").hidden=isScale;
+    form.elements.namedItem("barcode").disabled=isScale||mode==="carton";
+    form.elements.namedItem("extra_barcodes").disabled=isScale||mode==="carton";
+    const plu=form.elements.namedItem("plu");
+    plu.required=isScale;
+    if(isScale)plu.setAttribute("pattern","[0-9]{5}");
+    else plu.removeAttribute("pattern");
+    plu.maxLength=isScale?5:30;
+    $("unit-fields-title").textContent=isScale?"تەرازوو":"دانە";
+    $("purchase-price-label").textContent=isScale?"نرخی کڕینی کیلۆگرام (IQD)":"نرخی کڕینی دانە (IQD)";
+    $("sale-price-label").textContent=isScale?"نرخی فرۆشتنی کیلۆگرام (IQD)":"نرخی فرۆشتنی دانە (IQD)";
   }
   function sellingModeFromSnapshot(c){
-    if(["unit","carton","both"].includes(c.sale_mode))return c.sale_mode;
-    return c.carton?(c.unit_barcode?"both":"carton"):"unit";
+    if(["unit","carton","both","scale"].includes(c.sale_mode))return c.sale_mode;
+    return c.carton?(c.unit_barcode?"both":"carton"):
+      (!c.unit_barcode&&/^[0-9]{5}$/.test(c.plu||"")?"scale":"unit");
   }
   function resetEditor() {
     editing=null;

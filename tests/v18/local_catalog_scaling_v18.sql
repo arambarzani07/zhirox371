@@ -169,7 +169,7 @@ BEGIN
             v_clean AS code,
             p.id AS product_id,
             'unit'::text AS unit_type,
-            1 AS units_per_scan,
+            1::numeric AS units_per_scan,
             p.name AS product_name,
             p.sku,
             p.plu,

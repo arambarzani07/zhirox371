@@ -661,11 +661,33 @@ passed("V18 paginated catalog, barcode directory, and exact barcode lookup enfor
 const tomatoId=ok(await owner.rpc("retail_register_product_v14",{
  p_store_id:storeA.id,
  p_catalog:{
-  advanced:true,sale_mode:"unit",name:"تەماتە",sku:"VEG-00001",plu:"00001",
-  unit_barcode:"6260000000015",unit_purchase_price_iqd:900,unit_sale_price_iqd:1250,
+  advanced:true,sale_mode:"scale",name:"تەماتە",sku:"VEG-00001",plu:"00001",
+  unit_barcode:"",unit_purchase_price_iqd:900,unit_sale_price_iqd:1250,
   unit_alias_barcodes:[],carton:null,currency:"IQD"
  }
 }),"owner registers weighted product تەماتە with PLU 00001 at 1,250 IQD/kg");
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+tomatoId+"'"),"0",
+ "PLU-only scale item must not require or create ordinary barcodes");
+const scaleSnapshot=ok(await owner.rpc("retail_product_snapshot_v15",{
+ p_store_id:storeA.id,p_product_id:tomatoId
+}),"owner reads PLU-only scale item for editing");
+assert.equal(scaleSnapshot.sale_mode,"scale");
+assert.equal(scaleSnapshot.unit_barcode,"");
+assert.equal(scaleSnapshot.unit_sale_price_iqd,1250);
+const duplicateScale=await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,
+ p_catalog:{advanced:true,sale_mode:"scale",name:"Duplicate PLU",sku:null,plu:"00001",
+ unit_barcode:"",unit_purchase_price_iqd:null,unit_sale_price_iqd:1500,
+ unit_alias_barcodes:[],carton:null,currency:"IQD"}
+});
+fail(duplicateScale,"owner cannot duplicate another active 5-digit PLU in same store");
+assert.equal(duplicateScale.error.code,"23505");
+fail(await manager.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,p_catalog:{advanced:true,sale_mode:"scale",name:"Not owner",
+ sku:null,plu:"00456",unit_barcode:"",unit_purchase_price_iqd:null,
+ unit_sale_price_iqd:1500,unit_alias_barcodes:[],carton:null,currency:"IQD"}
+}),"manager cannot create PLU-only products");
+
 ok(await manager.rpc("retail_receive_stock",{
  p_store:storeA.id,p_product:tomatoId,p_quantity:5,p_reason:"opening"
 }),"manager receives 5.000 kg of تەماتە");

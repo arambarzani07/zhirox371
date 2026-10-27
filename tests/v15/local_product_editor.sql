@@ -33,12 +33,15 @@ BEGIN
    AND active AND unit_type='carton' AND code IS DISTINCT FROM v_carton.barcode;
  RETURN jsonb_build_object(
   'id',v_product.id,'version',v_product.catalog_version,
-  'sale_mode',CASE WHEN v_carton.product_id IS NOT NULL AND v_unit_code IS NOT NULL THEN 'both' WHEN v_carton.product_id IS NOT NULL THEN 'carton' ELSE 'unit' END,
+  'sale_mode',CASE WHEN v_carton.product_id IS NOT NULL AND v_unit_code IS NOT NULL THEN 'both'
+    WHEN v_carton.product_id IS NOT NULL THEN 'carton'
+    WHEN v_unit_code IS NULL AND v_product.plu ~ '^[0-9]{5}$' AND v_product.price_minor>0 THEN 'scale'
+    ELSE 'unit' END,
   'name',v_product.name,'sku',v_product.sku,'plu',v_product.plu,
   'unit_barcode',coalesce(v_unit_code,''),
   'unit_alias_barcodes',v_aliases,
-  'unit_purchase_price_iqd',CASE WHEN v_unit_code IS NULL THEN NULL ELSE v_product.purchase_price_minor END,
-  'unit_sale_price_iqd',CASE WHEN v_unit_code IS NULL THEN NULL ELSE v_product.price_minor END,'currency',v_product.currency,
+  'unit_purchase_price_iqd',CASE WHEN v_carton.product_id IS NOT NULL AND v_unit_code IS NULL THEN NULL ELSE v_product.purchase_price_minor END,
+  'unit_sale_price_iqd',CASE WHEN v_carton.product_id IS NOT NULL AND v_unit_code IS NULL THEN NULL ELSE v_product.price_minor END,'currency',v_product.currency,
   'carton',CASE WHEN v_carton.product_id IS NULL THEN 'null'::jsonb
     ELSE jsonb_build_object('name',v_carton.carton_name,'barcode',v_carton.barcode,
       'alias_barcodes',v_carton_aliases,
@@ -98,16 +101,20 @@ BEGIN
     OR p_catalog->>'currency' IS DISTINCT FROM 'IQD'
  THEN RAISE EXCEPTION 'Invalid catalog payload' USING errcode='22023';END IF;
  v_sale_mode=coalesce(p_catalog->>'sale_mode',CASE WHEN p_catalog->'carton' IS NOT NULL AND jsonb_typeof(p_catalog->'carton')<>'null' THEN 'both' ELSE 'unit' END);
- IF v_sale_mode NOT IN ('unit','carton','both') THEN RAISE EXCEPTION 'Invalid sale mode' USING errcode='22023';END IF;
+ IF v_sale_mode NOT IN ('unit','carton','both','scale') THEN RAISE EXCEPTION 'Invalid sale mode' USING errcode='22023';END IF;
  v_name=nullif(btrim(p_catalog->>'name'),'');
  v_sku=nullif(btrim(p_catalog->>'sku'),'');
  v_plu=nullif(btrim(p_catalog->>'plu'),'');
  v_unit_code=nullif(btrim(p_catalog->>'unit_barcode'),'');
  IF v_name IS NULL OR length(v_name)>160
    OR length(coalesce(v_sku,''))>80 OR length(coalesce(v_plu,''))>30
-   OR (v_sale_mode<>'carton' AND v_unit_code IS NULL)
+   OR (v_sale_mode NOT IN ('carton','scale') AND v_unit_code IS NULL)
    OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item identity' USING errcode='22023';END IF;
+ IF v_sale_mode='scale' THEN
+  IF v_unit_code IS NOT NULL OR (coalesce(v_plu,'')) !~ '^[0-9]{5}$' OR v_plu='00000'
+  THEN RAISE EXCEPTION 'Scale item needs five-digit PLU and no ordinary barcode' USING errcode='22023';END IF;
+ END IF;
  IF v_sale_mode='carton' THEN
   IF v_unit_code IS NOT NULL THEN RAISE EXCEPTION 'Unit barcode not allowed' USING errcode='22023';END IF;
   v_unit_price=0;
@@ -117,6 +124,7 @@ BEGIN
   v_unit_price=(p_catalog->>'unit_sale_price_iqd')::numeric;
  END IF;
  IF v_unit_price<0 OR v_unit_price>999999999 OR v_unit_price<>trunc(v_unit_price)
+    OR (v_sale_mode='scale' AND v_unit_price<=0)
  THEN RAISE EXCEPTION 'Invalid unit price' USING errcode='22023';END IF;
  IF jsonb_typeof(p_catalog->'unit_purchase_price_iqd')='number' THEN
    v_unit_cost=(p_catalog->>'unit_purchase_price_iqd')::numeric;
@@ -128,10 +136,12 @@ BEGIN
  v_unit_aliases=p_catalog->'unit_alias_barcodes';
  IF jsonb_typeof(v_unit_aliases)<>'array' OR jsonb_array_length(v_unit_aliases)>30
  THEN RAISE EXCEPTION 'Invalid unit aliases' USING errcode='22023';END IF;
+ IF v_sale_mode='scale' AND jsonb_array_length(v_unit_aliases)>0
+ THEN RAISE EXCEPTION 'Scale item cannot contain unit alias barcodes' USING errcode='22023';END IF;
  IF v_sale_mode='carton' THEN
   IF jsonb_array_length(v_unit_aliases)>0 OR (p_catalog->'unit_purchase_price_iqd' IS NOT NULL AND jsonb_typeof(p_catalog->'unit_purchase_price_iqd')<>'null')
   THEN RAISE EXCEPTION 'Unit aliases or cost not allowed' USING errcode='22023';END IF;
- ELSE
+ ELSIF v_sale_mode<>'scale' THEN
   v_codes:=array_append(v_codes,v_unit_code);
  END IF;
  FOR v_alias IN SELECT value FROM jsonb_array_elements_text(v_unit_aliases) LOOP
@@ -141,7 +151,7 @@ BEGIN
   v_codes:=array_append(v_codes,v_alias);
  END LOOP;
  v_carton=p_catalog->'carton';
- IF (v_sale_mode='unit' AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
+ IF (v_sale_mode IN ('unit','scale') AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
  OR (v_sale_mode IN ('both','carton') AND (v_carton IS NULL OR jsonb_typeof(v_carton)='null'))
  THEN RAISE EXCEPTION 'Carton mode mismatch' USING errcode='22023';END IF;
  IF v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null' THEN

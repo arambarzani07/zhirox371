@@ -7,6 +7,10 @@ ALTER TABLE public.retail_products
  ADD COLUMN plu text,
  ADD COLUMN purchase_price_minor bigint CHECK(purchase_price_minor>=0);
 
+CREATE UNIQUE INDEX IF NOT EXISTS retail_products_store_normalized_plu_unique
+ ON public.retail_products (store_id, lpad(btrim(plu),5,'0'))
+ WHERE active AND plu ~ '^[0-9]{1,5}$';
+
 CREATE TABLE public.retail_product_cartons(
  store_id uuid NOT NULL,
  product_id uuid NOT NULL,
@@ -57,13 +61,18 @@ BEGIN
  IF p_catalog->>'currency' IS DISTINCT FROM 'IQD'
  THEN RAISE EXCEPTION 'IQD catalog required' USING errcode='22023';END IF;
  v_sale_mode=coalesce(p_catalog->>'sale_mode',CASE WHEN p_catalog->'carton' IS NOT NULL AND jsonb_typeof(p_catalog->'carton')<>'null' THEN 'both' ELSE 'unit' END);
- IF v_sale_mode NOT IN ('unit','carton','both') THEN
+ IF v_sale_mode NOT IN ('unit','carton','both','scale') THEN
   RAISE EXCEPTION 'Invalid sale mode' USING errcode='22023';END IF;
  v_name=nullif(btrim(p_catalog->>'name'),'');
  v_unit_code=nullif(btrim(p_catalog->>'unit_barcode'),'');
- IF v_name IS NULL OR length(v_name)>160 OR (v_sale_mode<>'carton' AND v_unit_code IS NULL)
+ IF v_name IS NULL OR length(v_name)>160 OR (v_sale_mode NOT IN ('carton','scale') AND v_unit_code IS NULL)
     OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item name or barcode' USING errcode='22023';END IF;
+ IF v_sale_mode='scale' THEN
+  IF v_unit_code IS NOT NULL OR (coalesce(p_catalog->>'plu','')) !~ '^[0-9]{5}$'
+     OR p_catalog->>'plu' = '00000'
+  THEN RAISE EXCEPTION 'Scale product requires a five-digit PLU and no ordinary barcode' USING errcode='22023';END IF;
+ END IF;
  IF v_sale_mode='carton' THEN
   IF v_unit_code IS NOT NULL OR jsonb_array_length(coalesce(p_catalog->'unit_alias_barcodes','[]'::jsonb))>0
      OR (p_catalog->'unit_purchase_price_iqd' IS NOT NULL AND jsonb_typeof(p_catalog->'unit_purchase_price_iqd')<>'null')
@@ -75,6 +84,7 @@ BEGIN
   v_unit_price=(p_catalog->>'unit_sale_price_iqd')::numeric;
  END IF;
  IF v_unit_price<0 OR v_unit_price>999999999 OR v_unit_price<>trunc(v_unit_price)
+    OR (v_sale_mode='scale' AND v_unit_price<=0)
  THEN RAISE EXCEPTION 'Invalid unit price' USING errcode='22023';END IF;
  IF jsonb_typeof(p_catalog->'unit_purchase_price_iqd')='number' THEN
    v_raw_cost=(p_catalog->>'unit_purchase_price_iqd')::numeric;
@@ -89,9 +99,10 @@ BEGIN
  v_aliases=p_catalog->'unit_alias_barcodes';
  IF v_aliases IS NULL OR jsonb_typeof(v_aliases)<>'array'
     OR jsonb_array_length(v_aliases)>30
+    OR (v_sale_mode='scale' AND jsonb_array_length(v_aliases)>0)
  THEN RAISE EXCEPTION 'Invalid unit aliases' USING errcode='22023';END IF;
  v_carton=p_catalog->'carton';
- IF (v_sale_mode='unit' AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
+ IF (v_sale_mode IN ('unit','scale') AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
     OR (v_sale_mode IN ('carton','both') AND (v_carton IS NULL OR jsonb_typeof(v_carton)='null'))
  THEN RAISE EXCEPTION 'Sale mode carton definition mismatch' USING errcode='22023';END IF;
  IF v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null' THEN
@@ -123,7 +134,7 @@ BEGIN
  VALUES(p_store_id,v_name,nullif(p_catalog->>'sku',''),nullif(p_catalog->>'plu',''),
         v_unit_price::bigint,v_cost,'IQD',true) RETURNING id INTO v_product;
 
- IF v_sale_mode<>'carton' THEN
+ IF v_sale_mode NOT IN ('carton','scale') THEN
   INSERT INTO public.retail_barcodes(store_id,product_id,code,unit_type,units_per_scan)
   VALUES(p_store_id,v_product,v_unit_code,'unit',1);
  END IF;
@@ -155,7 +166,7 @@ BEGIN
  END IF;
  INSERT INTO public.retail_audit_events(store_id,actor_id,action,subject_id,details)
  VALUES(p_store_id,v_actor,'product.register_v14',v_product,
-        jsonb_build_object('barcodes',(v_sale_mode<>'carton')::int+jsonb_array_length(v_aliases)
+        jsonb_build_object('sale_mode',v_sale_mode,'barcodes',(v_sale_mode NOT IN ('carton','scale'))::int+jsonb_array_length(v_aliases)
        +(v_carton_code IS NOT NULL)::int
        +CASE WHEN v_carton_code IS NOT NULL THEN jsonb_array_length(v_carton_aliases) ELSE 0 END));
  RETURN v_product;
