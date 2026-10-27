@@ -582,6 +582,7 @@
     finally{busy(btn,false);}
   });
   $("product-form").querySelectorAll(`[name="sale_mode"]`).forEach(x=>x.addEventListener("change",syncSellingMode));
+  $("product-form").elements.namedItem("plu").addEventListener("input",syncSellingMode);
   syncSellingMode();
   $("cancel-edit").addEventListener("click",resetEditor);
   $("history-product").addEventListener("click",()=>void showProductHistory());
