@@ -21,7 +21,7 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 .receipt-page .button:disabled{opacity:.5;cursor:not-allowed}
 .receipt-page .secondary{background:#edf2f8;color:#4b637c}
 .receipt-page .sheet{width:var(--receipt-paper);min-width:0;max-width:100%;min-height:0;margin:0;padding:var(--receipt-pad);background:#fff;box-shadow:0 6px 28px #24384b20;border:0;overflow:visible}
-.receipt-page .receipt{direction:rtl;width:100%;font-family:Tahoma,"Segoe UI",Arial,sans-serif;font-size:9.5px;line-height:1.6;font-weight:500;color:#111;overflow-wrap:normal;word-break:normal}
+.receipt-page .receipt{direction:rtl;width:100%;font-family:Tahoma,"Segoe UI",Arial,sans-serif;font-size:10.5px;line-height:1.6;font-weight:500;color:#111;overflow-wrap:normal;word-break:normal}
 .receipt-page .receipt h1{font-size:12px;line-height:1.5;font-weight:800;text-align:center;margin:0 0 3px;overflow-wrap:anywhere}
 .receipt-page .center{text-align:center}
 .receipt-page .receipt-subtitle{font-size:9px;margin:0 0 6px}
@@ -43,6 +43,12 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 .receipt-page .grand-total{font-weight:850;font-size:11px;margin-bottom:6px!important}
 .receipt-page .footer{margin:10px 0 3px;text-align:center;font-size:9px}
 .receipt-page .status{font-size:13px;color:#8b4d4d;max-width:420px;text-align:center;min-height:20px}
+html[data-paper="80"]{--receipt-pad:4mm}
+html[data-paper="80"] .receipt-page .receipt{font-size:11.5px}
+html[data-paper="80"] .receipt-page .receipt h1{font-size:15px}
+html[data-paper="80"] .receipt-page .line-name{font-size:12px}
+html[data-paper="80"] .receipt-page .line-calculation{font-size:10.5px}
+html[data-paper="80"] .receipt-page .line-total{font-size:11.5px}
 [hidden]{display:none!important}
 @media print {
  @page{size:auto;margin:0}
