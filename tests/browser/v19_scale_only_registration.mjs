@@ -50,6 +50,8 @@ try{
  console.log("PASS real 2700001004806: 0.480 kg tomato at 600 IQD by store PLU");
 
  await page.locator('[data-tab="list"]').click();
+ await page.locator('#search').fill("تەماتە");
+ await page.waitForFunction(()=>document.querySelector("#results")?.innerText.includes("تەماتە"));
  await page.locator('#results .catalog-table-btn').first().click();
  await page.waitForFunction(()=>document.querySelector('#product-form [name="plu"]').value==="00001");
  assert.equal(await page.locator("#product-form").evaluate(f=>f.checkValidity()),true);
@@ -60,6 +62,7 @@ try{
  assert.equal(await calls("retail_update_product_v15"),1);
  console.log("PASS scale-only editor: reopen and update price without demanding a fake barcode");
 
+ await page.locator("#cancel-edit").click();
  await field("name").fill("دووبارە");
  await field("plu").fill("00002");
  await field("price").fill("1250");
