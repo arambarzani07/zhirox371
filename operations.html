@@ -41,7 +41,19 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .quick-cash-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .quick-cash-btn{height:32px;padding:0 10px;border:1px solid #d0dceb;border-radius:8px;background:#f4f7fb;color:#172b45;font-size:12px;font-weight:850}
 .parked-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px 13px;background:#f4f8fd;border:1px solid #cfe0f5;border-radius:10px;font-size:12px;font-weight:850}
-#cart-list{max-height:410px;overflow-y:auto}
+#cart-list{max-height:410px;overflow-y:auto;min-width:0}
+#cart-list .cash-basket-grid{width:100%;margin-top:10px;border:1px solid #334155;border-collapse:collapse;table-layout:fixed;direction:rtl;font-size:12px}
+#cart-list .cash-basket-grid th,#cart-list .cash-basket-grid td{border:1px solid #334155;padding:8px 4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}
+#cart-list .cash-basket-grid th{background:#eef3fa;color:#172b45;font-size:11px;font-weight:850;white-space:nowrap}
+#cart-list .cash-basket-grid td:nth-child(2),#cart-list .cash-basket-grid th:nth-child(2){text-align:right}
+#cart-list .cash-basket-grid td:nth-child(2){font-weight:750;line-height:1.6}
+#cart-list .cash-basket-grid .basket-num{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;white-space:nowrap}
+#cart-list .cash-basket-grid .basket-total{font-weight:900}
+#cart-list .cash-basket-grid .basket-quantity{display:flex;flex-direction:column;gap:5px;align-items:center;justify-content:center}
+#cart-list .cash-basket-grid .basket-quantity-actions{display:flex;gap:5px;align-items:center;justify-content:center;direction:ltr}
+#cart-list .cash-basket-grid .basket-quantity-actions button{height:24px;min-width:27px;width:27px;border:1px solid #c5d2e2;border-radius:5px;background:#f1f5fa;color:#253c59;font-size:16px;font-weight:850;padding:0;line-height:1}
+#cart-list .cash-basket-grid .basket-quantity-actions button:disabled{opacity:.4;cursor:not-allowed}
+#cart-list .cash-basket-grid .basket-qty-value{white-space:nowrap;font-weight:800;font-size:12px;direction:ltr;unicode-bidi:isolate}
 .stock-pick-btn,.stock-edit-link{height:31px;padding:0 11px;border:1px solid #cbd7e5;border-radius:8px;background:#f2f6fa;color:#172b45;font-size:12px;font-weight:850;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .stock-edit-link{margin-inline-start:6px;background:#eef5fc}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}

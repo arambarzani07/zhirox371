@@ -537,33 +537,44 @@ function renderCart(){
  const list=$("cart-list");list.replaceChildren();
  if(!cart.length){const div=document.createElement("div");div.className="blank";div.textContent="سەبەتە بەتاڵە";list.append(div);return}
  const table=document.createElement("table");
- table.innerHTML="<thead><tr><th>کاڵا</th><th>نرخ</th><th>بڕ</th><th>کۆ</th></tr></thead><tbody id=\"cart-body\"></tbody>";
+ table.className="cash-basket-grid";
+ table.setAttribute("aria-label","خشتەی سەبەتەی کاشێر");
+ const colgroup=document.createElement("colgroup");
+ for(const width of ["8%","27%","12%","17%","19%","17%"]){
+  const col=document.createElement("col");col.style.width=width;colgroup.append(col);
+ }
+ table.append(colgroup);
+ const thead=document.createElement("thead"),heading=document.createElement("tr");
+ for(const label of ["ژمارە","ناوی کاڵا","یەکە","نرخ","بڕ","کۆ"]){
+  const th=document.createElement("th");th.scope="col";th.textContent=label;heading.append(th);
+ }
+ thead.append(heading);table.append(thead);
+ const tbody=document.createElement("tbody");tbody.id="cart-body";
+ const fmtBasketNum=n=>Number(n).toLocaleString("en-US",{maximumFractionDigits:3});
  cart.forEach((it,i)=>{
+  const isKg=Boolean(it.isScale);
+  const unit=isKg?"کیلۆگرام":it.mode==="carton"?"کارتۆن":"دانە";
+  const kgRate=isKg?(it.unitKgPrice??(it.scaleGrams?Math.round(it.price*1000/it.scaleGrams):it.price)):it.price;
+  const values=[String(i+1),it.name,unit,fmtBasketNum(kgRate),"",fmtBasketNum(it.qty*it.price)];
   const row=document.createElement("tr");
-  for(const x of [saleLabel(it),money(it.price),"",money(it.qty*it.price)]){const td=document.createElement("td");td.textContent=x;row.append(td)}
-  if(it.isScale){
-    const kgRate=it.unitKgPrice||(it.scaleGrams?Math.round((it.price*1000)/it.scaleGrams):null);
-    if(kgRate){
-      const kgInfo=document.createElement("div");
-      kgInfo.style.fontSize="11px";
-      kgInfo.style.color="#64748b";
-      kgInfo.style.fontWeight="normal";
-      kgInfo.textContent="نرخی ١ کگم: "+money(kgRate);
-      row.children[0].append(kgInfo);
-      const rateInfo=document.createElement("div");
-      rateInfo.style.fontSize="10px";
-      rateInfo.style.color="#64748b";
-      rateInfo.textContent="("+money(kgRate)+"/کگم)";
-      row.children[1].append(rateInfo);
-    }
+  for(let col=0;col<values.length;col++){
+   const td=document.createElement("td");td.textContent=values[col];
+   if([0,3,5].includes(col))td.className="basket-num";
+   if(col===5)td.className="basket-num basket-total";
+   if([0,3,5].includes(col))td.dir="ltr";
+   row.append(td);
   }
-  const cell=row.children[2],wrap=document.createElement("span");wrap.className="qty";
-  const minus=document.createElement("button");minus.type="button";minus.dataset.line=i;minus.dataset.delta="-1";minus.textContent="−";
-  const plus=document.createElement("button");plus.type="button";plus.dataset.line=i;plus.dataset.delta="1";plus.textContent="+";
-  const count=document.createElement("span");count.textContent=it.isScale?it.units.toFixed(3)+" kg":String(it.qty);
-  if(it.isScale){plus.disabled=true;plus.title="بۆ زیادکردن پاکەتەکە دووبارە بسکانە";}
-  wrap.append(minus,count,plus);cell.append(wrap);table.tBodies[0].append(row);
- });list.append(table);
+  const cell=row.children[4],wrap=document.createElement("div");wrap.className="basket-quantity";
+  const count=document.createElement("span");count.className="basket-qty-value";
+  count.textContent=isKg?Number(it.units).toFixed(3):String(it.qty);
+  const actions=document.createElement("div");actions.className="basket-quantity-actions";
+  const minus=document.createElement("button");minus.type="button";minus.dataset.line=i;minus.dataset.delta="-1";minus.textContent="−";minus.title="کەمکردنەوە";minus.setAttribute("aria-label","کەمکردنەوەی بڕی "+it.name);
+  const plus=document.createElement("button");plus.type="button";plus.dataset.line=i;plus.dataset.delta="1";plus.textContent="+";plus.title="زیادکردن";plus.setAttribute("aria-label","زیادکردنی بڕی "+it.name);
+  if(isKg){plus.disabled=true;plus.title="بۆ زیادکردنی پاکەتی کێشدار بارکۆدەکە بسکانە";}
+  actions.append(minus,plus);wrap.append(count,actions);cell.append(wrap);
+  tbody.append(row);
+ });
+ table.append(tbody);list.append(table);
 }
 async function refreshStaff(){
  if(role!=="owner")return;
