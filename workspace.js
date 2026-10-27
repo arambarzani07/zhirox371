@@ -379,6 +379,11 @@
   function syncSellingMode(){
     const form=$("product-form");
     const mode=String(new FormData(form).get("sale_mode")||"unit");
+    // Normal unit/barcode products still require a barcode; a verified scale PLU
+    // allows a unit-priced item without inventing a 27+PLU barcode.
+    const plu=String(form.elements.namedItem("plu")?.value||"").trim();
+    const mainBarcode=form.elements.namedItem("barcode");
+    mainBarcode.required=mode!=="carton"&&!plu;
     for(const [section,enabled] of [["unit-fields",mode!=="carton"],["carton-fields",mode!=="unit"]]){
       const node=$(section);node.hidden=!enabled;
       node.querySelectorAll("input,textarea").forEach(field=>field.disabled=!enabled);
