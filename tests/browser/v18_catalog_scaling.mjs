@@ -13,6 +13,7 @@ const seed50k=String.raw`(() => {
   q.products[0].name="تەماتە";
   q.products[0].plu="00001";
   q.products[0].price_minor=1250;
+  q.products[0].base_unit="kg";
   q.stock[0].quantity=5;
   q.sessions.push({id:"dddddddd-dddd-4ddd-8ddd-dddddddddddd",store_id:storeId,cashier_id:q.account.id,opening_cash_minor:100000,opened_at:new Date().toISOString(),status:"open",variance_minor:null});
   for(let i=1;i<=50000;i++){
