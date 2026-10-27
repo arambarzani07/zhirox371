@@ -137,8 +137,10 @@
       if (!index.has(b.product_id)) index.set(b.product_id, []);
       index.get(b.product_id).push(b.code);
     }
+    const stockRes=await db.from("retail_stock_balances").select("product_id,quantity").eq("store_id",store.id).limit(2000);
+    const stockMap=new Map((stockRes.error?[]:stockRes.data||[]).map(x=>[x.product_id,Number(x.quantity)]));
     const q = query.trim().toLocaleLowerCase();
-    const mapped = base.map(p => ({ ...p, barcodes: index.get(p.id) || [] }))
+    const mapped = base.map(p => ({ ...p, stock_quantity:stockMap.get(p.id)??0, barcodes: index.get(p.id) || [] }))
       .filter(p => !q || (p.name + " " + p.barcodes.join(" ")).toLocaleLowerCase().includes(q));
     return {
       items: mapped.slice(offset, offset + PAGE_SIZE),
@@ -205,15 +207,15 @@
       return;
     }
     const table = document.createElement("table"); table.className = "table";
-    table.innerHTML = "<thead><tr><th>کاڵا</th><th>شێوازی فرۆشتن</th><th>نرخی دانە</th><th>نرخی کارتۆن</th><th>دانە لە کارتۆن</th><th>کۆگا</th><th></th></tr></thead><tbody></tbody>";
+    table.innerHTML = "<thead><tr><th>کاڵا</th><th>شێوازی فرۆشتن</th><th>نرخی دانە / کیلۆگرام</th><th>نرخی کارتۆن</th><th>دانە لە کارتۆن</th><th>کۆگا</th><th></th></tr></thead><tbody></tbody>";
     for (const p of priceItems) {
       const tr = document.createElement("tr");
-      const mode = p.sale_mode === "carton" ? "کارتۆن" : p.sale_mode === "both" || p.carton_price_minor != null ? "هەردووکیان" : "دانە";
+      const mode = p.sale_mode === "carton" ? "کارتۆن" : p.sale_mode === "both" || p.carton_price_minor != null ? "هەردووکیان" : p.base_unit==="kg"?"کیلۆگرام":"دانە";
       const unitPrice = p.sale_mode === "carton" ? "—" : fmtIqd(p.price_minor);
       const cartonPrice = p.carton_price_minor != null ? fmtIqd(p.carton_price_minor) : "—";
       const packUnits = p.units_per_carton ? String(p.units_per_carton) + " دانە" : "—";
       const stockQty = Number(p.stock_quantity || 0);
-      const stockText = stockQty.toLocaleString("en-US") + " دانە" + (stockQty<=0?" (تەواوبوو)":stockQty<=5?" (کەمبووە)":"");
+      const stockText = stockQty.toLocaleString("en-US",{maximumFractionDigits:3}) + (p.base_unit==="kg"?" کیلۆگرام":" دانە") + (stockQty<=0?" (تەواوبوو)":stockQty<=5?" (کەمبووە)":"");
       for (const val of [p.name, mode, unitPrice, cartonPrice, packUnits, stockText]) {
         const td = document.createElement("td"); td.textContent = val;
         if (val === stockText) {
@@ -240,7 +242,7 @@
         code: (p.barcodes && p.barcodes[0]) || p.sku || p.plu || "000000",
         name: p.name,
         priceMinor: p.sale_mode === "carton" && p.carton_price_minor != null ? p.carton_price_minor : p.price_minor,
-        unitLabel: p.sale_mode === "carton" ? "کارتۆن" : "دانە"
+        unitLabel: p.sale_mode === "carton" ? "کارتۆن" : p.base_unit==="kg"?"کیلۆگرام":"دانە"
       }));
       actionCell.append(labelBtn);
       tr.append(actionCell);
@@ -358,12 +360,12 @@
     table.innerHTML = "<thead><tr><th>بارکۆد</th><th>کاڵا</th><th>یەکە</th><th>دانە لە پاکەت</th><th>نرخی فرۆشتن</th><th>بڕی کۆگا</th><th></th></tr></thead><tbody><tr></tr></tbody>";
     const tr = table.tBodies[0].rows[0];
     const singleStock = Number(d.stock_quantity || 0);
-    const stockVal = singleStock.toLocaleString("en-US") + " دانە" + (singleStock<=0?" (تەواوبوو)":singleStock<=5?" (کەمبووە)":"");
+    const stockVal = singleStock.toLocaleString("en-US",{maximumFractionDigits:3}) + (d.base_unit==="kg"?" کیلۆگرام":" دانە") + (singleStock<=0?" (تەواوبوو)":singleStock<=5?" (کەمبووە)":"");
     for (const val of [
       d.code,
       d.product_name,
-      d.unit_type === "carton" ? "کارتۆن" : "دانە",
-      d.scale_label || (String(d.units_per_scan) + " دانە"),
+      d.unit_type === "carton" ? "کارتۆن" : d.base_unit==="kg"?"کیلۆگرام":"دانە",
+      d.scale_label || (String(d.units_per_scan) + (d.base_unit==="kg"?" کیلۆگرام":" دانە")),
       fmtIqd(d.price_minor),
       stockVal
     ]) {
@@ -382,7 +384,7 @@
       code: d.code,
       name: d.product_name,
       priceMinor: d.price_minor,
-      unitLabel: d.unit_type === "carton" ? "کارتۆن" : "دانە"
+      unitLabel: d.unit_type === "carton" ? "کارتۆن" : d.base_unit==="kg"?"کیلۆگرام":"دانە"
     }));
     actionTd.append(labelBtn);
     tr.append(actionTd);
