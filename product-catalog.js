@@ -45,6 +45,7 @@
   const cartonAliases=rawCartonExtra?rawCartonExtra.split(/[\n,،;]+/u).map(x=>barcode(x)).filter(Boolean):[];
   if(!unitEnabled&&(unitAliases.length||unitCost!==null))fail("خانەکانی دانە لەم شێوازەدا چالاک نین");
   if(!cartonEnabled&&(cartonAliases.length||cartonCode||cartonName||text(get("units_per_carton"))||cartonCost!==null||cartonPrice!==null))fail("خانەکانی کارتۆن لەم شێوازەدا چالاک نین");
+  if(scaleOnly&&unitAliases.length)fail("کۆدی تەرازوو بە تەنها تۆمار دەکرێت؛ فرەبارکۆدی دانە پێویست نییە");
   if(unitAliases.length>30||cartonAliases.length>30)fail("ژمارەی بارکۆدەکان لە سنوور زیاترە");
   const codes=[...(unit?[unit]:[]),...unitAliases,...(cartonCode?[cartonCode]:[]),...cartonAliases];
   if(new Set(codes).size!==codes.length)fail("بارکۆدی دووبارە لە هەمان کاڵا هەیە");
