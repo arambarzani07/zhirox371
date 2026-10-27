@@ -81,3 +81,27 @@ test("product form owns barcode definitions; cashier remains read-only and uses 
  assert.doesNotMatch(cash,/retail_register_product_v14|retail_create_product/);
  assert.match(cash,/retail_checkout_cash/);
 });
+
+test("scale-only tomato is registered using PLU 00001 without fake 2700001 unit barcode",()=>{
+ const d=parse(new Map([["name","تەماتە"],["sale_mode","unit"],["plu","1"],
+    ["barcode",""],["price","1250"],["purchase_price","1000"]]));
+ assert.equal(d.plu,"00001");
+ assert.equal(d.unit_barcode,"");
+ assert.equal(d.advanced,true);
+ assert.equal(d.unit_sale_price_iqd,1250);
+ assert.deepEqual(d.unit_alias_barcodes,[]);
+ assert.equal(d.carton,null);
+});
+test("scale-only forms reject incomplete 27 code, missing/invalid PLU, aliases and carton mismatch",()=>{
+ const base=new Map([["name","تەماتە"],["sale_mode","unit"],["price","1250"]]);
+ for(const raw of ["","00000","2700001","abc","100000"]){
+   const row=new Map(base);row.set("plu",raw);
+   assert.throws(()=>parse(row),/PLU/);
+ }
+ const fragment=new Map(base);fragment.set("plu","00001");fragment.set("barcode","2700001");
+ assert.throws(()=>parse(fragment),/تەواو/);
+ const aliases=new Map(base);aliases.set("plu","00001");aliases.set("extra_barcodes","6260001112223");
+ assert.throws(()=>parse(aliases),/فرەبارکۆدی دانە/);
+ const both=new Map(base);both.set("plu","00001");both.set("sale_mode","both");
+ assert.throws(()=>parse(both),/PLU/);
+});
