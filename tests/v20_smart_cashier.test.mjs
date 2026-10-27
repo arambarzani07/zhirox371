@@ -90,7 +90,7 @@ test("Locked Home unmodified; V20 modifies only cashier-owned UI and pure rules"
  assert.match(html,/<script src="\.\/cashier-v20-core\.js"><\/script>/);
  assert.match(html,/dir="rtl"/);
  assert.match(html,/min-width:1020px/);
- assert.match(js,/data\.removeLine/);
- assert.match(js,/data\.quantityLine/);
+ assert.match(js,/\.dataset\.removeLine/);
+ assert.match(js,/\.dataset\.quantityLine/);
  assert.match(js,/line\.outdated/);
 });
