@@ -467,7 +467,7 @@ $("scan-form").addEventListener("submit",e=>{
    // or create a financial sale until the kg price/weighted checkout is configured.
    msg("scan-msg",product.name+" — "+scale.kilograms.toFixed(3)+
      " kg ("+scale.grams+" گرام) — کۆدی "+scale.productCode+
-     " خوێندرایەوە؛ بۆ فرۆشتن نرخی کیلۆ و کاشێری کێشی پێویستە، بە دانە تۆمار نەکرا.","error");
+     " خوێندرایەوە؛ بۆ فرۆشتن نرخی کیلۆ و کاشێری کێشی پێویستە، بە دانە تۆمار نەکرا.","success");
    focusScanner();return;
  }
  const b=barcodes.find(x=>x.code===code);
