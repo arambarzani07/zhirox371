@@ -9,6 +9,7 @@
  function msg(value) { $("message").textContent = value || ""; }
  function paper(value) {
    const size = value === "80" ? "80" : "58";
+   document.documentElement.setAttribute("data-paper",size);
    document.documentElement.style.setProperty("--receipt-paper", size + "mm");
    document.documentElement.style.setProperty("--receipt-content",size === "80" ? "70mm" : "48mm");
    $("paper").value = size;
