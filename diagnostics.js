@@ -48,10 +48,11 @@ $("scan-form").addEventListener("submit",event=>{
   $("barcode-length").textContent=String(result.length);
   $("barcode-type").textContent=result.type;
   $("barcode-checksum").textContent=result.checksum;
-  $("scale-code").textContent=result.scaleItemCode ?? "—";
+  $("scale-code").textContent=result.scaleItemCode && result.scaleWeightKg !== null ?
+    result.scaleItemCode+" — "+result.scaleWeightKg.toFixed(3)+" kg" : "—";
   if(result.possibleScaleBarcode) {
     feedback("scan-feedback",result.validEan13?
-      "بارکۆدی پێوانە دۆزرایەوە؛ نرخ و کێش دیاری نەکرا.":
+      "بارکۆدی تەرازوو خوێندرایەوە؛ کۆدی کاڵا و کێش بەردەستن، نرخ لە بارکۆدەکەدا نییە.":
       "کۆدی prefix 27 ـە، بەڵام checksum ـی EAN-13 نادروستە.",!!result.validEan13);
   } else if(result.validEan13===false) {
     feedback("scan-feedback","Checksum ـی EAN-13 نادروستە. تکایە بارکۆدەکە دووبارە بسکانە.");
