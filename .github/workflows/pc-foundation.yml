@@ -103,6 +103,8 @@ jobs:
         run: node tests/browser/pc_icon_visual_polish.mjs
       - name: Check Products-owned multi barcode and carton registration in isolated Chromium
         run: node tests/browser/v14_product_catalog.mjs
+      - name: Verify scale-only PLU registration, edit, barcode resolution and fake-code rejection
+        run: node tests/browser/v19_scale_only_registration.mjs
       - name: Exercise owner-only V15 edit and immutable barcode history in Chromium
         run: node tests/browser/v15_product_editor.mjs
       - name: Verify V16 unit/carton/both PC flow with base-stock checkout in Chromium
