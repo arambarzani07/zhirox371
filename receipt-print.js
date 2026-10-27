@@ -21,29 +21,30 @@
    return node;
  }
  const fmtQuantity = n => Number(n).toLocaleString("en-US",{maximumFractionDigits:3});
- function renderLine(root,name,qty,price,packType,unitsPerPack,baseUnits,baseUnit) {
-   const outer=el("section","","line");
-   outer.append(el("div",name,"line-name"));
-   // Units on old receipts are historical snapshots, not the current product settings.
-   if(packType==="carton"&&baseUnit!=="kg"&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
-     outer.append(el("div",fmtQuantity(qty)+" کارتۆن × "+fmtQuantity(unitsPerPack)+" دانە","line-note"));
+ // Columns in fixed RTL order: number | item | unit | price | quantity | total.
+ // Money is in IQD, as stated in the receipt's totals; kg quantity retains 3 decimals.
+ function renderLine(root,index,name,qty,price,packType,unitsPerPack,baseUnit) {
+   const row=el("tr","");
+   const isKg=baseUnit==="kg";
+   const isCarton=!isKg&&packType==="carton";
+   const unit=isKg?"kg":isCarton?"کارتۆن":"دانە";
+   const values=[
+     String(index),
+     name,
+     unit,
+     fmtQuantity(price),
+     isKg?qty.toFixed(3):fmtQuantity(qty),
+     fmtQuantity(Math.round(qty*price))
+   ];
+   for(let i=0;i<values.length;i++){
+     const cell=el("td",values[i],i===5?"figure line-sum":([0,3,4].includes(i)?"figure":""));
+     if([0,3,4,5].includes(i))cell.setAttribute("dir","ltr");
+     if(i===2&&isCarton&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
+       cell.append(el("small",fmtQuantity(unitsPerPack)+" دانە","pack-hint"));
+     }
+     row.append(cell);
    }
-   const details=el("div","","line-details");
-   let calculation;
-   if(baseUnit==="kg"){
-     calculation=qty.toFixed(3)+" kg × "+fmtQuantity(price)+" IQD/kg";
-   }else if(packType==="carton"){
-     calculation=fmtQuantity(qty)+" × "+fmtQuantity(price)+" IQD";
-   }else {
-     calculation=fmtQuantity(qty)+" × "+fmtQuantity(price)+" IQD";
-   }
-   const math=el("span",calculation,"line-calculation");
-   math.setAttribute("dir","ltr");
-   const amount=el("strong",fmt(Math.round(qty*price)),"line-total money");
-   amount.setAttribute("dir","ltr");
-   details.append(math,amount);
-   outer.append(details);
-   root.append(outer);
+   root.append(row);
  }
  async function initialize() {
    if(!uuid.test(saleId||"")){msg("ناسنامەی پسووڵە نادروستە");return;}
@@ -97,10 +98,10 @@
    $("receipt-date").textContent=new Date(head.created_at)
      .toLocaleString("en-GB",{timeZone:"Asia/Baghdad",hour12:false});
    const list=$("receipt-lines");
-   for(const item of items){
-     renderLine(list,item.product_name_snapshot,Number(item.quantity),Number(item.unit_price_minor),
-       item.package_type,Number(item.units_per_package),item.base_units,item.base_unit_snapshot||"unit");
-   }
+   items.forEach((item,index)=>{
+     renderLine(list,index+1,item.product_name_snapshot,Number(item.quantity),Number(item.unit_price_minor),
+       item.package_type,Number(item.units_per_package),item.base_unit_snapshot||"unit");
+   });
    $("total").textContent=fmt(total);
    $("paid").textContent=fmt(paid);
    $("change").textContent=fmt(change);
