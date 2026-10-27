@@ -117,6 +117,8 @@ jobs:
         run: node tests/browser/v16_receipt_packs.mjs
       - name: Verify V18 50k product / 150k barcode pagination, inspection and hybrid scanner in Chromium
         run: node tests/browser/v18_catalog_scaling.mjs
+      - name: Verify V20 PC weighted-pack cart, duplicate scan and stale-price checkout guard
+        run: node tests/browser/v20_smart_cashier.mjs
   v12-real-auth-rls:
     name: V12 — Real local Supabase Auth / JWT / PostgREST / RLS
     runs-on: ubuntu-latest

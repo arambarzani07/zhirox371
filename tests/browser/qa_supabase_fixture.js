@@ -173,9 +173,16 @@
           data=id;
         }
       }
-    }else if(name==="retail_product_snapshot_v15"){
+    }else if(name==="retail_product_snapshot_v15"||name==="retail_product_snapshot_v19"){
       if(!state.advancedRpcEnabled)err=error("PGRST202","Function not found");
-      else data=editorSnapshot(args.p_product_id);
+      else{
+        data=editorSnapshot(args.p_product_id);
+        if(data&&name==="retail_product_snapshot_v19"){
+          const p=state.products.find(x=>x.id===args.p_product_id);
+          const stock=state.stock.find(x=>x.product_id===args.p_product_id);
+          data={...data,base_unit:p?.base_unit||"unit",stock_quantity:Number(stock?.quantity||0)};
+        }
+      }
     }else if(name==="retail_product_history_v15"){
       if(!state.advancedRpcEnabled)err=error("PGRST202","Function not found");
       else data=state.audit.filter(x=>x.subject_id===args.p_product_id)
@@ -241,7 +248,7 @@
             data={
               found:true,code:b.code,product_id:p.id,product_name:p.name,
               sku:cat?.sku??p.sku??null,plu:cat?.plu??p.plu??null,
-              unit_type:b.unit_type,units_per_scan:b.units_per_scan,
+              unit_type:b.unit_type,units_per_scan:b.units_per_scan,base_unit:p.base_unit||"unit",
               is_scale:false,scale_grams:null,scale_weight_kg:null,scale_label:null,
               price_minor:price,unit_price_minor:cat?.sale_mode==="carton"?null:p.price_minor,
               carton_price_minor:cat?.carton?.sale_price_iqd??null,
@@ -259,7 +266,7 @@
               data={
                 found:true,code:clean,product_id:scaleProd.id,product_name:scaleProd.name,
                 sku:sc?.sku??scaleProd.sku??null,plu:sc?.plu??scaleProd.plu??null,
-                unit_type:"unit",units_per_scan:1,
+                unit_type:"unit",units_per_scan:1,base_unit:scaleProd.base_unit||"kg",
                 is_scale:true,scale_grams:scale.grams,scale_weight_kg:scale.weightKg,scale_label:scale.scaleLabel,
                 price_minor:scale.priceMinor,unit_price_minor:scaleProd.price_minor,
                 carton_price_minor:sc?.carton?.sale_price_iqd??null,
@@ -414,7 +421,7 @@
           data=sale.id;
         }
       }
-    }else if(name==="retail_checkout_packs_v16"){
+    }else if(name==="retail_checkout_packs_v16"||name==="retail_checkout_weight_v19"){
       const discount=Math.max(0,Number(args.p_discount||0));
       const previous=state.sales.find(x=>x.request_id===args.p_request);
       const payload=JSON.stringify({items:args.p_items,cash:args.p_cash_received,discount});

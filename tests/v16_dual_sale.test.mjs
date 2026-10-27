@@ -48,7 +48,7 @@ test("V16 backend owns all pack prices, enforces base-unit stock and replay requ
  assert.match(sql,/package_type,package_barcode,units_per_package,base_units/);
  assert.match(sql,/CREATE TRIGGER retail_guard_unit_sale_v16/);
  assert.match(sql,/Unit sale not enabled for this product/);
- assert.match(ops,/stockUsed\(p\.id\)\+units>stock/);
+ assert.match(ops,/window\.CashierV20\.add\(cart,/);
  assert.match(ops,/retail_checkout_packs_v16/);
  assert.match(ops,/expected_price_minor:x\.price/);
  assert.doesNotMatch(sql,/UPDATE public\.retail_products SET/);
@@ -58,7 +58,7 @@ test("V16 receipts preserve original unit/carton price and pack-size snapshot wi
  const printer=read("receipt-print.js"),cashier=read("operations.js");
  assert.match(printer,/product_name_snapshot,package_type,package_barcode,units_per_package,base_units/);
  assert.match(printer,/Number\(item\.base_units\)!==quantity\*Number\(item\.units_per_package\)/);
- assert.match(printer,/String\(qty\)\+" کارتۆن × "\+String\(unitsPerPack\)/);
+ assert.match(printer,/fmtQuantity\(unitsPerPack\)\+" دانە"/);
  assert.match(printer,/PGRST204/);
  assert.match(cashier,/String\(line\.quantity\)\+" کارتۆن × "\+String\(line\.units_per_package\)/);
  assert.match(cashier,/PGRST204/);

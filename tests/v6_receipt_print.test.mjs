@@ -23,12 +23,12 @@ test("58mm and 80mm receipt widths are user selectable",()=>{
 });
 
 test("receipt stays unprintable until authenticated posted sale is validated",()=>{
- assert.match(printHtml,/id="print" disabled/);
+ assert.match(printHtml,/<button[^>]*id="print"[^>]*disabled/);
  assert.match(printHtml,/id="sheet" hidden/);
  assert.match(printJs,/auth\.getUser\(\)/);
  assert.match(printJs,/\.eq\("status","posted"\)\.single\(\)/);
  assert.match(printJs,/head\.receipt_no==null/);
- assert.match(printJs,/computed!==total/);
+ assert.match(printJs,/computed-discount!==total/);
  assert.match(printJs,/paid-total!==change/);
  assert.match(printJs,/items\.length===0\|\|items\.length>=200/);
  assert.match(printJs,/item\.product_name_snapshot/);

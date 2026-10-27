@@ -11,7 +11,7 @@ const migration=readFileSync(resolve(root,"db/v15_atomic_catalog_edit_20261027.s
 test("editing calls one checked RPC; no partial upsert-and-catch fallback",()=>{
  assert.match(source,/db\.rpc\("retail_update_product_v15"/);
  assert.match(source,/p_expected_version:editing\.version/);
- assert.match(source,/db\.rpc\("retail_product_snapshot_v15"/);
+ assert.match(source,/db\.rpc\("retail_product_snapshot_v19"/);
  assert.doesNotMatch(source,/\.upsert\([^]*?\.catch\(\(\)=>\{\}\)/);
  assert.doesNotMatch(source,/db\.from\("retail_barcodes"\)\.upsert\(/);
  assert.doesNotMatch(source,/usedFallback/);

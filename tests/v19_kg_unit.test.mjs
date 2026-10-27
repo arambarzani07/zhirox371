@@ -28,7 +28,7 @@ test("kilogram is independent of carton/unit selling mode",()=>{
 test("legacy whole-unit sale cannot silently consume kilograms",()=>{
  assert.match(guard,/Weighted product requires kg checkout/);
  assert.match(operations,/p\.base_unit==="kg"&&!b\.is_scale/);
- assert.match(operations,/const current=isScale\?null/);
+ assert.match(operations,/window\.CashierV20\.add\(cart,/);
 });
 test("scale scanner uses only verified 13-digit prefix-27 labels",()=>{
  assert.match(operations,/isValidEan13\(clean\)/);

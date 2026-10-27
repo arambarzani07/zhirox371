@@ -54,6 +54,10 @@ button:disabled{opacity:.55;cursor:not-allowed}
 #cart-list .cash-basket-grid .basket-quantity-actions button{height:24px;min-width:27px;width:27px;border:1px solid #c5d2e2;border-radius:5px;background:#f1f5fa;color:#253c59;font-size:16px;font-weight:850;padding:0;line-height:1}
 #cart-list .cash-basket-grid .basket-quantity-actions button:disabled{opacity:.4;cursor:not-allowed}
 #cart-list .cash-basket-grid .basket-qty-value{white-space:nowrap;font-weight:800;font-size:12px;direction:ltr;unicode-bidi:isolate}
+#cart-list .cash-basket-grid .basket-qty-input{width:62px;max-width:100%;height:28px;box-sizing:border-box;border:1px solid #bac8db;border-radius:6px;text-align:center;direction:ltr;font-size:12px;font-weight:850;color:#172b45;padding:2px}
+#cart-list .cash-basket-grid .basket-remove{height:23px;border:1px solid #e4c3bf;background:#fff4f2;border-radius:5px;color:#9a3329;font-size:11px;font-weight:800;padding:0 6px}
+#cart-list .cash-basket-grid .basket-qty-input:disabled,#cart-list .cash-basket-grid .basket-remove:disabled{opacity:.5}
+#cart-list .cash-basket-grid .basket-stale{display:block;color:#a43b2a;font-size:10px;font-weight:850;line-height:1.4}
 .stock-pick-btn,.stock-edit-link{height:31px;padding:0 11px;border:1px solid #cbd7e5;border-radius:8px;background:#f2f6fa;color:#172b45;font-size:12px;font-weight:850;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .stock-edit-link{margin-inline-start:6px;background:#eef5fc}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
@@ -73,6 +77,7 @@ select option{color:#26384d}
 <link rel="stylesheet" href="./ui-fixed-pc.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="./config.js"></script>
+<script src="./cashier-v20-core.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./ui-contrast-lock.css">
 </head>

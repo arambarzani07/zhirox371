@@ -30,7 +30,7 @@ function drawBasket(cart,paid=0,discount=0){
  nodes.cash.value=String(paid);
  const total= Math.max(0,cart.reduce((n,it)=>n+it.qty*it.price,0)-discount);
  const ctx=vm.createContext({
-  cart,document:{createElement:tag=>new FakeNode(tag)},
+  cart,busy:false,pendingCheckout:null,document:{createElement:tag=>new FakeNode(tag)},
   $:key=>nodes[key],cartNetTotal:()=>total,
   money:n=>Number(n).toLocaleString("en-US")+" IQD",
  });
@@ -66,6 +66,7 @@ test("0.245 kg scale tomato shows price per kg, kg quantity and correct IQD line
  assert.equal(actions[0].dataset.delta,"-1");
  assert.equal(actions[0].dataset.line,0);
  assert.equal(actions[1].disabled,true);
+ assert.equal(quantity.children[2].dataset.removeLine,"0");
 });
 test("Carton and unit rows are numbered, have pack prices and keep live buttons",()=>{
  const {table,nodes}=drawBasket([
@@ -76,7 +77,7 @@ test("Carton and unit rows are numbered, have pack prices and keep live buttons"
  assert.equal(rows.length,2);
  assert.deepEqual(cells(rows[0]).slice(0,4),["1","ئاو","کارتۆن","11,000"]);
  assert.equal(rows[0].children[5].textContent,"22,000");
- assert.equal(rows[0].children[4].children[0].children[0].textContent,"2");
+ assert.equal(rows[0].children[4].children[0].children[0].value,"2");
  assert.equal(rows[0].children[4].children[0].children[1].children[1].disabled,false);
  assert.deepEqual(cells(rows[1]).slice(0,4),["2","سێو","دانە","500"]);
  assert.equal(rows[1].children[5].textContent,"1,500");
@@ -91,7 +92,9 @@ test("An empty basket still displays its original empty state",()=>{
 });
 test("Quantity handler still uses data-line/delta and checks stock",()=>{
  assert.match(js,/closest\("\[data-line\]"\)/);
- assert.match(js,/if\(line\.isScale&&Number\(btn\.dataset\.delta\)>0\)return/);
- assert.match(js,/stockUsed\(line\.id,i\)/);
+ assert.match(js,/window\.CashierV20\.edit\(cart,index,quantity,available\)/);
+ assert.match(js,/\[data-remove-line\]/);
+ assert.match(js,/\[data-quantity-line\]/);
+ assert.match(js,/balances\.get\(line\.id\)/);
  assert.match(js,/cartChanged\(\);focusScanner\(\);/);
 });
