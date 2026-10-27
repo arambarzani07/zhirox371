@@ -31,13 +31,16 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 .receipt-page .receipt-row>:last-child{text-align:left;justify-self:end}
 .receipt-page .money,.receipt-page .latin{direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 .receipt-page .receipt-number{font-size:10px;font-weight:750}
-.receipt-page .line{padding:6px 0;border-bottom:1px dotted #b9b9b9}
-.receipt-page .line:last-child{border-bottom:0}
-.receipt-page .line-name{font-weight:750;font-size:10.5px;overflow-wrap:anywhere}
-.receipt-page .line-note{font-size:8.5px;color:#3d3d3d;margin-top:1px}
-.receipt-page .line-details{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 7px;margin-top:2px;direction:rtl}
-.receipt-page .line-calculation{direction:ltr;unicode-bidi:isolate;font-size:9px;font-weight:550;white-space:nowrap}
-.receipt-page .line-total{direction:ltr;unicode-bidi:isolate;font-weight:800;font-size:10px;white-space:nowrap;margin-inline-start:auto}
+/* Six-column thermal table: natural RTL order, no horizontal scrolling or clipped sums. */
+.receipt-page .receipt-items{width:100%;table-layout:fixed;border-collapse:collapse;direction:rtl;font-size:7.2px;line-height:1.5}
+.receipt-page .receipt-items th,.receipt-page .receipt-items td{padding:4px 1px;vertical-align:top;border-bottom:1px dotted #aaa;text-align:center;overflow-wrap:anywhere}
+.receipt-page .receipt-items th{font-weight:800;border-top:1px solid #777;border-bottom:1px solid #777}
+.receipt-page .receipt-items th:nth-child(2),.receipt-page .receipt-items td:nth-child(2){text-align:right}
+.receipt-page .receipt-items td:nth-child(2){font-weight:700;line-height:1.55}
+.receipt-page .receipt-items .figure{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.receipt-page .receipt-items .line-sum{font-weight:800}
+.receipt-page .receipt-items .pack-hint{display:block;font-size:6.5px;line-height:1.3;font-weight:400}
+.receipt-page .receipt-items tr{break-inside:avoid;page-break-inside:avoid}
 .receipt-page .totals{padding-top:1px}
 .receipt-page .totals .receipt-row{margin:5px 0}
 .receipt-page .grand-total{font-weight:850;font-size:11px;margin-bottom:6px!important}
@@ -46,18 +49,18 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 html[data-paper="80"]{--receipt-pad:4mm}
 html[data-paper="80"] .receipt-page .receipt{font-size:11.5px}
 html[data-paper="80"] .receipt-page .receipt h1{font-size:15px}
-html[data-paper="80"] .receipt-page .line-name{font-size:12px}
-html[data-paper="80"] .receipt-page .line-calculation{font-size:10.5px}
-html[data-paper="80"] .receipt-page .line-total{font-size:11.5px}
+html[data-paper="80"] .receipt-page .receipt-items{font-size:9.6px}
+html[data-paper="80"] .receipt-page .receipt-items th,html[data-paper="80"] .receipt-page .receipt-items td{padding:5px 2px}
+html[data-paper="80"] .receipt-page .receipt-items .pack-hint{font-size:8px}
 [hidden]{display:none!important}
 @media print {
  @page{size:auto;margin:0}
  html,body.receipt-page{margin:0!important;padding:0!important;background:white!important}
  .market-banner,.receipt-page .toolbar,.receipt-page .status{display:none!important}
  .receipt-page .shell{min-height:0!important;padding:0!important;margin:0!important;display:block!important}
- .receipt-page .sheet{width:var(--receipt-paper)!important;max-width:none!important;margin:0!important;padding:var(--receipt-pad)!important;box-shadow:none!important;break-inside:avoid}
+ .receipt-page .sheet{width:var(--receipt-paper)!important;max-width:none!important;margin:0!important;padding:var(--receipt-pad)!important;box-shadow:none!important;break-inside:auto}
  .receipt-page .receipt{width:100%!important;color:#000!important}
- .receipt-page .line,.receipt-page .receipt-row{break-inside:avoid}
+ .receipt-page .receipt-items tr,.receipt-page .receipt-row{break-inside:avoid;page-break-inside:avoid}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
@@ -87,7 +90,11 @@ html[data-paper="80"] .receipt-page .line-total{font-size:11.5px}
 <div class="receipt-row"><span>ژمارەی پسووڵە</span><strong id="receipt-number" class="money receipt-number"></strong></div>
 <div class="receipt-row"><span>بەروار و کات</span><span id="receipt-date" class="money"></span></div>
 <div class="rule"></div>
-<div id="receipt-lines"></div>
+<table class="receipt-items" aria-label="خشتەی کاڵاکانی پسووڵە">
+<colgroup><col style="width:8%"><col style="width:27%"><col style="width:12%"><col style="width:18%"><col style="width:15%"><col style="width:20%"></colgroup>
+<thead><tr><th scope="col">ژمارە</th><th scope="col">ناوی کاڵا</th><th scope="col">یەکە</th><th scope="col">نرخ</th><th scope="col">بڕ</th><th scope="col">کۆ</th></tr></thead>
+<tbody id="receipt-lines"></tbody>
+</table>
 <div class="rule"></div>
 <div class="totals">
 <div class="receipt-row grand-total"><span>کۆی گشتی</span><strong class="money" id="total"></strong></div>

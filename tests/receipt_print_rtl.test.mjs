@@ -21,7 +21,7 @@ class Element {
   addEventListener(event,listener){this[event]=listener;}
 }
 
-async function receiptFixture({item,total,cash=total,paper="80"}){
+async function receiptFixture({item,items=item?[item]:[],total,cash=total,paper="80"}){
  const nodes=new Map();
  const get=id=>{
    if(!nodes.has(id))nodes.set(id,new Element());
@@ -36,7 +36,7 @@ async function receiptFixture({item,total,cash=total,paper="80"}){
    return {
      select(){return this;},
      eq(){return this;},
-     limit(){return Promise.resolve({data:[item],error:null});},
+     limit(){return Promise.resolve({data:items,error:null});},
      single(){
        const data=table==="retail_sales"?{
          id:saleId,store_id:"store",receipt_no:1,total_minor:total,
@@ -61,7 +61,7 @@ async function receiptFixture({item,total,cash=total,paper="80"}){
  return {get,document};
 }
 
-test("kg receipt uses one clean calculation and 306 IQD rounded total",async()=>{
+test("kg table has exactly six headers and a precise 0.245 kg line",async()=>{
  const item={
    product_id:"p",product_name_snapshot:"تەماتە",
    quantity:0.245,unit_price_minor:1250,package_type:null,
@@ -74,33 +74,54 @@ test("kg receipt uses one clean calculation and 306 IQD rounded total",async()=>
  assert.equal(get("total").textContent,"306 IQD");
  assert.match(get("receipt-date").textContent,/27\/10\/2026/);
  assert.equal(document.documentElement.attrs["data-paper"],"80");
- const lines=get("receipt-lines").children;
- assert.equal(lines.length,1);
- assert.equal(lines[0].children.length,2,"no duplicate kg description");
- assert.equal(lines[0].children[0].textContent,"تەماتە");
- const detail=lines[0].children[1].children;
- assert.equal(detail[0].textContent,"0.245 kg × 1,250 IQD/kg");
- assert.equal(detail[0].attrs.dir,"ltr");
- assert.equal(detail[1].textContent,"306 IQD");
- assert.equal(detail[1].attrs.dir,"ltr");
+ assert.match(page,/<th scope="col">ژمارە<\/th><th scope="col">ناوی کاڵا<\/th><th scope="col">یەکە<\/th><th scope="col">نرخ<\/th><th scope="col">بڕ<\/th><th scope="col">کۆ<\/th>/);
+ const rows=get("receipt-lines").children;
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].tag,"tr");
+ const cells=rows[0].children;
+ assert.equal(cells.length,6);
+ assert.deepEqual(cells.map(cell=>cell.textContent),["1","تەماتە","kg","1,250","0.245","306"]);
+ assert.equal(cells[4].attrs.dir,"ltr");
+ assert.equal(cells[5].attrs.dir,"ltr");
 });
-test("carton receipts preserve pack labels and monetary total",async()=>{
+
+test("carton row retains pack-unit detail inside the unit column",async()=>{
  const item={
    product_id:"p",product_name_snapshot:"ئاوی کانزا",
    quantity:2,unit_price_minor:11000,package_type:"carton",
    units_per_package:12,base_units:24,base_unit_snapshot:"unit"
  };
  const {get,document}=await receiptFixture({item,total:22000,cash:25000,paper:"58"});
- const children=get("receipt-lines").children[0].children;
- assert.equal(children.length,3);
- assert.equal(children[1].textContent,"2 کارتۆن × 12 دانە");
- assert.equal(children[2].children[0].textContent,"2 × 11,000 IQD");
+ const cells=get("receipt-lines").children[0].children;
+ assert.equal(cells.length,6);
+ assert.deepEqual(cells.map(cell=>cell.textContent),["1","ئاوی کانزا","کارتۆن","11,000","2","22,000"]);
+ assert.equal(cells[2].children[0].textContent,"12 دانە");
  assert.equal(get("change").textContent,"3,000 IQD");
  assert.equal(document.documentElement.attrs["data-paper"],"58");
 });
-test("print stylesheet is paper-width limited and hides site banner",()=>{
+
+test("multiple items receive sequential row numbers and sum is unchanged",async()=>{
+ const items=[
+   {product_name_snapshot:"تەماتە",quantity:0.245,unit_price_minor:1250,
+      base_unit_snapshot:"kg",package_type:null},
+   {product_name_snapshot:"ئاوی کانزا",quantity:2,unit_price_minor:11000,
+      base_unit_snapshot:"unit",package_type:"carton",units_per_package:12,base_units:24},
+   {product_name_snapshot:"سێو",quantity:3,unit_price_minor:500,
+      base_unit_snapshot:"unit",package_type:"unit"}
+ ];
+ const {get}=await receiptFixture({items,total:23806,cash:24000,paper:"80"});
+ assert.equal(get("sheet").hidden,false);
+ assert.deepEqual(get("receipt-lines").children.map(row=>row.children[0].textContent),["1","2","3"]);
+ assert.equal(get("receipt-lines").children[2].children[2].textContent,"دانە");
+ assert.equal(get("total").textContent,"23,806 IQD");
+ assert.equal(get("change").textContent,"194 IQD");
+});
+
+test("six columns fit thermal paper with RTL item names and LTR numbers",()=>{
  assert.match(page,/--receipt-paper:58mm/);
  assert.match(page,/html\[data-paper="80"\]/);
+ assert.match(page,/<colgroup><col style="width:8%"><col style="width:27%"><col style="width:12%"><col style="width:18%"><col style="width:15%"><col style="width:20%"><\/colgroup>/);
+ assert.match(page,/table-layout:fixed;border-collapse:collapse;direction:rtl/);
  assert.match(page,/\.market-banner,\.receipt-page \.toolbar,\.receipt-page \.status\{display:none!important\}/);
  assert.match(page,/direction:ltr;unicode-bidi:isolate/);
  assert.match(page,/width:var\(--receipt-paper\)!important/);
