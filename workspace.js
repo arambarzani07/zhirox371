@@ -573,7 +573,7 @@
         if(editing&&["PGRST202","42883"].includes(result.error.code))
           throw new Error("دەستکاریکردنی کاڵا لە داتابەیس چالاک نییە");
         if(!editing&&catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
-          throw new Error("فەنکشنی تۆمارکردنی کاڵای پێشکەوتوو (V14) لە داتابەیسی پەیوەستکراو بەردەست نییە");
+          throw new Error("فەنکشنی تۆمارکردنی کاڵای پێشکەوتوو (V14) لە داتابەیسی پەیوەستکراو چالاک نییە");
         throw result.error;
       }
       const wasEditing=!!editing;
