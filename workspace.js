@@ -424,6 +424,7 @@
     assign("carton_purchase_price",carton?.purchase_price_iqd);
     assign("carton_price",carton?.sale_price_iqd);
     assign("extra_carton_barcodes",(carton?.alias_barcodes||[]).join("\n"));
+    syncSellingMode();
   }
   async function beginEdit(productId) {
     if(!db||!store||!user||user.id!==store.owner_user_id)return;
@@ -572,7 +573,7 @@
         if(editing&&["PGRST202","42883"].includes(result.error.code))
           throw new Error("دەستکاریکردنی کاڵا لە داتابەیس چالاک نییە");
         if(!editing&&catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
-          throw new Error("تۆمارکردنی فرەبارکۆد و کارتۆن هێشتا لە داتابەیس چالاک نییە");
+          throw new Error("فەنکشنی تۆمارکردنی کاڵای پێشکەوتوو (V14) لە داتابەیسی پەیوەستکراو بەردەست نییە");
         throw result.error;
       }
       const wasEditing=!!editing;
