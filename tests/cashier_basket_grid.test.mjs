@@ -30,7 +30,7 @@ function drawBasket(cart,paid=0,discount=0){
  nodes.cash.value=String(paid);
  const total= Math.max(0,cart.reduce((n,it)=>n+it.qty*it.price,0)-discount);
  const ctx=vm.createContext({
-  cart,document:{createElement:tag=>new FakeNode(tag)},
+  cart,busy:false,pendingCheckout:null,document:{createElement:tag=>new FakeNode(tag)},
   $:key=>nodes[key],cartNetTotal:()=>total,
   money:n=>Number(n).toLocaleString("en-US")+" IQD",
  });
