@@ -62,7 +62,6 @@ try{
  assert.equal(await calls("retail_update_product_v15"),1);
  console.log("PASS scale-only editor: reopen and update price without demanding a fake barcode");
 
- await page.locator("#cancel-edit").click();
  await field("name").fill("دووبارە");
  await field("plu").fill("00002");
  await field("price").fill("1250");
