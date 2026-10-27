@@ -36,7 +36,7 @@ try{
  assert.deepEqual(await grid.locator("thead th").allTextContents(),
    ["ژمارە","ناوی کاڵا","یەکە","نرخ","بڕ","کۆ"]);
  const rows=grid.locator("tbody tr");
- assert.equal(await rows.nth(0).locator("td").nth(2).innerText(),"کارتۆن\\n12 دانە");
+ assert.equal((await rows.nth(0).locator("td").nth(2).innerText()).replace(/\s+/g," ").trim(),"کارتۆن 12 دانە");
  assert.equal(await rows.nth(0).locator("td").nth(3).innerText(),"11,000");
  assert.equal(await rows.nth(0).locator("td").nth(4).innerText(),"2");
  assert.equal(await rows.nth(0).locator("td").nth(5).innerText(),"22,000");
