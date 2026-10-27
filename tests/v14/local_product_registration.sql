@@ -6,6 +6,10 @@ ALTER TABLE public.retail_products
  ADD COLUMN sku text,
  ADD COLUMN plu text,
  ADD COLUMN purchase_price_minor bigint CHECK(purchase_price_minor>=0);
+-- QA only: normalized scale PLUs must be unique per store for safe price lookup.
+CREATE UNIQUE INDEX retail_products_store_scale_plu_unique
+ ON public.retail_products(store_id, lpad(plu,5,'0'))
+ WHERE plu ~ '^[0-9]{1,5}$';
 
 CREATE TABLE public.retail_product_cartons(
  store_id uuid NOT NULL,
@@ -34,6 +38,7 @@ DECLARE
  v_actor uuid:=(select auth.uid());
  v_product uuid;
  v_name text;
+ v_plu text;
  v_sale_mode text;
  v_unit_code text;
  v_alias text;
@@ -60,8 +65,18 @@ BEGIN
  IF v_sale_mode NOT IN ('unit','carton','both') THEN
   RAISE EXCEPTION 'Invalid sale mode' USING errcode='22023';END IF;
  v_name=nullif(btrim(p_catalog->>'name'),'');
+ v_plu=nullif(btrim(p_catalog->>'plu'),'');
  v_unit_code=nullif(btrim(p_catalog->>'unit_barcode'),'');
- IF v_name IS NULL OR length(v_name)>160 OR (v_sale_mode<>'carton' AND v_unit_code IS NULL)
+ IF v_sale_mode='unit' AND v_unit_code IS NULL THEN
+   IF v_plu IS NULL OR v_plu !~ '^[0-9]{1,5}$'
+   THEN RAISE EXCEPTION 'Scale item requires 1..5 digit PLU' USING errcode='22023';END IF;
+   IF v_plu::integer=0
+   THEN RAISE EXCEPTION 'Scale PLU 00000 is invalid' USING errcode='22023';END IF;
+   v_plu=lpad(v_plu,5,'0');
+ END IF;
+ IF v_unit_code ~ '^27[0-9]{5}$'
+ THEN RAISE EXCEPTION 'Incomplete scale barcode must not be a unit code' USING errcode='22023';END IF;
+ IF v_name IS NULL OR length(v_name)>160 OR (v_sale_mode='both' AND v_unit_code IS NULL)
     OR length(v_unit_code)>60 OR v_unit_code~'[[:space:],;]'
  THEN RAISE EXCEPTION 'Invalid item name or barcode' USING errcode='22023';END IF;
  IF v_sale_mode='carton' THEN
@@ -90,6 +105,8 @@ BEGIN
  IF v_aliases IS NULL OR jsonb_typeof(v_aliases)<>'array'
     OR jsonb_array_length(v_aliases)>30
  THEN RAISE EXCEPTION 'Invalid unit aliases' USING errcode='22023';END IF;
+ IF v_unit_code IS NULL AND jsonb_array_length(v_aliases)>0
+ THEN RAISE EXCEPTION 'Scale-only item cannot have unit aliases without primary' USING errcode='22023';END IF;
  v_carton=p_catalog->'carton';
  IF (v_sale_mode='unit' AND v_carton IS NOT NULL AND jsonb_typeof(v_carton)<>'null')
     OR (v_sale_mode IN ('carton','both') AND (v_carton IS NULL OR jsonb_typeof(v_carton)='null'))
@@ -120,10 +137,10 @@ BEGIN
  END IF;
 
  INSERT INTO public.retail_products(store_id,name,sku,plu,price_minor,purchase_price_minor,currency,active)
- VALUES(p_store_id,v_name,nullif(p_catalog->>'sku',''),nullif(p_catalog->>'plu',''),
+ VALUES(p_store_id,v_name,nullif(p_catalog->>'sku',''),v_plu,
         v_unit_price::bigint,v_cost,'IQD',true) RETURNING id INTO v_product;
 
- IF v_sale_mode<>'carton' THEN
+ IF v_sale_mode<>'carton' AND v_unit_code IS NOT NULL THEN
   INSERT INTO public.retail_barcodes(store_id,product_id,code,unit_type,units_per_scan)
   VALUES(p_store_id,v_product,v_unit_code,'unit',1);
  END IF;

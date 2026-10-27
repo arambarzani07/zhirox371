@@ -379,6 +379,11 @@
   function syncSellingMode(){
     const form=$("product-form");
     const mode=String(new FormData(form).get("sale_mode")||"unit");
+    // Normal unit/barcode products still require a barcode; a verified scale PLU
+    // allows a unit-priced item without inventing a 27+PLU barcode.
+    const plu=String(form.elements.namedItem("plu")?.value||"").trim();
+    const mainBarcode=form.elements.namedItem("barcode");
+    mainBarcode.required=mode!=="carton"&&!plu;
     for(const [section,enabled] of [["unit-fields",mode!=="carton"],["carton-fields",mode!=="unit"]]){
       const node=$(section);node.hidden=!enabled;
       node.querySelectorAll("input,textarea").forEach(field=>field.disabled=!enabled);
@@ -419,6 +424,7 @@
     assign("carton_purchase_price",carton?.purchase_price_iqd);
     assign("carton_price",carton?.sale_price_iqd);
     assign("extra_carton_barcodes",(carton?.alias_barcodes||[]).join("\n"));
+    syncSellingMode();
   }
   async function beginEdit(productId) {
     if(!db||!store||!user||user.id!==store.owner_user_id)return;
@@ -567,7 +573,7 @@
         if(editing&&["PGRST202","42883"].includes(result.error.code))
           throw new Error("دەستکاریکردنی کاڵا لە داتابەیس چالاک نییە");
         if(!editing&&catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
-          throw new Error("تۆمارکردنی فرەبارکۆد و کارتۆن هێشتا لە داتابەیس چالاک نییە");
+          throw new Error("فەنکشنی تۆمارکردنی کاڵای پێشکەوتوو (V14) لە داتابەیسی پەیوەستکراو چالاک نییە");
         throw result.error;
       }
       const wasEditing=!!editing;
@@ -577,6 +583,7 @@
     finally{busy(btn,false);}
   });
   $("product-form").querySelectorAll(`[name="sale_mode"]`).forEach(x=>x.addEventListener("change",syncSellingMode));
+  $("product-form").elements.namedItem("plu").addEventListener("input",syncSellingMode);
   syncSellingMode();
   $("cancel-edit").addEventListener("click",resetEditor);
   $("history-product").addEventListener("click",()=>void showProductHistory());

@@ -761,3 +761,48 @@ passed("V19 sales return atomically refunds cash, restores 0.480 kg stock, recor
 console.log("V13 LOCAL-only permission regression: all three added checks passed; hosted Supabase remains UNCHANGED. Release still BLOCKED pending separate approved hosted remediation.");
 
 console.log("V12/V13 result: "+tests.length+" local real-GoTrue/JWT/PostgREST/PostgreSQL RLS test groups passed. SECURITY RELEASE GATE BLOCKED by TRUNCATE privilege. No hosted project accessed.");
+
+
+const scaleOnlyCatalog={
+ advanced:true,name:"تەماتەی تاقی",sku:"SCALE-QA-54321",plu:"54321",sale_mode:"unit",
+ unit_barcode:"",unit_alias_barcodes:[],unit_purchase_price_iqd:1000,
+ unit_sale_price_iqd:1250,carton:null,currency:"IQD"
+};
+const scaleOnlyId=ok(await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,p_catalog:scaleOnlyCatalog
+}),"owner creates PLU-only weighted tomato without registering a fake unit barcode");
+assert.equal(localSQL("select plu from public.retail_products where id='"+scaleOnlyId+"'"),"54321");
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+scaleOnlyId+"'"),"0");
+const weighted=ok(await cashier.rpc("retail_resolve_barcode_v18",{
+ p_store:storeA.id,p_code:"2754321004800"
+}),"real V18 scale barcode lookup for PLU-only registered product");
+assert.equal(weighted.found,true);
+assert.equal(weighted.is_scale,true);
+assert.equal(Number(weighted.price_minor),600);
+const scaleSnapshot=ok(await owner.rpc("retail_product_snapshot_v15",{
+ p_store_id:storeA.id,p_product_id:scaleOnlyId
+}),"owner can reopen weighted PLU-only product in editor");
+assert.equal(scaleSnapshot.unit_barcode,"");
+assert.equal(Number(scaleSnapshot.unit_sale_price_iqd),1250);
+const scaleEdit=ok(await owner.rpc("retail_update_product_v15",{
+ p_store_id:storeA.id,p_product_id:scaleOnlyId,p_expected_version:scaleSnapshot.version,
+ p_catalog:{...scaleOnlyCatalog,unit_sale_price_iqd:1500}
+}),"owner can update scale-only price with optimistic revision");
+assert.equal(Number(scaleEdit.unit_sale_price_iqd),1500);
+assert.equal(localSQL("select count(*) from public.retail_barcodes where product_id='"+scaleOnlyId+"'"),"0");
+const weightedNew=ok(await cashier.rpc("retail_resolve_barcode_v18",{
+ p_store:storeA.id,p_code:"2754321004800"
+}),"weighted item resolves changed server price");
+assert.equal(Number(weightedNew.price_minor),720);
+const duplicatePlu=await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,p_catalog:{...scaleOnlyCatalog,sku:"SCALE-QA-DUPLICATE"}
+});
+fail(duplicatePlu,"same store must reject duplicate scale PLU");
+assert.equal(duplicatePlu.error.code,"23505");
+const falseBarcode=await owner.rpc("retail_register_product_v14",{
+ p_store_id:storeA.id,p_catalog:{...scaleOnlyCatalog,sku:"SCALE-QA-BAD",plu:"54322",unit_barcode:"2700001"}
+});
+fail(falseBarcode,"7-digit 27+PLU fragment must never be saved as a normal barcode");
+assert.equal(falseBarcode.error.code,"22023");
+passed("Scale-only QA: V14 PLU registration, V15 edit snapshot, V18 live EAN13 price, no fake barcodes, duplicate PLU and invalid fragment guarded");
+
