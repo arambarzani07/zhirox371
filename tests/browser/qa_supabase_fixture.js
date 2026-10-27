@@ -241,7 +241,7 @@
             data={
               found:true,code:b.code,product_id:p.id,product_name:p.name,
               sku:cat?.sku??p.sku??null,plu:cat?.plu??p.plu??null,
-              unit_type:b.unit_type,units_per_scan:b.units_per_scan,
+              unit_type:b.unit_type,units_per_scan:b.units_per_scan,base_unit:p.base_unit||"unit",
               is_scale:false,scale_grams:null,scale_weight_kg:null,scale_label:null,
               price_minor:price,unit_price_minor:cat?.sale_mode==="carton"?null:p.price_minor,
               carton_price_minor:cat?.carton?.sale_price_iqd??null,
@@ -259,7 +259,7 @@
               data={
                 found:true,code:clean,product_id:scaleProd.id,product_name:scaleProd.name,
                 sku:sc?.sku??scaleProd.sku??null,plu:sc?.plu??scaleProd.plu??null,
-                unit_type:"unit",units_per_scan:1,
+                unit_type:"unit",units_per_scan:1,base_unit:scaleProd.base_unit||"kg",
                 is_scale:true,scale_grams:scale.grams,scale_weight_kg:scale.weightKg,scale_label:scale.scaleLabel,
                 price_minor:scale.priceMinor,unit_price_minor:scaleProd.price_minor,
                 carton_price_minor:sc?.carton?.sale_price_iqd??null,
