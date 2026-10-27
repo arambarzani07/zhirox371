@@ -19,10 +19,12 @@
    if(cls) node.className = cls;
    return node;
  }
- function renderLine(root,name,qty,price,packType,unitsPerPack,baseUnits) {
+ function renderLine(root,name,qty,price,packType,unitsPerPack,baseUnits,baseUnit) {
    const outer=el("div","","line");
    outer.append(el("div",name,"line-name"));
-   if(packType==="carton"&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
+   if(baseUnit==="kg"){
+     outer.append(el("div","کێش: "+qty.toFixed(3)+" کیلۆگرام — نرخی کیلۆ: "+fmt(price),"pack-detail"));
+   }else if(packType==="carton"&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
      outer.append(el("div",String(qty)+" کارتۆن × "+String(unitsPerPack)+" دانە","pack-detail"));
    }else if(baseUnits!=null&&Number(baseUnits)>0&&Number(baseUnits)!==qty){
      const kgRate=Math.round(Number(price)/Number(baseUnits));
@@ -31,8 +33,8 @@
      outer.append(el("div",String(qty)+" دانە","pack-detail"));
    }
    const data=el("div","","row");
-   data.append(el("span",String(qty)+" × "+fmt(price)));
-   data.append(el("strong",fmt(qty*price),"money"));
+   data.append(el("span",(baseUnit==="kg"?qty.toFixed(3)+" kg":String(qty))+" × "+fmt(price)));
+   data.append(el("strong",fmt(Math.round(qty*price)),"money"));
    outer.append(data);root.append(outer);
  }
  async function initialize() {
@@ -46,7 +48,7 @@
    const auth=await db.auth.getUser();
    if(auth.error||!auth.data?.user){msg("بۆ بینین و چاپی پسووڵە پێویستە بچیتە ژوورەوە");return;}
    const sale=await db.from("retail_sales")
-     .select("id,store_id,receipt_no,total_minor,cash_received_minor,change_due_minor,created_at,status")
+     .select("id,store_id,receipt_no,total_minor,cash_received_minor,change_due_minor,created_at,status,request_payload")
      .eq("id",saleId).eq("status","posted").single();
    if(sale.error||!sale.data){msg("پسووڵەکە نەدۆزرایەوە یان دەسەڵاتت نییە");return;}
    const head=sale.data;
@@ -54,13 +56,13 @@
    let [store,lines]=await Promise.all([
      db.from("retail_stores").select("name").eq("id",head.store_id).single(),
      db.from("retail_sale_items")
-       .select("product_id,quantity,unit_price_minor,product_name_snapshot,package_type,package_barcode,units_per_package,base_units")
+       .select("product_id,quantity,unit_price_minor,product_name_snapshot,package_type,package_barcode,units_per_package,base_units,base_unit_snapshot")
        .eq("store_id",head.store_id).eq("sale_id",head.id).limit(200)
    ]);
    // Historic receipts and older hosted databases lack V16 pack fields.
    if(["42703","PGRST204","PGRST205"].includes(lines.error?.code))
      lines=await db.from("retail_sale_items")
-       .select("product_id,quantity,unit_price_minor,product_name_snapshot")
+       .select("product_id,quantity,unit_price_minor,product_name_snapshot,base_unit_snapshot")
        .eq("store_id",head.store_id).eq("sale_id",head.id).limit(200);
    if(store.error||lines.error||!store.data){msg("وردەکاریی پسووڵە نەتوانرا بخوێندرێتەوە");return;}
    const items=lines.data||[];
@@ -69,16 +71,18 @@
    let computed=0;
    for(const item of items){
      const quantity=Number(item.quantity),price=Number(item.unit_price_minor);
-     if(!Number.isSafeInteger(quantity)||quantity<=0||!Number.isSafeInteger(price)||price<0||!item.product_name_snapshot
+     if(!(item.base_unit_snapshot==="kg" ? Number.isFinite(quantity)&&quantity>=0.001&&quantity<=99999.999&&Math.abs(quantity*1000-Math.round(quantity*1000))<0.000001 : Number.isSafeInteger(quantity)&&quantity>0)||!Number.isSafeInteger(price)||price<0||!item.product_name_snapshot
        || (item.package_type==="carton" &&
           (!Number.isSafeInteger(Number(item.units_per_package))||Number(item.units_per_package)<2||
            Number(item.base_units)!==quantity*Number(item.units_per_package)))){
        msg("زانیارییەکانی پسووڵە ناتەواون؛ چاپ ڕێگەپێنەدراوە");return;
      }
-     computed+=quantity*price;
+     computed+=Math.round(quantity*price);
      if(!Number.isSafeInteger(computed)){msg("ژمارەی نرخەکان لە سنوور دەرچوون");return;}
    }
-   if(computed!==total||!Number.isSafeInteger(total)||!Number.isSafeInteger(paid)||!Number.isSafeInteger(change)
+   const discount=Number(head.request_payload?.discount||0);
+   if(!Number.isSafeInteger(discount)||discount<0||discount>computed){msg("داشکاندنی پسووڵە نادروستە");return;}
+   if(computed-discount!==total||!Number.isSafeInteger(total)||!Number.isSafeInteger(paid)||!Number.isSafeInteger(change)
       || paid-total!==change){msg("کۆی پسووڵە و وردەکارییەکان یەک ناگرنەوە؛ چاپ ڕێگەپێنەدراوە");return;}
    $("store-name").textContent=store.data.name;
    $("receipt-number").textContent="#"+String(head.receipt_no).padStart(6,"0");
@@ -87,7 +91,7 @@
    const list=$("receipt-lines");
    for(const item of items){
      renderLine(list,item.product_name_snapshot,Number(item.quantity),Number(item.unit_price_minor),
-       item.package_type,Number(item.units_per_package),item.base_units);
+       item.package_type,Number(item.units_per_package),item.base_units,item.base_unit_snapshot||"unit");
    }
    $("total").textContent=fmt(total);
    $("paid").textContent=fmt(paid);
