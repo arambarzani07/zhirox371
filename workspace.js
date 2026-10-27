@@ -212,9 +212,15 @@
       const unitPrice = p.sale_mode === "carton" ? "—" : fmtIqd(p.price_minor);
       const cartonPrice = p.carton_price_minor != null ? fmtIqd(p.carton_price_minor) : "—";
       const packUnits = p.units_per_carton ? String(p.units_per_carton) + " دانە" : "—";
-      const stockText = Number(p.stock_quantity || 0).toLocaleString("en-US") + " دانە";
+      const stockQty = Number(p.stock_quantity || 0);
+      const stockText = stockQty.toLocaleString("en-US") + " دانە" + (stockQty<=0?" (تەواوبوو)":stockQty<=5?" (کەمبووە)":"");
       for (const val of [p.name, mode, unitPrice, cartonPrice, packUnits, stockText]) {
-        const td = document.createElement("td"); td.textContent = val; tr.append(td);
+        const td = document.createElement("td"); td.textContent = val;
+        if (val === stockText) {
+          if (stockQty <= 0) { td.style.color = "#dc2626"; td.style.fontWeight = "bold"; }
+          else if (stockQty <= 5) { td.style.color = "#d97706"; td.style.fontWeight = "bold"; }
+        }
+        tr.append(td);
       }
       const actionCell = document.createElement("td");
       if (user?.id === store?.owner_user_id) {
@@ -351,15 +357,22 @@
     table.className = "table";
     table.innerHTML = "<thead><tr><th>بارکۆد</th><th>کاڵا</th><th>یەکە</th><th>دانە لە پاکەت</th><th>نرخی فرۆشتن</th><th>بڕی کۆگا</th><th></th></tr></thead><tbody><tr></tr></tbody>";
     const tr = table.tBodies[0].rows[0];
+    const singleStock = Number(d.stock_quantity || 0);
+    const stockVal = singleStock.toLocaleString("en-US") + " دانە" + (singleStock<=0?" (تەواوبوو)":singleStock<=5?" (کەمبووە)":"");
     for (const val of [
       d.code,
       d.product_name,
       d.unit_type === "carton" ? "کارتۆن" : "دانە",
       d.scale_label || (String(d.units_per_scan) + " دانە"),
       fmtIqd(d.price_minor),
-      Number(d.stock_quantity || 0).toLocaleString("en-US") + " دانە"
+      stockVal
     ]) {
-      const td = document.createElement("td"); td.textContent = String(val); tr.append(td);
+      const td = document.createElement("td"); td.textContent = String(val);
+      if (val === stockVal) {
+        if (singleStock <= 0) { td.style.color = "#dc2626"; td.style.fontWeight = "bold"; }
+        else if (singleStock <= 5) { td.style.color = "#d97706"; td.style.fontWeight = "bold"; }
+      }
+      tr.append(td);
     }
     const actionTd = document.createElement("td");
     const labelBtn = document.createElement("button");

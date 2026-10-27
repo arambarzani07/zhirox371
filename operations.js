@@ -55,6 +55,36 @@ function parseScaleBarcode(code){
  return {code:clean,prefix:27,pluRaw,pluNum,grams,weightKg,scaleLabel:weightKg.toFixed(3)+" کگم"};
 }
 function cartSubtotal(){return cart.reduce((sum,item)=>sum+Number(item.price)*Number(item.qty),0);}
+let audioCtx=null;
+let scanSoundEnabled=localStorage.getItem("retail_scan_sound")!=="0";
+function playScanBeep(isSuccess=true){
+ if(!scanSoundEnabled)return;
+ try{
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)return;
+  if(!audioCtx)audioCtx=new AudioContextClass();
+  if(audioCtx.state==="suspended")void audioCtx.resume();
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  osc.connect(gain);gain.connect(audioCtx.destination);
+  const now=audioCtx.currentTime;
+  if(isSuccess){
+   osc.type="sine";osc.frequency.setValueAtTime(880,now);
+   gain.gain.setValueAtTime(0.12,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.08);
+   osc.start(now);osc.stop(now+0.085);
+  }else{
+   osc.type="triangle";osc.frequency.setValueAtTime(320,now);osc.frequency.setValueAtTime(220,now+0.08);
+   gain.gain.setValueAtTime(0.15,now);gain.gain.exponentialRampToValueAtTime(0.001,now+0.18);
+   osc.start(now);osc.stop(now+0.19);
+  }
+ }catch(_e){}
+}
+function syncSoundToggleBtn(){
+ const btn=$("scan-sound-toggle");
+ if(!btn)return;
+ btn.textContent=scanSoundEnabled?"🔊 دەنگ":"🔇 بێدەنگ";
+ btn.title=scanSoundEnabled?"دەنگ چالاکە (کلیک بکە بۆ بێدەنگکردن)":"بێدەنگە (کلیک بکە بۆ پێکردن)";
+}
 function cartDiscount(){
  const raw=Number($("discount")?.value||0);
  return Number.isSafeInteger(raw)&&raw>0?raw:0;
@@ -429,6 +459,8 @@ function renderStock(){
      const tr=document.createElement("tr");
      const tdName=document.createElement("td");tdName.textContent=p.name;
      const tdStock=document.createElement("td");tdStock.textContent=display;
+     if(units<=0){tdStock.style.color="#dc2626";tdStock.style.fontWeight="bold";}
+     else if(units<=5){tdStock.style.color="#d97706";tdStock.style.fontWeight="bold";}
      const tdAction=document.createElement("td");
      const pickBtn=document.createElement("button");
      pickBtn.type="button";pickBtn.className="stock-pick-btn";pickBtn.dataset.pickStock=p.id;pickBtn.textContent="هاتن";
@@ -454,7 +486,14 @@ function renderCart(){
  const total=cartNetTotal();
  $("total").textContent=money(total);
  const paid=Number($("cash").value||0);
- $("change").textContent=money(Math.max(0,paid-total));
+ const diff=paid-total;
+ if(paid>0&&diff<0){
+  $("change").textContent=money(Math.abs(diff))+" (کەمە)";
+  $("change").style.color="#dc2626";
+ }else{
+  $("change").textContent=money(Math.max(0,diff));
+  $("change").style.color="";
+ }
  const list=$("cart-list");list.replaceChildren();
  if(!cart.length){const div=document.createElement("div");div.className="blank";div.textContent="سەبەتە بەتاڵە";list.append(div);return}
  const table=document.createElement("table");
@@ -745,6 +784,14 @@ async function enter(){
  syncPending();
 }
 async function init(){
+ syncSoundToggleBtn();
+ $("scan-sound-toggle")?.addEventListener("click",()=>{
+  scanSoundEnabled=!scanSoundEnabled;
+  localStorage.setItem("retail_scan_sound",scanSoundEnabled?"1":"0");
+  syncSoundToggleBtn();
+  if(scanSoundEnabled)playScanBeep(true);
+  focusScanner();
+ });
  if(!window.supabase||!config?.supabaseUrl||!config?.publishableKey){
    viewPanel("login");msg("login-msg","پەیوەندی Supabase بەردەست نییە","error");return;
  }
@@ -838,26 +885,26 @@ $("scan-form").addEventListener("submit",async e=>{
  if(!b&&code){
    b=await resolveBarcodeServer(code);
  }
- if(!b){form.reset();msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");focusScanner();return}
+ if(!b){form.reset();msg("scan-msg","بارکۆدەکە نەدۆزرایەوە","error");playScanBeep(false);focusScanner();return}
  if(!["unit","carton"].includes(b.unit_type)||
     (b.unit_type==="unit"&&!b.is_scale&&Number(b.units_per_scan)!==1)||
     (b.unit_type==="unit"&&b.is_scale&&!(Number(b.scale_grams)>0))||
     (b.unit_type==="carton"&&!Number.isSafeInteger(Number(b.price_minor)))){
-   msg("scan-msg","شێوازی فرۆشتن پشتگیری ناکرێت","error");return;
+   msg("scan-msg","شێوازی فرۆشتن پشتگیری ناکرێت","error");playScanBeep(false);return;
  }
  const p=products.find(x=>x.id===b.product_id);
- if(!p||p.currency!=="IQD"){msg("scan-msg","کاڵا بۆ فرۆشتن بەردەست نییە","error");return}
+ if(!p||p.currency!=="IQD"){msg("scan-msg","کاڵا بۆ فرۆشتن بەردەست نییە","error");playScanBeep(false);return}
  const isScale=Boolean(b.is_scale&&Number(b.scale_grams)>0);
  const mode=b.unit_type,units=isScale?Number((Number(b.scale_grams)/1000).toFixed(3)):Number(b.units_per_scan),price=Number(b.price_minor??p.price_minor);
  if(!Number.isSafeInteger(price)||price<0||(isScale?!(units>0&&units<=99.999):(!Number.isSafeInteger(units)||units<1))){
-   msg("scan-msg","نرخ یان یەکەی کاڵا نادروستە","error");return;
+   msg("scan-msg","نرخ یان یەکەی کاڵا نادروستە","error");playScanBeep(false);return;
  }
  const stock=balances.get(p.id)||0;
- if(stockUsed(p.id)+units>stock){msg("scan-msg","بڕی کۆگا بەش ناکات","error");return}
+ if(stockUsed(p.id)+units>stock){msg("scan-msg","بڕی کۆگا بەش ناکات","error");playScanBeep(false);return}
   const current=cart.find(x=>x.id===p.id&&x.mode===mode&&(isScale?x.barcode===b.code:!x.isScale));
   if(current)current.qty++;
   else cart.push({id:p.id,name:p.name,barcode:b.code,mode,isScale,scaleGrams:isScale?Number(b.scale_grams):null,scaleLabel:b.scale_label||null,price,units,available:stock,qty:1});
-  form.reset();msg("scan-msg");cartChanged();focusScanner();
+  form.reset();msg("scan-msg");playScanBeep(true);cartChanged();focusScanner();
 });
 $("cart-list").addEventListener("click",e=>{
  const btn=e.target.closest("[data-line]");if(!btn||busy||pendingCheckout)return;

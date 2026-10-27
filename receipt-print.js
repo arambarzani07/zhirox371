@@ -19,11 +19,13 @@
    if(cls) node.className = cls;
    return node;
  }
- function renderLine(root,name,qty,price,packType,unitsPerPack) {
+ function renderLine(root,name,qty,price,packType,unitsPerPack,baseUnits) {
    const outer=el("div","","line");
    outer.append(el("div",name,"line-name"));
    if(packType==="carton"&&Number.isSafeInteger(unitsPerPack)&&unitsPerPack>=2){
      outer.append(el("div",String(qty)+" کارتۆن × "+String(unitsPerPack)+" دانە","pack-detail"));
+   }else if(baseUnits!=null&&Number(baseUnits)>0&&Number(baseUnits)!==qty){
+     outer.append(el("div","کێش: "+Number(baseUnits).toFixed(3)+" kg × "+fmt(price),"pack-detail"));
    }else if(packType==="unit"){
      outer.append(el("div",String(qty)+" دانە","pack-detail"));
    }
@@ -84,7 +86,7 @@
    const list=$("receipt-lines");
    for(const item of items){
      renderLine(list,item.product_name_snapshot,Number(item.quantity),Number(item.unit_price_minor),
-       item.package_type,Number(item.units_per_package));
+       item.package_type,Number(item.units_per_package),item.base_units);
    }
    $("total").textContent=fmt(total);
    $("paid").textContent=fmt(paid);
