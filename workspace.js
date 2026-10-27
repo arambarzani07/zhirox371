@@ -383,6 +383,14 @@
       const node=$(section);node.hidden=!enabled;
       node.querySelectorAll("input,textarea").forEach(field=>field.disabled=!enabled);
     }
+    const plu=String(form.elements.namedItem("plu")?.value||"").trim();
+    const barcode=String(form.elements.namedItem("barcode")?.value||"").trim();
+    const scaleOnly=mode==="unit"&&/^[0-9]{5}$/.test(plu)&&!barcode;
+    form.elements.namedItem("barcode").required=mode!=="carton"&&!scaleOnly;
+    const priceLabel=form.elements.namedItem("price").closest("label");
+    if(priceLabel?.firstChild?.nodeType===Node.TEXT_NODE)
+      priceLabel.firstChild.textContent=scaleOnly?
+        "نرخی فرۆشتنی کیلۆ (IQD)":"نرخی فرۆشتنی دانە (IQD)";
   }
   function sellingModeFromSnapshot(c){
     if(["unit","carton","both"].includes(c.sale_mode))return c.sale_mode;
@@ -567,7 +575,7 @@
         if(editing&&["PGRST202","42883"].includes(result.error.code))
           throw new Error("دەستکاریکردنی کاڵا لە داتابەیس چالاک نییە");
         if(!editing&&catalog.advanced&&["PGRST202","42883"].includes(result.error.code))
-          throw new Error("تۆمارکردنی فرەبارکۆد و کارتۆن هێشتا لە داتابەیس چالاک نییە");
+          throw new Error("فەنکشنی تۆمارکردنی پێشکەوتووی کاڵا (V14) لە داتابەیسی پەیوەستکراو نییە");
         throw result.error;
       }
       const wasEditing=!!editing;
@@ -577,6 +585,7 @@
     finally{busy(btn,false);}
   });
   $("product-form").querySelectorAll(`[name="sale_mode"]`).forEach(x=>x.addEventListener("change",syncSellingMode));
+  for(const field of ["plu","barcode"])$("product-form").elements.namedItem(field).addEventListener("input",syncSellingMode);
   syncSellingMode();
   $("cancel-edit").addEventListener("click",resetEditor);
   $("history-product").addEventListener("click",()=>void showProductHistory());
