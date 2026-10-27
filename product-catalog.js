@@ -29,6 +29,7 @@
   const scaleOnly=unitEnabled&&!rawUnit;
   // A scale-only item uses its 5-digit PLU; it has no permanent unit barcode.
   // A 7-digit 27+PLU fragment is never a scannable product barcode.
+  if(scaleOnly&&!rawPlu)fail("بارکۆدی دانە پێویستە یان PLU بۆ کاڵای تەرازوویی");
   if(scaleOnly&&(requestedMode!=="unit"||!/^[0-9]{1,5}$/.test(rawPlu)||
      Number(rawPlu)===0))fail("بۆ کاڵای تەرازوویی کۆدی PLU ـی 5 ژمارەیی پێویستە");
   const unit=barcode(get("barcode"),unitEnabled&&!scaleOnly);
