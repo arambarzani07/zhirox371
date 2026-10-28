@@ -56,6 +56,25 @@ function persistParked(){const key=parkedKey();if(!key)return;try{if(parkedCarts
 function loadParked(){const key=parkedKey();if(!key)return;try{const raw=JSON.parse(sessionStorage.getItem(key)||"[]");parkedCarts=Array.isArray(raw)?raw:[];}catch(e){parkedCarts=[];}renderParkedBar();}
 function persistReturnAttempt(){const key=returnKey();if(!key)return;try{if(returnAttempt)sessionStorage.setItem(key,JSON.stringify(returnAttempt));else sessionStorage.removeItem(key);}catch(e){}}
 function loadReturnAttempt(){const key=returnKey();if(!key)return;try{const raw=JSON.parse(sessionStorage.getItem(key)||"null");returnAttempt=raw&&raw.id&&raw.saleId&&raw.sessionId?raw:null;}catch(e){returnAttempt=null;}}
+async function financialRpc(action,rpc,args){
+ const key="retail_financial_attempt_"+store.id+"_"+user.id+"_"+action;
+ const fingerprint=JSON.stringify({rpc,...args});
+ let attempt;
+ try{attempt=JSON.parse(sessionStorage.getItem(key)||"null");}catch(_e){}
+ if(attempt&&attempt.fingerprint!==fingerprint)throw new Error("ئەنجامی مامەڵەی پێشوو دیار نییە؛ هەمان زانیاری دووبارە بنێرە");
+ if(!attempt){
+  attempt={id:crypto.randomUUID(),fingerprint};
+  sessionStorage.setItem(key,JSON.stringify(attempt));
+ }
+ const result=await db.rpc(rpc,{...args,p_request:attempt.id});
+ if(result.error){
+  if(["22023","42501","22P02","23514","PGRST202","42883"].includes(result.error.code))sessionStorage.removeItem(key);
+  throw result.error;
+ }
+ if(!result.data)throw new Error("سێرڤەر پشتڕاستکردنەوەی مامەڵەکەی نەگەڕاندەوە");
+ sessionStorage.removeItem(key);
+ return {...result.data,request_id:attempt.id};
+}
 function isValidEan13(code){
  const clean=String(code||"").trim();
  if(!/^\d{13}$/.test(clean))return false;
@@ -1337,13 +1356,11 @@ async function loadCustomersAndLedger(){
    }catch(_e){}
  }
  const custMap=new Map();
- for(const c of locCust)if(c&&c.id&&c.active!==false)custMap.set(c.id,c);
  for(const c of remCust)if(c&&c.id&&c.active!==false)custMap.set(c.id,{...(custMap.get(c.id)||{}),...c});
  customersList=[...custMap.values()].sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ckb"));
  saveLocalCustomers(customersList);
 
  const ledMap=new Map();
- for(const l of locLed)if(l&&l.id)ledMap.set(l.id,l);
  for(const l of remLed)if(l&&l.id)ledMap.set(l.id,{...(ledMap.get(l.id)||{}),...l});
  customerLedgerList=[...ledMap.values()].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
  saveLocalCustomerLedger(customerLedgerList);
@@ -1406,44 +1423,21 @@ async function recordCustomerLedgerEntry({customerId,entryType,amount,note="",re
    if(targetMsgId)msg(targetMsgId,"بڕی پارە نادروستە","error");
    return null;
  }
- const reqId=crypto.randomUUID();
+ let reqId=null;
  const oldBal=Number(cust.balance_minor||0);
  const delta=entryType==="payment_received"?-amt:entryType==="paid_purchase"?0:amt;
  let newBal=Math.max(0,oldBal+delta);
  let entryId=crypto.randomUUID();
- if(db){
-   try{
-     const rpcRes=await db.rpc("retail_record_customer_ledger_v19",{
-       p_store:store.id,
-       p_customer:customerId,
-       p_entry_type:entryType,
-       p_amount:amt,
-       p_note:note||null,
-       p_receipt_no:receiptNo||null,
-       p_due_date:dueDate||null,
-       p_sale_id:saleId||null,
-       p_payment_method:paymentMethod||"cash_drawer",
-       p_request:reqId
-     });
-     if(!rpcRes.error&&rpcRes.data){
-       if(rpcRes.data.entry_id)entryId=rpcRes.data.entry_id;
-       if(rpcRes.data.balance_after_minor!==undefined)newBal=Number(rpcRes.data.balance_after_minor);
-     }else{
-       await db.from("retail_customers").update({
-         balance_minor:newBal,
-         due_date:dueDate||cust.due_date||null,
-         updated_at:new Date().toISOString()
-       }).eq("store_id",store.id).eq("id",customerId);
-       await db.from("retail_customer_ledger").insert({
-         id:entryId,store_id:store.id,customer_id:customerId,entry_type:entryType,
-         amount_minor:amt,delta_minor:delta,balance_after_minor:newBal,
-         sale_id:saleId||null,receipt_no:receiptNo||null,due_date:dueDate||null,
-         payment_method:paymentMethod||"cash_drawer",note:note||null,
-         actor_id:user?.id||null,request_id:reqId
-       });
-     }
-   }catch(_e){}
- }
+ if(!db)throw new Error("پەیوەندیی سێرڤەر بەردەست نییە");
+ try{
+   const result=await financialRpc("customer-ledger","retail_record_customer_ledger_v19",{
+     p_store:store.id,p_customer:customerId,
+     p_entry_type:entryType==="debt_sale"&&!saleId?"debt_add":entryType,
+     p_amount:amt,p_note:note||null,p_receipt_no:receiptNo||null,p_due_date:dueDate||null,
+     p_sale_id:saleId||null,p_payment_method:paymentMethod||"cash_drawer"
+   });
+   entryId=result.entry_id;newBal=Number(result.balance_after_minor);reqId=result.request_id;
+ }catch(err){msg(targetMsgId||"system-msg",safe(err),"error");return null;}
  cust.balance_minor=newBal;
  if(dueDate)cust.due_date=dueDate;
  cust.updated_at=new Date().toISOString();
@@ -1938,19 +1932,16 @@ async function loadSuppliersAndPurchasing(){
    }catch(_e){}
  }
  const supMap=new Map();
- for(const s of locSup)if(s&&s.id&&s.active!==false)supMap.set(s.id,s);
  for(const s of remSup)if(s&&s.id&&s.active!==false)supMap.set(s.id,{...(supMap.get(s.id)||{}),...s});
  suppliersList=[...supMap.values()].sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ckb"));
  saveLocalSuppliers(suppliersList);
 
  const poMap=new Map();
- for(const po of locPo)if(po&&po.id)poMap.set(po.id,po);
  for(const po of remPo)if(po&&po.id)poMap.set(po.id,{...(poMap.get(po.id)||{}),...po});
  purchaseOrdersList=[...poMap.values()].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
  saveLocalPurchaseOrders(purchaseOrdersList);
 
  const ledMap=new Map();
- for(const l of locLed)if(l&&l.id)ledMap.set(l.id,l);
  for(const l of remLed)if(l&&l.id)ledMap.set(l.id,{...(ledMap.get(l.id)||{}),...l});
  supplierLedgerList=[...ledMap.values()].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
  saveLocalSupplierLedger(supplierLedgerList);
@@ -2047,47 +2038,21 @@ async function recordSupplierLedgerEntry({supplierId="",entryType,amount,invoice
    if(targetMsgId)msg(targetMsgId,"بڕی پارەی وەسڵ نادروستە","error");
    return null;
  }
- const reqId=crypto.randomUUID();
+ let reqId=null;
  const oldBal=Number(sup?.balance_minor||0);
  const delta=(entryType==="payment_sent"||entryType==="return_to_supplier")?-amt:entryType==="purchase_cash"?0:amt;
  let newBal=sup?Math.max(0,oldBal+delta):0;
  let entryId=crypto.randomUUID();
- if(db){
-   try{
-     const rpcRes=await db.rpc("retail_record_supplier_ledger_v19",{
-       p_store:store.id,
-       p_supplier:supplierId||null,
-       p_entry_type:entryType,
-       p_amount:amt,
-       p_note:note||null,
-       p_invoice_no:invoiceNo||null,
-       p_product_id:productId||null,
-       p_product_name:productName||null,
-       p_quantity:quantity!==null?Number(quantity):null,
-       p_unit_cost:unitCost!==null?Math.round(Number(unitCost)):null,
-       p_payment_method:paymentMethod||"credit",
-       p_request:reqId
-     });
-     if(!rpcRes.error&&rpcRes.data){
-       if(rpcRes.data.entry_id)entryId=rpcRes.data.entry_id;
-       if(rpcRes.data.balance_after_minor!==undefined)newBal=Number(rpcRes.data.balance_after_minor);
-     }else{
-       if(sup){
-         await db.from("retail_suppliers").update({
-           balance_minor:newBal,
-           updated_at:new Date().toISOString()
-         }).eq("store_id",store.id).eq("id",sup.id);
-       }
-       await db.from("retail_supplier_ledger").insert({
-         id:entryId,store_id:store.id,supplier_id:sup?sup.id:null,supplier_name:sup?sup.name:"دابینکەری گشتی",
-         entry_type:entryType,amount_minor:amt,delta_minor:delta,balance_after_minor:newBal,
-         invoice_no:invoiceNo||null,product_id:productId||null,product_name:productName||null,
-         quantity:quantity!==null?Number(quantity):null,unit_cost_minor:unitCost!==null?Math.round(Number(unitCost)):null,
-         payment_method:paymentMethod||"credit",note:note||null,actor_id:user?.id||null,request_id:reqId
-       });
-     }
-   }catch(_e){}
- }
+ if(!db)throw new Error("پەیوەندیی سێرڤەر بەردەست نییە");
+ try{
+   const result=await financialRpc("supplier-ledger","retail_record_supplier_ledger_v21",{
+     p_store:store.id,p_supplier:supplierId||null,p_entry_type:entryType,p_amount:amt,
+     p_note:note||null,p_invoice_no:invoiceNo||null,p_product_id:productId||null,
+     p_product_name:productName||null,p_quantity:quantity!==null?Number(quantity):null,
+     p_unit_cost:unitCost!==null?Math.round(Number(unitCost)):null,p_payment_method:paymentMethod||"credit"
+   });
+   entryId=result.entry_id;newBal=Number(result.balance_after_minor);reqId=result.request_id;
+ }catch(err){msg(targetMsgId||"system-msg",safe(err),"error");return null;}
  if(sup){
    sup.balance_minor=newBal;
    sup.updated_at=new Date().toISOString();
@@ -4262,7 +4227,7 @@ function saveLocalSettingsAndProfiles(){
  const pk=localStaffProfilesKey();
  if(pk){
    const obj={};
-   for(const [uid,val] of staffProfilesMap.entries())obj[uid]=val;
+   for(const [uid,val] of staffProfilesMap.entries()){const {pin_code,...profile}=val;obj[uid]=profile;}
    try{localStorage.setItem(pk,JSON.stringify(obj));}catch(_e){}
  }
 }
@@ -4296,7 +4261,7 @@ async function loadSettingsAndStaffProfiles(){
    try{
      const parsed=JSON.parse(localStorage.getItem(pk)||"{}");
      if(parsed&&typeof parsed==="object"){
-       for(const [uid,val] of Object.entries(parsed))staffProfilesMap.set(uid,val);
+       for(const [uid,val] of Object.entries(parsed)){const {pin_code,...profile}=val;staffProfilesMap.set(uid,profile);}
      }
    }catch(_e){}
  }
@@ -4308,7 +4273,7 @@ async function loadSettingsAndStaffProfiles(){
      }
    }catch(_e){}
    try{
-     const pRes=await db.from("retail_staff_profiles").select("*").eq("store_id",store.id).limit(200);
+     const pRes=await db.from("retail_staff_profiles").select("store_id,user_id,full_name,job_title,phone,email,role,active,note,actor_id,updated_at").eq("store_id",store.id).limit(200);
      if(!pRes.error&&Array.isArray(pRes.data)){
        for(const r of pRes.data)staffProfilesMap.set(r.user_id,r);
      }
@@ -4318,19 +4283,10 @@ async function loadSettingsAndStaffProfiles(){
  applyStoreSettingsToRuntime();
 }
 async function persistStoreSettingsToServer(patch){
- storeSettings={...defaultStoreSettings(),...storeSettings,...patch};
- saveLocalSettingsAndProfiles();
- applyStoreSettingsToRuntime();
- if(db&&store){
-   try{
-     await db.from("retail_store_settings").upsert({
-       store_id:store.id,
-       settings_json:storeSettings,
-       updated_by:user?.id||null,
-       updated_at:new Date().toISOString()
-     },{onConflict:"store_id"});
-   }catch(_e){}
- }
+ const next={...defaultStoreSettings(),...storeSettings,...patch};
+ const {error}=await db.from("retail_store_settings").upsert({store_id:store.id,settings_json:next,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:"store_id"});
+ if(error)throw error;
+ storeSettings=next;saveLocalSettingsAndProfiles();applyStoreSettingsToRuntime();
 }
 async function refreshSettingsSection(sub=setSub){
  await loadSettingsAndStaffProfiles();
@@ -6321,59 +6277,9 @@ async function init(){
  $("return-item-product")?.addEventListener("change",updateReturnItemBarcodes);
  $("return-item-barcode")?.addEventListener("change",updateReturnItemBarcodes);
  $("return-item-qty")?.addEventListener("input",updateReturnItemBarcodes);
- $("returns-item-form")?.addEventListener("submit",async e=>{
+ $("returns-item-form")?.addEventListener("submit",e=>{
   e.preventDefault();
-  if(!db||!store||busy)return;
-  if(!shiftSession){
-   msg("returns-msg","بۆ گەڕاندنەوەی کاڵا و پارە سەرەتا شێفتی کاشێر بکەرەوە","error");
-   return;
-  }
-  const prodId=String($("return-item-product")?.value||"");
-  const code=String($("return-item-barcode")?.value||"");
-  const qty=Number($("return-item-qty")?.value||0);
-  const refundIqd=Number($("return-item-refund")?.value||0);
-  const note=String($("return-item-note")?.value||"گەڕاندنەوەی کاڵا").trim();
-  const p=products.find(x=>x.id===prodId);
-  const b=barcodes.find(x=>x.product_id===prodId&&x.code===code&&x.active!==false);
-  const isKg=p?.base_unit==="kg";
-  if(!p||!b||!(qty>0)||!Number.isSafeInteger(refundIqd)||refundIqd<0||!note){
-   msg("returns-msg","زانیاری گەڕاندنەوەی کاڵا نادروستە","error");
-   return;
-  }
-  lock(true);msg("returns-msg","");
-  try{
-   const stockReqId=itemReturnAttempt?.stockReqId||crypto.randomUUID();
-   const cashReqId=itemReturnAttempt?.cashReqId||crypto.randomUUID();
-   itemReturnAttempt={stockReqId,cashReqId};
-   if(isKg){
-    const {error:sErr}=await db.rpc("retail_receive_weight_v19",{
-     p_store:store.id,p_barcode:b.code,p_kg:Number(qty.toFixed(3)),p_reason:"purchase",p_request:stockReqId
-    });
-    if(sErr)throw sErr;
-   }else{
-    const {error:sErr}=await db.rpc("retail_receive_packs_v17",{
-     p_store:store.id,p_barcode:b.code,p_packages:Math.round(qty),p_expected_units:Number(b.units_per_scan||1),p_reason:"purchase",p_request:stockReqId
-    });
-    if(sErr)throw sErr;
-   }
-   if(refundIqd>0){
-    const {error:cErr}=await db.rpc("retail_cash_movement",{
-     p_store:store.id,p_session:shiftSession.id,p_request:cashReqId,
-     p_kind:"cash_out",p_amount:refundIqd,p_note:("گەڕاندنەوەی کاڵا ("+p.name+" × "+qty+"): "+note).slice(0,160)
-    });
-    if(cErr)throw cErr;
-   }
-   itemReturnAttempt=null;
-   await loadInventory();
-   await refreshShift();
-   await refreshReturns();
-   msg("returns-msg","کاڵای «"+p.name+"» گەڕێندرایەوە بۆ کۆگا و "+money(refundIqd)+" لە سندووق تۆمارکرا","success");
-  }catch(err){
-   itemReturnAttempt=null;
-   msg("returns-msg",safe(err),"error");
-  }finally{
-   lock(false);
-  }
+  msg("returns-msg","گەڕاندنەوەی تاکەکاڵا تا بەستنەوەی پارێزراو بە ڕیزی پسووڵە ڕاگیراوە؛ گەڕاندنەوەی تەواوی پسووڵە بەکاربهێنە","error");
  });
  if(!window.supabase||!config?.supabaseUrl||!config?.publishableKey){
    viewPanel("login");msg("login-msg","پەیوەندی Supabase بەردەست نییە","error");return;
@@ -7029,7 +6935,13 @@ async function commitCheckout(){
      p_items:pendingCheckout.items,p_cash_received:pendingCheckout.cash
    };
    if(Number(pendingCheckout.discount)>0)rpcArgs.p_discount=Number(pendingCheckout.discount);
-   const {data,error}=await db.rpc(pendingCheckout.v19?"retail_checkout_weight_v19":pendingCheckout.v16?
+   const customerCheckout=Boolean(pendingCheckout.customerId);
+   if(customerCheckout){
+     rpcArgs.p_customer=pendingCheckout.customerId;
+     rpcArgs.p_paid=Number(pendingCheckout.paidAmount);
+     rpcArgs.p_discount=Number(pendingCheckout.discount||0);
+   }
+   const {data,error}=await db.rpc(customerCheckout?"retail_checkout_customer_v21":pendingCheckout.v19?"retail_checkout_weight_v19":pendingCheckout.v16?
       "retail_checkout_packs_v16":"retail_checkout_cash",rpcArgs);
    if(error)throw error;
    const saleId=data;
@@ -7047,37 +6959,7 @@ async function commitCheckout(){
        .select("receipt_no,total_minor,change_due_minor")
        .eq("store_id",store.id).eq("id",saleId).single();
      const rNo=receipt?.receipt_no?String(receipt.receipt_no).padStart(6,"0"):"";
-     if(checkoutMeta.customerId){
-       if(checkoutMeta.debtAmount>0){
-         if(shiftSession){
-           try{
-             await db.rpc("retail_cash_movement",{
-               p_store:store.id,p_session:shiftSession.id,p_request:crypto.randomUUID(),
-               p_kind:"cash_out",p_amount:checkoutMeta.debtAmount,
-               p_note:("فرۆشتن بە قەرز لەسەر پسووڵەی #"+(rNo||saleId)).slice(0,160)
-             });
-             await refreshShift();
-           }catch(_e){}
-         }
-         await recordCustomerLedgerEntry({
-           customerId:checkoutMeta.customerId,
-           entryType:"debt_sale",
-           amount:checkoutMeta.debtAmount,
-           receiptNo:rNo,
-           saleId,
-           note:checkoutMeta.summaryNote||("فرۆشتن بە قەرز — پسووڵەی #"+(rNo||saleId))
-         });
-       }else{
-         await recordCustomerLedgerEntry({
-           customerId:checkoutMeta.customerId,
-           entryType:"paid_purchase",
-           amount:Number(receipt?.total_minor||checkoutMeta.paidAmount||0),
-           receiptNo:rNo,
-           saleId,
-           note:checkoutMeta.summaryNote||("کڕینی نەقدی — پسووڵەی #"+(rNo||saleId))
-         });
-       }
-     }
+     if(checkoutMeta.customerId)await loadCustomersAndLedger();
      if(!receiptError&&receipt?.receipt_no){
        lastCompletedSale={id:saleId,receipt_no:receipt.receipt_no,total_minor:receipt.total_minor};
        renderLastSaleBar();
@@ -7166,14 +7048,14 @@ $("checkout-form").addEventListener("submit",async e=>{
  // No checkout request UUID is created until every item is verified.
  requestId=crypto.randomUUID();
  const hasKg=cart.some(x=>x.isScale);
- const packs=cart.some(x=>x.mode==="carton"||Boolean(x.scaleLabel)||Boolean(x.isScale))||discount>0;
+ const packs=Boolean(String($("checkout-customer")?.value||""))||cart.some(x=>x.mode==="carton"||Boolean(x.scaleLabel)||Boolean(x.isScale))||discount>0;
  pendingCheckout={id:requestId,
    v16:packs,
    v19:hasKg,
    discount,
    customerId,
    debtAmount:0,
-   paidAmount:total,
+   paidAmount:cash,
    summaryNote,
    items:packs?cart.map(x=>({barcode:x.barcode,quantity:x.qty,
        expected_price_minor:x.price,expected_units:x.isScale?1:x.units})):
@@ -7183,7 +7065,7 @@ $("checkout-form").addEventListener("submit",async e=>{
 });
 $("checkout-to-debt")?.addEventListener("click",async()=>{
  if(!db||!store||busy||!cart.length||pendingCheckout)return;
- if(role==="cashier"&&storeSettings.permCashierCreditSale==="manager_only"){
+ if(!canManage()){
    msg("checkout-msg","فرۆشتن بە قەرز تەنها بۆ بەڕێوەبەر و خاوەنکار ڕێگەپێدراوە","error");
    return;
  }
@@ -7211,7 +7093,7 @@ $("checkout-to-debt")?.addEventListener("click",async()=>{
  const summaryNote=cart.map(x=>x.name+" × "+(x.isScale?Number(x.units).toFixed(3)+"کگم":x.qty)).join("، ").slice(0,150);
  requestId=crypto.randomUUID();
  const hasKg=cart.some(x=>x.isScale);
- const packs=cart.some(x=>x.mode==="carton"||Boolean(x.scaleLabel)||Boolean(x.isScale))||discount>0;
+ const packs=Boolean(String($("checkout-customer")?.value||""))||cart.some(x=>x.mode==="carton"||Boolean(x.scaleLabel)||Boolean(x.isScale))||discount>0;
  pendingCheckout={id:requestId,
    v16:packs,
    v19:hasKg,
@@ -7246,86 +7128,17 @@ function resetCustomerForm(){
 }
 $("cust-cancel-edit")?.addEventListener("click",resetCustomerForm);
 $("customer-form")?.addEventListener("submit",async e=>{
- e.preventDefault();
- if(!store||busy)return;
- const editId=String($("cust-edit-id")?.value||"").trim();
- const name=String($("cust-name")?.value||"").trim();
- const phone=String($("cust-phone")?.value||"").trim();
- const address=String($("cust-address")?.value||"").trim();
- const creditLimit=Math.max(0,Math.round(Number($("cust-credit-limit")?.value||0)));
- const openingDebt=Math.max(0,Math.round(Number($("cust-opening-debt")?.value||0)));
- const note=String($("cust-note")?.value||"").trim();
- if(!name){
-   msg("cust-directory-msg","تکایە ناوی کڕیار بنووسە","error");
-   return;
- }
+ e.preventDefault();if(!store||busy||!canManage())return;
  lock(true);msg("cust-directory-msg","");
  try{
-   if(editId){
-     const existing=customersList.find(c=>c.id===editId);
-     if(!existing)throw new Error("کڕیارەکە نەدۆزرایەوە");
-     existing.name=name;
-     existing.phone=phone;
-     existing.address=address;
-     existing.credit_limit_minor=creditLimit;
-     existing.note=note;
-     existing.updated_at=new Date().toISOString();
-     if(db){
-       try{
-         await db.from("retail_customers").update({
-           name,phone:phone||null,address:address||null,credit_limit_minor:creditLimit,note:note||null,updated_at:existing.updated_at
-         }).eq("store_id",store.id).eq("id",editId);
-       }catch(_e){}
-     }
-     saveLocalCustomers(customersList);
-     populateCustomerSelectors();
-     resetCustomerForm();
-     renderCustomersDirectory();
-     msg("cust-directory-msg","زانیارییەکانی کڕیار «"+name+"» نوێکرایەوە","success");
-   }else{
-     const newCust={
-       id:crypto.randomUUID(),
-       store_id:store.id,
-       name,
-       phone,
-       address,
-       credit_limit_minor:creditLimit,
-       balance_minor:0,
-       due_date:null,
-       note,
-       active:true,
-       created_at:new Date().toISOString(),
-       updated_at:new Date().toISOString()
-     };
-     if(db){
-       try{
-         await db.from("retail_customers").insert({
-           id:newCust.id,store_id:store.id,name,phone:phone||null,address:address||null,
-           credit_limit_minor:creditLimit,balance_minor:0,note:note||null,active:true
-         });
-       }catch(_e){}
-     }
-     customersList.push(newCust);
-     customersList.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ckb"));
-     saveLocalCustomers(customersList);
-     populateCustomerSelectors();
-     if(openingDebt>0){
-       await recordCustomerLedgerEntry({
-         customerId:newCust.id,
-         entryType:"opening_balance",
-         amount:openingDebt,
-         note:"قەرزی سەرەتای کردنەوەی حیساب"+(note?" — "+note:"")
-       });
-     }
-     resetCustomerForm();
-     renderCustomersDirectory();
-     msg("cust-directory-msg","کڕیاری نوێ «"+name+"» بە سەرکەوتوویی تۆمارکرا","success");
-   }
- }catch(err){
-   msg("cust-directory-msg",safe(err),"error");
- }finally{
-   lock(false);
- }
+  await financialRpc("save-customer","retail_save_party_v21",{
+   p_store:store.id,p_kind:"customer",p_party:{id:$("cust-edit-id")?.value||"",name:$("cust-name")?.value.trim()||"",
+    phone:$("cust-phone")?.value||"",address:$("cust-address")?.value||"",credit_limit:Number($("cust-credit-limit")?.value||0),
+    opening_balance:$("cust-edit-id")?.value?0:Number($("cust-opening-debt")?.value||0),note:$("cust-note")?.value||""}
+  });
+  await loadCustomersAndLedger();resetCustomerForm();renderCustomersDirectory();
+  msg("cust-directory-msg","حیسابی کڕیار لە سێرڤەر پاشەکەوت کرا","success");
+ }catch(err){msg("cust-directory-msg",safe(err),"error");}finally{lock(false);}
 });
 $("cust-search")?.addEventListener("input",renderCustomersDirectory);
 $("cust-status-filter")?.addEventListener("change",renderCustomersDirectory);
@@ -7549,15 +7362,6 @@ $("customer-payment-form")?.addEventListener("submit",async e=>{
  }
  lock(true);msg("cust-payments-msg","");
  try{
-   if(method==="cash_drawer"&&shiftSession&&db){
-     const {error:cErr}=await db.rpc("retail_cash_movement",{
-       p_store:store.id,p_session:shiftSession.id,p_request:crypto.randomUUID(),
-       p_kind:"cash_in",p_amount:amount,
-       p_note:("وەرگرتنەوەی قەرزی کڕیار ("+cust.name+"): "+note).slice(0,160)
-     });
-     if(cErr)throw cErr;
-     await refreshShift();
-   }
    const entry=await recordCustomerLedgerEntry({
      customerId,
      entryType:"payment_received",
@@ -7798,87 +7602,17 @@ function resetSupplierForm(){
 }
 $("sup-cancel-edit")?.addEventListener("click",resetSupplierForm);
 $("supplier-form")?.addEventListener("submit",async e=>{
- e.preventDefault();
- if(!store||busy||!canManage())return;
- const editId=String($("sup-edit-id")?.value||"").trim();
- const name=String($("sup-name")?.value||"").trim();
- const company=String($("sup-company")?.value||"").trim();
- const phone=String($("sup-phone")?.value||"").trim();
- const address=String($("sup-address")?.value||"").trim();
- const category=String($("sup-category")?.value||"").trim();
- const openingBal=Math.max(0,Math.round(Number($("sup-opening-balance")?.value||0)));
- const note=String($("sup-note")?.value||"").trim();
- if(!name){
-   msg("sup-directory-msg","تکایە ناوی دابینکەر یان مەندووب بنووسە","error");
-   return;
- }
+ e.preventDefault();if(!store||busy||!canManage())return;
  lock(true);msg("sup-directory-msg","");
  try{
-   if(editId){
-     const existing=suppliersList.find(s=>s.id===editId);
-     if(!existing)throw new Error("دابینکەرەکە نەدۆزرایەوە");
-     existing.name=name;
-     existing.company=company;
-     existing.phone=phone;
-     existing.address=address;
-     existing.category=category;
-     existing.note=note;
-     existing.updated_at=new Date().toISOString();
-     if(db){
-       try{
-         await db.from("retail_suppliers").update({
-           name,company:company||null,phone:phone||null,address:address||null,category:category||null,note:note||null,updated_at:existing.updated_at
-         }).eq("store_id",store.id).eq("id",editId);
-       }catch(_e){}
-     }
-     saveLocalSuppliers(suppliersList);
-     populateSupplierSelectors();
-     resetSupplierForm();
-     renderSuppliersDirectoryView();
-     msg("sup-directory-msg","زانیارییەکانی دابینکەر «"+name+"» نوێکرایەوە","success");
-   }else{
-     const newSup={
-       id:crypto.randomUUID(),
-       store_id:store.id,
-       name,
-       company,
-       phone,
-       address,
-       category,
-       balance_minor:0,
-       note,
-       active:true,
-       created_at:new Date().toISOString(),
-       updated_at:new Date().toISOString()
-     };
-     if(db){
-       try{
-         await db.from("retail_suppliers").insert({
-           id:newSup.id,store_id:store.id,name,company:company||null,phone:phone||null,address:address||null,category:category||null,balance_minor:0,note:note||null,active:true
-         });
-       }catch(_e){}
-     }
-     suppliersList.push(newSup);
-     suppliersList.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ckb"));
-     saveLocalSuppliers(suppliersList);
-     populateSupplierSelectors();
-     if(openingBal>0){
-       await recordSupplierLedgerEntry({
-         supplierId:newSup.id,
-         entryType:"opening_balance",
-         amount:openingBal,
-         note:"قەرزی سەرەتای کردنەوەی حیسابی دابینکەر"+(note?" — "+note:"")
-       });
-     }
-     resetSupplierForm();
-     renderSuppliersDirectoryView();
-     msg("sup-directory-msg","دابینکەری نوێ «"+name+"» بە سەرکەوتوویی تۆمارکرا","success");
-   }
- }catch(err){
-   msg("sup-directory-msg",safe(err),"error");
- }finally{
-   lock(false);
- }
+  await financialRpc("save-supplier","retail_save_party_v21",{
+   p_store:store.id,p_kind:"supplier",p_party:{id:$("sup-edit-id")?.value||"",name:$("sup-name")?.value.trim()||"",
+    company:$("sup-company")?.value||"",phone:$("sup-phone")?.value||"",address:$("sup-address")?.value||"",category:$("sup-category")?.value||"",
+    opening_balance:$("sup-edit-id")?.value?0:Number($("sup-opening-balance")?.value||0),note:$("sup-note")?.value||""}
+  });
+  await loadSuppliersAndPurchasing();resetSupplierForm();renderSuppliersDirectoryView();
+  msg("sup-directory-msg","حیسابی دابینکەر لە سێرڤەر پاشەکەوت کرا","success");
+ }catch(err){msg("sup-directory-msg",safe(err),"error");}finally{lock(false);}
 });
 $("sup-search")?.addEventListener("input",renderSuppliersDirectoryView);
 $("sup-filter")?.addEventListener("change",renderSuppliersDirectoryView);
@@ -7980,88 +7714,19 @@ $("receiving-form")?.addEventListener("submit",async e=>{
    msg("rec-msg","بۆ ڕاکێشانی پارەی وەسڵ لە سندووقی کاشێر، سەرەتا شێفت بکەرەوە یان «نەقد لە قاسەی سەرەکی» هەڵبژێرە","error");
    return;
  }
- const stockNote="وەسڵی کڕین "+invoiceNo+(sup?" ("+sup.name+")":"")+(note?" — "+note:"");
- const stockOk=await performStockAdjustment({
-   productId:p.id,
-   mode:"delta_in",
-   qty,
-   reason:"purchase",
-   note:stockNote,
-   targetMsgId:"rec-msg"
- });
- if(!stockOk)return;
-
- lock(true);
+ lock(true);msg("rec-msg","");
  try{
-   if(paymentMode==="cash_drawer"&&totalCost>0&&shiftSession&&db){
-     const {error:cErr}=await db.rpc("retail_cash_movement",{
-       p_store:store.id,p_session:shiftSession.id,p_request:crypto.randomUUID(),
-       p_kind:"cash_out",p_amount:totalCost,
-       p_note:("کڕینی کاڵا ("+p.name+" — "+invoiceNo+"): "+(sup?sup.name:"نەقدی")).slice(0,160)
-     });
-     if(cErr)throw cErr;
-     await refreshShift();
-   }
-   if(expiryDate){
-     const expRec={
-       id:crypto.randomUUID(),
-       store_id:store.id,
-       product_id:p.id,
-       product_name:p.name,
-       batch_no:invoiceNo,
-       quantity:Number(qty.toFixed(3)),
-       expiry_date:expiryDate,
-       note:"وەرگرتنی کاڵا"+(sup?" لە "+sup.name:""),
-       status:"active",
-       created_at:new Date().toISOString()
-     };
-     try{
-       await db.from("retail_stock_expiries").insert({
-         id:expRec.id,store_id:store.id,product_id:p.id,batch_no:invoiceNo,
-         quantity:expRec.quantity,expiry_date:expiryDate,note:expRec.note,status:"active",actor_id:user?.id||null
-       });
-     }catch(_e){}
-     const locExp=loadLocalExpiries();
-     locExp.push(expRec);
-     saveLocalExpiries(locExp);
-   }
-   await recordSupplierLedgerEntry({
-     supplierId:sup?sup.id:"",
-     entryType:paymentMode==="credit"?"purchase_credit":"purchase_cash",
-     amount:totalCost,
-     invoiceNo,
-     productId:p.id,
-     productName:p.name,
-     quantity:Number(qty.toFixed(3)),
-     unitCost,
-     paymentMethod:paymentMode,
-     note:note||("وەرگرتنی "+qty+" "+(p.base_unit==="kg"?"کگم":"دانە")+" "+p.name),
-     targetMsgId:"rec-msg"
-   });
-   if(poId){
-     const po=purchaseOrdersList.find(x=>x.id===poId);
-     if(po){
-       po.status="received";
-       po.updated_at=new Date().toISOString();
-       saveLocalPurchaseOrders(purchaseOrdersList);
-       if(db){
-         try{
-           await db.from("retail_purchase_orders").update({status:"received",updated_at:po.updated_at}).eq("store_id",store.id).eq("id",po.id);
-         }catch(_e){}
-       }
-     }
-   }
-   if($("rec-po-id"))$("rec-po-id").value="";
-   if($("rec-invoice-no"))$("rec-invoice-no").value="";
-   if($("rec-expiry-date"))$("rec-expiry-date").value="";
-   if($("rec-note"))$("rec-note").value="";
-   renderGoodsReceivingView();
-   msg("rec-msg","وەسڵی "+invoiceNo+" تۆمارکرا: +"+qty+" "+(p.base_unit==="kg"?"کگم":"دانە")+" خرایە سەر کۆگای «"+p.name+"»"+(paymentMode==="credit"&&sup?" و "+money(totalCost)+" خرایە سەر حیسابی «"+sup.name+"»":""),"success");
- }catch(err){
-   msg("rec-msg",safe(err),"error");
- }finally{
-   lock(false);
- }
+  await financialRpc("purchase-receipt","retail_receive_purchase_v21",{
+   p_store:store.id,p_purchase:{product_id:p.id,supplier_id:sup?.id||"",po_id:poId||"",
+    quantity:qty,unit_cost:unitCost,invoice_no:invoiceNo,payment_method:paymentMode,
+    expiry_date:expiryDate||"",note}
+  });
+  e.target.reset();
+  await loadInventory();await loadSuppliersAndPurchasing();await refreshShift();
+  renderGoodsReceivingView();
+  msg("rec-msg","وەسڵی کڕین، کۆگا و حیساب بە یەک مامەڵە تۆمارکران","success");
+ }catch(err){msg("rec-msg",safe(err),"error");}
+ finally{lock(false);}
 });
 $("rec-search")?.addEventListener("input",renderGoodsReceivingView);
 $("rec-supplier-filter")?.addEventListener("change",renderGoodsReceivingView);
@@ -8118,15 +7783,6 @@ $("supplier-payment-form")?.addEventListener("submit",async e=>{
  }
  lock(true);msg("sacc-msg","");
  try{
-   if(entryType==="payment_sent"&&paymentMethod==="cash_drawer"&&shiftSession&&db){
-     const {error:cErr}=await db.rpc("retail_cash_movement",{
-       p_store:store.id,p_session:shiftSession.id,p_request:crypto.randomUUID(),
-       p_kind:"cash_out",p_amount:amount,
-       p_note:("پێدانی پارە بە دابینکەر ("+sup.name+"): "+note).slice(0,160)
-     });
-     if(cErr)throw cErr;
-     await refreshShift();
-   }
    const entry=await recordSupplierLedgerEntry({
      supplierId:sup.id,
      entryType,
@@ -8774,7 +8430,7 @@ $("staff-form").addEventListener("submit",async e=>{
      email:email||"—",
      role:id===store.owner_user_id?"owner":assignedRole,
      active:id===store.owner_user_id?true:isActive,
-     pin_code:pinCode||"—",
+
      note,
      updated_at:new Date().toISOString()
    };
@@ -8785,7 +8441,7 @@ $("staff-form").addEventListener("submit",async e=>{
        await db.from("retail_staff_profiles").upsert({
          store_id:store.id,user_id:id,full_name:fullName,job_title:jobTitle,
          phone:phone||null,email:email||null,role:profileObj.role,active:profileObj.active,
-         pin_code:pinCode||null,note:note||null,actor_id:user?.id||null,updated_at:profileObj.updated_at
+         note:note||null,actor_id:user?.id||null,updated_at:profileObj.updated_at
        },{onConflict:"store_id,user_id"});
      }catch(_e){}
    }
@@ -8936,7 +8592,7 @@ $("sys-backup-json-btn")?.addEventListener("click",()=>{
    exported_at:new Date().toISOString(),
    store:{id:store?.id,name:storeSettings.storeName||store?.name,currency:store?.currency||"IQD"},
    settings:storeSettings,
-   staff_profiles:[...staffProfilesMap.values()],
+   staff_profiles:[...staffProfilesMap.values()].map(({pin_code,...profile})=>profile),
    products,
    barcodes,
    stock_balances:[...balances.entries()].map(([product_id,quantity])=>({product_id,quantity})),
@@ -8953,12 +8609,12 @@ $("sys-backup-json-btn")?.addEventListener("click",()=>{
  const url=URL.createObjectURL(blob);
  const a=document.createElement("a");
  a.href=url;
- a.download="kani_chnar_full_backup_"+new Date().toISOString().slice(0,10)+".json";
+ a.download="kani_chnar_loaded_snapshot_"+new Date().toISOString().slice(0,10)+".json";
  document.body.append(a);
  a.click();
  a.remove();
  URL.revokeObjectURL(url);
- msg("set-sys-msg","فایلی پاشەکەوتی تەواوی سیستەم (Full JSON Backup) بە سەرکەوتوویی دابەزێندرا","success");
+ msg("set-sys-msg","داتای بارکراوی ئەم پەڕەیە هەناردە کرا؛ ئەمە پاشەکەوتی تەواوی داتابەیس نییە","success");
 });
 $("sys-export-summary-csv")?.addEventListener("click",()=>{
  const rows=[

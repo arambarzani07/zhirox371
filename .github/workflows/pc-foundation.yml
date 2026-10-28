@@ -25,6 +25,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install locked database test dependency
+        run: npm ci
+      - name: Verify production upgrade and financial rollback against PostgreSQL WASM
+        run: npm run test:database
       - name: Run foundation, Home-lock and UI safety tests
         run: node --test tests/*.test.mjs
   postgres-concurrency:

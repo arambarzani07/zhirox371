@@ -1,3 +1,15 @@
+-- Upgrade the existing Retail OS V8+ schema. Review against a backup before hosted deployment.
+-- This file is also executed in disposable PostgreSQL integration tests.
+BEGIN;
+ALTER TABLE public.retail_products ADD COLUMN IF NOT EXISTS base_unit text NOT NULL DEFAULT 'unit', ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.retail_stock_events ADD COLUMN IF NOT EXISTS actor_id uuid REFERENCES auth.users(id), ADD COLUMN IF NOT EXISTS request_id uuid, ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.retail_sale_items ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(), ADD COLUMN IF NOT EXISTS base_unit_snapshot text NOT NULL DEFAULT 'unit';
+CREATE OR REPLACE FUNCTION public.retail_is_store_member(p_store uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $member$
+ SELECT retail_internal.has_role(p_store,ARRAY['manager','cashier']);
+$member$;
+REVOKE ALL ON FUNCTION public.retail_is_store_member(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.retail_is_store_member(uuid) TO authenticated;
 -- ==============================================================================
 -- سوپەرمارکێتی کانی چنار — Kani Chinar Supermarket
 -- V19 Production Complete Migration & System Upgrade Script
@@ -8,6 +20,19 @@
 -- ٣. دروستکردنی ئیندێکسە خێراکان بۆ زیاتر لە ١٥٠ هەزار بارکۆد
 -- ٤. فانکشنەکانی تۆمارکردن، دەستکاری، گەڕاندنەوەی فرۆش، پەڕەبەندی و بارکۆدی تەرازوو
 -- ==============================================================================
+
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS refunded boolean NOT NULL DEFAULT false;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS discount_minor bigint NOT NULL DEFAULT 0;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS return_request_id uuid;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS return_session_id uuid;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS return_actor_id uuid;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS refunded_at timestamptz;
+ALTER TABLE public.retail_sales ADD COLUMN IF NOT EXISTS restored_units numeric(14,3);
+
+CREATE UNIQUE INDEX IF NOT EXISTS retail_sales_store_return_request_idx
+  ON public.retail_sales(store_id, return_request_id)
+  WHERE return_request_id IS NOT NULL;
+
 
 -- ١. نوێکردنەوەی خشتەی کاڵاکان و بارکۆدەکان
 ALTER TABLE public.retail_products
@@ -310,16 +335,16 @@ CREATE OR REPLACE FUNCTION public.retail_checkout_packs_v16(
 AS $$
 DECLARE
   v_actor uuid := (select auth.uid());
-  v_sale uuid; v_prior_status text; v_prior_payload jsonb; v_prior_actor uuid;
-  v_request_payload jsonb; v_cash_session uuid;
-  v_entry jsonb; v_barcode text; v_qty bigint; v_expected_price bigint; v_expected_units numeric;
-  v_product uuid; v_name text; v_pack_type text; v_pack_units integer; v_pack_price bigint;
-  v_pactive boolean; v_currency text; v_unit_kg_price bigint;
-  v_plu_raw text; v_weight_grams integer; v_weight_kg numeric(14,3); v_plu_count integer;
-  v_line_base_units numeric(14,3); v_snapshot_name text;
+  v_sale uuid;v_prior_status text;v_prior_payload jsonb;v_prior_actor uuid;
+  v_request_payload jsonb;v_cash_session uuid;
+  v_entry jsonb;v_barcode text;v_qty bigint;v_expected_price bigint;v_expected_units numeric;
+  v_product uuid;v_name text;v_pack_type text;v_pack_units integer;v_pack_price bigint;
+  v_pactive boolean;v_currency text;v_unit_kg_price bigint;
+  v_plu_raw text;v_weight_grams integer;v_weight_kg numeric(14,3);v_plu_count integer;
+  v_line_base_units numeric(14,3);v_snapshot_name text;
   v_discount bigint := greatest(coalesce(p_discount, 0), 0);
-  v_need jsonb := '{}'::jsonb; v_old_units numeric; v_total numeric := 0; v_net_total numeric := 0;
-  v_stock numeric; v_record record; v_receipt_number bigint;
+  v_need jsonb := '{}'::jsonb;v_old_units numeric;v_total numeric := 0;v_net_total numeric := 0;
+  v_stock numeric;v_record record;v_receipt_number bigint;
 BEGIN
   IF v_actor IS NULL OR NOT retail_internal.has_role(p_store,array['manager','cashier'])
   THEN RAISE EXCEPTION 'Cashier permission required' USING errcode='42501';END IF;
@@ -341,6 +366,15 @@ BEGIN
      OR jsonb_typeof(v_entry->'expected_price_minor')<>'number'
      OR jsonb_typeof(v_entry->'expected_units')<>'number'
     THEN RAISE EXCEPTION 'Invalid barcode line' USING errcode='22023';END IF;
+    IF (v_entry->>'quantity')!~'^[0-9]{1,6}$'
+      OR (v_entry->>'expected_price_minor')!~'^[0-9]{1,10}$'
+      OR (v_entry->>'expected_units')!~'^[0-9]{1,6}(\.[0-9]{1,3})?$'
+    THEN RAISE EXCEPTION 'Invalid quantity or expected price' USING errcode='22023';END IF;
+    IF (v_entry->>'quantity')::bigint NOT BETWEEN 1 AND 100000
+      OR (v_entry->>'expected_price_minor')::bigint>999999999
+      OR (v_entry->>'expected_units')::numeric<=0
+      OR (v_entry->>'expected_units')::numeric>100000
+    THEN RAISE EXCEPTION 'Invalid quantity or expected price' USING errcode='22023';END IF;
   END LOOP;
 
   IF v_discount > 0 THEN
@@ -370,11 +404,13 @@ BEGIN
 
   FOR v_entry IN SELECT value FROM jsonb_array_elements(p_items)
   LOOP
+    v_weight_kg := NULL;
     v_barcode := v_entry->>'barcode';
     v_qty := (v_entry->>'quantity')::bigint;
     v_expected_price := (v_entry->>'expected_price_minor')::bigint;
     v_expected_units := (v_entry->>'expected_units')::numeric;
 
+    -- Step 1: Check registered ordinary unit/carton barcodes FIRST
     SELECT b.product_id,b.unit_type,b.units_per_scan,p.name,p.active,p.currency,
      CASE WHEN b.unit_type='carton' THEN c.sale_price_minor ELSE p.price_minor END
     INTO v_product,v_pack_type,v_pack_units,v_name,v_pactive,v_currency,v_pack_price
@@ -385,7 +421,8 @@ BEGIN
     FOR SHARE OF b,p;
 
     IF FOUND THEN
-      IF NOT v_pactive OR v_currency<>'IQD'
+      IF (SELECT base_unit FROM public.retail_products WHERE id=v_product AND store_id=p_store)<>'unit'
+         OR NOT v_pactive OR v_currency<>'IQD'
          OR v_pack_type NOT IN ('unit','carton')
          OR v_pack_units IS NULL OR v_pack_units<1
          OR v_pack_price IS NULL
@@ -395,31 +432,40 @@ BEGIN
       v_line_base_units := (v_qty * v_pack_units)::numeric(14,3);
       v_snapshot_name := v_name || CASE WHEN v_pack_type='carton' THEN ' (کارتۆن)' ELSE ' (دانە)' END;
     ELSE
+      -- Step 2: Verified scale barcode format ONLY (Prefix 27 + 5-digit PLU + 5-digit weight in grams + EAN-13 checksum)
       IF v_barcode !~ '^27[0-9]{11}$' OR NOT retail_internal.is_valid_ean13(v_barcode) THEN
         RAISE EXCEPTION 'Barcode price/pack changed or inactive' USING errcode='22023';
       END IF;
       v_plu_raw := substring(v_barcode FROM 3 FOR 5);
       v_weight_grams := substring(v_barcode FROM 8 FOR 5)::integer;
-      IF v_plu_raw = '00000' OR v_weight_grams <= 0 THEN
+      IF v_plu_raw = '00000' OR v_weight_grams <= 0 OR v_qty<>1 THEN
         RAISE EXCEPTION 'Barcode price/pack changed or inactive' USING errcode='22023';
       END IF;
 
       SELECT count(*)
       INTO v_plu_count
       FROM public.retail_products p
-      WHERE p.store_id = p_store AND p.active = true AND p.currency = 'IQD'
-        AND p.price_minor IS NOT NULL AND p.price_minor > 0
+      WHERE p.store_id = p_store
+        AND p.active = true
+        AND p.base_unit = 'kg'
+        AND p.currency = 'IQD'
+        AND p.price_minor IS NOT NULL
+        AND p.price_minor > 0
+        AND p.plu IS NOT NULL
         AND (
-          (p.plu IS NOT NULL AND (
-            btrim(p.plu) = v_plu_raw
-            OR (btrim(p.plu) ~ '^[0-9]{1,5}$' AND lpad(btrim(p.plu), 5, '0') = v_plu_raw)
-            OR btrim(p.plu) = ('27' || v_plu_raw)
-          ))
-          OR EXISTS (
+          btrim(p.plu) = v_plu_raw
+          OR (btrim(p.plu) ~ '^[0-9]{1,5}$' AND lpad(btrim(p.plu), 5, '0') = v_plu_raw)
+        )
+        AND (
+          EXISTS (
             SELECT 1 FROM public.retail_barcodes bu
             WHERE bu.store_id = p.store_id AND bu.product_id = p.id
-              AND (bu.code = ('27' || v_plu_raw) OR bu.code = v_plu_raw OR bu.code = trim(leading '0' from v_plu_raw))
-              AND bu.active = true
+              AND bu.unit_type = 'unit' AND bu.active = true AND bu.units_per_scan = 1
+          )
+          OR NOT EXISTS (
+            SELECT 1 FROM public.retail_barcodes bc
+            WHERE bc.store_id = p.store_id AND bc.product_id = p.id
+              AND bc.unit_type = 'carton' AND bc.active = true
           )
         );
 
@@ -430,20 +476,16 @@ BEGIN
       SELECT p.id, p.name, p.active, p.currency, p.price_minor
       INTO v_product, v_name, v_pactive, v_currency, v_unit_kg_price
       FROM public.retail_products p
-      WHERE p.store_id = p_store AND p.active = true AND p.currency = 'IQD'
-        AND p.price_minor IS NOT NULL AND p.price_minor > 0
+      WHERE p.store_id = p_store
+        AND p.active = true
+        AND p.base_unit = 'kg'
+        AND p.currency = 'IQD'
+        AND p.price_minor IS NOT NULL
+        AND p.price_minor > 0
+        AND p.plu IS NOT NULL
         AND (
-          (p.plu IS NOT NULL AND (
-            btrim(p.plu) = v_plu_raw
-            OR (btrim(p.plu) ~ '^[0-9]{1,5}$' AND lpad(btrim(p.plu), 5, '0') = v_plu_raw)
-            OR btrim(p.plu) = ('27' || v_plu_raw)
-          ))
-          OR EXISTS (
-            SELECT 1 FROM public.retail_barcodes bu
-            WHERE bu.store_id = p.store_id AND bu.product_id = p.id
-              AND (bu.code = ('27' || v_plu_raw) OR bu.code = v_plu_raw OR bu.code = trim(leading '0' from v_plu_raw))
-              AND bu.active = true
-          )
+          btrim(p.plu) = v_plu_raw
+          OR (btrim(p.plu) ~ '^[0-9]{1,5}$' AND lpad(btrim(p.plu), 5, '0') = v_plu_raw)
         )
       FOR SHARE OF p;
 
@@ -452,29 +494,39 @@ BEGIN
       v_pack_type := 'unit';
       v_pack_units := 1;
 
-      IF v_pack_price <= 0 OR v_expected_price <> v_pack_price
+      IF v_pack_price <= 0
+         OR v_expected_price <> v_pack_price
          OR (v_expected_units <> 1 AND v_expected_units <> v_weight_kg)
-      THEN RAISE EXCEPTION 'Barcode price/pack changed or inactive' USING errcode='22023';END IF;
+      THEN
+        RAISE EXCEPTION 'Barcode price/pack changed or inactive' USING errcode='22023';
+      END IF;
 
       v_line_base_units := round(v_qty::numeric * v_weight_kg, 3);
       v_snapshot_name := v_name || ' (' || to_char(v_weight_kg, 'FM999990.000') || ' کگم)';
     END IF;
 
     v_total := v_total + v_qty * v_pack_price;
+    IF v_total > 9999999999999 THEN RAISE EXCEPTION 'Sale total too large' USING errcode='22023';END IF;
     v_old_units := coalesce((v_need->>v_product::text)::numeric, 0);
     v_need := jsonb_set(v_need, array[v_product::text], to_jsonb(round(v_old_units + v_line_base_units, 3)));
 
     INSERT INTO public.retail_sale_items(
      store_id,sale_id,product_id,quantity,unit_price_minor,product_name_snapshot,
-     package_type,package_barcode,units_per_package,base_units)
-    VALUES(p_store,v_sale,v_product,v_qty,v_pack_price,
-      v_snapshot_name,v_pack_type,v_barcode,v_pack_units,v_line_base_units);
+     package_type,package_barcode,units_per_package,base_units,base_unit_snapshot)
+    VALUES(p_store,v_sale,v_product,CASE WHEN v_weight_kg IS NOT NULL THEN v_line_base_units ELSE v_qty END,
+      CASE WHEN v_weight_kg IS NOT NULL THEN v_unit_kg_price ELSE v_pack_price END,
+      v_snapshot_name,v_pack_type,v_barcode,v_pack_units,v_line_base_units,CASE WHEN v_weight_kg IS NOT NULL THEN 'kg' ELSE 'unit' END);
   END LOOP;
 
-  IF v_discount > v_total THEN RAISE EXCEPTION 'Barcode price/pack changed or inactive' USING errcode='22023';END IF;
+  IF v_discount > v_total THEN
+    RAISE EXCEPTION 'Barcode price/pack changed or inactive' USING errcode='22023';
+  END IF;
   v_net_total := v_total - v_discount;
-  IF p_cash_received < v_net_total THEN RAISE EXCEPTION 'Cash amount is below total' USING errcode='22023';END IF;
+  IF p_cash_received < v_net_total THEN
+    RAISE EXCEPTION 'Cash amount is below total' USING errcode='22023';
+  END IF;
 
+  -- Sorted product-level stock locks: unit, carton, and fractional scale items share one stock balance.
   FOR v_record IN SELECT key AS product_id, value::numeric(14,3) AS units
                   FROM jsonb_each_text(v_need) ORDER BY key
   LOOP
@@ -505,9 +557,9 @@ BEGIN
   RETURN v_sale;
 END;
 $$;
+REVOKE ALL ON FUNCTION public.retail_checkout_packs_v16(uuid,uuid,jsonb,bigint,bigint) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.retail_checkout_packs_v16(uuid,uuid,jsonb,bigint,bigint) TO authenticated;
 
--- ٩. فانکشنی گەڕاندنەوەی فرۆشتن (V19 Return Sale)
 CREATE OR REPLACE FUNCTION public.retail_return_sale_v19(
   p_store uuid,
   p_sale uuid,
@@ -517,48 +569,167 @@ CREATE OR REPLACE FUNCTION public.retail_return_sale_v19(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $$
 DECLARE
-  v_actor uuid := (select auth.uid());
+  v_actor uuid := (SELECT auth.uid());
+  v_existing record;
   v_sale record;
   v_item record;
+  v_restored numeric(14,3) := 0;
+  v_base numeric(14,3) := 0;
+  v_shift_status text;
+  v_shift_cashier uuid;
 BEGIN
-  IF v_actor IS NULL THEN RAISE EXCEPTION 'Not authenticated' USING errcode = '42501'; END IF;
-
-  SELECT * INTO v_sale
-  FROM public.retail_sales
-  WHERE id = p_sale AND store_id = p_store FOR UPDATE;
-
-  IF NOT FOUND THEN RAISE EXCEPTION 'Sale not found' USING errcode = '22023'; END IF;
-  IF v_sale.refunded THEN
-    RETURN jsonb_build_object('success', true, 'sale_id', p_sale, 'receipt_no', v_sale.receipt_no, 'already_refunded', true);
+  IF v_actor IS NULL OR NOT retail_internal.has_role(p_store, array['manager','cashier']) THEN
+    RAISE EXCEPTION 'Cashier permission required' USING errcode = '42501';
+  END IF;
+  IF p_store IS NULL OR p_sale IS NULL OR p_session IS NULL OR p_request IS NULL THEN
+    RAISE EXCEPTION 'Invalid sale return request' USING errcode = '22023';
   END IF;
 
-  -- گەڕاندنەوەی بڕی کاڵاکان بۆ ناو کۆگا
-  FOR v_item IN
-    SELECT product_id, base_units, quantity
-    FROM public.retail_sale_items
-    WHERE sale_id = p_sale AND store_id = p_store
-  LOOP
-    UPDATE public.retail_stock_balances
-    SET quantity = quantity + coalesce(v_item.base_units, v_item.quantity::numeric),
-        updated_at = now()
-    WHERE store_id = p_store AND product_id = v_item.product_id;
+  -- Check completed return request BEFORE locking the active shift so an ambiguous
+  -- network retry succeeds idempotently even if the shift was subsequently closed.
+  SELECT id, receipt_no, total_minor, status, refunded, return_request_id, return_session_id, return_actor_id, restored_units
+  INTO v_existing
+  FROM public.retail_sales
+  WHERE store_id = p_store AND return_request_id = p_request;
 
-    INSERT INTO public.retail_stock_events(
-      store_id, product_id, delta, reason, actor_id, sale_id, request_id
-    ) VALUES (
-      p_store, v_item.product_id, coalesce(v_item.base_units, v_item.quantity::numeric),
-      'sale_return', v_actor, p_sale, p_request
+  IF FOUND THEN
+    IF v_existing.id IS DISTINCT FROM p_sale
+       OR v_existing.return_session_id IS DISTINCT FROM p_session
+       OR v_existing.return_actor_id IS DISTINCT FROM v_actor
+    THEN
+      RAISE EXCEPTION 'Return request reused with changed actor or payload' USING errcode = '23505';
+    END IF;
+    RETURN jsonb_build_object(
+      'sale_id', v_existing.id,
+      'receipt_no', v_existing.receipt_no,
+      'refunded_minor', v_existing.total_minor,
+      'restored_units', coalesce(v_existing.restored_units, 0),
+      'request_id', p_request,
+      'idempotent', true
     );
+  END IF;
+
+  SELECT id, receipt_no, total_minor, status, refunded, return_request_id, return_session_id, return_actor_id, restored_units
+  INTO v_sale
+  FROM public.retail_sales
+  WHERE store_id = p_store AND id = p_sale
+  FOR UPDATE;
+
+  IF NOT FOUND OR v_sale.status <> 'posted' THEN
+    RAISE EXCEPTION 'Receipt cannot be refunded' USING errcode = '22023';
+  END IF;
+
+  -- Re-check after acquiring row lock on retail_sales to serialize concurrent identical retries.
+  IF v_sale.refunded THEN
+    IF v_sale.return_request_id = p_request THEN
+      IF v_sale.return_session_id IS DISTINCT FROM p_session
+         OR v_sale.return_actor_id IS DISTINCT FROM v_actor
+      THEN
+        RAISE EXCEPTION 'Return request reused with changed actor or payload' USING errcode = '23505';
+      END IF;
+      RETURN jsonb_build_object(
+        'sale_id', v_sale.id,
+        'receipt_no', v_sale.receipt_no,
+        'refunded_minor', v_sale.total_minor,
+        'restored_units', coalesce(v_sale.restored_units, 0),
+        'request_id', p_request,
+        'idempotent', true
+      );
+    END IF;
+    RAISE EXCEPTION 'Receipt cannot be refunded' USING errcode = '22023';
+  END IF;
+
+  -- Prevent hijacking a pre-existing unrelated cash movement UUID for a new sale return.
+  IF EXISTS (
+    SELECT 1 FROM public.retail_cash_movements
+    WHERE store_id = p_store AND request_id = p_request
+  ) THEN
+    RAISE EXCEPTION 'Return request reused with changed actor or payload' USING errcode = '23505';
+  END IF;
+
+  IF v_sale.total_minor > 0 THEN
+    PERFORM public.retail_cash_movement(
+      p_store,
+      p_session,
+      p_request,
+      'cash_out',
+      v_sale.total_minor,
+      'گەڕاندنەوەی پسووڵە #' || lpad(v_sale.receipt_no::text, 6, '0')
+    );
+  ELSE
+    SELECT status, cashier_id INTO v_shift_status, v_shift_cashier
+    FROM public.retail_cash_sessions
+    WHERE id = p_session AND store_id = p_store
+    FOR UPDATE;
+    IF NOT FOUND OR v_shift_status <> 'open' OR v_shift_cashier <> v_actor THEN
+      RAISE EXCEPTION 'Shift not open for user' USING errcode = '42501';
+    END IF;
+  END IF;
+
+  -- Restore stock in deterministic product_id order and record an immutable,
+  -- correlated positive stock movement in public.retail_stock_events.
+  FOR v_item IN
+    SELECT
+      product_id,
+      round(sum(coalesce(base_units, quantity * coalesce(units_per_package, 1)))::numeric, 3) AS units_to_restore
+    FROM public.retail_sale_items
+    WHERE store_id = p_store AND sale_id = p_sale
+    GROUP BY product_id
+    ORDER BY product_id
+  LOOP
+    v_base := round(v_item.units_to_restore, 3);
+    IF v_base <= 0 THEN
+      RAISE EXCEPTION 'Invalid sale item units for return' USING errcode = '22023';
+    END IF;
+    INSERT INTO public.retail_stock_balances(store_id, product_id, quantity)
+    VALUES (p_store, v_item.product_id, v_base)
+    ON CONFLICT (store_id, product_id)
+    DO UPDATE SET
+      quantity = round(public.retail_stock_balances.quantity + EXCLUDED.quantity, 3),
+      updated_at = now();
+
+    INSERT INTO public.retail_stock_events(store_id, product_id, delta, reason, sale_id)
+    VALUES (p_store, v_item.product_id, v_base, 'sale_return', p_sale);
+
+    v_restored := round(v_restored + v_base, 3);
   END LOOP;
 
-  -- نوێکردنەوەی دۆخی پسوولە
-  UPDATE public.retail_sales
-  SET refunded = true, refund_request_id = p_request
-  WHERE id = p_sale AND store_id = p_store;
+  IF v_restored <= 0 THEN
+    RAISE EXCEPTION 'Receipt cannot be refunded' USING errcode = '22023';
+  END IF;
 
-  RETURN jsonb_build_object('success', true, 'sale_id', p_sale, 'receipt_no', v_sale.receipt_no);
+  UPDATE public.retail_sales
+  SET refunded = true,
+      return_request_id = p_request,
+      return_session_id = p_session,
+      return_actor_id = v_actor,
+      refunded_at = now(),
+      restored_units = v_restored
+  WHERE store_id = p_store AND id = p_sale;
+
+  INSERT INTO public.retail_audit_events(store_id, actor_id, subject_id, action, details)
+  VALUES (
+    p_store, v_actor, p_sale, 'sale.return_v19',
+    jsonb_build_object(
+      'receipt_no', v_sale.receipt_no,
+      'refunded_minor', v_sale.total_minor,
+      'restored_units', v_restored,
+      'request_id', p_request,
+      'session_id', p_session
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'sale_id', v_sale.id,
+    'receipt_no', v_sale.receipt_no,
+    'refunded_minor', v_sale.total_minor,
+    'restored_units', v_restored,
+    'request_id', p_request,
+    'idempotent', false
+  );
 END;
 $$;
+REVOKE ALL ON FUNCTION public.retail_return_sale_v19(uuid, uuid, uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.retail_return_sale_v19(uuid, uuid, uuid, uuid) TO authenticated;
 
 -- ١٠. فانکشنەکانی دەستکاریکردنی کاڵا (V15 Product Snapshot & Editor)
@@ -604,12 +775,6 @@ BEGIN
 END;
 $$;
 
--- Overload for reverse parameter ordering
-CREATE OR REPLACE FUNCTION public.retail_product_snapshot_v15(p_product_id uuid, p_store_id uuid)
-RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
-AS $$
-  SELECT public.retail_product_snapshot_v15(p_store_id, p_product_id);
-$$;
 
 CREATE OR REPLACE FUNCTION public.retail_product_history_v15(p_store_id uuid, p_product_id uuid)
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
@@ -627,11 +792,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.retail_product_history_v15(p_product_id uuid, p_store_id uuid)
-RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
-AS $$
-  SELECT public.retail_product_history_v15(p_store_id, p_product_id);
-$$;
 
 CREATE OR REPLACE FUNCTION public.retail_update_product_v15(
  p_store_id uuid, p_product_id uuid, p_expected_version integer, p_catalog jsonb)
@@ -789,11 +949,11 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.retail_product_snapshot_v15(uuid, uuid) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.retail_product_snapshot_v15(uuid, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.retail_product_snapshot_v15(uuid, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.retail_product_history_v15(uuid, uuid) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.retail_product_history_v15(uuid, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.retail_product_history_v15(uuid, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.retail_update_product_v15(uuid, uuid, integer, jsonb) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.retail_update_product_v15(uuid, uuid, integer, jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.retail_update_product_v15(uuid, uuid, integer, jsonb) TO service_role;
 
 -- ١١. فانکشنی وەرگرتنی زانیاری کاڵا و گۆڕینی یەکە (V19 Snapshot & Base Unit)
@@ -1007,6 +1167,14 @@ CREATE TABLE IF NOT EXISTS public.retail_customers(
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.retail_customers
+ ADD COLUMN IF NOT EXISTS address text,
+ ADD COLUMN IF NOT EXISTS balance_minor bigint NOT NULL DEFAULT 0,
+ ADD COLUMN IF NOT EXISTS due_date date,
+ ADD COLUMN IF NOT EXISTS note text,
+ ADD COLUMN IF NOT EXISTS active boolean NOT NULL DEFAULT true,
+ ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(),
+ ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE public.retail_customers ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS retail_customers_store_active_idx ON public.retail_customers(store_id, active, name);
 DROP POLICY IF EXISTS retail_customers_policy ON public.retail_customers;
@@ -1154,7 +1322,7 @@ CREATE TABLE IF NOT EXISTS public.retail_suppliers(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id uuid NOT NULL REFERENCES public.retail_stores(id),
   name text NOT NULL CHECK (length(btrim(name)) BETWEEN 1 AND 140),
-  company_name text,
+  company text,
   phone text,
   address text,
   category text DEFAULT 'گشتی',
@@ -1177,7 +1345,8 @@ CREATE TABLE IF NOT EXISTS public.retail_purchase_orders(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id uuid NOT NULL REFERENCES public.retail_stores(id),
   supplier_id uuid REFERENCES public.retail_suppliers(id) ON DELETE SET NULL,
-  order_no text NOT NULL,
+  po_no text NOT NULL,
+  supplier_name text,
   product_id uuid REFERENCES public.retail_products(id) ON DELETE SET NULL,
   product_name text NOT NULL,
   quantity numeric(14,3) NOT NULL CHECK (quantity > 0),
@@ -1208,6 +1377,9 @@ CREATE TABLE IF NOT EXISTS public.retail_supplier_ledger(
   delta_minor bigint NOT NULL DEFAULT 0,
   balance_after_minor bigint NOT NULL DEFAULT 0,
   invoice_no text,
+  supplier_name text,
+  product_name text,
+  unit_cost_minor bigint CHECK (unit_cost_minor >= 0),
   product_id uuid REFERENCES public.retail_products(id) ON DELETE SET NULL,
   quantity numeric(14,3),
   payment_method text,
@@ -1577,3 +1749,579 @@ GRANT SELECT, INSERT, UPDATE ON public.retail_products TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.retail_barcodes TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.retail_product_cartons TO authenticated;
 NOTIFY pgrst, 'reload schema';
+
+CREATE OR REPLACE FUNCTION public.retail_catalog_page_v18(
+  p_store uuid,
+  p_search text DEFAULT '',
+  p_offset integer DEFAULT 0,
+  p_limit integer DEFAULT 50,
+  p_stock_filter text DEFAULT 'all'
+) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $$
+DECLARE
+  v_q text := lower(btrim(coalesce(p_search, '')));
+  v_sf text := coalesce(p_stock_filter, 'all');
+  v_off integer := greatest(coalesce(p_offset, 0), 0);
+  v_lim integer := least(greatest(coalesce(p_limit, 50), 1), 100);
+  v_total bigint := 0;
+  v_items jsonb := '[]'::jsonb;
+BEGIN
+  IF (SELECT auth.uid()) IS NULL OR NOT retail_internal.has_role(p_store, array['manager','cashier']) THEN
+    RAISE EXCEPTION 'Catalog permission required' USING errcode = '42501';
+  END IF;
+
+  SELECT count(*)
+  INTO v_total
+  FROM public.retail_products p
+  LEFT JOIN public.retail_stock_balances s ON s.store_id = p.store_id AND s.product_id = p.id
+  WHERE p.store_id = p_store
+    AND (
+      v_sf = 'all'
+      OR (v_sf = 'low' AND coalesce(s.quantity, 0) <= 5)
+      OR (v_sf = 'out' AND coalesce(s.quantity, 0) <= 0)
+    )
+    AND (
+      v_q = ''
+      OR lower(p.name) LIKE '%' || v_q || '%'
+      OR (p.sku IS NOT NULL AND lower(p.sku) LIKE '%' || v_q || '%')
+      OR (p.plu IS NOT NULL AND lower(p.plu) LIKE '%' || v_q || '%')
+      OR EXISTS (
+        SELECT 1 FROM public.retail_barcodes b
+        WHERE b.store_id = p.store_id
+          AND b.product_id = p.id
+          AND b.active = true
+          AND lower(b.code) LIKE '%' || v_q || '%'
+      )
+    );
+
+  SELECT coalesce(jsonb_agg(row_to_json(row_item)::jsonb), '[]'::jsonb)
+  INTO v_items
+  FROM (
+    SELECT
+      p.id,
+      p.base_unit,
+      p.name,
+      p.sku,
+      p.plu,
+      p.price_minor,
+      CASE
+        WHEN c.product_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM public.retail_barcodes bu
+          WHERE bu.store_id = p.store_id AND bu.product_id = p.id AND bu.unit_type = 'unit' AND bu.active = true
+        ) THEN 'both'
+        WHEN c.product_id IS NOT NULL THEN 'carton'
+        ELSE 'unit'
+      END AS sale_mode,
+      p.active,
+      p.currency,
+      c.carton_name,
+      c.units_per_carton,
+      c.sale_price_minor AS carton_price_minor,
+      coalesce(s.quantity, 0) AS stock_quantity,
+      coalesce((
+        SELECT jsonb_agg(b.code ORDER BY b.unit_type DESC, b.code)
+        FROM public.retail_barcodes b
+        WHERE b.store_id = p.store_id AND b.product_id = p.id AND b.active = true
+      ), '[]'::jsonb) AS barcodes,
+      coalesce((
+        SELECT jsonb_agg(jsonb_build_object(
+          'code', b.code,
+          'unit_type', b.unit_type,
+          'units_per_scan', b.units_per_scan,
+          'price_minor', CASE WHEN b.unit_type = 'carton' THEN c.sale_price_minor ELSE p.price_minor END
+        ) ORDER BY b.code)
+        FROM public.retail_barcodes b
+        WHERE b.store_id = p.store_id AND b.product_id = p.id AND b.active = true
+      ), '[]'::jsonb) AS barcode_details
+    FROM public.retail_products p
+    LEFT JOIN public.retail_product_cartons c ON c.store_id = p.store_id AND c.product_id = p.id
+    LEFT JOIN public.retail_stock_balances s ON s.store_id = p.store_id AND s.product_id = p.id
+    WHERE p.store_id = p_store
+      AND (
+        v_sf = 'all'
+        OR (v_sf = 'low' AND coalesce(s.quantity, 0) <= 5)
+        OR (v_sf = 'out' AND coalesce(s.quantity, 0) <= 0)
+      )
+      AND (
+        v_q = ''
+        OR lower(p.name) LIKE '%' || v_q || '%'
+        OR (p.sku IS NOT NULL AND lower(p.sku) LIKE '%' || v_q || '%')
+        OR (p.plu IS NOT NULL AND lower(p.plu) LIKE '%' || v_q || '%')
+        OR EXISTS (
+          SELECT 1 FROM public.retail_barcodes b
+          WHERE b.store_id = p.store_id
+            AND b.product_id = p.id
+            AND b.active = true
+            AND lower(b.code) LIKE '%' || v_q || '%'
+        )
+      )
+    ORDER BY p.created_at DESC, p.id ASC
+    OFFSET v_off LIMIT v_lim
+  ) row_item;
+
+  RETURN jsonb_build_object(
+    'total_count', v_total,
+    'offset', v_off,
+    'limit', v_lim,
+    'items', v_items
+  );
+END;
+$$;
+REVOKE ALL ON FUNCTION public.retail_catalog_page_v18(uuid, text, integer, integer, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.retail_catalog_page_v18(uuid, text, integer, integer, text) TO authenticated;
+
+-- 4. Paginated Barcode Directory & Inspection RPC across 150,000+ barcodes
+CREATE OR REPLACE FUNCTION public.retail_barcode_page_v18(
+  p_store uuid,
+  p_search text DEFAULT '',
+  p_offset integer DEFAULT 0,
+  p_limit integer DEFAULT 50
+) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $$
+DECLARE
+  v_q text := lower(btrim(coalesce(p_search, '')));
+  v_off integer := greatest(coalesce(p_offset, 0), 0);
+  v_lim integer := least(greatest(coalesce(p_limit, 50), 1), 100);
+  v_total bigint := 0;
+  v_items jsonb := '[]'::jsonb;
+BEGIN
+  IF (SELECT auth.uid()) IS NULL OR NOT retail_internal.has_role(p_store, array['manager','cashier']) THEN
+    RAISE EXCEPTION 'Barcode directory permission required' USING errcode = '42501';
+  END IF;
+
+  SELECT count(*)
+  INTO v_total
+  FROM public.retail_barcodes b
+  JOIN public.retail_products p ON p.store_id = b.store_id AND p.id = b.product_id
+  WHERE b.store_id = p_store
+    AND b.active = true
+    AND (
+      v_q = ''
+      OR lower(b.code) LIKE '%' || v_q || '%'
+      OR lower(p.name) LIKE '%' || v_q || '%'
+      OR (p.sku IS NOT NULL AND lower(p.sku) LIKE '%' || v_q || '%')
+      OR (p.plu IS NOT NULL AND lower(p.plu) LIKE '%' || v_q || '%')
+    );
+
+  SELECT coalesce(jsonb_agg(row_to_json(row_b)::jsonb), '[]'::jsonb)
+  INTO v_items
+  FROM (
+    SELECT
+      b.code,
+      b.product_id,
+      p.name AS product_name,
+      b.unit_type,
+      b.units_per_scan,
+      CASE WHEN b.unit_type = 'carton' THEN c.sale_price_minor ELSE p.price_minor END AS price_minor,
+      (
+        b.code = coalesce(p.unit_primary_barcode, (
+          SELECT min(bu.code) FROM public.retail_barcodes bu
+          WHERE bu.store_id = p.store_id AND bu.product_id = p.id AND bu.unit_type = 'unit' AND bu.active = true
+        ))
+        OR b.code = c.barcode
+      ) AS is_primary,
+      b.active,
+      p.active AS product_active
+    FROM public.retail_barcodes b
+    JOIN public.retail_products p ON p.store_id = b.store_id AND p.id = b.product_id
+    LEFT JOIN public.retail_product_cartons c ON c.store_id = b.store_id AND c.product_id = b.product_id
+    WHERE b.store_id = p_store
+      AND b.active = true
+      AND (
+        v_q = ''
+        OR lower(b.code) LIKE '%' || v_q || '%'
+        OR lower(p.name) LIKE '%' || v_q || '%'
+        OR (p.sku IS NOT NULL AND lower(p.sku) LIKE '%' || v_q || '%')
+        OR (p.plu IS NOT NULL AND lower(p.plu) LIKE '%' || v_q || '%')
+      )
+    ORDER BY b.code ASC
+    OFFSET v_off LIMIT v_lim
+  ) row_b;
+
+  RETURN jsonb_build_object(
+    'total_count', v_total,
+    'offset', v_off,
+    'limit', v_lim,
+    'items', v_items
+  );
+END;
+$$;
+REVOKE ALL ON FUNCTION public.retail_barcode_page_v18(uuid, text, integer, integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.retail_barcode_page_v18(uuid, text, integer, integer) TO authenticated;
+
+
+-- v19 resolves exact codes and verified prefix 27 five-digit grams scale labels.
+-- No list of scale barcodes is materialized: barcode 2700001002451 => 0.245 kg.
+CREATE OR REPLACE FUNCTION public.retail_resolve_barcode_v18(p_store uuid,p_code text)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=''
+AS $fn$
+DECLARE
+ v_actor uuid:=(SELECT auth.uid());
+ v_code text:=btrim(coalesce(p_code,''));
+ v_scale boolean:=false;
+ v_grams int;v_weight numeric(14,3);v_i int;v_digit int;v_sum int:=0;
+ v_row record;v_stock numeric;v_aliases jsonb;
+ v_prefix boolean:=false;v_package_price bigint;
+BEGIN
+ IF v_actor IS NULL OR NOT retail_internal.has_role(p_store,ARRAY['manager','cashier'])
+ THEN RAISE EXCEPTION 'Store access denied' USING ERRCODE='42501'; END IF;
+ IF v_code='' OR length(v_code)>60
+ THEN RAISE EXCEPTION 'Invalid barcode' USING ERRCODE='22023'; END IF;
+ v_scale:=v_code ~ '^27[0-9]{11}$' AND NOT EXISTS(SELECT 1 FROM public.retail_barcodes WHERE store_id=p_store AND code=v_code AND active);
+ IF v_scale THEN
+   FOR v_i IN 1..12 LOOP
+     v_digit:=substring(v_code FROM v_i FOR 1)::int;
+     v_sum:=v_sum+v_digit*CASE WHEN v_i%2=0 THEN 3 ELSE 1 END;
+   END LOOP;
+   IF (10-v_sum%10)%10<>substring(v_code FROM 13 FOR 1)::int
+   THEN RETURN jsonb_build_object('found',false,'valid_ean13',false,'has_longer_prefix',false);END IF;
+   v_grams:=substring(v_code FROM 8 FOR 5)::int;
+   IF v_grams<=0 THEN RETURN jsonb_build_object('found',false);END IF;
+   v_weight:=v_grams::numeric/1000;
+ END IF;
+ SELECT p.id AS product_id,p.name AS product_name,p.sku,p.plu,p.base_unit,
+   p.currency,p.price_minor AS unit_price_minor,
+   b.code AS registered_code,b.unit_type,b.units_per_scan,CASE WHEN b.unit_type='carton' THEN c.sale_price_minor ELSE p.price_minor END AS price_minor,
+   p.unit_primary_barcode
+ INTO v_row
+ FROM public.retail_barcodes b
+ JOIN public.retail_products p ON p.id=b.product_id AND p.store_id=b.store_id
+ LEFT JOIN public.retail_product_cartons c ON c.store_id=p.store_id AND c.product_id=p.id
+ WHERE p.store_id=p_store AND p.active AND b.active
+   AND (b.code=v_code OR (v_scale AND p.base_unit='kg' AND b.code=left(v_code,7) AND b.unit_type='unit'))
+ ORDER BY (b.code=v_code) DESC LIMIT 1;
+ IF NOT FOUND THEN
+   RETURN jsonb_build_object('found',false,'has_longer_prefix',false);
+ END IF;
+ IF v_scale AND v_row.registered_code<>v_code AND v_row.base_unit<>'kg'
+ THEN RETURN jsonb_build_object('found',false); END IF;
+ IF v_scale AND v_row.registered_code<>v_code THEN
+   v_package_price:=round(v_weight*v_row.unit_price_minor)::bigint;
+ ELSE
+   v_scale:=false;
+   v_package_price:=coalesce(v_row.price_minor,v_row.unit_price_minor);
+ END IF;
+ SELECT coalesce(sb.quantity,0) INTO v_stock FROM public.retail_stock_balances sb
+  WHERE sb.store_id=p_store AND sb.product_id=v_row.product_id;
+ v_stock:=coalesce(v_stock,0);
+ SELECT coalesce(jsonb_agg(jsonb_build_object(
+     'code',b.code,'product_id',b.product_id,'unit_type',b.unit_type,
+     'units_per_scan',b.units_per_scan,'price_minor',CASE WHEN b.unit_type='carton' THEN (SELECT c.sale_price_minor FROM public.retail_product_cartons c WHERE c.store_id=b.store_id AND c.product_id=b.product_id) ELSE v_row.unit_price_minor END,
+     'active',b.active
+   ) ORDER BY b.code),'[]'::jsonb) INTO v_aliases
+ FROM public.retail_barcodes b WHERE b.store_id=p_store
+   AND b.product_id=v_row.product_id AND b.active;
+ v_prefix:=(v_row.base_unit='kg' AND length(v_code)=7) OR EXISTS(SELECT 1 FROM public.retail_barcodes WHERE store_id=p_store AND active AND length(code)>length(v_code) AND left(code,length(v_code))=v_code);
+ RETURN jsonb_build_object(
+   'found',true,'code',v_code,'product_id',v_row.product_id,
+   'product_name',v_row.product_name,'sku',v_row.sku,'plu',v_row.plu,
+   'currency',v_row.currency,'base_unit',v_row.base_unit,
+   'unit_type',v_row.unit_type,'unit_price_minor',v_row.unit_price_minor,
+   'scale_unit_price_minor',CASE WHEN v_scale THEN v_row.unit_price_minor ELSE NULL END,
+   'price_minor',v_package_price,
+   'units_per_scan',CASE WHEN v_scale THEN 1 ELSE v_row.units_per_scan END,
+   'stock_quantity',v_stock,'product_barcodes',v_aliases,
+   'is_scale',v_scale,'scale_grams',CASE WHEN v_scale THEN v_grams ELSE NULL END,
+   'scale_weight_kg',CASE WHEN v_scale THEN v_weight ELSE NULL END,
+   'scale_label',CASE WHEN v_scale THEN to_char(v_weight,'FM999990.000')||' کگم' ELSE NULL END,
+   'has_longer_prefix',v_prefix);
+END $fn$;
+REVOKE ALL ON FUNCTION public.retail_resolve_barcode_v18(uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.retail_resolve_barcode_v18(uuid,text) TO authenticated;
+NOTIFY pgrst,'reload schema';
+CREATE OR REPLACE FUNCTION public.retail_checkout_weight_v19(p_store uuid,p_request uuid,p_items jsonb,p_cash_received bigint,p_discount bigint DEFAULT 0)
+RETURNS uuid LANGUAGE sql SECURITY INVOKER SET search_path='' AS $route$
+ SELECT public.retail_checkout_packs_v16(p_store,p_request,p_items,p_cash_received,p_discount);
+$route$;
+REVOKE ALL ON FUNCTION public.retail_checkout_weight_v19(uuid,uuid,jsonb,bigint,bigint) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.retail_checkout_weight_v19(uuid,uuid,jsonb,bigint,bigint) TO authenticated;
+-- Stock receiving RPCs copied from the transaction-tested V17/V17.1 contracts.
+CREATE TABLE IF NOT EXISTS public.retail_stock_receipt_requests_v17 (
+ store_id uuid NOT NULL,
+ request_id uuid NOT NULL,
+ actor_id uuid NOT NULL,
+ product_id uuid NOT NULL,
+ barcode text NOT NULL,
+ package_type text NOT NULL CHECK(package_type IN ('unit','carton')),
+ packages bigint NOT NULL CHECK(packages BETWEEN 1 AND 1000000),
+ units_per_package integer NOT NULL CHECK(units_per_package BETWEEN 1 AND 1000000),
+ base_units numeric(14,3) NOT NULL CHECK(base_units>0),
+ reason text NOT NULL CHECK(reason IN ('opening','purchase')),
+ total_stock numeric(14,3) NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(store_id,request_id),
+ FOREIGN KEY (store_id,product_id) REFERENCES public.retail_products(store_id,id)
+);
+ALTER TABLE public.retail_stock_receipt_requests_v17 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.retail_stock_receipt_requests_v17 FROM PUBLIC,anon,authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_receive_packs_v17(
+ p_store uuid,p_request uuid,p_barcode text,p_packages bigint,
+ p_expected_units integer,p_reason text
+) RETURNS numeric LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $v17$
+DECLARE
+ v_actor uuid:=(select auth.uid());
+ v_product uuid;v_mode text;v_units integer;v_active boolean;
+ v_increment numeric;v_total numeric;v_existing public.retail_stock_receipt_requests_v17%ROWTYPE;
+BEGIN
+ IF v_actor IS NULL OR NOT retail_internal.has_role(p_store,array['manager'])
+ THEN RAISE EXCEPTION 'Manager permission required' USING errcode='42501';END IF;
+ IF p_store IS NULL OR p_request IS NULL OR p_barcode IS NULL
+   OR length(p_barcode) NOT BETWEEN 1 AND 60 OR p_barcode~'[[:space:],;]'
+   OR p_packages IS NULL OR p_packages NOT BETWEEN 1 AND 1000000
+   OR p_expected_units IS NULL OR p_expected_units NOT BETWEEN 1 AND 1000000
+   OR p_reason IS NULL OR p_reason NOT IN ('opening','purchase')
+ THEN RAISE EXCEPTION 'Invalid stock receipt' USING errcode='22023';END IF;
+ -- A committed request must be replayable even if its source barcode was
+ -- retired after the first successful stock receipt. Check the immutable
+ -- request record before resolving current barcode definitions.
+ SELECT * INTO v_existing FROM public.retail_stock_receipt_requests_v17
+  WHERE store_id=p_store AND request_id=p_request;
+ IF FOUND THEN
+   IF v_existing.actor_id IS DISTINCT FROM v_actor
+      OR v_existing.barcode IS DISTINCT FROM p_barcode
+      OR v_existing.packages IS DISTINCT FROM p_packages
+      OR v_existing.units_per_package IS DISTINCT FROM p_expected_units
+      OR v_existing.reason IS DISTINCT FROM p_reason
+   THEN RAISE EXCEPTION 'Stock receipt request reused' USING errcode='23505';END IF;
+   RETURN v_existing.total_stock;
+ END IF;
+ SELECT b.product_id,b.unit_type,b.units_per_scan,p.active
+ INTO v_product,v_mode,v_units,v_active
+ FROM public.retail_barcodes b JOIN public.retail_products p
+ ON p.id=b.product_id AND p.store_id=b.store_id
+ WHERE b.store_id=p_store AND b.code=p_barcode AND b.active
+ FOR SHARE OF b,p;
+ IF NOT FOUND OR NOT v_active OR v_mode NOT IN ('unit','carton')
+  OR (v_mode='unit' AND v_units<>1)
+  OR (v_mode='carton' AND
+    (v_units<2 OR NOT EXISTS(SELECT 1 FROM public.retail_product_cartons c
+      WHERE c.product_id=v_product AND c.store_id=p_store
+      AND c.units_per_carton=v_units)))
+  OR p_expected_units<>v_units
+ THEN RAISE EXCEPTION 'Inactive or changed pack barcode' USING errcode='22023';END IF;
+ v_increment=p_packages::numeric*v_units;
+ IF v_increment>1000000 THEN
+  RAISE EXCEPTION 'Base unit receipt exceeds maximum' USING errcode='22023';END IF;
+ -- Unique request identity serializes retries from concurrent clients.
+ INSERT INTO public.retail_stock_receipt_requests_v17(
+  store_id,request_id,actor_id,product_id,barcode,package_type,
+  packages,units_per_package,base_units,reason,total_stock
+ )VALUES(p_store,p_request,v_actor,v_product,p_barcode,v_mode,p_packages,v_units,
+   v_increment,p_reason,0)
+ ON CONFLICT(store_id,request_id) DO NOTHING;
+ IF NOT FOUND THEN
+   SELECT * INTO v_existing FROM public.retail_stock_receipt_requests_v17
+    WHERE store_id=p_store AND request_id=p_request;
+   IF NOT FOUND OR v_existing.actor_id IS DISTINCT FROM v_actor
+    OR v_existing.product_id IS DISTINCT FROM v_product
+    OR v_existing.barcode IS DISTINCT FROM p_barcode
+    OR v_existing.package_type IS DISTINCT FROM v_mode
+    OR v_existing.packages IS DISTINCT FROM p_packages
+    OR v_existing.units_per_package IS DISTINCT FROM v_units
+    OR v_existing.reason IS DISTINCT FROM p_reason
+   THEN RAISE EXCEPTION 'Stock receipt request reused' USING errcode='23505';END IF;
+   RETURN v_existing.total_stock;
+ END IF;
+ -- Calls preexisting manager-only transactional base-unit receipt. Its one
+ -- stock balance, stock event and immutable actor audit are the source of truth.
+ v_total=retail_internal.receive_stock(p_store,v_product,v_increment,p_reason);
+ UPDATE public.retail_stock_receipt_requests_v17 SET total_stock=v_total
+ WHERE store_id=p_store AND request_id=p_request;
+ INSERT INTO public.retail_audit_events(store_id,actor_id,action,subject_id,details)
+ VALUES(p_store,v_actor,'stock.receive_packs_v17',v_product,
+  jsonb_build_object('request_id',p_request,'barcode',p_barcode,
+  'package_type',v_mode,'packages',p_packages,
+  'units_per_package',v_units,'base_units',v_increment,'total_stock',v_total));
+ RETURN v_total;
+END;
+$v17$;
+REVOKE ALL ON FUNCTION public.retail_receive_packs_v17(uuid,uuid,text,bigint,integer,text)
+ FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.retail_receive_packs_v17(uuid,uuid,text,bigint,integer,text)
+ TO authenticated;
+CREATE TABLE IF NOT EXISTS public.retail_stock_mixed_receipts_v171(
+ store_id uuid NOT NULL, request_id uuid NOT NULL, actor_id uuid NOT NULL,
+ product_id uuid NOT NULL, lines jsonb NOT NULL,
+ reason text NOT NULL CHECK(reason IN('opening','purchase')),
+ base_units numeric(14,3) NOT NULL CHECK(base_units>0),
+ total_stock numeric(14,3) NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(store_id,request_id),
+ FOREIGN KEY(store_id,product_id) REFERENCES public.retail_products(store_id,id)
+);
+ALTER TABLE public.retail_stock_mixed_receipts_v171 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.retail_stock_mixed_receipts_v171 FROM PUBLIC,anon,authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_receive_mixed_v171(
+ p_store uuid,p_request uuid,p_lines jsonb,p_reason text
+) RETURNS numeric LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $mixed$
+DECLARE
+ v_actor uuid:=(select auth.uid());
+ v_existing public.retail_stock_mixed_receipts_v171%ROWTYPE;
+ v_entry jsonb;v_barcode text;v_packages bigint;v_expected integer;
+ v_product uuid;v_found uuid;v_type text;v_units integer;v_active boolean;
+ v_seen_unit boolean:=false;v_seen_carton boolean:=false;
+ v_base numeric(14,3):=0;v_total numeric(14,3);
+BEGIN
+ IF v_actor IS NULL OR NOT retail_internal.has_role(p_store,array['manager'])
+ THEN RAISE EXCEPTION 'Manager permission required' USING errcode='42501';END IF;
+ IF p_store IS NULL OR p_request IS NULL OR p_lines IS NULL
+    OR jsonb_typeof(p_lines)<>'array' OR jsonb_array_length(p_lines)<>2
+    OR p_reason IS NULL OR p_reason NOT IN('opening','purchase')
+ THEN RAISE EXCEPTION 'Invalid mixed receipt' USING errcode='22023';END IF;
+ -- Committed replay is validated before live barcode lookup, so retirement
+ -- of a scanned barcode does not cause a second stock mutation.
+ SELECT * INTO v_existing FROM public.retail_stock_mixed_receipts_v171
+ WHERE store_id=p_store AND request_id=p_request;
+ IF FOUND THEN
+   IF v_existing.actor_id IS DISTINCT FROM v_actor
+     OR v_existing.lines IS DISTINCT FROM p_lines
+     OR v_existing.reason IS DISTINCT FROM p_reason
+   THEN RAISE EXCEPTION 'Mixed request reused' USING errcode='23505';END IF;
+   RETURN v_existing.total_stock;
+ END IF;
+ -- Sorted barcode locks avoid lock-order inversions across concurrent receipts.
+ FOR v_entry IN SELECT value FROM jsonb_array_elements(p_lines) ORDER BY value->>'barcode'
+ LOOP
+  IF jsonb_typeof(v_entry)<>'object'
+    OR jsonb_typeof(v_entry->'barcode')<>'string'
+    OR jsonb_typeof(v_entry->'packages')<>'number'
+    OR jsonb_typeof(v_entry->'expected_units')<>'number'
+    OR (v_entry->>'barcode') IS NULL
+    OR length(v_entry->>'barcode') NOT BETWEEN 1 AND 60
+    OR (v_entry->>'barcode')~'[[:space:],;]'
+    OR (v_entry->>'packages') !~ '^[1-9][0-9]{0,5}$'
+    OR (v_entry->>'expected_units') !~ '^[1-9][0-9]{0,5}$'
+  THEN RAISE EXCEPTION 'Invalid mixed line' USING errcode='22023';END IF;
+  v_barcode=v_entry->>'barcode';
+  v_packages=(v_entry->>'packages')::bigint;
+  v_expected=(v_entry->>'expected_units')::integer;
+  SELECT b.product_id,b.unit_type,b.units_per_scan,p.active
+  INTO v_found,v_type,v_units,v_active
+  FROM public.retail_barcodes b
+  JOIN public.retail_products p ON p.store_id=b.store_id AND p.id=b.product_id
+  WHERE b.store_id=p_store AND b.code=v_barcode AND b.active
+  FOR SHARE OF b,p;
+  IF NOT FOUND OR NOT v_active OR v_units IS NULL OR v_expected<>v_units
+    OR (v_type='unit' AND v_units<>1)
+    OR (v_type='carton' AND (v_units<2 OR NOT EXISTS(
+      SELECT 1 FROM public.retail_product_cartons c
+      WHERE c.store_id=p_store AND c.product_id=v_found AND c.units_per_carton=v_units)))
+    OR v_type NOT IN('unit','carton')
+  THEN RAISE EXCEPTION 'Inactive or changed mixed barcode' USING errcode='22023';END IF;
+  IF v_product IS NULL THEN v_product=v_found;END IF;
+  IF v_product<>v_found THEN
+    RAISE EXCEPTION 'Mixed receipt must be one product' USING errcode='22023';END IF;
+  IF v_type='unit' THEN
+    IF v_seen_unit THEN RAISE EXCEPTION 'Duplicate unit line' USING errcode='22023';END IF;
+    v_seen_unit=true;
+  ELSE
+    IF v_seen_carton THEN RAISE EXCEPTION 'Duplicate carton line' USING errcode='22023';END IF;
+    v_seen_carton=true;
+  END IF;
+  v_base=v_base+v_packages::numeric*v_units;
+  IF v_base>1000000 THEN
+    RAISE EXCEPTION 'Mixed base units exceed maximum' USING errcode='22023';END IF;
+ END LOOP;
+ IF NOT v_seen_unit OR NOT v_seen_carton OR v_base<2
+ THEN RAISE EXCEPTION 'Both unit and carton required' USING errcode='22023';END IF;
+ -- The unique request key fences simultaneous retries. All downstream stock
+ -- balance, event, manager audit and mixed receipt commit/rollback together.
+ INSERT INTO public.retail_stock_mixed_receipts_v171(
+  store_id,request_id,actor_id,product_id,lines,reason,base_units,total_stock)
+ VALUES(p_store,p_request,v_actor,v_product,p_lines,p_reason,v_base,0)
+ ON CONFLICT(store_id,request_id) DO NOTHING;
+ IF NOT FOUND THEN
+   SELECT * INTO v_existing FROM public.retail_stock_mixed_receipts_v171
+   WHERE store_id=p_store AND request_id=p_request;
+   IF NOT FOUND OR v_existing.actor_id IS DISTINCT FROM v_actor
+       OR v_existing.lines IS DISTINCT FROM p_lines
+       OR v_existing.reason IS DISTINCT FROM p_reason
+       OR v_existing.product_id IS DISTINCT FROM v_product
+   THEN RAISE EXCEPTION 'Mixed request reused' USING errcode='23505';END IF;
+   RETURN v_existing.total_stock;
+ END IF;
+ v_total=retail_internal.receive_stock(p_store,v_product,v_base,p_reason);
+ UPDATE public.retail_stock_mixed_receipts_v171 SET total_stock=v_total
+ WHERE store_id=p_store AND request_id=p_request;
+ INSERT INTO public.retail_audit_events(store_id,actor_id,action,subject_id,details)
+ VALUES(p_store,v_actor,'stock.receive_mixed_v171',v_product,
+   jsonb_build_object('request_id',p_request,'lines',p_lines,
+       'base_units',v_base,'total_stock',v_total));
+ RETURN v_total;
+END;
+$mixed$;
+REVOKE ALL ON FUNCTION public.retail_receive_mixed_v171(uuid,uuid,jsonb,text)
+ FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.retail_receive_mixed_v171(uuid,uuid,jsonb,text)
+ TO authenticated;
+CREATE TABLE IF NOT EXISTS retail_internal.stock_receive_requests(
+ store_id uuid NOT NULL REFERENCES public.retail_stores(id),request_id uuid NOT NULL,actor_id uuid NOT NULL,
+ fingerprint jsonb NOT NULL,base_units numeric(14,3),result_quantity numeric(14,3),PRIMARY KEY(store_id,request_id)
+);
+REVOKE ALL ON retail_internal.stock_receive_requests FROM PUBLIC,anon,authenticated;
+-- V19 kilogram receipt: decimal kg precision, atomic stock and idempotent request UUID.
+CREATE OR REPLACE FUNCTION retail_internal.receive_weight_v19(
+ p_store uuid,p_barcode text,p_kg numeric,p_reason text,p_request uuid
+) RETURNS numeric LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $fn$
+DECLARE
+ v_actor uuid:=(SELECT auth.uid());v_product uuid;v_stock numeric(14,3);v_prev record;
+ v_payload jsonb;
+BEGIN
+ IF v_actor IS NULL OR NOT retail_internal.has_role(p_store,ARRAY['manager'])
+ THEN RAISE EXCEPTION 'Manager permission required' USING ERRCODE='42501'; END IF;
+ IF p_request IS NULL OR p_reason NOT IN ('purchase','opening') OR
+    p_kg IS NULL OR p_kg<0.001 OR p_kg>1000000 OR p_kg<>round(p_kg,3)
+ THEN RAISE EXCEPTION 'Invalid kg receipt' USING ERRCODE='22023'; END IF;
+ SELECT p.id INTO v_product
+ FROM public.retail_products p
+ JOIN public.retail_barcodes b ON b.store_id=p.store_id AND b.product_id=p.id
+ WHERE p.store_id=p_store AND b.code=p_barcode AND b.active
+   AND b.unit_type='unit' AND b.units_per_scan=1
+   AND p.active AND p.base_unit='kg';
+ IF NOT FOUND THEN RAISE EXCEPTION 'Active kg product barcode required' USING ERRCODE='22023'; END IF;
+ v_payload:=jsonb_build_object('mode','kg','product_id',v_product,
+    'barcode',p_barcode,'kg',p_kg,'reason',p_reason);
+ INSERT INTO retail_internal.stock_receive_requests(store_id,request_id,actor_id,fingerprint)
+ VALUES(p_store,p_request,v_actor,v_payload)
+ ON CONFLICT(store_id,request_id) DO NOTHING;
+ SELECT actor_id,fingerprint,result_quantity INTO v_prev
+ FROM retail_internal.stock_receive_requests
+ WHERE store_id=p_store AND request_id=p_request FOR UPDATE;
+ IF v_prev.actor_id IS DISTINCT FROM v_actor OR v_prev.fingerprint IS DISTINCT FROM v_payload
+ THEN RAISE EXCEPTION 'Request reused with changed payload' USING ERRCODE='22023'; END IF;
+ IF v_prev.result_quantity IS NOT NULL THEN RETURN v_prev.result_quantity; END IF;
+ INSERT INTO public.retail_stock_balances(store_id,product_id,quantity)
+ VALUES(p_store,v_product,p_kg)
+ ON CONFLICT(store_id,product_id) DO UPDATE
+ SET quantity=public.retail_stock_balances.quantity+excluded.quantity,updated_at=now()
+ RETURNING quantity INTO v_stock;
+ INSERT INTO public.retail_stock_events(store_id,product_id,delta,reason)
+ VALUES(p_store,v_product,p_kg,p_reason);
+ INSERT INTO public.retail_audit_events(store_id,actor_id,action,subject_id,details)
+ VALUES(p_store,v_actor,'stock.receive_kg_v19',v_product,
+  jsonb_build_object('request_id',p_request,'kg',p_kg,'reason',p_reason));
+ UPDATE retail_internal.stock_receive_requests
+ SET base_units=p_kg,result_quantity=v_stock
+ WHERE store_id=p_store AND request_id=p_request;
+ RETURN v_stock;
+END $fn$;
+REVOKE ALL ON FUNCTION retail_internal.receive_weight_v19(uuid,text,numeric,text,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION retail_internal.receive_weight_v19(uuid,text,numeric,text,uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_receive_weight_v19(
+ p_store uuid,p_barcode text,p_kg numeric,p_reason text,p_request uuid
+) RETURNS numeric LANGUAGE sql SECURITY INVOKER SET search_path=''
+AS $fn$
+ SELECT retail_internal.receive_weight_v19(p_store,p_barcode,p_kg,p_reason,p_request);
+$fn$;
+REVOKE ALL ON FUNCTION public.retail_receive_weight_v19(uuid,text,numeric,text,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.retail_receive_weight_v19(uuid,text,numeric,text,uuid) TO authenticated;
+NOTIFY pgrst,'reload schema';
+COMMIT;

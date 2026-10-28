@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PORT = 3000;
+const portArg=process.argv.indexOf("--port");
+const PORT = Number(portArg>=0?process.argv[portArg+1]:(process.env.PORT||3000));
+if(!Number.isInteger(PORT)||PORT<0||PORT>65535)throw new Error("Invalid server port");
 const HOST = "0.0.0.0";
 
 const MIME_TYPES = {
@@ -28,16 +30,18 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  const parsedUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  let pathname = decodeURIComponent(parsedUrl.pathname);
-
-  if (pathname === "/" || pathname === "") {
-    pathname = "/index.html";
+  let pathname;
+  try{pathname=decodeURIComponent(new URL(req.url,"http://localhost").pathname);}
+  catch(_e){res.writeHead(400);res.end("Bad request");return;}
+  if(pathname==="/")pathname="/index.html";
+  const segments=pathname.split("/").filter(Boolean);
+  if(segments.some(x=>x.startsWith(".")||x.includes("\\"))||
+    ["node_modules","db","tests","supabase","scripts"].includes(segments[0])||
+    segments[0]==="server.mjs"||segments[0]?.startsWith("package")){
+    res.writeHead(404);res.end("Not found");return;
   }
-
-  const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, "");
-  let filePath = path.join(__dirname, safePath);
-
+  let filePath=path.resolve(__dirname,"."+pathname);
+  if(!filePath.startsWith(__dirname+path.sep)){res.writeHead(404);res.end("Not found");return;}
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
     filePath = path.join(filePath, "index.html");
   }
@@ -62,5 +66,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Retail OS PC running on http://${HOST}:${PORT}`);
+  console.log(`Retail OS PC running on http://${HOST}:${server.address().port}`);
 });

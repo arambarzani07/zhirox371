@@ -1071,7 +1071,7 @@ select option{color:#0f172a;font-size:14px}
 <label class="field" style="max-width:210px">ئیمەیڵی هەژمار<input id="staff-email" name="email" type="email" maxlength="120" placeholder="staff@market.com" style="direction:ltr"></label>
 <label class="field" style="max-width:135px">ڕۆڵی سیستەم<select id="staff-role" name="role"><option value="cashier">کاشێر</option><option value="manager">بەڕێوەبەر</option></select></label>
 <label class="field" style="max-width:130px">دۆخ<select id="staff-active" name="active"><option value="true">چالاک</option><option value="false">ناچالاک</option></select></label>
-<label class="field" style="max-width:120px">کۆدی PIN<input id="staff-pin" name="pin_code" maxlength="8" placeholder="1234" style="direction:ltr"></label>
+<label class="field" style="max-width:120px">کۆدی PIN<input id="staff-pin" disabled title="PIN چالاک نییە؛ چوونەژوورەوە بە Supabase Auth ـە" name="pin_code" maxlength="8" placeholder="1234" style="direction:ltr"></label>
 <label class="field">تێبینی کارمەند<input id="staff-note" name="note" maxlength="140" placeholder="شێفتی بەیانیان / ئێواران..."></label>
 <button type="submit" class="primary" id="staff-submit-btn">پاشەکەوتکردن</button>
 </form>
@@ -1194,9 +1194,9 @@ select option{color:#0f172a;font-size:14px}
 </div>
 
 <div class="stock-adjust-card" style="margin-bottom:14px;background:#f8fafc">
-<h3 style="margin:0 0 10px;font-size:15px">٢. پاشەکەوتکردنی گشتی (Full Backup)، پشکنینی سێرڤەر و چاودێریی قەبارەی داتاکان</h3>
+<h3 style="margin:0 0 10px;font-size:15px">٢. پاشەکەوتکردنی گشتی (Loaded Snapshot)، پشکنینی سێرڤەر و چاودێریی قەبارەی داتاکان</h3>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-<button type="button" class="primary" id="sys-backup-json-btn">⬇ داگرتنی پاشەکەوتی تەواوی سیستەم (Full JSON Backup)</button>
+<button type="button" class="primary" id="sys-backup-json-btn">⬇ داگرتنی هەناردەی داتای بارکراوی سیستەم (Loaded Snapshot)</button>
 <button type="button" class="secondary" id="sys-export-summary-csv">⬇ هەناردەی ڕاپۆرتی داتاکانی سیستەم (CSV)</button>
 <button type="button" class="secondary" id="sys-ping-server-btn">🔄 پشکنینی خێرایی پەیوەندیی سێرڤەر (Ping)</button>
 <button type="button" class="secondary" id="sys-clear-cache-btn">🧹 نوێکردنەوەی کاشی گەڕان و کاتەلۆگ</button>

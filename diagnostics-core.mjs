@@ -18,7 +18,7 @@ export function inspectBarcode(input) {
     length: code.length,
     type: numeric13 ? "EAN-13" : /^[0-9]+$/.test(code) ? "ژمارەیی" : "ئەلفانوومێریک",
     checksum: numeric13 ? (valid ? "دروستە" : "نادروستە") : "پەیوەندی نییە",
-    scaleItemCode: scale ? code.slice(2, 9) : null,
+    scaleItemCode: scale ? code.slice(2, 7) : null,
     possibleScaleBarcode: scale,
     validEan13: valid
   });
