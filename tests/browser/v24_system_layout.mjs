@@ -9,6 +9,7 @@ try{
   await page.locator('.system-nav').waitFor({state:'visible'});
   assert.equal(await page.locator('.system-nav > [data-system-group]').count(),12,`main navigation ${m}/${s}`);
   assert.ok(await page.locator('main h1').innerText());
+  assert.ok(await page.locator('.system-nav').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'all main cards fit without a horizontal scroll');
   if(page.url().includes('operations.html')){await page.locator('#operations-panel').waitFor({state:'visible'});assert.equal(await page.locator('#operations-panel > section:not([hidden])').count(),1,`visible content ${m}/${s}`);}
   if(page.url().includes('modules.html'))assert.match(await page.locator('#module-detail').innerText(),/هێشتا جێبەجێ نەکراوە/);
  }

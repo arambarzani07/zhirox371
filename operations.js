@@ -3750,7 +3750,7 @@ function renderSettingsSystemView(){
 }
 
 function renderOfflineHourlySyncStatus(){
- if(window.RETAIL_DEMO_MODE!==true){if($("offline-sync-badge"))$("offline-sync-badge").textContent="پەیوەندیی ڕاستەوخۆی سێرڤەر";if($("offline-demo-panel"))$("offline-demo-panel").hidden=true;return;}
+ if(window.RETAIL_DEMO_MODE!==true){if($("offline-sync-badge")){$("offline-sync-badge").textContent="پەیوەندیی ڕاستەوخۆی سێرڤەر";$("offline-sync-badge").title="مامەڵەکان پێویستیان بە پشتڕاستکردنەوەی سێرڤەر هەیە؛ هاوکاتسازی ئۆفلاین چالاک نییە";}if($("offline-demo-panel"))$("offline-demo-panel").hidden=true;return;}
  if($("offline-demo-panel"))$("offline-demo-panel").hidden=false;
 
  const api=window.RetailOfflineSync;

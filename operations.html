@@ -329,7 +329,7 @@ select option{color:#0f172a;font-size:14px}
 </div>
 <div id="pos-promo-bar" style="margin-bottom:9px;padding:7px 9px;background:#fdf2f8;border:1px solid #f5d0fe;border-radius:8px">
 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-<input id="pos-coupon-code" maxlength="40" autocomplete="off" placeholder="کۆدی کوپۆن (وەک KANI10)..." style="flex:1;min-width:110px;height:32px;font-size:12px;direction:ltr;text-transform:uppercase;padding:2px 8px">
+<input id="pos-coupon-code" maxlength="40" autocomplete="off" placeholder="کۆدی کوپۆنی تۆمارکراو..." style="flex:1;min-width:110px;height:32px;font-size:12px;direction:ltr;text-transform:uppercase;padding:2px 8px">
 <button type="button" class="secondary" id="pos-apply-coupon-btn" style="height:32px;padding:0 9px;font-size:11px;font-weight:700">کوپۆن</button>
 <button type="button" class="secondary" id="pos-auto-offer-btn" style="height:32px;padding:0 9px;font-size:11px;font-weight:700;background:#fce7f3;border-color:#f9a8d4;color:#9d174d" title="پشکنین و جێبەجێکردنی ئۆفەر و داشکاندنی خۆکار لەسەر سەبەتە">⚡ ئۆفەر</button>
 </div>
@@ -1612,7 +1612,7 @@ select option{color:#0f172a;font-size:14px}
 <form id="offer-coupon-form">
 <input type="hidden" id="cpn-edit-id" value="">
 <div class="formrow" style="margin-bottom:10px">
-<label class="field" style="max-width:190px">کۆدی کوپۆن (Code)<input id="cpn-code" maxlength="32" required autocomplete="off" placeholder="KANI10" style="direction:ltr;text-transform:uppercase;font-weight:800"></label>
+<label class="field" style="max-width:190px">کۆدی کوپۆن (Code)<input id="cpn-code" maxlength="32" required autocomplete="off" placeholder="کۆدی کوپۆن" style="direction:ltr;text-transform:uppercase;font-weight:800"></label>
 <label class="field">ناونیشانی کوپۆن<input id="cpn-title" maxlength="120" required autocomplete="off" placeholder="کوپۆنی دیاری جەژن یان کڕیاری تایبەت"></label>
 <label class="field" style="max-width:170px">جۆری داشکاندن<select id="cpn-kind">
 <option value="fixed_iqd">بڕی دینار (IQD)</option>
@@ -1924,94 +1924,8 @@ select option{color:#0f172a;font-size:14px}
 <div class="msg" id="receipts-msg" role="status"></div>
 <div class="receipt-detail" id="receipt-detail" hidden></div>
 </section>
-<section id="payments-panel" class="surface" hidden>
-<div class="stock-sub-head">
-<h2>پارەدان و جووڵەی نەقدی سندووق</h2>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button type="button" class="secondary" id="payments-go-shift">بەڕێوەبردنی شێفت</button>
-<button type="button" class="secondary" id="payments-refresh">نوێکردنەوە</button>
-</div>
-</div>
-<div class="shift-metrics">
-<div><span>دۆخی شێفتی سندووق</span><strong id="pay-shift-status">—</strong></div>
-<div><span>سەرەتا + فرۆشتنی شێفت</span><strong id="pay-sales-total">0 IQD</strong></div>
-<div><span>کۆی پارەی هاتوو (وەرگرتن)</span><strong id="pay-total-in">0 IQD</strong></div>
-<div><span>کۆی پارەی دەرچوو (پارەدان)</span><strong id="pay-total-out">0 IQD</strong></div>
-<div><span>باڵانسی چاوەڕوانکراوی سندووق</span><strong id="pay-expected-balance">0 IQD</strong></div>
-</div>
-<div class="stock-adjust-card" id="pay-open-shift-box" hidden>
-<h3>کردنەوەی شێفتی سندووق</h3>
-<form id="pay-shift-open-form" class="formrow">
-<label class="field">پارەی سەرەتایی سندووق (IQD)<input type="number" name="opening" min="0" step="1" value="100000" required></label>
-<button type="submit" class="primary">کردنەوەی شێفت</button>
-</form>
-</div>
-<div class="stock-adjust-card">
-<h3>تۆمارکردنی پارەدان یان وەرگرتنی نەقدی</h3>
-<form id="payments-form" class="formrow">
-<label class="field" style="max-width:220px">جۆری مامەڵە<select name="kind"><option value="cash_out">پارەدان / خەرجی (دەرچوو)</option><option value="cash_in">وەرگرتنی پارە (هاتوو)</option></select></label>
-<label class="field" style="max-width:230px">پۆلێن / بابەت<select name="category"><option value="پارەدانی دابینکەر">پارەدانی دابینکەر</option><option value="خەرجی ڕۆژانەی فرۆشگا">خەرجی ڕۆژانەی فرۆشگا</option><option value="کرێی گواستنەوە و بار">کرێی گواستنەوە و بار</option><option value="پێشینەی کارمەند">پێشینەی کارمەند</option><option value="زیادکردنی پارەی وردە">زیادکردنی پارەی وردە</option><option value="مامەڵەی تر">مامەڵەی تر</option></select></label>
-<label class="field" style="max-width:200px">بڕی پارە (IQD)<input type="number" id="pay-amount" name="amount" min="1" step="1" placeholder="بۆ نموونە 25000" required></label>
-<label class="field" style="min-width:240px">تێبینی و هۆکار<input name="note" maxlength="140" placeholder="ناوی وەرگر یان وردەکاری مامەڵە بنووسە" required></label>
-<button type="submit" class="primary" id="pay-submit">تۆمارکردنی مامەڵە</button>
-<button type="button" class="secondary" id="pay-retry" hidden>دووبارە ناردنەوە</button>
-</form>
-<div class="quick-cash-row" id="pay-quick-row" style="margin-top:10px">
-<button type="button" class="quick-cash-btn" data-pay-quick="5000">+5,000</button>
-<button type="button" class="quick-cash-btn" data-pay-quick="10000">+10,000</button>
-<button type="button" class="quick-cash-btn" data-pay-quick="25000">+25,000</button>
-<button type="button" class="quick-cash-btn" data-pay-quick="50000">+50,000</button>
-<button type="button" class="quick-cash-btn" data-pay-quick="100000">+100,000</button>
-</div>
-<div class="msg" id="payments-msg" role="status"></div>
-</div>
-<div class="stock-adjust-card">
-<h3>مێژووی جووڵەکانی پارەی سندووق</h3>
-<div class="formrow" style="margin-bottom:10px">
-<label class="field">گەڕان لە تێبینی یان بڕ<input type="search" id="payments-search" placeholder="گەڕان بە تێبینی یان بڕی پارە..."></label>
-<label class="field" style="max-width:220px">پاڵاوتنی جۆر<select id="payments-kind-filter"><option value="all">هەموو جووڵەکان</option><option value="cash_out">تەنها پارەدان (دەرچوو)</option><option value="cash_in">تەنها وەرگرتن (هاتوو)</option></select></label>
-</div>
-<div id="payments-list"></div>
-</div>
-</section>
-<section id="returns-panel" class="surface" hidden>
-<div class="stock-sub-head">
-<h2>گەڕاندنەوەی پسووڵە و کاڵا</h2>
-<button type="button" class="secondary" id="returns-refresh">نوێکردنەوە</button>
-</div>
-<div class="shift-metrics">
-<div><span>ژمارەی پسووڵەی گەڕاوە</span><strong id="ret-metric-count">0</strong></div>
-<div><span>کۆی بەهای گەڕاوە</span><strong id="ret-metric-amount">0 IQD</strong></div>
-<div><span>پسووڵەی چالاک</span><strong id="ret-metric-active">0</strong></div>
-<div><span>دۆخی شێفتی کاشێر</span><strong id="ret-metric-shift">—</strong></div>
-</div>
-<div class="stock-adjust-card">
-<h3>گەڕان و هەڵبژاردنی پسووڵە بۆ گەڕاندنەوە</h3>
-<form id="returns-lookup-form" class="formrow">
-<label class="field">ژمارەی پسووڵە یان بارکۆدی کاڵا<input type="search" id="returns-search-input" placeholder="ژمارەی پسووڵە (وەک 1 یان 000001) یان بارکۆد بسکانە..."></label>
-<label class="field" style="max-width:220px">دۆخی پسووڵەکان<select id="returns-filter-mode"><option value="all">هەموو پسووڵەکان</option><option value="active">تەنها چالاک (ئامادە بۆ گەڕاندنەوە)</option><option value="refunded">تەنها گەڕاوەکان</option></select></label>
-<button type="submit" class="primary">پشکنین و کردنەوە</button>
-<button type="button" class="secondary" id="returns-clear-search">پاککردنەوە</button>
-</form>
-<div class="msg" id="returns-msg" role="status"></div>
-<div id="returns-selected-box" class="receipt-detail" hidden></div>
-</div>
-<div class="stock-adjust-card">
-<h3>گەڕاندنەوەی تاکە کاڵا بۆ کۆگا و گێڕانەوەی پارە</h3>
-<form id="returns-item-form" class="formrow">
-<label class="field" style="min-width:220px">هەڵبژاردنی کاڵا<select id="return-item-product" required></select></label>
-<label class="field" style="min-width:220px">بارکۆد / یەکەی فرۆشتن<select id="return-item-barcode" required></select></label>
-<label class="field" style="max-width:150px">بڕی گەڕاوە<input type="number" id="return-item-qty" min="1" step="1" value="1" required></label>
-<label class="field" style="max-width:180px">بڕی پارەی گەڕاوە (IQD)<input type="number" id="return-item-refund" min="0" step="1" value="0" required></label>
-<label class="field" style="min-width:220px">هۆکاری گەڕاندنەوە<input id="return-item-note" value="گەڕاندنەوەی کاڵا لەلایەن کڕیار" required></label>
-<button type="submit" class="primary">گەڕاندنەوەی کاڵا بۆ کۆگا</button>
-</form>
-</div>
-<div class="stock-adjust-card">
-<h3>لیستی پسووڵەکان بۆ گەڕاندنەوە</h3>
-<div id="returns-list"></div>
-</div>
-</section>
+
+
 </section>
 <div id="system-msg" class="msg" role="alert"></div>
 <div class="ops-shelf-label-modal" id="ops-shelf-label-modal" hidden>
