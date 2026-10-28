@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { createLocalAuthV3 } from "./local-auth-v3.mjs";
 
 // Test-only server. Loopback interface, not a public/LAN service.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function send(res, status, data) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
