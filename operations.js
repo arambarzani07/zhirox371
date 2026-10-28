@@ -4812,7 +4812,7 @@ function redrawShift(summary){
   $("shift-sales").textContent=money(summary.sales);
   $("shift-moves").textContent=money(summary.movements);
   $("shift-expected").textContent=money(summary.expected);
-  if($("shift-profit")) $("shift-profit").textContent=money(summary.profit!=null?summary.profit:Math.round((summary.sales||0)*0.18));
+  if($("shift-profit")) $("shift-profit").textContent=summary.profit!=null?money(summary.profit):"—";
  }
  $("movement-retry").hidden=!pendingCashMovement;
  $("movement-retry").disabled=busy;
@@ -4910,6 +4910,7 @@ function renderPaymentsList(){
  if($("pay-expected-balance"))$("pay-expected-balance").textContent=money(shiftSummaryData?.expected||0);
  if($("pay-open-shift-box"))$("pay-open-shift-box").hidden=!!shiftSession;
  if($("pay-submit"))$("pay-submit").disabled=busy||!shiftSession||!!pendingCashMovement;
+ if($("pay-retry"))$("pay-retry").hidden=!pendingCashMovement;
  renderTable("payments-list",["کات","جۆری مامەڵە","بڕی پارە","بابەت و تێبینی"],filtered.map(m=>[
    new Date(m.created_at).toLocaleString("en-GB"),
    m.kind==="cash_in"?"وەرگرتنی پارە (هاتوو)":"پارەدان / خەرجی (دەرچوو)",
@@ -4921,15 +4922,14 @@ async function refreshPayments(){
  if(!db||!store)return;
  msg("payments-msg","");
  await refreshShift();
- let {data,error}=await db.from("retail_cash_movements")
+ allMovements=[];
+ if(!shiftSession){renderPaymentsList();return;}
+ const {data,error}=await db.from("retail_cash_movements")
    .select("id,session_id,actor_id,kind,amount_minor,note,created_at")
-   .eq("store_id",store.id)
+   .eq("store_id",store.id).eq("session_id",shiftSession.id)
    .order("created_at",{ascending:false}).limit(200);
- if(error){
-   allMovements=[];
- }else{
-   allMovements=data||[];
- }
+ if(error){renderPaymentsList();msg("payments-msg",safe(error),"error");return;}
+ allMovements=data||[];
  renderPaymentsList();
 }
 function updateReturnItemBarcodes(){

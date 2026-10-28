@@ -1462,6 +1462,14 @@ select option{color:#0f172a;font-size:14px}
 <section id="audit-panel" class="surface" hidden>
 <h2>چاودێری</h2><div id="audit-list"></div>
 </section>
+<section id="payments-panel" class="surface" hidden>
+<div class="receipt-head"><h2>پارەدان و جووڵەی سندووق</h2><div class="actions"><button id="payments-go-shift" class="secondary" type="button">شێفت</button><button id="payments-refresh" class="secondary" type="button">نوێکردنەوە</button></div></div>
+<div class="shift-metrics"><div><span>دۆخی شێفت</span><strong id="pay-shift-status">—</strong></div><div><span>پارەی سەرەتا و فرۆشتن</span><strong id="pay-sales-total">—</strong></div><div><span>پارەی چاوەڕوانکراو</span><strong id="pay-expected-balance">—</strong></div></div>
+<div id="pay-open-shift-box"><form id="pay-shift-open-form" class="formrow"><label class="field">پارەی سەرەتایی (IQD)<input name="opening" type="number" min="0" max="9999999999999" step="1" value="0" required></label><button class="primary" type="submit">کردنەوەی شێفت</button></form></div>
+<form id="payments-form" class="formrow"><label class="field">جۆری جووڵە<select name="kind"><option value="cash_out">پارەدان (دەرچوو)</option><option value="cash_in">وەرگرتن (هاتوو)</option></select></label><label class="field">بابەت<input name="category" maxlength="60"></label><label class="field">بڕی پارە (IQD)<input id="pay-amount" name="amount" type="number" min="1" max="9999999999999" step="1" required></label><label class="field">تێبینی<input name="note" maxlength="160" required></label><button id="pay-submit" class="primary" type="submit">تۆمارکردنی جووڵە</button><button id="pay-retry" class="secondary" type="button" hidden>پشکنینەوەی هەمان داواکاری</button></form>
+<div class="msg" id="payments-msg" role="status"></div>
+<h3>دوایین ٢٠٠ جووڵەی شێفت</h3><div class="formrow"><label class="field">گەڕان<input id="payments-search" type="search" autocomplete="off"></label><label class="field">پاڵاوتنی جووڵە<select id="payments-kind-filter"><option value="all">هەمووی</option><option value="cash_in">هاتوو</option><option value="cash_out">دەرچوو</option></select></label></div><div id="payments-list"></div>
+</section>
 <section id="returns-panel" class="surface" hidden>
 <div class="receipt-head"><h2>گەڕاندنەوەی کاڵا</h2><button id="returns-refresh" type="button" class="secondary">نوێکردنەوە</button></div>
 <form id="returns-lookup-form" class="formrow">

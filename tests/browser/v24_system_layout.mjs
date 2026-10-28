@@ -9,9 +9,17 @@ try{
   await page.locator('.system-nav').waitFor({state:'visible'});
   assert.equal(await page.locator('.system-nav > [data-system-group]').count(),12,`main navigation ${m}/${s}`);
   assert.ok(await page.locator('main h1').innerText());
+  if(page.url().includes('operations.html')){await page.locator('#operations-panel').waitFor({state:'visible'});assert.equal(await page.locator('#operations-panel > section:not([hidden])').count(),1,`visible content ${m}/${s}`);}
   if(page.url().includes('modules.html'))assert.match(await page.locator('#module-detail').innerText(),/هێشتا جێبەجێ نەکراوە/);
  }
  console.log('PASS V24: all 12 Home cards and 48 destinations reach the shared PC shell, including explicit unfinished modules');
+ await page.goto(origin+'/operations.html?view=payments');await page.locator('#payments-panel').waitFor({state:'visible'});
+ await page.locator('#pay-shift-open-form [name=opening]').fill('1000');await page.locator('#pay-shift-open-form button').click();await page.locator('#pay-open-shift-box').waitFor({state:'hidden'});
+ await page.evaluate(()=>window.__retailQA.movements.push({id:'other',store_id:window.__retailQA.store.id,session_id:'other-shift',kind:'cash_in',amount_minor:999999,note:'OTHER SHIFT',created_at:new Date().toISOString()}));
+ await page.locator('#pay-amount').fill('250');await page.locator('#payments-form [name=note]').fill('UI movement');await page.locator('#pay-submit').click();
+ await page.waitForFunction(()=>document.querySelector('#payments-list')?.textContent.includes('UI movement'));
+ assert.doesNotMatch(await page.locator('#payments-list').innerText(),/OTHER SHIFT/);
+ assert.equal(await page.evaluate(()=>window.__retailQA.called.filter(x=>x.name==='retail_cash_movement').length),1);
  await page.goto(origin+'/operations.html?view=cash');await page.locator('#cash-panel').waitFor({state:'visible'});
  await page.locator('[data-tab=receipts]').click();assert.equal(await page.locator('.system-nav .system-current').getAttribute('data-system-group'),'cash');
  await page.locator('[data-tab=stock]').click();assert.equal(await page.locator('.system-cash-subtabs').isVisible(),false);
