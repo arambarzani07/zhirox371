@@ -528,7 +528,7 @@ function selectShiftSub(nextSub){
  renderShiftStaffSubsections();
 }
 function selectLabelsSub(nextSub){
- if(window.RETAIL_DEMO_MODE!==true){window.location.assign(nextSub==="batch"?"./modules.html?group=9&sub=2":nextSub==="template"?"./diagnostics.html?section=labels":"./workspace.html?section=labels&view="+(nextSub==="barcode"?"barcodes":"prices"));return;}
+ if(window.RETAIL_DEMO_MODE!==true){window.location.assign(nextSub==="batch"?"./workspace.html?view=prices&section=labels&batch=1":nextSub==="template"?"./diagnostics.html?section=labels":"./workspace.html?section=labels&view="+(nextSub==="barcode"?"barcodes":"prices"));return;}
 
  if(!["price","barcode","batch","template"].includes(nextSub))nextSub="price";
  labelsSub=nextSub;

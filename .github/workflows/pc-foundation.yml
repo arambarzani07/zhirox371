@@ -132,6 +132,8 @@ jobs:
         run: node tests/browser/v20_smart_cashier.mjs
       - name: Verify all 48 destinations, shared design and CSV preflight
         run: node tests/browser/v24_system_layout.mjs
+      - name: Verify standard barcode labels, batch copies and stale-price print protection
+        run: node tests/browser/v26_labels.mjs
       - name: Verify confirmed purchase writes, unknown costs and stale cancellation
         run: node tests/browser/v23_purchasing.mjs
       - name: Verify linked returns, server report totals and safe API failures

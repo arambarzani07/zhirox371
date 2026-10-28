@@ -111,7 +111,7 @@
       labelBtn.type = "button"; labelBtn.className = "catalog-label-btn"; labelBtn.dataset.printLabel = (p.barcodes && p.barcodes[0]) || p.id;
       labelBtn.textContent = "لەیبڵ";
       labelBtn.addEventListener("click", () => openLabelPreview({
-        code: (p.barcodes && p.barcodes[0]) || p.sku || p.plu || "000000",
+        code: (p.barcodes && p.barcodes[0]) || "",
         name: p.name,
         priceMinor: p.sale_mode === "carton" && p.carton_price_minor != null ? p.carton_price_minor : p.price_minor,
         unitLabel: p.sale_mode === "carton" ? "کارتۆن" : p.base_unit === "kg" ? "کیلۆگرام" : "دانە"
@@ -269,46 +269,48 @@
       } else cHint.hidden = true;
     }
   }
-  function buildBarcodeSvg(code) {
-    const ns = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(ns, "svg");
-    svg.id = "label-barcode-svg";
-    svg.setAttribute("height", "34");
-    const clean = String(code || "000000").trim();
-    const widths = [2, 1, 2, 1];
-    for (let i = 0; i < clean.length; i++) {
-      const ch = clean.charCodeAt(i);
-      widths.push(1 + (ch % 3), 1 + ((ch >> 2) % 2), 1 + ((ch >> 3) % 3), 1);
-    }
-    widths.push(2, 1, 2);
-    let x = 4;
-    for (let i = 0; i < widths.length; i++) {
-      const w = widths[i];
-      if (i % 2 === 0) {
-        const rect = document.createElementNS(ns, "rect");
-        rect.setAttribute("x", String(x));
-        rect.setAttribute("y", "2");
-        rect.setAttribute("width", String(w));
-        rect.setAttribute("height", "30");
-        rect.setAttribute("fill", "#172b45");
-        svg.append(rect);
-      }
-      x += w;
-    }
-    svg.setAttribute("width", String(Math.min(Math.max(x + 4, 120), 210)));
-    svg.setAttribute("viewBox", "0 0 " + (x + 4) + " 34");
-    return svg;
+  let currentLabel=null,batchLabels=[],batchReady=false,printingBatch=false,batchBusy=false;
+  function buildBarcodeSvg(code){return window.RetailLabelTools.svg(code);}
+  function showLabel(item){
+    currentLabel=window.RetailLabelTools.item(item);
+    $("label-product-name").textContent=item.name+" ("+item.unitLabel+")";
+    $("label-price-text").textContent=fmtIqd(item.priceMinor);$("label-code-text").textContent=item.code;
+    const svg=buildBarcodeSvg(item.code);svg.id="label-barcode-svg";$("label-barcode-holder").replaceChildren(svg);$("barcode-label-box").hidden=false;
   }
-  function openLabelPreview(item) {
-    const box = $("barcode-label-box");
-    if (!box || !item) return;
-    $("label-product-name").textContent = item.name + (item.unitLabel ? " (" + item.unitLabel + ")" : "");
-    $("label-price-text").textContent = fmtIqd(item.priceMinor);
-    $("label-code-text").textContent = item.code || "—";
-    const holder = $("label-barcode-holder");
-    holder.replaceChildren(buildBarcodeSvg(item.code || "0"));
-    box.hidden = false;
+  async function openLabelPreview(item){
+    try{if(!db||!store)throw new Error("سەرەتا بچۆ ژوورەوە");const [confirmed]=await window.RetailLabelTools.confirm(db,store.id,[{...item,copies:1}]);showLabel(confirmed);}
+    catch(error){$("barcode-label-box").hidden=true;message("system-message",explain(error),"error");}
   }
+  function printLabels(nodes,size="50x30"){
+    if(size==="38x25"&&nodes.some(x=>Number(x.querySelector("svg")?.getAttribute("width"))/2>170))throw new Error("بارکۆدەکە بۆ لیبڵی ٣٨ ملیمەتری درێژە؛ قەبارەی ٥٠ ملیمەتری هەڵبژێرە");
+    document.getElementById("label-print-root")?.remove();
+    const root=document.createElement("div");root.id="label-print-root";
+    for(const node of nodes){const copy=node.cloneNode(true);copy.removeAttribute("id");copy.className="batch-print-label"+(size==="38x25"?" size-small":"");root.append(copy);}
+    const style=document.createElement("style");style.textContent="@page{size:"+(size==="38x25"?"38mm 25mm":"50mm 30mm")+";margin:0}";root.append(style);
+    document.body.append(root);document.body.classList.add("printing-labels");window.print();
+  }
+  function setBatchBusy(value){batchBusy=value;for(const el of $("batch-label-panel").querySelectorAll("button,input"))el.disabled=value;$("label-queue-btn").disabled=value;$("batch-print").disabled=value||!batchReady;}
+  function invalidateBatch(){batchReady=false;$("batch-print").disabled=true;$("batch-label-preview").replaceChildren();}
+  function renderBatch(){
+    invalidateBatch();$("batch-label-panel").hidden=false;const root=$("batch-label-list");root.replaceChildren();
+    for(const row of batchLabels){const line=document.createElement("div");line.className="batch-queue-row";const text=document.createElement("span");text.textContent=row.name+" — "+row.code;
+      const copies=document.createElement("input");copies.type="number";copies.min="1";copies.max="50";copies.value=row.copies;copies.setAttribute("aria-label","ژمارەی کۆپی "+row.code);copies.oninput=()=>{row.copies=copies.value;invalidateBatch();};
+      const remove=document.createElement("button");remove.type="button";remove.textContent="لابردن";remove.onclick=()=>{batchLabels=batchLabels.filter(x=>x!==row);renderBatch();};line.append(text,copies,remove);root.append(line);}
+  }
+  $("label-queue-btn").onclick=()=>{if(!currentLabel||batchBusy)return;const old=batchLabels.find(x=>x.code===currentLabel.code);if(!old)batchLabels.push({...currentLabel,copies:1});renderBatch();};
+  $("batch-clear").onclick=()=>{batchLabels=[];renderBatch();message("batch-message","");};
+  $("batch-prepare").onclick=async()=>{const btn=$("batch-prepare");setBatchBusy(true);invalidateBatch();try{
+    batchLabels=await window.RetailLabelTools.confirm(db,store.id,batchLabels);const root=$("batch-label-preview");
+    for(const row of batchLabels)for(let i=0;i<Number(row.copies);i++){const card=document.createElement("article");card.className="batch-print-label";for(const text of [store.name,row.name+" ("+row.unitLabel+")",fmtIqd(row.priceMinor)]){const p=document.createElement("div");p.textContent=text;card.append(p);}card.append(buildBarcodeSvg(row.code));const code=document.createElement("div");code.textContent=row.code;code.dir="ltr";card.append(code);root.append(card);}
+    batchReady=true;$("batch-print").disabled=false;message("batch-message","نرخەکان پشتڕاست کرانەوە؛ پێشبینینەکە بپشکنە. چاپ تۆمارێکی کۆگا یان نرخ ناگۆڕێت.","success");
+   }catch(error){message("batch-message",explain(error),"error");}finally{setBatchBusy(false);}};
+  $("batch-print").onclick=async()=>{if(!batchReady)return;const btn=$("batch-print");setBatchBusy(true);try{
+    const fresh=await window.RetailLabelTools.confirm(db,store.id,batchLabels);if(fresh.some((x,i)=>x.priceMinor!==batchLabels[i].priceMinor||x.name!==batchLabels[i].name)){invalidateBatch();throw new Error("نرخ یان ناوی کاڵا گۆڕدراوە؛ پێشبینین دووبارە ئامادە بکە");}
+    printingBatch=true;printLabels([...$("batch-label-preview").children]);
+   }catch(error){invalidateBatch();message("batch-message",explain(error),"error");}finally{setBatchBusy(false);}};
+  window.addEventListener("afterprint",()=>{document.body.classList.remove("printing-labels");$("label-print-root")?.remove();printingBatch=false;});
+
+  if(new URLSearchParams(location.search).get("batch")==="1")$("batch-label-panel").hidden=false;
   function renderPrices() {
     const root = $("prices-results");
     root.replaceChildren();
@@ -350,7 +352,7 @@
       labelBtn.type = "button"; labelBtn.className = "catalog-label-btn"; labelBtn.dataset.printLabel = (p.barcodes && p.barcodes[0]) || p.id;
       labelBtn.textContent = "لەیبڵ";
       labelBtn.addEventListener("click", () => openLabelPreview({
-        code: (p.barcodes && p.barcodes[0]) || p.sku || p.plu || "000000",
+        code: (p.barcodes && p.barcodes[0]) || "",
         name: p.name,
         priceMinor: p.sale_mode === "carton" && p.carton_price_minor != null ? p.carton_price_minor : p.price_minor,
         unitLabel: p.sale_mode === "carton" ? "کارتۆن" : p.base_unit==="kg"?"کیلۆگرام":"دانە"
@@ -948,7 +950,7 @@
     });
   }
   if($("label-print-btn")){
-    $("label-print-btn").addEventListener("click",()=>{window.print();});
+    $("label-print-btn").addEventListener("click",async()=>{try{if(!currentLabel)return;const [fresh]=await window.RetailLabelTools.confirm(db,store.id,[{...currentLabel,copies:1}]);if(fresh.priceMinor!==currentLabel.priceMinor||fresh.name!==currentLabel.name){showLabel(fresh);throw new Error("نرخ یان ناو گۆڕدراوە؛ لیبڵە نوێکە بپشکنە و دووبارە چاپ بکە");}printLabels([$("label-card")],$("label-size").value);}catch(error){message("system-message",explain(error),"error");}});
   }
   if($("label-close-btn")){
     $("label-close-btn").addEventListener("click",()=>{

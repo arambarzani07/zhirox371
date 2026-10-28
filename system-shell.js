@@ -36,7 +36,7 @@
     ['sales','profit','inventory','insights'].map(x=>op('reports',x)),
     [op('staff','users'),op('staff','permissions'),'./diagnostics.html',op('staff','system')],
     ['new','discounts','coupons','campaigns'].map(x=>op('offers',x)),
-    ['./workspace.html?view=prices&section=labels','./workspace.html?view=barcodes&section=labels',pending(9,2),'./diagnostics.html?section=labels'],
+    ['./workspace.html?view=prices&section=labels','./workspace.html?view=barcodes&section=labels','./workspace.html?view=prices&section=labels&batch=1','./diagnostics.html?section=labels'],
     [op('shift'),pending(10,1),pending(10,2),pending(10,3)],
     [pending(11,0),pending(11,1),op('audit'),'./qa.html']
    ];
