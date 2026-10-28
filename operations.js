@@ -861,44 +861,78 @@ function renderOpsCatalogList(){
 async function saveOpsCatalogProduct(e){
   e?.preventDefault();
   if(!db||!store||busy)return;
-  const pId=$("ops-cat-id").value.trim();
-  const name=$("ops-cat-name").value.trim();
-  const code=$("ops-cat-barcode").value.trim();
-  const priceMinor=Math.round(Number($("ops-cat-price").value||0));
-  const baseUnit=$("ops-cat-unit").value==="kg"?"kg":"unit";
-  const plu=$("ops-cat-plu").value.trim()||null;
-  if(!name||priceMinor<=0){msg("ops-cat-msg","ناوی کاڵا و نرخی فرۆشتن بنووسە","error");return;}
+  // V21: only atomic, owner-authorized catalog RPCs may mutate products.
+  // A raw products.update followed by barcodes.insert can partially save an item.
+  if(role!=="owner"){
+    msg("ops-cat-msg","تەنها خاوەنی فرۆشگا دەتوانێت کاڵا تۆمار یان دەستکاری بکات","error");return;
+  }
+  const pId=String($("ops-cat-id")?.value||"").trim();
+  const name=String($("ops-cat-name")?.value||"").trim();
+  const code=String($("ops-cat-barcode")?.value||"").trim();
+  const enteredPrice=String($("ops-cat-price")?.value||"").trim();
+  const priceMinor=Number(enteredPrice);
+  const baseUnit=$("ops-cat-unit")?.value==="kg"?"kg":"unit";
+  const plu=String($("ops-cat-plu")?.value||"").trim()||null;
+  if(!name||name.length>160||!code||code.length>60||/[\s,،;]/u.test(code)
+    ||!Number.isSafeInteger(priceMinor)||priceMinor<1||priceMinor>999999999
+    ||(plu&&plu.length>30)){
+    msg("ops-cat-msg","ناوی کاڵا، بارکۆد و نرخی فرۆشتن بە دروستی بنووسە","error");return;
+  }
+  if(!pId&&baseUnit==="kg"){
+    msg("ops-cat-msg","بۆ کاڵای کیلۆیی: لە بەشی کاڵاکان تۆمار بکە و یەکە بە ڕێگای پارێزراوی کۆگا بگۆڕە؛ ئەم فۆرمە گۆڕینی دوو قۆناغی ناپارێزراو ناکات","error");
+    return;
+  }
   lock(true);msg("ops-cat-msg","");
   try{
-    let targetProdId=pId;
-    if(targetProdId){
-      const {error:uErr}=await db.from("retail_products").update({
-        name,price_minor:priceMinor,base_unit:baseUnit,plu
-      }).eq("id",targetProdId).eq("store_id",store.id);
-      if(uErr)throw uErr;
+    let catalog;
+    let result;
+    if(pId){
+      const snapshot=await db.rpc("retail_product_snapshot_v19",{
+        p_store_id:store.id,p_product_id:pId
+      });
+      if(snapshot.error)throw snapshot.error;
+      const original=snapshot.data;
+      if(!original||!Number.isSafeInteger(Number(original.version)))
+        throw new Error("زانیاری و وەشانی کاڵا نەدۆزرایەوە");
+      if(original.base_unit!==baseUnit)
+        throw new Error("گۆڕینی یەکە لە فۆرمی کۆگا و بە پشکنینی بڕی کۆگا ئەنجام بدە");
+      if(!["unit","both"].includes(original.sale_mode))
+        throw new Error("بۆ کاڵای تەنها کارتۆن فۆرمی تەواوی کاڵاکان بەکاربهێنە");
+      // Preserve all unit aliases, carton aliases, carton prices and costs.
+      // The modal edits only name, primary unit barcode, PLU and unit IQD price.
+      catalog={
+        name,sku:original.sku??null,plu,
+        sale_mode:original.sale_mode,currency:"IQD",
+        unit_barcode:code,
+        unit_alias_barcodes:original.unit_alias_barcodes||[],
+        unit_sale_price_iqd:priceMinor,
+        unit_purchase_price_iqd:original.unit_purchase_price_iqd??null,
+        carton:original.carton??null
+      };
+      result=await db.rpc("retail_update_product_v15",{
+        p_store_id:store.id,p_product_id:pId,
+        p_expected_version:Number(original.version),p_catalog:catalog
+      });
     }else{
-      const {data:nData,error:nErr}=await db.from("retail_products").insert({
-        store_id:store.id,name,price_minor:priceMinor,currency:"IQD",base_unit:baseUnit,plu,active:true
-      }).select("id,name,price_minor,currency,base_unit,sku,plu").single();
-      if(nErr)throw nErr;
-      targetProdId=nData.id;
+      catalog={
+        name,sku:null,plu,sale_mode:"unit",currency:"IQD",
+        unit_barcode:code,unit_alias_barcodes:[],
+        unit_sale_price_iqd:priceMinor,
+        unit_purchase_price_iqd:null,carton:null
+      };
+      result=await db.rpc("retail_register_product_v14",{
+        p_store_id:store.id,p_catalog:catalog
+      });
     }
-    if(code&&targetProdId){
-      const existingB=barcodes.find(b=>b.code===code&&b.product_id===targetProdId);
-      if(!existingB){
-        const {error:bErr}=await db.from("retail_barcodes").insert({
-          store_id:store.id,product_id:targetProdId,code,unit_type:"unit",units_per_scan:1,price_minor:priceMinor,active:true
-        });
-        if(bErr&&!["23505"].includes(bErr.code))throw bErr;
-      }
-    }
+    if(result.error)throw result.error;
     await loadInventory();
     populateStockSelectors();
     renderOpsCatalogList();
     if($("ops-catalog-form-box"))$("ops-catalog-form-box").hidden=true;
-    msg("stock-msg","کاڵاکە بە سەرکەوتوویی لە سیستم تۆمارکرا","success");
+    msg("stock-msg",pId?"کاڵاکە بە شێوەیەکی پارێزراو نوێکرایەوە":"کاڵاکە بە شێوەیەکی پارێزراو تۆمارکرا","success");
   }catch(err){
-    msg("ops-cat-msg",safe(err),"error");
+    msg("ops-cat-msg",err?.code==="40001"?
+      "کاڵاکە لەلایەن بەکارهێنەرێکی تر نوێکراوەتەوە؛ دووبارە بیکەرەوە":safe(err),"error");
   }finally{
     lock(false);
   }
