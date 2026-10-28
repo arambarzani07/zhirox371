@@ -61,7 +61,7 @@
     };
   }
   function tableRows(name){
-    if(name==="retail_stores")return state.store?[state.store]:[];
+    if(name==="retail_stores")return state.store?[state.store,...(state.extraStores||[])]:[];
     if(name==="retail_products")return state.products;
     if(name==="retail_barcodes")return state.barcodes;
     if(name==="retail_stock_balances")return state.stock;
@@ -72,6 +72,7 @@
     if(name==="retail_audit_events")return state.audit;
     if(name==="retail_sale_items")return state.saleItems;
     if(name==="retail_stock_events")return state.stockEvents;
+    if(['retail_finance_entries','retail_campaigns','retail_offers','retail_discount_rules','retail_coupons'].includes(name))return state[name]||(state[name]=[]);
     throw Error("Unknown QA table "+name);
   }
   function from(table){
@@ -81,6 +82,7 @@
       order(key,opts){sortKey=key;descending=opts?.ascending===false;return this;},
       limit(n){limit=n;return this;},
       insert(value){inserted=value;return this;},
+      upsert(){return {select:()=>({maybeSingle:async()=>({data:null,error:error('42501','QA mutation denied')})})};},
       getResult(){
         if(inserted!==null){
           if(table!=="retail_stores")return {data:null,error:error("42501","Fixture insert not allowed")};
@@ -144,6 +146,7 @@
       unit_sale_price_iqd:p.price_minor,unit_alias_barcodes:[],carton:null,currency:"IQD"};
   }
   function rpc(name,args){
+    if(name==='retail_finance_state_v25')return Promise.resolve({data:{safe_balance_minor:0,drawer_balance_minor:0,customer_receivables_minor:0,supplier_payables_minor:0},error:null});
     state.called.push({name,args});
     if(state.forceRpcError){const err=state.forceRpcError;state.forceRpcError=null;return Promise.resolve({data:null,error:err});}
     let data=null,err=null;
