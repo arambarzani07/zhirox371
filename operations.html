@@ -1458,6 +1458,28 @@ select option{color:#0f172a;font-size:14px}
 <section id="audit-panel" class="surface" hidden>
 <h2>چاودێری</h2><div id="audit-list"></div>
 </section>
+<section id="returns-panel" class="surface" hidden>
+<div class="receipt-head"><h2>گەڕاندنەوەی کاڵا</h2><button id="returns-refresh" type="button" class="secondary">نوێکردنەوە</button></div>
+<p>پسووڵە هەڵبژێرە؛ بڕی گەڕاوە بەپێی نرخی سەرەتایی و داشکاندنی پسووڵە حساب دەکرێت. پارە و قەرز تەنها دوای پشتڕاستکردنەوەی سێرڤەر دەگۆڕدرێن.</p>
+<form id="returns-lookup-form" class="formrow">
+<label class="field">ژمارەی پسووڵە، ناسنامە یان بارکۆد<input id="returns-search-input" maxlength="120" autocomplete="off"></label>
+<button type="submit">دۆزینەوەی پسووڵە</button><button id="returns-clear-search" type="button" class="secondary">پاککردنەوە</button>
+<label class="field">دۆخ<select id="returns-filter-mode"><option value="all">هەموو</option><option value="active">چالاک</option><option value="refunded">گەڕاوە</option></select></label>
+</form>
+<div class="msg" id="returns-msg" role="status"></div>
+<div id="returns-list"></div>
+<div id="returns-selected-box" class="receipt-detail" hidden></div>
+<form id="returns-item-form" class="surface">
+<h3>گەڕاندنەوەی بەشێک لە پسووڵە</h3>
+<div class="formrow">
+<label class="field">ڕیزی پسووڵە<select id="return-item-product" required></select></label>
+<label class="field">بارکۆدی تۆمارکراو<select id="return-item-barcode" disabled></select></label>
+<label class="field">بڕی گەڕاوە<input id="return-item-qty" type="number" min="1" step="1" required></label>
+<label class="field">بڕی حسابکراو (IQD)<input id="return-item-refund" type="text" readonly></label>
+<label class="field">تێبینی<input id="return-item-note" maxlength="500" required></label>
+<button type="submit">تۆمارکردنی گەڕاندنەوە</button>
+</div></form>
+</section>
 <section id="receipts-panel" class="surface" hidden>
 <div class="receipt-head"><h2>پسووڵەکان</h2><button class="secondary" id="receipts-refresh" type="button">نوێکردنەوە</button></div>
 <div class="shift-metrics" id="receipts-summary">
