@@ -17,6 +17,7 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 .receipt-page .toolbar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:12px 16px;background:white;border:1px solid #dee5ee;border-radius:12px}
 .receipt-page .toolbar label{display:flex;align-items:center;gap:9px;font-size:13px}
 .receipt-page .toolbar select{min-height:38px;border:1px solid #d7e2ee;border-radius:8px;color:#26384d;padding:0 9px;background:#fff}
+.receipt-page .toolbar input{min-height:36px;border:1px solid #d7e2ee;border-radius:8px;color:#26384d;padding:0 9px;background:#fff;font-size:12.5px}
 .receipt-page .button{min-height:38px;padding:0 15px;border:0;border-radius:8px;color:#fff;background:#274a77;font-weight:750;font-size:13px}
 .receipt-page .button:disabled{opacity:.5;cursor:not-allowed}
 .receipt-page .secondary{background:#edf2f8;color:#4b637c}
@@ -24,7 +25,8 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 .receipt-page .receipt{direction:rtl;width:100%;font-family:Tahoma,"Segoe UI",Arial,sans-serif;font-size:10.5px;line-height:1.6;font-weight:500;color:#111;overflow-wrap:normal;word-break:normal}
 .receipt-page .receipt h1{font-size:12px;line-height:1.5;font-weight:800;text-align:center;margin:0 0 3px;overflow-wrap:anywhere}
 .receipt-page .center{text-align:center}
-.receipt-page .receipt-subtitle{font-size:9px;margin:0 0 6px}
+.receipt-page .receipt-subtitle{font-size:9px;margin:0 0 4px;font-weight:700}
+.receipt-page .receipt-contact{font-size:8.8px;line-height:1.45;margin:1px 0;color:#111;font-weight:650;overflow-wrap:anywhere}
 .receipt-page .rule{border:0;border-bottom:1px dashed #666;height:0;margin:7px 0}
 .receipt-page .receipt-row{display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:baseline;gap:6px;margin:4px 0}
 .receipt-page .receipt-row>:first-child{min-width:0;text-align:right}
@@ -49,6 +51,7 @@ body.receipt-page{margin:0;background:#f2f4f8;color:#1c2633;font-family:"Noto Sa
 html[data-paper="80"]{--receipt-pad:4mm}
 html[data-paper="80"] .receipt-page .receipt{font-size:11.5px}
 html[data-paper="80"] .receipt-page .receipt h1{font-size:15px}
+html[data-paper="80"] .receipt-page .receipt-contact{font-size:10px}
 html[data-paper="80"] .receipt-page .receipt-items{font-size:9.6px}
 html[data-paper="80"] .receipt-page .receipt-items th,html[data-paper="80"] .receipt-page .receipt-items td{padding:5px 2px}
 html[data-paper="80"] .receipt-page .receipt-items .pack-hint{font-size:8px}
@@ -77,6 +80,11 @@ html[data-paper="80"] .receipt-page .receipt-items .pack-hint{font-size:8px}
 <option value="58">58mm</option>
 <option value="80">80mm</option>
 </select></label>
+<label>ناونیشان
+<input id="toolbar-address" type="text" maxlength="140" placeholder="ناونیشانی فرۆشگا..."></label>
+<label>ژمارەی تەلەفۆن
+<input id="toolbar-phone" type="text" maxlength="40" dir="ltr" placeholder="0750 000 0000"></label>
+<button class="button secondary" id="save-contact" type="button">پاشەکەوت لەسەر پسووڵە</button>
 <button class="button" id="print" type="button" disabled>چاپکردن</button>
 <button class="button secondary" id="back" type="button">گەڕانەوە</button>
 </div>
@@ -86,6 +94,8 @@ html[data-paper="80"] .receipt-page .receipt-items .pack-hint{font-size:8px}
 <header>
 <h1 id="store-name"></h1>
 <div class="center receipt-subtitle">پسووڵەی فرۆشتن</div>
+<div class="center receipt-contact" id="store-address">ناونیشان: هەولێر — کانی چنار</div>
+<div class="center receipt-contact" id="store-phone" dir="rtl">ژمارەی تەلەفۆن: <span class="latin" id="store-phone-val">0750 000 0000</span></div>
 </header>
 <div class="rule"></div>
 <div class="receipt-row"><span>ژمارەی پسووڵە</span><strong id="receipt-number" class="money receipt-number"></strong></div>
@@ -101,7 +111,7 @@ html[data-paper="80"] .receipt-page .receipt-items .pack-hint{font-size:8px}
 <div class="receipt-row"><span>پارەی گەڕاوە</span><span class="money" id="change"></span></div>
 </div>
 <div class="rule"></div>
-<div class="footer">سوپاس بۆ کڕینەکەتان</div>
+<div class="footer" id="receipt-footer">سوپاس بۆ کڕینەکەتان</div>
 </div>
 </article>
 </div>

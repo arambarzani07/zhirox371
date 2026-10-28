@@ -102,6 +102,17 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #cart-list .cash-basket-grid .basket-qty-input:disabled,#cart-list .cash-basket-grid .basket-remove:disabled{opacity:.5}
 #cart-list .cash-basket-grid .basket-stale{display:block;color:#b91c1c;font-size:11px;font-weight:850;line-height:1.4}
 
+/* Sub-Navigation Bars & Operational Cards Across Modules */
+.stock-sub-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1.5px solid #e2e8f0}
+.stock-sub-head h2{margin:0}
+.stock-subnav,.stock-sub-nav,.stock-subtabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#f1f5f9;padding:5px;border-radius:12px;border:1.5px solid #cbd5e1}
+.stock-subnav{margin-bottom:16px}
+.stock-subnav button,.stock-sub-nav button,.stock-subtab{height:40px;min-height:40px;padding:0 16px;border:1.5px solid transparent;border-radius:9px;background:transparent;color:#172b45;font-size:13px;font-weight:850;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .12s ease}
+.stock-subnav button:hover:not(.active),.stock-sub-nav button:hover:not(.active),.stock-subtab:hover:not(.active){background:#ffffff;border-color:#cbd5e1;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.stock-subnav button.active,.stock-sub-nav button.active,.stock-subtab.active{background:#203e66 !important;border-color:#203e66 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;box-shadow:0 2px 6px rgba(32,62,102,0.22)}
+.stock-adjust-card{background:#f8fafc;border:1.5px solid #dbe4f0;border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(15,23,42,0.02)}
+.stock-adjust-card h3{margin:0 0 12px;font-size:15px;font-weight:900;color:#172b45}
+
 .stock-pick-btn,.stock-action-btn,.stock-edit-link{height:38px;min-height:38px;padding:0 14px;border:1.5px solid #cbd5e1;border-radius:9px;background:#f8fafc;color:#0f172a;font-size:13px;font-weight:850;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;transition:all .1s}
 .stock-action-btn,.stock-edit-link{margin-inline-start:6px;background:#eef5fc}
 .stock-pick-btn:hover,.stock-action-btn:hover,.stock-edit-link:hover{background:#e2e8f0}
@@ -112,7 +123,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .stock-badge.ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
 .stock-badge.info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
 
-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
 td,th{padding:12px 14px;border-bottom:1px solid #e2e8f0;text-align:right}
 th{background:#f8fafc;color:#475569;font-weight:850}
 .qty{display:inline-flex;align-items:center;gap:8px}
@@ -158,6 +169,74 @@ select option{color:#0f172a;font-size:14px}
 .pager-info{font-size:14px;font-weight:900;color:#0f172a;direction:ltr}
 .pager button{height:44px;min-height:44px;padding:0 20px}
 [hidden]{display:none!important}
+
+/* Touch-Screen On-Screen Numpad for Cash Register */
+.pos-touch-numpad-box{margin:8px 0 10px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:8px 10px}
+.pos-touch-numpad-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pos-touch-numpad-title{font-size:12px;font-weight:800;color:#334155}
+.pos-touch-toggle-btn{background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;padding:2px 8px;font-weight:800;color:#475569;cursor:pointer;transition:all .1s}
+.pos-touch-toggle-btn:hover{background:#f1f5f9;color:#0f172a}
+.pos-touch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;direction:ltr}
+.touch-key{min-height:42px;height:42px;font-size:17px;font-weight:850;border-radius:9px;border:1.5px solid #cbd5e1;background:#ffffff;color:#0f172a;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,0.03);transition:all .08s ease;cursor:pointer;user-select:none}
+.touch-key:hover{background:#f1f5f9;border-color:#94a3b8}
+.touch-key:active{transform:scale(0.93);background:#e2e8f0}
+.touch-key-action{background:#f1f5f9;color:#334155;font-size:18px}
+.touch-key-clear{background:#fef2f2;border-color:#fca5a5;color:#b91c1c;font-weight:900}
+.touch-key-clear:hover{background:#fee2e2}
+.touch-key-triple{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-weight:900;font-size:14px}
+.touch-key-triple:hover{background:#dbeafe}
+.touch-key-iqd{background:#f0fdf4;border-color:#bbf7d0;color:#15803d;font-size:14px;font-weight:900}
+.touch-key-iqd:hover{background:#dcfce7}
+.touch-key-exact{background:#1e3a8a;border-color:#1e3a8a;color:#ffffff;font-size:13px;font-weight:850}
+.touch-key-exact:hover{background:#1d4ed8}
+.pos-touch-target-indicator{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#e2e8f0;border-radius:8px;margin-bottom:6px;font-size:11px;flex-wrap:wrap}
+.pos-touch-target-name{color:#1e3a8a;font-weight:900}
+.pos-touch-switch-btn{height:24px;min-height:24px;padding:0 7px;font-size:10px;font-weight:800;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#1e293b;cursor:pointer;transition:all .1s}
+.pos-touch-switch-btn:hover{background:#f1f5f9;color:#1e3a8a;border-color:#93c5fd}
+.pos-touch-switch-btn:active{transform:scale(0.95)}
+.pos-touch-switch-btn.active{background:#1e3a8a;color:#ffffff;border-color:#1e3a8a}
+
+/* Shelf Edge Label Modal & Printing (40x25mm / 50x30mm) */
+.ops-shelf-label-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.ops-shelf-label-backdrop{position:absolute;inset:0;background:rgba(15,23,42,0.55);backdrop-filter:blur(2px)}
+.ops-shelf-label-dialog{position:relative;background:#ffffff;border-radius:16px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2),0 10px 10px -5px rgba(0,0,0,0.1);max-width:520px;width:100%;padding:22px 24px;border:1.5px solid #cbd5e1;z-index:2}
+.ops-shelf-label-card{background:#ffffff;border:2px solid #0f172a;border-radius:8px;padding:8px 12px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.06);display:flex;flex-direction:column;align-items:center;justify-content:space-between;box-sizing:border-box}
+.ops-shelf-label-card.size-40x25{width:220px;min-height:140px;padding:6px 8px}
+.ops-shelf-label-card.size-50x30{width:270px;min-height:165px;padding:8px 12px}
+.ops-label-store{font-size:11px;font-weight:850;color:#475569;letter-spacing:0.2px}
+.ops-label-name{font-size:14px;font-weight:900;color:#0f172a;margin:2px 0 4px;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ops-label-price-box{display:flex;align-items:baseline;justify-content:center;gap:6px;background:#f8fafc;border:1.5px solid #0f172a;border-radius:6px;padding:2px 10px;margin:2px 0 6px;width:90%}
+.ops-label-price{font-size:22px;font-weight:950;color:#0f172a;direction:ltr}
+.ops-label-unit{font-size:12px;font-weight:800;color:#475569}
+.ops-label-barcode-wrap{display:flex;justify-content:center;margin:2px 0}
+.ops-label-barcode-wrap svg{display:block;max-width:100%}
+.ops-label-code{font-size:12px;font-weight:900;letter-spacing:1px;color:#0f172a;direction:ltr;font-family:monospace}
+
+@media print{
+  body.printing-ops-label *{visibility:hidden!important}
+  body.printing-ops-label #ops-shelf-label-card,
+  body.printing-ops-label #ops-shelf-label-card *{visibility:visible!important}
+  body.printing-ops-label #ops-shelf-label-card{
+    position:fixed!important;left:0!important;top:0!important;
+    border:1px solid #000!important;box-shadow:none!important;margin:0!important;
+    page-break-inside:avoid!important;background:#fff!important;color:#000!important;
+  }
+  body.printing-ops-label.label-size-40x25 #ops-shelf-label-card{
+    width:40mm!important;height:25mm!important;padding:1.5mm 2mm!important;
+  }
+  body.printing-ops-label.label-size-50x30 #ops-shelf-label-card{
+    width:50mm!important;height:30mm!important;padding:2mm 3mm!important;
+  }
+  body.printing-batch-labels *{visibility:hidden!important}
+  body.printing-batch-labels #batch-labels-print-sheet,
+  body.printing-batch-labels #batch-labels-print-sheet *{visibility:visible!important}
+  body.printing-batch-labels #batch-labels-print-sheet{
+    position:absolute!important;left:0!important;top:0!important;width:100%!important;
+    display:grid!important;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))!important;
+    gap:4mm!important;padding:4mm!important;background:#fff!important;border:none!important;
+  }
+  @page{size:auto;margin:0mm}
+}
 </style>
 <link rel="stylesheet" href="./ui-global.css">
 <link rel="stylesheet" href="./ui-fixed-pc.css">
@@ -178,17 +257,21 @@ select option{color:#0f172a;font-size:14px}
 <div class="viewport"><div class="desktop">
 <header>
 <a href="./index.html" class="brand"><i>◈</i><span>سیستەمی کاشێر</span></a>
-<div class="head-actions"><div class="ws-links-group"><a class="ws-link" id="go-workspace-list" href="./workspace.html?view=list">کاڵاکان</a><a class="ws-link" id="go-workspace-new" href="./workspace.html?view=new">کاڵای نوێ</a><a class="ws-link" id="go-workspace-prices" href="./workspace.html?view=prices">نرخەکان</a><a class="ws-link" id="go-workspace-barcodes" href="./workspace.html?view=barcodes">بارکۆدەکان</a></div><span class="smallinfo" id="who"></span><button id="logout" type="button" class="secondary" hidden>دەرچوون</button><a class="home" href="./index.html" aria-label="سەرەتا">⌂</a></div>
+<div class="head-actions"><button type="button" id="offline-sync-badge" class="secondary" style="height:36px;padding:0 12px;font-size:12px;font-weight:850;background:#ecfdf5;border-color:#6ee7b7;color:#065f46" title="ستراتیژی ١٠٠٪ ئۆفلاین — ناردنی خۆکاری داتاکان هەر کاتژمێرێک بۆ سێرڤەر">⚡ ١٠٠٪ ئۆفلاین | ناردنی کاتژمێری</button><div class="ws-links-group"><a class="ws-link" id="go-workspace-list" href="./workspace.html?view=list">کاڵاکان</a><a class="ws-link" id="go-workspace-new" href="./workspace.html?view=new">کاڵای نوێ</a><a class="ws-link" id="go-workspace-prices" href="./workspace.html?view=prices">نرخەکان</a><a class="ws-link" id="go-workspace-barcodes" href="./workspace.html?view=barcodes">بارکۆدەکان</a><a class="ws-link" id="go-customer-display" href="./customer-display.html" target="_blank" title="شاشەی دووەمی کڕیار (Customer Display)" style="color:#1d4ed8;font-weight:900">🖥️ شاشەی کڕیار</a></div><span class="smallinfo" id="who"></span><button id="quick-switch-user" type="button" class="secondary" style="height:36px;padding:0 10px;font-size:12px;font-weight:850;background:#eff6ff;border-color:#93c5fd;color:#1e40af" title="گۆڕینی خێرای کارمەند / کاشێر" hidden>🔄 گۆڕینی کاشێر</button><button id="logout" type="button" class="secondary" hidden>دەرچوون</button><a class="home" href="./index.html" aria-label="سەرەتا">⌂</a></div>
 </header>
 <main>
 <h1>کاشێر</h1>
 <section class="surface narrow" id="login-panel" hidden>
 <h2>چوونەژوورەوە</h2>
 <form id="login-form" class="formrow">
-<label class="field">ئیمەیڵ<input type="email" name="email" required autocomplete="username"></label>
-<label class="field">وشەی نهێنی<input type="password" name="password" required autocomplete="current-password"></label>
+<label class="field">ئیمەیڵ یان کۆدی کارمەند<input type="text" name="email" required autocomplete="username" placeholder="ئیمەیڵ، مۆبایل، PIN یان UUID..."></label>
+<label class="field">وشەی نهێنی<input type="password" name="password" autocomplete="current-password" placeholder="وشەی نهێنی یان PIN"></label>
 <button class="primary" type="submit">چوونەژوورەوە</button>
 </form>
+<div id="quick-login-staff-box" style="margin-top:14px;padding-top:12px;border-top:1px dashed #cbd5e1">
+<span style="font-size:12px;font-weight:850;color:#475569;display:block;margin-bottom:8px">چوونەژوورەوەی خێرا بەپێی کارمەند:</span>
+<div id="quick-login-staff-list" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+</div>
 <p><a href="./workspace.html" style="color:#4c6e9e;font-size:12px">هەژماری نوێ</a></p>
 <div class="msg" id="login-msg" role="status"></div>
 </section>
@@ -198,7 +281,7 @@ select option{color:#0f172a;font-size:14px}
 <button data-tab="receipts" type="button">پسووڵەکان</button>
 <button data-tab="payments" type="button">پارەدان</button>
 <button data-tab="returns" type="button">گەڕاندنەوە</button>
-<button data-tab="shift" type="button">شێفت</button>
+<button data-tab="shift" type="button">شێفت و کارمەندان</button>
 <button data-tab="stock" type="button">کۆگا</button>
 <button data-tab="customers" type="button">کڕیاران و حسابەکان</button>
 <button data-tab="suppliers" type="button">کڕین و دابینکەران</button>
@@ -206,6 +289,7 @@ select option{color:#0f172a;font-size:14px}
 <button data-tab="reports" type="button">ڕاپۆرت و شیکاری</button>
 <button data-tab="staff" type="button">ڕێکخستنەکان</button>
 <button data-tab="offers" type="button">ئۆفەر و داشکاندن</button>
+<button data-tab="labels" type="button">لیبڵ و چاپکردن</button>
 <button data-tab="audit" type="button">چاودێری</button>
 </nav>
 <section class="grid" id="cash-panel" hidden>
@@ -221,6 +305,7 @@ select option{color:#0f172a;font-size:14px}
 <span style="font-size:12px;font-weight:700;color:#334e68">ئەنجامی گەڕانی کاڵا</span>
 <div style="display:flex;align-items:center;gap:8px">
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#334e68;margin:0">کێشی تەرازوو (گرام):<input id="cash-scale-grams" type="number" min="1" max="99999" step="1" value="1000" style="width:90px;height:30px;padding:2px 6px" title="بۆ کاڵای کیلۆیی: کێش بە گرام بنووسە (١٠٠٠ گرام = ١ کیلۆگرام)"></label>
+<button type="button" class="secondary" id="scale-serial-btn" style="height:30px;padding:0 8px;font-size:11px;font-weight:750" title="خوێندنەوەی کێش ڕاستەوخۆ لە تەرازووی ئەلیکترۆنی">⚖️ تەرازووی کێبڵ</button>
 <button type="button" class="secondary" id="cash-catalog-close" style="height:30px;padding:0 10px;font-size:12px">داخستن</button>
 </div>
 </div>
@@ -258,6 +343,39 @@ select option{color:#0f172a;font-size:14px}
 <button type="button" class="quick-cash-btn" data-tender="25000">25,000</button>
 <button type="button" class="quick-cash-btn" data-tender="50000">50,000</button>
 </div>
+<div class="pos-touch-numpad-box" id="pos-touch-numpad-box">
+<div class="pos-touch-numpad-header">
+<span class="pos-touch-numpad-title">⌨ تەختەکلیلی ژمارەیی تاچ (Numpad)</span>
+<button type="button" class="pos-touch-toggle-btn" id="pos-touch-toggle-btn" title="شاردنەوە یان پیشاندانی کیبۆرد">داخستن ✕</button>
+</div>
+<div class="pos-touch-target-indicator" id="pos-touch-target-indicator">
+<span style="color:#475569;font-weight:700">نووسین لە:</span>
+<strong class="pos-touch-target-name" id="pos-touch-target-name">وەرگیراو (IQD)</strong>
+<div style="display:flex;gap:4px;margin-inline-start:auto">
+<button type="button" class="pos-touch-switch-btn" id="pos-touch-switch-barcode" title="گواستنەوە بۆ سکانەر و بارکۆد">سکانەر</button>
+<button type="button" class="pos-touch-switch-btn" id="pos-touch-switch-cash" title="گواستنەوە بۆ وەرگیراو">وەرگیراو</button>
+<button type="button" class="pos-touch-switch-btn" id="pos-touch-switch-discount" title="گواستنەوە بۆ داشکاندن">داشکاندن</button>
+</div>
+</div>
+<div class="pos-touch-grid" id="pos-touch-grid">
+<button type="button" class="touch-key" data-key="7">7</button>
+<button type="button" class="touch-key" data-key="8">8</button>
+<button type="button" class="touch-key" data-key="9">9</button>
+<button type="button" class="touch-key touch-key-action" data-key="backspace" title="سڕینەوەی یەک پیت">⌫</button>
+<button type="button" class="touch-key" data-key="4">4</button>
+<button type="button" class="touch-key" data-key="5">5</button>
+<button type="button" class="touch-key" data-key="6">6</button>
+<button type="button" class="touch-key touch-key-clear" data-key="clear" title="سڕینەوەی هەمووی">C</button>
+<button type="button" class="touch-key" data-key="1">1</button>
+<button type="button" class="touch-key" data-key="2">2</button>
+<button type="button" class="touch-key" data-key="3">3</button>
+<button type="button" class="touch-key touch-key-triple" data-key="000" title="سێ سفر">000</button>
+<button type="button" class="touch-key" data-key="0">0</button>
+<button type="button" class="touch-key touch-key-iqd" data-key="250" title="زیادکردنی ٢٥٠">250</button>
+<button type="button" class="touch-key touch-key-iqd" data-key="500" title="زیادکردنی ٥٠٠">500</button>
+<button type="button" class="touch-key touch-key-exact" data-key="exact" title="بڕی تەواوی فرۆشتن">تەواو</button>
+</div>
+</div>
 <div class="usd-box" style="margin:8px 0;padding:6px 8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:12px">
 <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" id="usd-toggle">
 <span style="font-weight:700">💵 وەرگرتن بە دۆلار ($)</span>
@@ -287,7 +405,17 @@ select option{color:#0f172a;font-size:14px}
 </aside>
 </section>
 <section id="shift-panel" class="surface" hidden>
-<div class="receipt-head"><h2>شێفت</h2><button class="secondary" id="shift-refresh" type="button">نوێکردنەوە</button></div>
+<div class="receipt-head" style="margin-bottom:12px">
+<h2>شێفت و کارمەندان</h2>
+<div class="nav" id="shift-subtabs" style="margin-bottom:0">
+<button type="button" data-shift-sub="shifts" class="active">شێفتەکان</button>
+<button type="button" data-shift-sub="attendance">ئامادەبوون</button>
+<button type="button" data-shift-sub="workhours">کاتی کار</button>
+<button type="button" data-shift-sub="evaluation">هەڵسەنگاندن</button>
+</div>
+</div>
+<div id="shift-sub-shifts">
+<div class="receipt-head"><h3>بەڕێوەبردنی شێفتی کاشێر و سندووق</h3><button class="secondary" id="shift-refresh" type="button">نوێکردنەوە</button></div>
 <div id="shift-current" class="shift-info" hidden>
 <div class="shift-metrics">
 <div><span>پارەی سەرەتا</span><strong id="shift-opening">0 IQD</strong></div>
@@ -326,6 +454,91 @@ select option{color:#0f172a;font-size:14px}
 <div class="msg" id="shift-msg" role="status"></div>
 <div id="shift-report" class="shift-report" hidden></div>
 <div id="shift-history"></div>
+</div>
+
+<div id="shift-sub-attendance" hidden>
+<div class="shift-metrics" style="margin-bottom:14px">
+<div><span>کارمەندی ئامادەی ئەمڕۆ</span><strong id="att-kpi-present" style="color:#15803d">0</strong></div>
+<div><span>دواکەوتوو لە دەوام</span><strong id="att-kpi-late" style="color:#d97706">0</strong></div>
+<div><span>مۆڵەت / نەهاتوو</span><strong id="att-kpi-absent" style="color:#b91c1c">0</strong></div>
+<div><span>کۆی تۆمارەکانی ئامادەبوون</span><strong id="att-kpi-total">0</strong></div>
+</div>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">تۆمارکردنی هاتن و دەرچوونی کارمەند (ئامادەبوونی ڕۆژانە)</h3>
+<form id="attendance-form" class="formrow">
+<label class="field">ناوی کارمەند<input id="att-staff-name" maxlength="80" required placeholder="وەک: ئارام بارزانی / کاشێری ١"></label>
+<label class="field" style="max-width:160px">پلە و ئەرک<select id="att-role"><option value="کاشێر">کاشێر</option><option value="بەڕێوەبەر">بەڕێوەبەر</option><option value="کۆگاوان">کۆگاوان</option><option value="کارمەندی ڕەفە">کارمەندی ڕەفە</option></select></label>
+<label class="field" style="max-width:160px">بەروار<input id="att-date" type="date" required style="direction:ltr"></label>
+<label class="field" style="max-width:140px">کاتی هاتن<input id="att-check-in" type="time" value="08:00" required style="direction:ltr"></label>
+<label class="field" style="max-width:140px">کاتی دەرچوون<input id="att-check-out" type="time" value="16:00" style="direction:ltr"></label>
+<label class="field" style="max-width:165px">دۆخ<select id="att-status"><option value="present">ئامادەبوو ✅</option><option value="late">دواکەوتوو ⏰</option><option value="leave">مۆڵەت 📄</option><option value="absent">نەهاتوو ❌</option></select></label>
+<label class="field">تێبینی<input id="att-note" maxlength="120" placeholder="شێفتی بەیانی یان ئێوارە..."></label>
+<button type="submit" class="primary">تۆمارکردنی ئامادەبوون</button>
+</form>
+<div class="msg" id="att-msg" role="status"></div>
+</div>
+<div class="formrow" style="margin-bottom:12px">
+<label class="field">گەڕان بە ناوی کارمەند یان تێبینی<input id="att-search" maxlength="80" placeholder="گەڕان لە تۆماری ئامادەبوون..."></label>
+<label class="field" style="max-width:190px">پاڵاوتنی دۆخ<select id="att-status-filter"><option value="all">هەموو دۆخەکان</option><option value="present">تەنها ئامادەبووان</option><option value="late">تەنها دواکەوتووان</option><option value="leave">مۆڵەت</option><option value="absent">نەهاتوو</option></select></label>
+<button type="button" class="secondary" id="att-export-csv">⬇ هەناردەی ئامادەبوون (CSV)</button>
+</div>
+<div id="attendance-list"></div>
+</div>
+
+<div id="shift-sub-workhours" hidden>
+<div class="shift-metrics" style="margin-bottom:14px">
+<div><span>کۆی کاتژمێری کارکردنی ئاسایی</span><strong id="wh-kpi-regular">0 کاتژمێر</strong></div>
+<div><span>کۆی کاتژمێری زیادە (Overtime)</span><strong id="wh-kpi-overtime" style="color:#1d4ed8">0 کاتژمێر</strong></div>
+<div><span>کۆی شایستەی دارایی کاتی کار</span><strong id="wh-kpi-pay" style="color:#15803d">0 IQD</strong></div>
+<div><span>شێفتە تۆمارکراوەکانی کاشێر</span><strong id="wh-kpi-shifts">0</strong></div>
+</div>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">تۆمارکردنی کاتژمێری کار، کاتژمێری زیادە (Overtime) و هەقدەست</h3>
+<form id="workhours-form" class="formrow">
+<label class="field">ناوی کارمەند<input id="wh-staff-name" maxlength="80" required placeholder="ناوی کارمەند بنووسە"></label>
+<label class="field" style="max-width:155px">بەروار<input id="wh-date" type="date" required style="direction:ltr"></label>
+<label class="field" style="max-width:140px">کاتژمێری ئاسایی<input id="wh-regular-hrs" type="number" min="0" max="24" step="0.5" value="8" required style="direction:ltr"></label>
+<label class="field" style="max-width:140px">کاتژمێری زیادە<input id="wh-overtime-hrs" type="number" min="0" max="24" step="0.5" value="0" style="direction:ltr"></label>
+<label class="field" style="max-width:165px">کرێی یەک کاتژمێر (IQD)<input id="wh-hourly-rate" type="number" min="0" step="250" value="3500" required style="direction:ltr"></label>
+<label class="field" style="max-width:160px">پاداشت / لێبڕین (IQD)<input id="wh-bonus" type="number" step="500" value="0" style="direction:ltr"></label>
+<label class="field">تێبینی<input id="wh-note" maxlength="120" placeholder="جەردی شەوانە یان دەوامی فەرمی..."></label>
+<button type="submit" class="primary">تۆمارکردنی کاتی کار</button>
+</form>
+<div class="msg" id="wh-msg" role="status"></div>
+</div>
+<div class="formrow" style="margin-bottom:12px">
+<label class="field">گەڕان لە کاتژمێری کار<input id="wh-search" maxlength="80" placeholder="گەڕان بە ناوی کارمەند..."></label>
+<button type="button" class="secondary" id="wh-export-csv">⬇ هەناردەی کاتی کار و مووچە (CSV)</button>
+</div>
+<div id="workhours-list"></div>
+</div>
+
+<div id="shift-sub-evaluation" hidden>
+<div class="shift-metrics" style="margin-bottom:14px">
+<div><span>تێکڕای نمرەی گشتیی کارمەندان</span><strong id="eval-kpi-avg" style="color:#15803d">5.0 / 5</strong></div>
+<div><span>کارمەندی پلە نایاب (⭐)</span><strong id="eval-kpi-top">0</strong></div>
+<div><span>وردبینیی سندووقی شێفتەکان</span><strong id="eval-kpi-accuracy">100%</strong></div>
+<div><span>کۆی هەڵسەنگاندنەکان</span><strong id="eval-kpi-count">0</strong></div>
+</div>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">تۆمارکردنی هەڵسەنگاندنی ئەدا و وردبینیی کارمەند</h3>
+<form id="evaluation-form" class="formrow">
+<label class="field">ناوی کارمەند<input id="eval-staff-name" maxlength="80" required placeholder="ناوی کارمەند یان کاشێر"></label>
+<label class="field" style="max-width:160px">مانگ / ماوە<input id="eval-period" maxlength="40" value="2026-10" required style="direction:ltr"></label>
+<label class="field" style="max-width:155px">خێرایی و مامەڵە (1-5)<select id="eval-speed"><option value="5">5 — نایاب</option><option value="4">4 — زۆر باش</option><option value="3">3 — باش</option><option value="2">2 — مامناوەند</option><option value="1">1 — لاواز</option></select></label>
+<label class="field" style="max-width:155px">پاکیی حیسابی سندووق (1-5)<select id="eval-accuracy"><option value="5">5 — بێ هەڵە</option><option value="4">4 — زۆر باش</option><option value="3">3 — باش</option><option value="2">2 — کورتهێنانی کەم</option><option value="1">1 — هەڵەی دووبارە</option></select></label>
+<label class="field" style="max-width:155px">پابەندبوون بە کات (1-5)<select id="eval-discipline"><option value="5">5 — نموونەیی</option><option value="4">4 — زۆر باش</option><option value="3">3 — باش</option><option value="2">2 — دواکەوتن</option><option value="1">1 — کەمتەرخەم</option></select></label>
+<label class="field">پێشنیار و تێبینیی بەڕێوەبەر<input id="eval-note" maxlength="140" placeholder="شایستەی پاداشتە، مامەڵەی لەگەڵ کڕیار زۆر باشە..."></label>
+<button type="submit" class="primary">پاشەکەوتکردنی هەڵسەنگاندن</button>
+</form>
+<div class="msg" id="eval-msg" role="status"></div>
+</div>
+<div class="formrow" style="margin-bottom:12px">
+<label class="field">گەڕان لە هەڵسەنگاندنەکان<input id="eval-search" maxlength="80" placeholder="ناوی کارمەند یان تێبینی..."></label>
+<button type="button" class="secondary" id="eval-export-csv">⬇ هەناردەی هەڵسەنگاندنەکان (CSV)</button>
+</div>
+<div id="evaluation-list"></div>
+</div>
 </section>
 <section id="stock-panel" class="surface" hidden>
 <div class="receipt-head" style="margin-bottom:12px">
@@ -1200,6 +1413,32 @@ select option{color:#0f172a;font-size:14px}
 <div class="msg" id="set-sys-msg" role="status"></div>
 </div>
 
+<div id="offline-demo-panel" hidden class="stock-adjust-card" style="margin-bottom:14px;background:#f0fdf4;border-color:#86efac">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+<h3 style="margin:0;font-size:15px;color:#14532d">٢. ستراتیژی کارکردنی ١٠٠٪ ئۆفلاین و ناردنی خۆکاری کاتژمێری بۆ سێرڤەر (100% Offline-First + Hourly Server Sync)</h3>
+<span class="stock-badge ok" id="sys-sync-mode-badge">١٠٠٪ خۆکار (بێ دەستکاریکردن) ✓</span>
+</div>
+<div id="sys-zero-touch-banner" style="padding:10px 14px;margin-bottom:12px;border-radius:10px;background:#dcfce7;border:1px solid #86efac;color:#14532d;font-size:13px;font-weight:750;line-height:1.6">
+✅ <strong>پاشەکەوتکردنی خۆکار لەسەر دیسکی D (Zero-Touch Disk D Auto-Storage):</strong> سیستەمەکە بە شێوەی ١٠٠٪ خۆکار و بێ هیچ دەستکاریکردنێک فۆڵدەری تایبەت بە خۆی لەسەر <strong>دیسکی D</strong> دروست دەکات: <code dir="ltr">D:\SupermarketPOS_Data\backups\</code> (لەگەڵ کۆپیی ناو <code dir="ltr">IndexedDB</code> و <code dir="ltr">LocalStorage</code>) تا هەرگیز بە فۆڕماتکردنی ویندۆز (دیسکی C) هیچ داتایەکت نەفەوتێت.
+</div>
+<div class="shift-metrics" style="margin-bottom:12px">
+<div><span>شوێنی خەزنکردن و باکئەپی خۆکار</span><strong id="sys-sync-kpi-mode" style="color:#15803d" dir="ltr">D:\SupermarketPOS_Data (١٠٠٪ خۆکار)</strong></div>
+<div><span>دۆخی هێڵی ئینتەرنێت</span><strong id="sys-sync-kpi-net" style="color:#168db7">پەیوەستە (سەرهێڵ)</strong></div>
+<div><span>مامەڵەی چاوەڕوانکراو لە ڕیزدا (Outbox)</span><strong id="sys-sync-kpi-queue" style="color:#d97706">0 مامەڵە</strong></div>
+<div><span>دوایین ناردن و کاتی ناردنی داهاتوو</span><strong id="sys-sync-kpi-last" style="color:#7c3aed">هەر ١ کاتژمێر جارێک</strong></div>
+</div>
+<div class="formrow" style="margin-bottom:12px">
+<label class="field" style="max-width:280px">ماوەی خۆکاری ناردن بۆ سێرڤەر (ئەگەر ئینتەرنێت هەبوو)<select id="sys-sync-interval-select">
+<option value="60">هەر ١ کاتژمێر جارێک (٦٠ خولەک — ستاندارد)</option>
+<option value="30">هەر ٣٠ خولەک جارێک</option>
+<option value="120">هەر ٢ کاتژمێر جارێک (١٢٠ خولەک)</option>
+<option value="15">هەر ١٥ خولەک جارێک</option>
+</select></label>
+<button type="button" class="primary" id="sys-sync-now-btn" style="background:#15803d">☁️ ناردنی دەستبەجێی داتاکان بۆ سێرڤەر (Sync Now)</button>
+</div>
+<div id="sys-offline-sync-history-table"></div>
+</div>
+
 <div class="stock-adjust-card" style="margin-bottom:14px;background:#f8fafc">
 <h3 style="margin:0 0 10px;font-size:15px">٢. پاشەکەوتکردنی گشتی (Loaded Snapshot)، پشکنینی سێرڤەر و چاودێریی قەبارەی داتاکان</h3>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
@@ -1460,8 +1699,173 @@ select option{color:#0f172a;font-size:14px}
 <div id="offers-campaigns-list"></div>
 </div>
 </section>
+<section id="labels-panel" class="surface" hidden>
+<div class="receipt-head" style="margin-bottom:12px">
+<h2>لیبڵ و چاپکردنی بارکۆد و نرخی ڕەفە</h2>
+<div class="nav" id="labels-subtabs" style="margin-bottom:0">
+<button type="button" data-labels-sub="price" class="active">لیبڵی نرخ</button>
+<button type="button" data-labels-sub="barcode">بارکۆد</button>
+<button type="button" data-labels-sub="batch">چاپی کۆمەڵەیی</button>
+<button type="button" data-labels-sub="template">قاڵبی چاپ</button>
+</div>
+</div>
+
+<div id="labels-sub-price">
+<div class="shift-metrics" style="margin-bottom:14px">
+<div><span>کۆی کاڵا ئامادەکان بۆ چاپ</span><strong id="lbl-kpi-products">0</strong></div>
+<div><span>قەبارەی ستانداردی هەڵبژێردراو</span><strong id="lbl-kpi-size">40×25 mm</strong></div>
+<div><span>چاپی خێرای ڕەفە</span><strong style="color:#15803d">ئامادەیە ✓</strong></div>
+<div><span>جۆری هێماسازی بارکۆد</span><strong>Code-128 / EAN-13</strong></div>
+</div>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">دیزاین و چاپی ڕاستەوخۆی لەیبڵی نرخی سەر ڕەفە (Shelf Edge Price Label)</h3>
+<div class="formrow">
+<label class="field" style="flex:1.5">هەڵبژاردنی کاڵا لە کاتەلۆگ<select id="lbl-price-product"><option value="">کاڵایەک هەڵبژێرە...</option></select></label>
+<label class="field" style="max-width:180px">قەبارەی کاغەزی لەیبڵ<select id="lbl-price-size"><option value="40x25">40mm × 25mm (ستاندارد)</option><option value="50x30">50mm × 30mm (گەورە)</option></select></label>
+<label class="field">ناوی سەر لەیبڵ<input id="lbl-price-custom-name" maxlength="80" placeholder="ناوی کاڵا"></label>
+<label class="field" style="max-width:150px">نرخ (IQD)<input id="lbl-price-custom-val" type="number" min="0" step="250" placeholder="2500" style="direction:ltr"></label>
+<button type="button" class="primary" id="lbl-price-print-now">🖨 چاپی دەستبەجێی لەیبڵ</button>
+</div>
+<div class="msg" id="lbl-price-msg" role="status"></div>
+</div>
+<div class="formrow" style="margin-bottom:12px">
+<label class="field">گەڕانی خێرا لە هەموو کاڵاکان بۆ چاپی لەیبڵی نرخ<input id="lbl-price-search" maxlength="100" placeholder="ناوی کاڵا یان بارکۆد بنووسە..."></label>
+</div>
+<div id="labels-price-catalog-list"></div>
+</div>
+
+<div id="labels-sub-barcode" hidden>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">دروستکەر و پشکنەری بارکۆدی ستاندارد (EAN-13) و بارکۆدی تەرازوو (Prefix 27)</h3>
+<div class="formrow" style="margin-bottom:10px">
+<label class="field">هەڵبژاردنی کاڵا<select id="lbl-bc-product"><option value="">کاڵا هەڵبژێرە یان بارکۆدی نوێ دروست بکە...</option></select></label>
+<label class="field" style="max-width:210px">جۆری دروستکردنی بارکۆد<select id="lbl-bc-mode"><option value="ean13">بارکۆدی ستانداردی کاڵا (EAN-13)</option><option value="scale27">بارکۆدی تەرازووی کێش (Prefix 27)</option></select></label>
+<label class="field" style="max-width:140px">کۆدی PLU (بۆ تەرازوو)<input id="lbl-bc-plu" maxlength="5" value="101" style="direction:ltr"></label>
+<label class="field" style="max-width:150px">کێش بە گرام (بۆ تەرازوو)<input id="lbl-bc-grams" type="number" min="1" max="99999" value="1000" style="direction:ltr"></label>
+<button type="button" class="secondary" id="lbl-bc-generate-btn">🎲 دروستکردنی بارکۆدی دروست</button>
+</div>
+<div class="formrow">
+<label class="field">ژمارەی بارکۆدی ئامادەکراو<input id="lbl-bc-code-input" maxlength="32" style="direction:ltr;font-weight:900;font-family:monospace" placeholder="2000000000000"></label>
+<button type="button" class="primary" id="lbl-bc-print-btn">🖨 چاپی ئەم بارکۆدە</button>
+<button type="button" class="secondary" id="lbl-bc-add-batch-btn">+ ناردن بۆ چاپی کۆمەڵەیی</button>
+</div>
+<div class="msg" id="lbl-bc-msg" role="status"></div>
+</div>
+<div id="lbl-bc-preview-box" style="display:flex;justify-content:center;padding:18px;background:#f1f5f9;border-radius:12px;border:1.5px dashed #94a3b8;margin-bottom:14px"></div>
+<div id="labels-barcode-table"></div>
+</div>
+
+<div id="labels-sub-batch" hidden>
+<div class="shift-metrics" style="margin-bottom:14px">
+<div><span>ژمارەی جۆری کاڵا لە ڕیزدا</span><strong id="batch-kpi-items">0</strong></div>
+<div><span>کۆی گشتیی دانەی لەیبڵ بۆ چاپ</span><strong id="batch-kpi-copies" style="color:#1d4ed8">0</strong></div>
+<div><span>قەبارەی چاپی کۆمەڵەیی</span><strong id="batch-kpi-size">40×25 mm</strong></div>
+<div><span>دۆخی پەڕەی چاپ</span><strong style="color:#15803d">ئامادەیە بۆ چاپ</strong></div>
+</div>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">ئامادەکردنی لیستی چاپی کۆمەڵەیی لەیبڵەکان (Batch Shelf &amp; Barcode Printing)</h3>
+<form id="batch-label-add-form" class="formrow" style="margin-bottom:10px">
+<label class="field" style="flex:1.6">هەڵبژاردنی کاڵا بۆ زیادکردن<select id="batch-lbl-product"><option value="">کاڵا هەڵبژێرە...</option></select></label>
+<label class="field" style="max-width:150px">ژمارەی کۆپی (دانە)<input id="batch-lbl-copies" type="number" min="1" max="100" value="2" required style="direction:ltr"></label>
+<button type="submit" class="primary">+ زیادکردن بۆ لیستی چاپ</button>
+<button type="button" class="secondary" id="batch-lbl-add-all">زیادکردنی هەموو کاڵاکان (١ دانە)</button>
+<button type="button" class="secondary" id="batch-lbl-clear">پاککردنەوەی لیست</button>
+<button type="button" class="primary" id="batch-lbl-print-all" style="background:#15803d">🖨 چاپی هەموو لەیبڵەکان پێکەوە</button>
+</form>
+<div class="msg" id="batch-lbl-msg" role="status"></div>
+</div>
+<div id="batch-labels-queue-table" style="margin-bottom:16px"></div>
+<h3>پێشبینینی پەڕەی چاپی کۆمەڵەیی</h3>
+<div id="batch-labels-print-sheet" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;padding:16px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px"></div>
+</div>
+
+<div id="labels-sub-template" hidden>
+<div style="padding:18px 20px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+<h3 style="margin:0">ڕێکخستنی قاڵبی ستانداردی چاپی لەیبڵ و پسووڵە (Print Templates)</h3>
+<a href="./diagnostics.html" class="secondary" style="text-decoration:none;height:36px;padding:0 14px">🖨 چوون بۆ تاقیگەی چاپکەر و سکانەر (Diagnostics)</a>
+</div>
+<form id="label-template-form" class="formrow">
+<label class="field">ناونیشانی فرۆشگا لەسەر لەیبڵ<input id="tpl-store-title" maxlength="60" value="سوپەرمارکێتی کانی چنار" required></label>
+<label class="field" style="max-width:190px">قەبارەی بنەڕەتیی لەیبڵ<select id="tpl-default-size"><option value="40x25">40mm × 25mm (بچووک)</option><option value="50x30">50mm × 30mm (مامناوەند)</option></select></label>
+<label class="field" style="max-width:180px">پیشاندانی یەکەی کاڵا<select id="tpl-show-unit"><option value="1">بەڵێ (دانە / کگم)</option><option value="0">نەخێر — تەنها نرخ</option></select></label>
+<label class="field" style="max-width:180px">پیشاندانی ژمارەی بارکۆد<select id="tpl-show-code"><option value="1">بەڵێ لە ژێر هێڵەکان</option><option value="0">نەخێر</option></select></label>
+<button type="submit" class="primary">پاشەکەوتکردنی قاڵبی چاپ</button>
+</form>
+<div class="msg" id="tpl-msg" role="status"></div>
+</div>
+</div>
+</section>
+
 <section id="audit-panel" class="surface" hidden>
-<h2>چاودێری</h2><div id="audit-list"></div>
+<div class="receipt-head" style="margin-bottom:12px">
+<h2>چاودێری و مۆڵەتەکان</h2>
+<div class="nav" id="audit-subtabs" style="margin-bottom:0">
+<button type="button" data-audit-sub="alerts">ئاگادارییەکان</button>
+<button type="button" data-audit-sub="approvals">داوای مۆڵەت</button>
+<button type="button" data-audit-sub="changes" class="active">گۆڕانکارییەکان</button>
+<button type="button" data-audit-sub="qa">پشکنینی مامەڵە</button>
+</div>
+</div>
+
+<div id="audit-sub-alerts" hidden>
+<div class="shift-metrics" style="margin-bottom:14px">
+<div><span>ئاگادارییە فریاگوزارییەکان (🔴)</span><strong id="alert-kpi-critical" style="color:#b91c1c">0</strong></div>
+<div><span>ئاگاداریی کۆگا و بەسەرچوون (🟡)</span><strong id="alert-kpi-warning" style="color:#d97706">0</strong></div>
+<div><span>ئاگاداریی قەرز و دارایی (🔵)</span><strong id="alert-kpi-finance" style="color:#1d4ed8">0</strong></div>
+<div><span>کۆی گشتیی ئاگادارییە چالاکەکان</span><strong id="alert-kpi-total">0</strong></div>
+</div>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">زیادکردنی ئاگاداری یان یادخەرەوەی کارگێڕی بۆ ستافی فرۆشگا</h3>
+<form id="audit-alert-form" class="formrow">
+<label class="field" style="flex:1.5">دەقی ئاگاداری<input id="alert-custom-title" maxlength="140" required placeholder="وەک: پشکنینی پلەی گەرمی ساردکەرەوەی شیرەمەنی..."></label>
+<label class="field" style="max-width:180px">ئاستی گرنگی<select id="alert-custom-severity"><option value="critical">فریاگوزاری 🔴</option><option value="warning">ئاگادارکردنەوە 🟡</option><option value="info">زانیاری 🔵</option></select></label>
+<label class="field" style="max-width:180px">بەشی پەیوەندیدار<select id="alert-custom-dept"><option value="کۆگا">کۆگا</option><option value="کاشێر">کاشێر</option><option value="دارایی و قەرز">دارایی و قەرز</option><option value="کارگێڕی">کارگێڕی</option></select></label>
+<button type="submit" class="primary">+ تۆمارکردنی ئاگاداری</button>
+<button type="button" class="secondary" id="alert-refresh-btn">نوێکردنەوەی پشکنینی زیرەک</button>
+</form>
+<div class="msg" id="audit-alert-msg" role="status"></div>
+</div>
+<div id="audit-alerts-list"></div>
+</div>
+
+<div id="audit-sub-approvals" hidden>
+<div class="shift-metrics" style="margin-bottom:14px">
+<div><span>داواکاریی چاوەڕوانکراو</span><strong id="appr-kpi-pending" style="color:#d97706">0</strong></div>
+<div><span>پەسەندکراو (✓)</span><strong id="appr-kpi-approved" style="color:#15803d">0</strong></div>
+<div><span>ڕەتکراوە (✕)</span><strong id="appr-kpi-rejected" style="color:#b91c1c">0</strong></div>
+<div><span>کۆی داواکارییەکانی مۆڵەت</span><strong id="appr-kpi-total">0</strong></div>
+</div>
+<div style="padding:16px 18px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;margin-bottom:14px">
+<h3 style="margin:0 0 10px">تۆمارکردنی داوای مۆڵەت (ڕەزامەندیی بەڕێوەبەر بۆ مامەڵە یان مۆڵەتی کارمەند)</h3>
+<form id="approval-request-form" class="formrow">
+<label class="field">داواکار (کارمەند / کاشێر)<input id="appr-requester" maxlength="80" required placeholder="ناوی کارمەند"></label>
+<label class="field" style="max-width:210px">جۆری داواکاری<select id="appr-type"><option value="داشکاندنی تایبەت">مۆڵەتی داشکاندنی تایبەت</option><option value="گەڕاندنەوەی پسووڵە">مۆڵەتی گەڕاندنەوەی پسووڵە</option><option value="تێپەڕاندنی سنووری قەرز">زیادکردنی سنووری قەرزی کڕیار</option><option value="لادانی کاڵای تەلەف">نووسینی تەلەف و بەسەرچووی کۆگا</option><option value="مۆڵەتی کاتژمێری / ڕۆژانە">مۆڵەتی کەسیی کارمەند</option></select></label>
+<label class="field" style="max-width:165px">بڕی پارە یان ماوە<input id="appr-amount" maxlength="60" placeholder="وەک: 25,000 IQD یان ١ ڕۆژ"></label>
+<label class="field" style="flex:1.4">هۆکار و ڕوونکردنەوە<input id="appr-reason" maxlength="140" required placeholder="وردەکاریی داواکاری بنووسە..."></label>
+<button type="submit" class="primary">ناردنی داوای مۆڵەت</button>
+</form>
+<div class="msg" id="appr-msg" role="status"></div>
+</div>
+<div id="audit-approvals-list"></div>
+</div>
+
+<div id="audit-sub-changes">
+<div class="formrow" style="margin-bottom:12px">
+<label class="field">گەڕان لە تۆماری گۆڕانکارییەکان (Audit Log)<input id="audit-search-input" maxlength="80" placeholder="بەدوای کردار یان بەکارهێنەردا بگەڕێ..."></label>
+<button type="button" class="secondary" id="audit-refresh-btn">نوێکردنەوە</button>
+<button type="button" class="secondary" id="audit-export-csv">⬇ هەناردەی تۆماری چاودێری (CSV)</button>
+</div>
+<div id="audit-list"></div>
+</div>
+
+<div id="audit-sub-qa" hidden>
+<div style="padding:20px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px">
+<h3 style="margin:0 0 8px">پشکنینی سەلامەتیی مامەڵە داراییەکان و تاقیکردنەوەی هاوکات (QA &amp; Concurrency Verification)</h3>
+<p style="margin:0 0 14px;font-size:13px;color:#475569;line-height:1.6">هەموو مامەڵەکانی فرۆشتن، داخستنی شێفت، جووڵەی پارە و وەرگرتنی کۆگا لە ڕێگەی قوفڵی ڕیزی داتابەیس (Row-Level Locks) و ناسنامەی بێهاوتا (Idempotency Request IDs) پارێزراون لە دووبارەبوونەوە.</p>
+<a href="./qa.html" class="primary" style="text-decoration:none">🛡️ کردنەوەی پەڕەی تەواوی پشکنینی مامەڵە (QA Suite)</a>
+</div>
+</div>
 </section>
 <section id="payments-panel" class="surface" hidden>
 <div class="receipt-head"><h2>پارەدان و جووڵەی سندووق</h2><div class="actions"><button id="payments-go-shift" class="secondary" type="button">شێفت</button><button id="payments-refresh" class="secondary" type="button">نوێکردنەوە</button></div></div>
@@ -1500,6 +1904,16 @@ select option{color:#0f172a;font-size:14px}
 <div><span>پسووڵەی گەڕاوە</span><strong id="receipts-metric-refunded">0 IQD</strong></div>
 <div><span>کۆی داشکاندن</span><strong id="receipts-metric-discount">0 IQD</strong></div>
 </div>
+<div class="stock-adjust-card" id="receipt-header-config-box" style="margin-bottom:12px;background:#f8fafc">
+<h3 style="margin:0 0 8px;font-size:14px">🖨 ناونیشان و ژمارەی تەلەفۆنی سەر پسووڵە (چاپی 58mm و 80mm)</h3>
+<div class="formrow">
+<label class="field" style="min-width:190px">ناوی فرۆشگا لەسەر پسووڵە<input id="receipt-cfg-name" maxlength="120" placeholder="سوپەرمارکێتی کانی چنار"></label>
+<label class="field" style="min-width:210px">ناونیشانی سەر پسووڵە<input id="receipt-cfg-address" maxlength="160" placeholder="هەولێر — کانی چنار"></label>
+<label class="field" style="max-width:180px">ژمارەی تەلەفۆنی سەر پسووڵە<input id="receipt-cfg-phone" maxlength="40" dir="ltr" placeholder="0750 000 0000"></label>
+<label class="field" style="min-width:200px">دەقی خوارەوەی پسووڵە<input id="receipt-cfg-footer" maxlength="180" placeholder="سوپاس بۆ کڕینەکەتان"></label>
+<button type="button" class="primary" id="receipt-cfg-save-btn">پاشەکەوت لەسەر پسووڵە</button>
+</div>
+</div>
 <div class="formrow" style="margin-bottom:12px">
 <label class="field">گەڕان بە ژمارەی پسووڵە<input id="receipts-search" maxlength="60" autocomplete="off" placeholder="ژمارەی پسووڵە بنووسە (وەک 1 یان 000001)"></label>
 <label class="field" style="max-width:200px">دۆخی پسووڵە<select id="receipts-status-filter"><option value="all">هەموو پسووڵەکان</option><option value="active">فرۆشراو (چالاک)</option><option value="refunded">گەڕاوە</option></select></label>
@@ -1510,8 +1924,131 @@ select option{color:#0f172a;font-size:14px}
 <div class="msg" id="receipts-msg" role="status"></div>
 <div class="receipt-detail" id="receipt-detail" hidden></div>
 </section>
+<section id="payments-panel" class="surface" hidden>
+<div class="stock-sub-head">
+<h2>پارەدان و جووڵەی نەقدی سندووق</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button type="button" class="secondary" id="payments-go-shift">بەڕێوەبردنی شێفت</button>
+<button type="button" class="secondary" id="payments-refresh">نوێکردنەوە</button>
+</div>
+</div>
+<div class="shift-metrics">
+<div><span>دۆخی شێفتی سندووق</span><strong id="pay-shift-status">—</strong></div>
+<div><span>سەرەتا + فرۆشتنی شێفت</span><strong id="pay-sales-total">0 IQD</strong></div>
+<div><span>کۆی پارەی هاتوو (وەرگرتن)</span><strong id="pay-total-in">0 IQD</strong></div>
+<div><span>کۆی پارەی دەرچوو (پارەدان)</span><strong id="pay-total-out">0 IQD</strong></div>
+<div><span>باڵانسی چاوەڕوانکراوی سندووق</span><strong id="pay-expected-balance">0 IQD</strong></div>
+</div>
+<div class="stock-adjust-card" id="pay-open-shift-box" hidden>
+<h3>کردنەوەی شێفتی سندووق</h3>
+<form id="pay-shift-open-form" class="formrow">
+<label class="field">پارەی سەرەتایی سندووق (IQD)<input type="number" name="opening" min="0" step="1" value="100000" required></label>
+<button type="submit" class="primary">کردنەوەی شێفت</button>
+</form>
+</div>
+<div class="stock-adjust-card">
+<h3>تۆمارکردنی پارەدان یان وەرگرتنی نەقدی</h3>
+<form id="payments-form" class="formrow">
+<label class="field" style="max-width:220px">جۆری مامەڵە<select name="kind"><option value="cash_out">پارەدان / خەرجی (دەرچوو)</option><option value="cash_in">وەرگرتنی پارە (هاتوو)</option></select></label>
+<label class="field" style="max-width:230px">پۆلێن / بابەت<select name="category"><option value="پارەدانی دابینکەر">پارەدانی دابینکەر</option><option value="خەرجی ڕۆژانەی فرۆشگا">خەرجی ڕۆژانەی فرۆشگا</option><option value="کرێی گواستنەوە و بار">کرێی گواستنەوە و بار</option><option value="پێشینەی کارمەند">پێشینەی کارمەند</option><option value="زیادکردنی پارەی وردە">زیادکردنی پارەی وردە</option><option value="مامەڵەی تر">مامەڵەی تر</option></select></label>
+<label class="field" style="max-width:200px">بڕی پارە (IQD)<input type="number" id="pay-amount" name="amount" min="1" step="1" placeholder="بۆ نموونە 25000" required></label>
+<label class="field" style="min-width:240px">تێبینی و هۆکار<input name="note" maxlength="140" placeholder="ناوی وەرگر یان وردەکاری مامەڵە بنووسە" required></label>
+<button type="submit" class="primary" id="pay-submit">تۆمارکردنی مامەڵە</button>
+<button type="button" class="secondary" id="pay-retry" hidden>دووبارە ناردنەوە</button>
+</form>
+<div class="quick-cash-row" id="pay-quick-row" style="margin-top:10px">
+<button type="button" class="quick-cash-btn" data-pay-quick="5000">+5,000</button>
+<button type="button" class="quick-cash-btn" data-pay-quick="10000">+10,000</button>
+<button type="button" class="quick-cash-btn" data-pay-quick="25000">+25,000</button>
+<button type="button" class="quick-cash-btn" data-pay-quick="50000">+50,000</button>
+<button type="button" class="quick-cash-btn" data-pay-quick="100000">+100,000</button>
+</div>
+<div class="msg" id="payments-msg" role="status"></div>
+</div>
+<div class="stock-adjust-card">
+<h3>مێژووی جووڵەکانی پارەی سندووق</h3>
+<div class="formrow" style="margin-bottom:10px">
+<label class="field">گەڕان لە تێبینی یان بڕ<input type="search" id="payments-search" placeholder="گەڕان بە تێبینی یان بڕی پارە..."></label>
+<label class="field" style="max-width:220px">پاڵاوتنی جۆر<select id="payments-kind-filter"><option value="all">هەموو جووڵەکان</option><option value="cash_out">تەنها پارەدان (دەرچوو)</option><option value="cash_in">تەنها وەرگرتن (هاتوو)</option></select></label>
+</div>
+<div id="payments-list"></div>
+</div>
+</section>
+<section id="returns-panel" class="surface" hidden>
+<div class="stock-sub-head">
+<h2>گەڕاندنەوەی پسووڵە و کاڵا</h2>
+<button type="button" class="secondary" id="returns-refresh">نوێکردنەوە</button>
+</div>
+<div class="shift-metrics">
+<div><span>ژمارەی پسووڵەی گەڕاوە</span><strong id="ret-metric-count">0</strong></div>
+<div><span>کۆی بەهای گەڕاوە</span><strong id="ret-metric-amount">0 IQD</strong></div>
+<div><span>پسووڵەی چالاک</span><strong id="ret-metric-active">0</strong></div>
+<div><span>دۆخی شێفتی کاشێر</span><strong id="ret-metric-shift">—</strong></div>
+</div>
+<div class="stock-adjust-card">
+<h3>گەڕان و هەڵبژاردنی پسووڵە بۆ گەڕاندنەوە</h3>
+<form id="returns-lookup-form" class="formrow">
+<label class="field">ژمارەی پسووڵە یان بارکۆدی کاڵا<input type="search" id="returns-search-input" placeholder="ژمارەی پسووڵە (وەک 1 یان 000001) یان بارکۆد بسکانە..."></label>
+<label class="field" style="max-width:220px">دۆخی پسووڵەکان<select id="returns-filter-mode"><option value="all">هەموو پسووڵەکان</option><option value="active">تەنها چالاک (ئامادە بۆ گەڕاندنەوە)</option><option value="refunded">تەنها گەڕاوەکان</option></select></label>
+<button type="submit" class="primary">پشکنین و کردنەوە</button>
+<button type="button" class="secondary" id="returns-clear-search">پاککردنەوە</button>
+</form>
+<div class="msg" id="returns-msg" role="status"></div>
+<div id="returns-selected-box" class="receipt-detail" hidden></div>
+</div>
+<div class="stock-adjust-card">
+<h3>گەڕاندنەوەی تاکە کاڵا بۆ کۆگا و گێڕانەوەی پارە</h3>
+<form id="returns-item-form" class="formrow">
+<label class="field" style="min-width:220px">هەڵبژاردنی کاڵا<select id="return-item-product" required></select></label>
+<label class="field" style="min-width:220px">بارکۆد / یەکەی فرۆشتن<select id="return-item-barcode" required></select></label>
+<label class="field" style="max-width:150px">بڕی گەڕاوە<input type="number" id="return-item-qty" min="1" step="1" value="1" required></label>
+<label class="field" style="max-width:180px">بڕی پارەی گەڕاوە (IQD)<input type="number" id="return-item-refund" min="0" step="1" value="0" required></label>
+<label class="field" style="min-width:220px">هۆکاری گەڕاندنەوە<input id="return-item-note" value="گەڕاندنەوەی کاڵا لەلایەن کڕیار" required></label>
+<button type="submit" class="primary">گەڕاندنەوەی کاڵا بۆ کۆگا</button>
+</form>
+</div>
+<div class="stock-adjust-card">
+<h3>لیستی پسووڵەکان بۆ گەڕاندنەوە</h3>
+<div id="returns-list"></div>
+</div>
+</section>
 </section>
 <div id="system-msg" class="msg" role="alert"></div>
+<div class="ops-shelf-label-modal" id="ops-shelf-label-modal" hidden>
+<div class="ops-shelf-label-backdrop" id="ops-shelf-label-backdrop"></div>
+<div class="ops-shelf-label-dialog">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1.5px solid #e2e8f0;padding-bottom:10px">
+<h3 style="margin:0;display:flex;align-items:center;gap:8px">🏷 چاپی لەیبڵی ڕەفەی کاڵا (Shelf Edge Label)</h3>
+<button type="button" class="secondary" id="ops-label-modal-close" style="height:32px;padding:0 12px;font-size:12px">داخستن ✕</button>
+</div>
+<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;background:#f8fafc;padding:10px 14px;border-radius:10px;border:1px solid #cbd5e1">
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:750">
+قەبارەی لەیبڵ:
+<select id="ops-label-size-select" style="height:36px;padding:4px 10px;border-radius:8px;border:1.5px solid #cbd5e1;font-weight:750">
+<option value="40x25">40mm × 25mm (ستانداردی بچووک)</option>
+<option value="50x30">50mm × 30mm (ستانداردی گەورە)</option>
+</select>
+</label>
+<div style="display:flex;gap:8px;margin-right:auto">
+<button type="button" class="primary" id="ops-label-print-btn" style="height:36px;padding:0 16px;font-size:13px">🖨 چاپکردن</button>
+</div>
+</div>
+<div style="display:flex;justify-content:center;padding:20px;background:#f1f5f9;border-radius:12px;border:1px dashed #94a3b8">
+<div class="ops-shelf-label-card size-40x25" id="ops-shelf-label-card">
+<div class="ops-label-store">سوپەرمارکێتی کانی چنار</div>
+<div class="ops-label-name" id="ops-label-prod-name">—</div>
+<div class="ops-label-price-box">
+<strong class="ops-label-price" id="ops-label-prod-price">0 IQD</strong>
+<span class="ops-label-unit" id="ops-label-prod-unit">دانە</span>
+</div>
+<div class="ops-label-barcode-wrap" id="ops-label-barcode-wrap">
+<svg id="ops-label-barcode-svg" height="34"></svg>
+</div>
+<div class="ops-label-code" id="ops-label-prod-code">—</div>
+</div>
+</div>
+</div>
+</div>
 </main>
 </div></div>
 </body></html>

@@ -15,3 +15,11 @@ test('confirmed promotion changes are tenant scoped and validate upsert identity
  await assert.rejects(()=>mutate(q,'store','retail_offers','upsert',{id:'record',store_id:'other'},'record'));
  await assert.rejects(()=>mutate(q,'store','retail_finance_entries','delete',null,'record'));
 });
+
+test('production config keeps the actual SDK and never provisions a local owner or sync queue',async()=>{
+ const {readFileSync}=await import('node:fs');const {runInNewContext}=await import('node:vm');
+ const sdk={createClient(){return 'real'}};let writes=0;
+ const window={supabase:sdk,localStorage:{setItem(){writes++}},navigator:{onLine:true}};
+ runInNewContext(readFileSync('config.js','utf8'),{window});
+ assert.equal(window.supabase,sdk);assert.equal(window.RETAIL_CONFIG.offlineFirst,false);assert.equal(window.RetailOfflineSync,undefined);assert.equal(writes,0);
+});

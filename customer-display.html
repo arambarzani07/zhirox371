@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>شاشەی کڕیار — سوپەرمارکێتی کانی چنار</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0f172a;color:#f8fafc;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+header{background:#1e293b;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #334155;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.brand{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:900;color:#ffffff}
+.brand i{width:46px;height:46px;border-radius:12px;background:#2563eb;color:#fff;display:grid;place-items:center;font-size:26px;font-style:normal;box-shadow:0 2px 8px rgba(37,99,235,0.4)}
+.welcome-tag{font-size:16px;font-weight:800;color:#94a3b8}
+.live-clock{font-size:15px;font-weight:900;color:#38bdf8;direction:ltr;background:#0f172a;padding:6px 14px;border-radius:8px;border:1px solid #334155}
+
+main{flex:1;display:flex;padding:24px 32px;gap:24px}
+.cart-section{flex:1.8;background:#1e293b;border-radius:20px;border:1.5px solid #334155;padding:20px;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+.cart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1.5px solid #334155;padding-bottom:12px}
+.cart-header h2{margin:0;font-size:20px;font-weight:900;color:#ffffff}
+.cart-table-wrap{flex:1;overflow-y:auto;max-height:calc(100vh - 240px)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{background:#0f172a;color:#94a3b8;padding:12px 14px;font-weight:900;text-align:right;position:sticky;top:0;border-bottom:2px solid #334155}
+td{padding:14px;border-bottom:1px solid #334155;font-weight:800}
+.prod-name{font-size:18px;font-weight:900;color:#ffffff}
+.prod-price{font-size:16px;color:#cbd5e1;direction:ltr;text-align:right}
+.prod-qty{font-size:18px;font-weight:950;color:#38bdf8;text-align:center}
+.prod-total{font-size:19px;font-weight:950;color:#4ade80;direction:ltr;text-align:left}
+tr.new-item{animation:pulseItem 1.5s ease-out}
+@keyframes pulseItem{0%{background:#1e3a8a}100%{background:transparent}}
+
+.totals-section{flex:1;background:#1e293b;border-radius:20px;border:1.5px solid #334155;padding:24px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+.total-card{background:linear-gradient(135deg,#1e3a8a 0%,#1e1b4b 100%);border:2px solid #3b82f6;border-radius:18px;padding:24px;text-align:center;margin-bottom:16px;box-shadow:0 8px 20px rgba(37,99,235,0.3)}
+.total-label{font-size:18px;font-weight:850;color:#bfdbfe;margin-bottom:6px}
+.total-val{font-size:46px;font-weight:950;color:#ffffff;direction:ltr;line-height:1.2}
+
+.meta-rows{display:flex;flex-direction:column;gap:12px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;background:#0f172a;padding:12px 16px;border-radius:12px;border:1px solid #334155;font-size:15px;font-weight:850}
+.meta-row.due{background:#064e3b;border-color:#059669}
+.meta-row.due strong{color:#6ee7b7;font-size:22px}
+.meta-val{font-size:18px;font-weight:950;direction:ltr}
+
+/* Idle Welcome Screen */
+.idle-banner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;background:#1e293b;border-radius:24px;border:2px dashed #334155}
+.idle-icon{font-size:72px;margin-bottom:16px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.idle-title{font-size:36px;font-weight:950;color:#ffffff;margin:0 0 12px}
+.idle-sub{font-size:20px;font-weight:800;color:#94a3b8;max-width:600px;line-height:1.6}
+
+/* Completed Sale Overlay */
+.completed-banner{background:#064e3b;border:2px solid #10b981;border-radius:18px;padding:20px;text-align:center;margin-bottom:16px;animation:slideDown .3s ease-out}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.completed-title{font-size:24px;font-weight:950;color:#a7f3d0}
+.completed-rcpt{font-size:15px;font-weight:800;color:#d1fae5;margin-top:4px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+<div class="brand"><i>◈</i><span>سوپەرمارکێتی کانی چنار</span></div>
+<div class="welcome-tag">بەخێربێن بۆ سوپەرمارکێتی کانی چنار — کڕینێکی شاد</div>
+<div class="live-clock" id="live-clock">--:--:--</div>
+</header>
+
+<main id="display-container">
+<!-- Idle Welcome View -->
+<div class="idle-banner" id="idle-view">
+<div class="idle-icon">🛒</div>
+<h1 class="idle-title">بەخێربێن بۆ سوپەرمارکێتی کانی چنار</h1>
+<p class="idle-sub">کاشێری ژمارە ١ لە خزمەتتاندایە. کاڵاکانتان بە ڕێکی و وردی لەسەر ئەم شاشەیە پیشان دەدرێن.</p>
+<div style="margin-top:24px;padding:12px 24px;background:#0f172a;border-radius:12px;border:1px solid #334155;font-size:16px;font-weight:800;color:#38bdf8">
+نرخی ١٠٠ دۆلار: 152,000 IQD
+</div>
+</div>
+
+<!-- Active Sale View -->
+<div class="cart-section" id="active-cart-wrap" hidden>
+<div class="cart-header">
+<h2>لیستی کاڵاکانی سەبەتە</h2>
+<span id="items-count-badge" style="background:#0f172a;padding:4px 12px;border-radius:8px;font-weight:900;color:#38bdf8">0 کاڵا</span>
+</div>
+<div class="cart-table-wrap">
+<table>
+<thead>
+<tr>
+<th>ناوی کاڵا</th>
+<th>نرخی یەکە</th>
+<th style="text-align:center">بڕ</th>
+<th style="text-align:left">کۆی نرخ</th>
+</tr>
+</thead>
+<tbody id="cart-rows"></tbody>
+</table>
+</div>
+</div>
+
+<div class="totals-section" id="active-totals-wrap" hidden>
+<div>
+<div class="completed-banner" id="completed-badge" hidden>
+<div class="completed-title">✓ فرۆشتن بە سەرکەوتوویی تەواو بوو</div>
+<div class="completed-rcpt" id="completed-rcpt-text">پسووڵەی #000000 — سوپاس بۆ سەردانتان</div>
+</div>
+
+<div class="total-card">
+<div class="total-label">کۆی گشتی بۆ دان (IQD)</div>
+<div class="total-val" id="disp-grand-total">0 IQD</div>
+</div>
+
+<div class="meta-rows">
+<div class="meta-row" id="row-discount" hidden>
+<span>داشکاندن</span>
+<strong class="meta-val" id="disp-discount" style="color:#f43f5e">-0 IQD</strong>
+</div>
+<div class="meta-row">
+<span>پارەی وەرگیراو</span>
+<strong class="meta-val" id="disp-cash" style="color:#ffffff">0 IQD</strong>
+</div>
+<div class="meta-row due" id="row-change">
+<span>پارەی گەڕاوە</span>
+<strong class="meta-val" id="disp-change">0 IQD</strong>
+</div>
+</div>
+</div>
+
+<div style="text-align:center;padding:12px;font-size:14px;color:#94a3b8;font-weight:750;border-top:1px solid #334155">
+سەردانتان جێگای ڕێز و پێزانینمانە
+</div>
+</div>
+</main>
+
+<script>
+(function(){
+  const clockEl = document.getElementById("live-clock");
+  function tickClock(){
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString("en-GB",{hour12:false});
+  }
+  setInterval(tickClock,1000);
+  tickClock();
+
+  const idleView = document.getElementById("idle-view");
+  const cartWrap = document.getElementById("active-cart-wrap");
+  const totalsWrap = document.getElementById("active-totals-wrap");
+  const cartRows = document.getElementById("cart-rows");
+  const countBadge = document.getElementById("items-count-badge");
+  const grandTotal = document.getElementById("disp-grand-total");
+  const discountRow = document.getElementById("row-discount");
+  const discountVal = document.getElementById("disp-discount");
+  const cashVal = document.getElementById("disp-cash");
+  const changeVal = document.getElementById("disp-change");
+  const completedBadge = document.getElementById("completed-badge");
+  const completedRcpt = document.getElementById("completed-rcpt-text");
+
+  function fmt(n){
+    return Number(n||0).toLocaleString("en-US") + " IQD";
+  }
+
+  let idleTimeout = null;
+
+  function renderState(data){
+    if(!data || !data.items || !data.items.length){
+      if(data && data.state === "completed"){
+        // Keep showing completed banner for 8s
+        showCompleted(data);
+        return;
+      }
+      idleView.hidden = false;
+      cartWrap.hidden = true;
+      totalsWrap.hidden = true;
+      completedBadge.hidden = true;
+      return;
+    }
+
+    clearTimeout(idleTimeout);
+    idleView.hidden = true;
+    cartWrap.hidden = false;
+    totalsWrap.hidden = false;
+    completedBadge.hidden = true;
+
+    countBadge.textContent = data.items.length + " کاڵا";
+    cartRows.replaceChildren();
+
+    for(let i = 0; i < data.items.length; i++){
+      const it = data.items[i];
+      const tr = document.createElement("tr");
+      if(i === data.items.length - 1) tr.className = "new-item";
+
+      const tdName = document.createElement("td");
+      tdName.className = "prod-name";
+      tdName.textContent = it.name + (it.unitLabel ? " (" + it.unitLabel + ")" : "");
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "prod-price";
+      tdPrice.textContent = fmt(it.price);
+
+      const tdQty = document.createElement("td");
+      tdQty.className = "prod-qty";
+      tdQty.textContent = it.qty;
+
+      const tdTotal = document.createElement("td");
+      tdTotal.className = "prod-total";
+      tdTotal.textContent = fmt(it.total || (it.price * it.qty));
+
+      tr.append(tdName, tdPrice, tdQty, tdTotal);
+      cartRows.append(tr);
+    }
+
+    grandTotal.textContent = fmt(data.total);
+
+    if(data.discount && Number(data.discount) > 0){
+      discountRow.hidden = false;
+      discountVal.textContent = "-" + fmt(data.discount);
+    } else {
+      discountRow.hidden = true;
+    }
+
+    cashVal.textContent = fmt(data.cash);
+    changeVal.textContent = fmt(data.change);
+  }
+
+  function showCompleted(data){
+    idleView.hidden = true;
+    cartWrap.hidden = false;
+    totalsWrap.hidden = false;
+    completedBadge.hidden = false;
+    completedRcpt.textContent = "پسووڵەی #" + String(data.receiptNo||"000000").padStart(6,"0") + " — سوپاس بۆ سەردانتان";
+    grandTotal.textContent = fmt(data.total);
+    cashVal.textContent = fmt(data.cash);
+    changeVal.textContent = fmt(data.change);
+
+    clearTimeout(idleTimeout);
+    idleTimeout = setTimeout(() => {
+      idleView.hidden = false;
+      cartWrap.hidden = true;
+      totalsWrap.hidden = true;
+      completedBadge.hidden = true;
+    }, 8000);
+  }
+
+  // BroadcastChannel listener
+  try {
+    const channel = new BroadcastChannel("retail_pos_customer_display");
+    channel.onmessage = e => {
+      if(e.data) renderState(e.data);
+    };
+  } catch(_e) {}
+
+  // Storage event listener fallback
+  window.addEventListener("storage", e => {
+    if(e.key === "retail_pos_customer_display_payload" && e.newValue){
+      try {
+        const payload = JSON.parse(e.newValue);
+        renderState(payload);
+      } catch(_e) {}
+    }
+  });
+
+  // Check initial state
+  try {
+    const raw = localStorage.getItem("retail_pos_customer_display_payload");
+    if(raw) renderState(JSON.parse(raw));
+  } catch(_e) {}
+})();
+</script>
+</body>
+</html>

@@ -34,9 +34,15 @@ Customer/supplier ledger tables retain legacy external-safe transactions. The ne
 
 ## Validation
 
-- `npm test`: 168 tests passed.
+- `npm test`: 176 tests passed.
 - `npm run test:database`: 38 PGlite SQL tests passed, including installation twice, atomic transfer/retry after shift close, overdraft and fractional-money rejection, rollback after a forced insert failure, totals beyond 500 rows, role downgrade replay, and promotion access policies.
 - `npm run build`: syntax and local asset references passed.
 - Browser CI extends the 48-route suite with empty promotions, rejected promotion saves and Labels print-template context. UI fixtures are isolated from SQL tests.
 
 New database source: `supabase/migrations/20261028162200_finance_promotions_integrity.sql`, also embedded by `scripts/sync-upgrade.mjs` in the standalone upgrade. No hosted migration has been applied. The frontend requires this migration before the new finance endpoints are available; missing endpoints show errors rather than simulated success.
+
+## Integration with the concurrent main update
+
+Main commit `6d59ba3` added an offline engine, customer display, browser-local staff/audit modules and a local snapshot server. During integration, the engine was found to replace the authenticated SDK by default and to report a read-only ping as successful synchronization. Production now retains the real SDK. The disposable engine requires the explicit `window.RETAIL_DEMO_MODE === true` flag, and its sync action reports that transaction replay/backup synchronization is unimplemented without sending or clearing the queue. Production quick identity switching is disabled. The static server retains its existing source-path protections and does not expose the unauthenticated snapshot/restore API.
+
+The new staff/audit forms store browser-local records; production entry points route to the explicit unfinished status rather than presenting these as central attendance, approvals or staff records. The customer-display addition is retained. This integration does not certify every new offline-engine RPC or hardware protocol. A new regression proves production configuration does not replace the real SDK, create a local owner, or provision local storage.

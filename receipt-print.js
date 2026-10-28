@@ -46,6 +46,8 @@
    }
    root.append(row);
  }
+ let activeDbClient=null;
+ let activeStoreIdGlobal=null;
  async function initialize() {
    if(!uuid.test(saleId||"")){msg("ناسنامەی پسووڵە نادروستە");return;}
    if(!window.supabase||!cfg?.supabaseUrl||!cfg?.publishableKey){
@@ -54,6 +56,7 @@
    const db=window.supabase.createClient(cfg.supabaseUrl,cfg.publishableKey,{
      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}
    });
+   activeDbClient=db;
    const auth=await db.auth.getUser();
    if(auth.error||!auth.data?.user){msg("بۆ بینین و چاپی پسووڵە پێویستە بچیتە ژوورەوە");return;}
    const sale=await db.from("retail_sales")
@@ -94,6 +97,57 @@
    if(computed-discount!==total||!Number.isSafeInteger(total)||!Number.isSafeInteger(paid)||!Number.isSafeInteger(change)
       || paid-total!==change){msg("کۆی پسووڵە و وردەکارییەکان یەک ناگرنەوە؛ چاپ ڕێگەپێنەدراوە");return;}
    $("store-name").textContent=store.data.name;
+   let activeStoreId=head.store_id;
+   activeStoreIdGlobal=activeStoreId;
+   let customAddress="هەولێر — کانی چنار";
+   let customPhone="0750 000 0000";
+   let customFooter="سوپاس بۆ کڕینەکەتان";
+   try{
+     const ls=window.localStorage;
+     if(ls){
+       const rawSet=ls.getItem("retail_store_settings_v19_"+activeStoreId);
+       if(rawSet){
+         const parsed=JSON.parse(rawSet);
+         if(parsed?.storeName)$("store-name").textContent=parsed.storeName;
+         if(parsed?.storeAddress)customAddress=String(parsed.storeAddress).trim();
+         if(parsed?.storePhone)customPhone=String(parsed.storePhone).trim();
+         if(parsed?.receiptFooter)customFooter=String(parsed.receiptFooter).trim();
+       }
+       const directAddr=ls.getItem("retail_store_address");
+       const directPhone=ls.getItem("retail_store_phone");
+       const directFooter=ls.getItem("retail_receipt_footer");
+       if(directAddr&&directAddr.trim())customAddress=directAddr.trim();
+       if(directPhone&&directPhone.trim())customPhone=directPhone.trim();
+       if(directFooter&&directFooter.trim())customFooter=directFooter.trim();
+     }
+   }catch(_e){}
+   try{
+     const sQuery=db.from("retail_store_settings").select("settings_json").eq("store_id",activeStoreId);
+     const sRes=typeof sQuery.maybeSingle==="function"?await sQuery.maybeSingle():await sQuery.single();
+     const sj=sRes?.data?.settings_json;
+     if(sj&&typeof sj==="object"){
+       if(sj.storeName&&String(sj.storeName).trim())$("store-name").textContent=String(sj.storeName).trim();
+       if(sj.storeAddress&&String(sj.storeAddress).trim())customAddress=String(sj.storeAddress).trim();
+       if(sj.storePhone&&String(sj.storePhone).trim())customPhone=String(sj.storePhone).trim();
+       if(sj.receiptFooter&&String(sj.receiptFooter).trim())customFooter=String(sj.receiptFooter).trim();
+     }
+   }catch(_e){}
+   function applyContactToSheet(addrVal,phoneVal,footerVal){
+     const cleanAddr=String(addrVal||"").trim()||"هەولێر — کانی چنار";
+     const cleanPhone=String(phoneVal||"").trim()||"0750 000 0000";
+     $("store-address").textContent="ناونیشان: "+cleanAddr;
+     if($("store-phone-val")){
+       $("store-phone-val").textContent=cleanPhone;
+     }else{
+       $("store-phone").textContent="ژمارەی تەلەفۆن: "+cleanPhone;
+     }
+     if(footerVal&&$("receipt-footer")){
+       $("receipt-footer").textContent=String(footerVal).trim();
+     }
+   }
+   applyContactToSheet(customAddress,customPhone,customFooter);
+   if($("toolbar-address"))$("toolbar-address").value=customAddress;
+   if($("toolbar-phone"))$("toolbar-phone").value=customPhone;
    $("receipt-number").textContent="#"+String(head.receipt_no).padStart(6,"0");
    $("receipt-date").textContent=new Date(head.created_at)
      .toLocaleString("en-GB",{timeZone:"Asia/Baghdad",hour12:false});
@@ -112,8 +166,57 @@
      setTimeout(()=>{window.print();},350);
    }
  }
+ async function syncToolbarContact(saveToStorage){
+   const addr=String($("toolbar-address")?.value||"").trim()||"هەولێر — کانی چنار";
+   const phone=String($("toolbar-phone")?.value||"").trim()||"0750 000 0000";
+   $("store-address").textContent="ناونیشان: "+addr;
+   if($("store-phone-val")){
+     $("store-phone-val").textContent=phone;
+   }else{
+     $("store-phone").textContent="ژمارەی تەلەفۆن: "+phone;
+   }
+   if(saveToStorage){
+     try{
+       const ls=window.localStorage;
+       let mergedSettings={storeAddress:addr,storePhone:phone};
+       if(ls){
+         ls.setItem("retail_store_address",addr);
+         ls.setItem("retail_store_phone",phone);
+         for(let i=0;i<ls.length;i++){
+           const k=ls.key(i);
+           if(k&&k.startsWith("retail_store_settings_v19_")){
+             const cur=JSON.parse(ls.getItem(k)||"{}");
+             cur.storeAddress=addr;
+             cur.storePhone=phone;
+             mergedSettings=cur;
+             ls.setItem(k,JSON.stringify(cur));
+           }
+         }
+         if(activeStoreIdGlobal){
+           const storeKey="retail_store_settings_v19_"+activeStoreIdGlobal;
+           const cur=JSON.parse(ls.getItem(storeKey)||"{}");
+           cur.storeAddress=addr;
+           cur.storePhone=phone;
+           mergedSettings=cur;
+           ls.setItem(storeKey,JSON.stringify(cur));
+         }
+       }
+       if(activeDbClient&&activeStoreIdGlobal){
+         await activeDbClient.from("retail_store_settings").upsert({
+           store_id:activeStoreIdGlobal,
+           settings_json:mergedSettings,
+           updated_at:new Date().toISOString()
+         });
+       }
+       msg("ناونیشان و ژمارەی تەلەفۆن لەسەر پسووڵە پاشەکەوت کرا ✓");
+     }catch(_e){}
+   }
+ }
  paper(params.get("paper"));
  $("paper").addEventListener("change",event=>paper(event.target.value));
+ $("toolbar-address")?.addEventListener("input",()=>syncToolbarContact(false));
+ $("toolbar-phone")?.addEventListener("input",()=>syncToolbarContact(false));
+ $("save-contact")?.addEventListener("click",()=>syncToolbarContact(true));
  $("print").addEventListener("click",()=>{
    if(!$("print").disabled&& !$("sheet").hidden)window.print();
  });

@@ -34,7 +34,7 @@ try{
  assert.equal(await page.evaluate(()=>window.__retailQA.retail_offers?.length||0),0,'empty server must stay empty, no sample offers');
  await page.locator('#off-title').fill('Rejected offer');await page.locator('#off-product').selectOption('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');await page.locator('#off-discount-iqd').fill('250');
  await page.locator('#offer-new-form button[type=submit]').click();
- await page.waitForFunction(()=>document.querySelector('#off-new-msg')?.textContent.includes('QA mutation denied'));
+ await page.waitForFunction(()=>document.querySelector('#off-new-msg')?.textContent.includes('دەسەڵاتی ئەم کردارەت نییە'));
  assert.doesNotMatch(await page.locator('#offers-new-list').innerText(),/Rejected offer/);
  await page.goto(origin+'/diagnostics.html?section=labels');await page.locator('.system-nav').waitFor({state:'visible'});
  assert.equal(await page.locator('.system-current').getAttribute('data-system-group'),'labels');

@@ -71,6 +71,8 @@ test("kg table has exactly six headers and a precise 0.245 kg line",async()=>{
  assert.equal(get("sheet").hidden,false);
  assert.equal(get("print").disabled,false);
  assert.equal(get("store-name").textContent,"سوپەرمارکێتی کانی چنار");
+ assert.match(get("store-address").textContent,/ناونیشان:/);
+ assert.equal(get("store-phone-val").textContent,"0750 000 0000");
  assert.equal(get("total").textContent,"306 IQD");
  assert.match(get("receipt-date").textContent,/27\/10\/2026/);
  assert.equal(document.documentElement.attrs["data-paper"],"80");
