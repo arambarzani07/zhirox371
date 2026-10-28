@@ -37,8 +37,8 @@
     [op('staff','users'),op('staff','permissions'),'./diagnostics.html',op('staff','system')],
     ['new','discounts','coupons','campaigns'].map(x=>op('offers',x)),
     ['./workspace.html?view=prices&section=labels','./workspace.html?view=barcodes&section=labels','./workspace.html?view=prices&section=labels&batch=1','./diagnostics.html?section=labels'],
-    [op('shift'),pending(10,1),pending(10,2),pending(10,3)],
-    [pending(11,0),pending(11,1),op('audit'),'./qa.html']
+    [op('shift'),...['attendance','workhours','evaluation'].map(x=>'./staff-workflows.html?topic='+x+'&section=shift')],
+    ['./staff-workflows.html?topic=alerts&section=audit','./staff-workflows.html?topic=approvals&section=audit',op('audit'),'./qa.html']
    ];
    const url=routes[m]?.[s];
    if(url){e.preventDefault();e.stopImmediatePropagation();window.location.assign(url);}
@@ -70,13 +70,15 @@
   for(const h of main.querySelectorAll('section:not([hidden]) > h2'))h.classList.toggle('system-repeat-heading',!!heading&&h.textContent.trim()===heading.textContent.trim());
  }
  window.RetailSystemShell=Object.freeze({select,groups,children});
- if(operations)select('cash');else if(document.getElementById('products-panel'))select(param.get('section')==='labels'?'labels':'products');else select(param.get('section')==='labels'?'labels':document.title.includes('ئامێر')?'staff':'audit');
+ if(operations)select('cash');else if(document.getElementById('products-panel'))select(param.get('section')==='labels'?'labels':'products');else select(['labels','shift','audit'].includes(param.get('section'))?param.get('section'):document.title.includes('ئامێر')?'staff':'audit');
  // Shared behavior and status presentation across every form, without changing data operations.
  for(const el of main.querySelectorAll('input[type=number]'))el.inputMode=el.step?.includes('.')?'decimal':'numeric';
  document.addEventListener('click',e=>{if(e.target.closest('button[type="submit"],.primary'))document.querySelectorAll('.msg:not(:empty),.message:not(:empty)').forEach(x=>x.setAttribute('role','status'));});
  if(document.getElementById('module-detail')){
   const m=Number(param.get('group')),s=Number(param.get('sub'));const valid=Number.isInteger(m)&&Number.isInteger(s)&&groups[m]&&children[m]?.[s];
   const detail=document.getElementById('module-detail');
+  const completed=m===10&&s>0&&s<4?'./staff-workflows.html?topic='+['shifts','attendance','workhours','evaluation'][s]+'&section=shift':m===11&&s<2&&s>=0?'./staff-workflows.html?topic='+['alerts','approvals'][s]+'&section=audit':m===9&&s===2?'./workspace.html?view=prices&section=labels&batch=1':null;
+  if(valid&&completed){window.location.assign(completed);return;}
   if(valid){select(groups[m][0]);document.getElementById('module-title').textContent=children[m][s];
    detail.textContent='ئەم بەشە هێشتا جێبەجێ نەکراوە.';
    const next=document.getElementById('module-next');next.append(action(m===9?'پشکنین و چاپی لیبڵ':m===10?'شێفتەکان':'تۆماری گۆڕانکارییەکان',m===9?'./workspace.html?view=prices&section=labels':m===10?'./operations.html?view=shift':'./operations.html?view=audit'));

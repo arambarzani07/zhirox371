@@ -342,3 +342,68 @@ test('promotion policies allow cashier reading but deny cashier and outsider cha
  assert.equal((await as(stranger,'select id from retail_campaigns')).length,0);
  assert.equal((await as(cashier,"update retail_campaigns set name='Forbidden' returning id")).length,0);
 });
+
+const attendanceV27={name:'QA Staff',role:'cashier',date:'2026-10-28',checkIn:'08:00',checkOut:'16:00',status:'present',note:'manual record'};
+const workhoursV27={name:'QA Staff',date:'2026-10-28',regularHrs:8,overtimeHrs:2,hourlyRate:3500,overtimeRate:5000,bonus:-1000,totalPay:999999};
+const reviewV27={name:'QA Staff',period:'2026-10',speed:3,accuracy:4,discipline:5,avgScore:5};
+const alertV27={title:'Manual alert',severity:'warning',dept:'QA',note:'review'};
+const approvalV27={requester:'QA Staff',type:'Review request',amount:'1 day',reason:'QA manual request'};
+async function workflowWrite(id,topic,data,version=0,action='save',request=uuid(910),actor=owner){return (await as(actor,'select retail_workflow_write_v27($1,$2,$3,$4,$5,$6,$7::jsonb) as result',[store,request,id,topic,version,action,JSON.stringify(data)]))[0].result.record;}
+async function workflowList(topic,status='all',offset=0,actor=owner,query=''){return (await as(actor,'select retail_workflow_list_v27($1,$2,$3,$4,50,$5) as result',[store,topic,status,offset,query]))[0].result;}
+test('workflow writes persist all five topics with authoritative actor, server calculations and history',async()=>{
+ const topics=[['attendance',attendanceV27],['workhours',workhoursV27],['evaluation',reviewV27],['alerts',alertV27],['approvals',approvalV27]];
+ for(let i=0;i<topics.length;i++){const [topic,payload]=topics[i];const record=await workflowWrite(uuid(920+i),topic,payload,0,'save',uuid(930+i));assert.equal(record.topic,topic);assert.equal(record.created_by,owner);assert.equal(record.version,1);assert.ok(record.updated_at);assert.equal((await workflowList(topic)).total,1);}
+ assert.equal((await workflowList('workhours')).rows[0].data.totalPay,37000);assert.equal((await workflowList('evaluation')).rows[0].data.avgScore,4);
+ assert.equal(Number(await scalar('select count(*) from retail_internal.workflow_history')),5);
+ assert.equal(Number(await scalar('select count(*) from retail_cash_movements')),0,'estimates and approvals must not move money');
+});
+test('workflow retry is exactly once, stale versions fail and inactive manager replay is denied',async()=>{
+ const row=await workflowWrite(uuid(940),'attendance',attendanceV27);assert.deepEqual(await workflowWrite(uuid(940),'attendance',attendanceV27),row);
+ await assert.rejects(()=>workflowWrite(uuid(940),'attendance',{...attendanceV27,note:'changed'}),/different actor or payload/);
+ await workflowWrite(uuid(940),'attendance',{...attendanceV27,note:'updated'},1,'save',uuid(941));
+ await assert.rejects(()=>workflowWrite(uuid(940),'attendance',attendanceV27,1,'save',uuid(942)),/Record changed/);
+ assert.equal(Number(await scalar('select count(*) from retail_internal.workflow_history')),2);
+ await workflowWrite(uuid(943),'attendance',attendanceV27,0,'save',uuid(944),manager);
+ await db.exec(`update retail_memberships set active=false where user_id='${manager}'`);
+ await assert.rejects(()=>workflowWrite(uuid(943),'attendance',attendanceV27,0,'save',uuid(944),manager),/Manager permission required/);
+});
+test('workflow soft archive/restore retains history, and alert resolve cannot masquerade as archive',async()=>{
+ await workflowWrite(uuid(950),'attendance',attendanceV27);await workflowWrite(uuid(950),'attendance',{},1,'archive',uuid(951));
+ assert.equal((await workflowList('attendance','active')).total,0);assert.equal((await workflowList('attendance','archived')).total,1);
+ await workflowWrite(uuid(950),'attendance',{},2,'restore',uuid(952));assert.equal((await workflowList('attendance','active')).rows[0].version,3);
+ await workflowWrite(uuid(953),'alerts',alertV27,0,'save',uuid(954));await workflowWrite(uuid(953),'alerts',{},1,'resolve',uuid(955));
+ await assert.rejects(()=>workflowWrite(uuid(953),'alerts',{},2,'archive',uuid(956)),/Invalid workflow transition/);
+ assert.equal((await workflowList('alerts','resolved')).total,1);
+});
+test('approval has one terminal decision and never changes membership or financial permissions',async()=>{
+ await assert.rejects(()=>workflowWrite(uuid(960),'approvals',{...approvalV27,status:'approved'}),/Invalid approval request/);
+ await workflowWrite(uuid(960),'approvals',approvalV27);const accepted=await workflowWrite(uuid(960),'approvals',{},1,'approve',uuid(961));assert.equal(accepted.status,'approved');
+ await assert.rejects(()=>workflowWrite(uuid(960),'approvals',{},1,'reject',uuid(962)),/Record changed/);
+ await assert.rejects(()=>workflowWrite(uuid(960),'approvals',{},2,'reject',uuid(963)),/Invalid workflow transition/);
+ await assert.rejects(()=>workflowWrite(uuid(960),'approvals',approvalV27,2,'save',uuid(964)),/Final or archived record/);
+ assert.equal(await scalar(`select role from retail_memberships where user_id='${cashier}'`),'cashier');assert.equal(Number(await scalar('select count(*) from retail_finance_entries')),0);
+});
+test('workflow SQL rejects impossible dates, fabricated hours and missing rates without journal or data',async()=>{
+ const invalid=[['attendance',{...attendanceV27,date:'2026-02-30'}],['attendance',{...attendanceV27,checkIn:'25:99'}],['workhours',{...workhoursV27,overtimeHrs:20}],['workhours',{...workhoursV27,overtimeRate:null}],['workhours',{...workhoursV27,hourlyRate:1.5}],['evaluation',{...reviewV27,speed:0}],['alerts',{...alertV27,severity:'fake'}]];
+ for(let i=0;i<invalid.length;i++)await assert.rejects(()=>workflowWrite(uuid(970+i),invalid[i][0],invalid[i][1],0,'save',uuid(980+i)));
+ assert.equal(Number(await scalar('select count(*) from retail_workflow_records')),0);assert.equal(Number(await scalar('select count(*) from retail_internal.financial_requests')),0);
+});
+test('workflow RLS and RPCs deny cashier/outsider reads and writes, cross-store IDs and direct mutation',async()=>{
+ await workflowWrite(uuid(990),'attendance',attendanceV27);
+ for(const actor of [cashier,stranger]){await assert.rejects(()=>workflowList('attendance','all',0,actor),/Manager permission required/);await assert.rejects(()=>workflowWrite(uuid(991),'attendance',attendanceV27,0,'save',uuid(992),actor),/Manager permission required/);assert.equal((await as(actor,'select * from retail_workflow_records')).length,0);}
+ await assert.rejects(()=>as(owner,'update retail_workflow_records set version=99'),/permission denied/);
+ assert.equal(await scalar("select has_table_privilege('authenticated','retail_workflow_records','TRUNCATE')"),false);assert.equal(await scalar("select has_table_privilege('anon','retail_workflow_records','SELECT')"),false);
+ const other=uuid(993);await db.exec(`insert into retail_stores(id,owner_user_id,name) values('${other}','${stranger}','Other')`);
+ await assert.rejects(()=>as(stranger,"select retail_workflow_write_v27($1,$2,$3,'attendance',1,'save',$4::jsonb)",[other,uuid(994),uuid(990),JSON.stringify(attendanceV27)]),/Record not accessible/);
+});
+test('workflow list pages and automatic alert counts cover all server records',async()=>{
+ await db.exec(`insert into retail_workflow_records(id,store_id,topic,data,status,created_by,updated_by) select gen_random_uuid(),'${store}','attendance',jsonb_build_object('name','Staff'||n),'active','${owner}','${owner}' from generate_series(1,51) n; update retail_stock_balances set quantity=0; update retail_customers set balance_minor=6000`);
+ const a=await workflowList('attendance'),b=await workflowList('attendance','all',50);assert.equal(a.total,51);assert.equal(a.rows.length,50);assert.equal(b.rows.length,1);assert.ok(!a.rows.some(x=>x.id===b.rows[0].id));
+ const searched=await workflowList('attendance','all',0,owner,'Staff51');assert.equal(searched.total,1);assert.equal(searched.rows[0].data.name,'Staff51');
+ const alerts=await workflowList('alerts');assert.deepEqual(alerts.signals,{out_of_stock:1,over_credit_limit:1});
+});
+test('workflow mutation rolls back record, history, audit and journal together on audit failure',async()=>{
+ await db.exec("CREATE FUNCTION public.qa_reject_workflow_audit() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.action LIKE 'workflow.%' THEN RAISE EXCEPTION 'QA audit unavailable';END IF;RETURN NEW;END$$; CREATE TRIGGER qa_workflow_audit BEFORE INSERT ON retail_audit_events FOR EACH ROW EXECUTE FUNCTION public.qa_reject_workflow_audit();");
+ try{await assert.rejects(()=>workflowWrite(uuid(995),'attendance',attendanceV27),/QA audit unavailable/);for(const table of ['public.retail_workflow_records','retail_internal.workflow_history','retail_internal.financial_requests'])assert.equal(Number(await scalar('select count(*) from '+table)),0);}
+ finally{await db.exec('DROP TRIGGER qa_workflow_audit ON retail_audit_events; DROP FUNCTION public.qa_reject_workflow_audit();');}
+});

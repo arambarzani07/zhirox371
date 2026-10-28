@@ -514,7 +514,7 @@ function selectOffersSub(nextSub){
  void refreshOffersSection(nextSub);
 }
 function selectShiftSub(nextSub){
- if(window.RETAIL_DEMO_MODE!==true&&["attendance","workhours","evaluation"].includes(nextSub)){window.location.assign("./modules.html?group=10&sub="+(["shifts","attendance","workhours","evaluation"].indexOf(nextSub)));return;}
+ if(["attendance","workhours","evaluation"].includes(nextSub)){window.location.assign("./staff-workflows.html?topic="+nextSub+"&section=shift");return;}
 
  if(!["shifts","attendance","workhours","evaluation"].includes(nextSub))nextSub="shifts";
  shiftSub=nextSub;
@@ -542,7 +542,7 @@ function selectLabelsSub(nextSub){
  renderLabelsWorkspace();
 }
 function selectAuditSub(nextSub){
- if(window.RETAIL_DEMO_MODE!==true&&["alerts","approvals","qa"].includes(nextSub)){window.location.assign(nextSub==="qa"?"./qa.html":"./modules.html?group=11&sub="+(nextSub==="alerts"?0:1));return;}
+ if(["alerts","approvals","qa"].includes(nextSub)){window.location.assign(nextSub==="qa"?"./qa.html":"./staff-workflows.html?topic="+nextSub+"&section=audit");return;}
 
  if(!["alerts","approvals","changes","qa"].includes(nextSub))nextSub="changes";
  auditSub=nextSub;
@@ -5223,8 +5223,7 @@ async function enter(){
  await loadReportsData();
  await loadSettingsAndStaffProfiles();
  await loadOffersAndDiscountsData();
- loadShiftStaffSubsectionsData();
- loadLabelsAndAuditSubsectionsData();
+ if(window.RETAIL_DEMO_MODE===true){loadShiftStaffSubsectionsData();loadLabelsAndAuditSubsectionsData();}
  await refreshShift();
  loadParked();
  loadReturnAttempt();

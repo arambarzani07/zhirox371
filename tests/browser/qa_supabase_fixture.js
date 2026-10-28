@@ -61,7 +61,7 @@
     };
   }
   function tableRows(name){
-    if(name==="retail_stores")return state.store?[state.store]:[];
+    if(name==="retail_stores")return state.store?[state.store,...(state.extraStores||[])]:[];
     if(name==="retail_products")return state.products;
     if(name==="retail_barcodes")return state.barcodes;
     if(name==="retail_stock_balances")return state.stock;

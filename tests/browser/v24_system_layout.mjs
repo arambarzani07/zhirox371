@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import{chromium}from'playwright';
-const fixture=readFileSync('tests/browser/qa_supabase_fixture.js','utf8')+readFileSync('tests/browser/qa_v22_fixture.js','utf8');
+const fixture=readFileSync('tests/browser/qa_supabase_fixture.js','utf8')+readFileSync('tests/browser/qa_v22_fixture.js','utf8')+readFileSync('tests/browser/qa_v27_fixture.js','utf8');
 const origin=process.env.PC_PREVIEW_ORIGIN||'http://127.0.0.1:8765';const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:1190,height:850}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));await page.route('https://cdn.jsdelivr.net/**',r=>r.fulfill({contentType:'application/javascript',body:'/* isolated fixture */'}));await page.addInitScript({content:fixture});
 try{
@@ -11,6 +11,7 @@ try{
   assert.ok(await page.locator('main h1').innerText());
   assert.ok(await page.locator('.system-nav').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'all main cards fit without a horizontal scroll');
   if(page.url().includes('operations.html')){await page.locator('#operations-panel').waitFor({state:'visible'});assert.equal(await page.locator('#operations-panel > section:not([hidden])').count(),1,`visible content ${m}/${s}`);}
+  if(page.url().includes('staff-workflows.html'))await page.locator('#wf-editor').waitFor({state:'visible'});
   if(page.url().includes('modules.html'))assert.match(await page.locator('#module-detail').innerText(),/هێشتا جێبەجێ نەکراوە/);
  }
  console.log('PASS V24: all 12 Home cards and 48 destinations reach the shared PC shell, including explicit unfinished modules');

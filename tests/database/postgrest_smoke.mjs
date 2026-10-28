@@ -42,3 +42,9 @@ assert.equal(refund.debt_reduced_minor,600);assert.equal(refund.cash_refunded_mi
 assert.equal(ok(await db.from('retail_customers').select('balance_minor').eq('id',party.id).single(),'after credit return').balance_minor,0);
 const report=ok(await db.rpc('retail_report_v22',{p_store:store,p_kind:'sales'}),'real report RPC');assert.equal(Number(report.summary.net_minor),0);assert.equal(Number(report.summary.refund_minor),1000);
 console.log('PASS: V22 real PostgREST linked credit return, exact cash/debt split and complete report RPC');
+
+const workflowId=randomUUID(),workflowRequest=randomUUID();const workflowArgs={p_store:store,p_request:workflowRequest,p_id:workflowId,p_topic:'attendance',p_version:0,p_action:'save',p_data:{name:'Real JWT staff record',date:'2026-10-28',status:'present'}};
+const workflow=ok(await db.rpc('retail_workflow_write_v27',workflowArgs),'workflow through real JWT');assert.equal(workflow.record.id,workflowId);assert.equal(workflow.record.version,1);assert.equal(ok(await db.rpc('retail_workflow_write_v27',workflowArgs),'workflow replay').record.version,1);
+assert.equal(ok(await db.rpc('retail_workflow_list_v27',{p_store:store,p_topic:'attendance'}),'workflow list').rows[0].id,workflowId);
+assert.ok((await db.from('retail_workflow_records').update({status:'archived'}).eq('id',workflowId)).error,'direct workflow writes must be denied');
+console.log('PASS: V27 real authenticated workflow RPC, durable replay, server read and denied direct write');
