@@ -1,0 +1,25 @@
+name: Offline foundation checks
+on:
+  pull_request:
+    paths:
+      - 'offline/**'
+      - 'docs/full-offline-foundation-v1.md'
+      - '.github/workflows/offline-foundation.yml'
+  push:
+    branches: [main, 'feature/full-offline-foundation-v1']
+    paths:
+      - 'offline/**'
+      - 'docs/full-offline-foundation-v1.md'
+      - '.github/workflows/offline-foundation.yml'
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: node --test offline/tests/*.test.mjs
