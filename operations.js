@@ -9273,38 +9273,73 @@ $("offer-discount-form")?.addEventListener("submit",async e=>{
 $("disc-md-product")?.addEventListener("change",syncDirectMarkdownPreview);
 $("disc-md-pct")?.addEventListener("input",syncDirectMarkdownPreview);
 
-$("disc-direct-markdown-form")?.addEventListener("submit",async e=>{
-  e.preventDefault();
-  if(!store||busy)return;
+// V22: a direct sale-price markdown is a catalog change, never an unsynchronized
+// retail_products UPDATE followed by per-barcode writes. V15 performs it atomically.
+async function submitDirectMarkdown(e){
+  e?.preventDefault();
+  if(!store||!db||busy)return;
+  if(role!=="owner"){
+    msg("disc-md-msg","تەنها خاوەنی فرۆشگا دەتوانێت نرخ بگۆڕێت","error");
+    return;
+  }
   const prodId=String($("disc-md-product")?.value||"");
-  const newPrice=Number($("disc-md-new-price")?.value||0);
+  const rawPrice=String($("disc-md-new-price")?.value??"").trim();
+  const newPrice=Number(rawPrice);
   const p=products.find(x=>x.id===prodId);
-  if(!p||!Number.isSafeInteger(newPrice)||newPrice<0){
+  if(!p||!/^[0-9]{1,9}$/.test(rawPrice)||!Number.isSafeInteger(newPrice)||newPrice<1||newPrice>999999999){
     msg("disc-md-msg","کاڵا و نرخی نوێ نادروستە","error");
     return;
   }
   lock(true);msg("disc-md-msg","");
+  let saved=false;
   try{
-    const oldPrice=Number(p.price_minor||0);
-    p.price_minor=newPrice;
-    if(db){
-      const {error:pErr}=await db.from("retail_products").update({price_minor:newPrice}).eq("store_id",store.id).eq("id",prodId);
-      if(pErr)throw pErr;
-      for(const b of barcodes.filter(x=>x.product_id===prodId&&x.unit_type==="unit"&&Number(x.units_per_scan||1)===1)){
-        b.price_minor=newPrice;
-        try{await db.from("retail_barcodes").update({price_minor:newPrice}).eq("store_id",store.id).eq("code",b.code);}catch(_e){}
-      }
+    const {data:snapshot,error:readError}=await db.rpc("retail_product_snapshot_v19",{
+      p_store_id:store.id,p_product_id:prodId
+    });
+    if(readError)throw readError;
+    if(!snapshot||!Number.isSafeInteger(Number(snapshot.version))||
+       !["unit","both"].includes(snapshot.sale_mode)||
+       !["unit","kg"].includes(snapshot.base_unit)||
+       typeof snapshot.unit_barcode!=="string"||!snapshot.unit_barcode){
+      throw new Error("نرخی ئەم کاڵایە لەم فۆرمەدا ناگۆڕدرێت؛ بەشی کاڵاکان بەکاربهێنە");
     }
+    const oldPrice=Number(snapshot.unit_sale_price_iqd);
+    if(!Number.isSafeInteger(oldPrice)||oldPrice!==Number(p.price_minor)){
+      throw new Error("نرخی کاڵا لە سێرڤەر گۆڕاوە؛ سەرەتا لیستی کاڵاکان نوێ بکەرەوە");
+    }
+    if(newPrice>=oldPrice){
+      throw new Error("نرخی نوێ بۆ داشکاندن دەبێت لە نرخی ئێستا کەمتر بێت");
+    }
+    const catalog={
+      name:snapshot.name,sku:snapshot.sku??null,plu:snapshot.plu??null,
+      sale_mode:snapshot.sale_mode,currency:"IQD",unit_barcode:snapshot.unit_barcode,
+      unit_alias_barcodes:snapshot.unit_alias_barcodes||[],
+      unit_sale_price_iqd:newPrice,
+      unit_purchase_price_iqd:snapshot.unit_purchase_price_iqd??null,
+      carton:snapshot.carton??null
+    };
+    const {error:saveError}=await db.rpc("retail_update_product_v15",{
+      p_store_id:store.id,p_product_id:prodId,
+      p_expected_version:Number(snapshot.version),p_catalog:catalog
+    });
+    if(saveError)throw saveError;
+    saved=true;
+    // The server owns prices and barcode definitions. Refresh only after commit.
     await loadInventory();
     syncDirectMarkdownPreview();
     renderOffersDiscountsView();
     msg("disc-md-msg","نرخی «"+p.name+"» لە "+money(oldPrice)+" کەمکرایەوە بۆ "+money(newPrice),"success");
   }catch(err){
-    msg("disc-md-msg",safe(err),"error");
+    msg("disc-md-msg",saved?
+      "نرخ لە سێرڤەر پاشەکەوت کرا، بەڵام نوێکردنەوەی لیست شکست هێنا؛ Refresh بکە":
+      err?.code==="40001"?
+        "نرخی کاڵا لەلایەن بەکارهێنەرێکی تر گۆڕاوە؛ لیستی کاڵاکان نوێ بکەرەوە":
+        safe(err),"error");
   }finally{
     lock(false);
   }
-});
+}
+$("disc-direct-markdown-form")?.addEventListener("submit",submitDirectMarkdown);
 
 $("offers-discounts-list")?.addEventListener("click",async e=>{
   const toPosBtn=e.target.closest("[data-disc-rule-to-pos]");
