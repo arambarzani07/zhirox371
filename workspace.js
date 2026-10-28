@@ -838,26 +838,22 @@
       if(!db||!store||!user)return;
       const raw=$("import-text")?.value?.trim()||"";
       if(!raw){message("import-status","تکایە داتای CSV بنووسە یان فایلێک دیاری بکە","error");return;}
-      const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-      if(!lines.length){message("import-status","هیچ دێڕێک نەدۆزرایەوە","error");return;}
+      let prepared;
+      try{prepared=window.RetailCatalogImport.prepare(raw);}catch(error){message("import-status",error.message,"error");return;}
+      const lines=prepared.items;
       const btn=$("import-submit");
       busy(btn,true);
       message("import-status",`دەستکرا بە هاوردەکردنی ${lines.length} کاڵا...`,"info");
       let successCount=0;
       let errorCount=0;
-      for(const line of lines){
-        const parts=line.split(/[,;\t]/).map(p=>p.trim());
-        if(parts.length<2)continue;
-        const name=parts[0];
-        const barcode=parts[1];
-        const priceMinor=Math.round(Number(parts[2]||0));
-        if(!name||!barcode){errorCount++;continue;}
+      for(const item of lines){
+        const {name,barcode,price:priceMinor}=item;
         try{
           const {error}=await db.rpc("retail_create_product",{
             p_store_id:store.id,
             p_name:name,
             p_barcode:barcode,
-            p_price_minor:isNaN(priceMinor)?0:priceMinor
+            p_price_minor:priceMinor
           });
           if(error)errorCount++;
           else successCount++;

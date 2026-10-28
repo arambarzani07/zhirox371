@@ -454,6 +454,7 @@ function selectTab(next){
    x.hidden=(x.dataset.tab==="staff"&&role!=="owner") ||
       (["stock","suppliers","finance","reports","audit"].includes(x.dataset.tab)&&!canManage());
  });
+ window.RetailSystemShell?.select(next);
  if(next==="cash"){populateCustomerSelectors();renderCart();renderParkedBar();renderLastSaleBar();syncPending();focusScanner();}
  if(next==="stock"){selectStockSub(stockSub);}
  if(next==="customers"){selectCustomerSub(custSub);}

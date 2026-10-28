@@ -37,7 +37,11 @@ main{padding:20px 36px 28px;max-width:1490px;margin:0 auto}h1{font-size:22px;mar
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="./config.js"></script>
 <script src="./product-catalog.js"></script>
+<script src="./catalog-import.js"></script>
+<script src="./card-icons.js"></script>
+<script src="./system-shell.js" defer></script>
 <script src="./workspace.js" defer></script>
+<link rel="stylesheet" href="./system-ui.css">
 <link rel="stylesheet" href="./ui-contrast-lock.css">
 </head>
 <body>
@@ -113,7 +117,7 @@ main{padding:20px 36px 28px;max-width:1490px;margin:0 auto}h1{font-size:22px;mar
 <div class="toolbar"><h2>کاڵاکان</h2><div style="display:flex;gap:9px;flex-wrap:wrap"><select id="list-stock-filter" class="input-search" style="min-width:155px" aria-label="فلتەری کۆگا"><option value="all">هەموو کاڵاکان</option><option value="low">کەمبووە (≤ 5)</option><option value="out">تەواوبوو (0)</option></select><button type="button" class="secondary" id="import-btn">📂 هاوردەکردن (CSV)</button><button type="button" class="secondary" id="export-list-csv">⬇ هەناردەکردن (CSV)</button><input id="search" class="input-search" placeholder="گەڕان بە ناو، بارکۆد، کۆد..." aria-label="گەڕان بە ناو یان بارکۆد"><button type="button" class="secondary" id="refresh">نوێکردنەوە</button></div></div>
 <div id="import-panel" hidden style="background:#f8fafc;border:1px dashed #94a3b8;border-radius:8px;padding:12px;margin-bottom:12px">
 <h3 style="font-size:13px;margin-bottom:6px">هاوردەکردنی بەکۆمەڵی کاڵاکان لە فایلی CSV یان نووسین</h3>
-<p style="font-size:11px;color:#64748b;margin-bottom:8px">فۆرمات: ناوی کاڵا, بارکۆد, نرخی فرۆشتن (لە هەر دێڕێکدا یەک دانە)</p>
+<p style="font-size:11px;color:#64748b;margin-bottom:8px">فۆرمات: ناوی کاڵا, بارکۆد, نرخی فرۆشتن (IQD)</p>
 <textarea id="import-text" rows="4" style="width:100%;font-family:monospace;font-size:12px;padding:6px;border:1px solid #cbd5e1;border-radius:4px" placeholder="تەماتە, 2700001, 1250&#10;ڕۆنی زەیت, 8690504, 2500"></textarea>
 <div style="display:flex;gap:8px;margin-top:8px">
 <input type="file" id="import-file" accept=".csv,.txt" style="font-size:11px">
