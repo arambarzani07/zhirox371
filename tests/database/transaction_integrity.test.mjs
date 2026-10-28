@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 const uuid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
-const owner=uuid(1),cashier=uuid(2),stranger=uuid(3),store=uuid(10),product=uuid(20),customer=uuid(30),supplier=uuid(40),shift=uuid(50);
+const owner=uuid(1),cashier=uuid(2),stranger=uuid(3),manager=uuid(4),store=uuid(10),product=uuid(20),customer=uuid(30),supplier=uuid(40),shift=uuid(50);
 const upgrade=readFileSync('db/v19_complete_production_upgrade.sql','utf8');
 const migration=readFileSync('supabase/migrations/'+readdirSync('supabase/migrations').find(n=>n.endsWith('_transaction_integrity.sql')),'utf8');
 let db;
@@ -16,9 +16,9 @@ before(async()=>{
 after(async()=>{await db?.close();});
 beforeEach(async()=>{
  await db.exec(`TRUNCATE public.retail_stores,auth.users CASCADE;
- INSERT INTO auth.users(id) VALUES('${owner}'),('${cashier}'),('${stranger}');
+ INSERT INTO auth.users(id) VALUES('${owner}'),('${cashier}'),('${stranger}'),('${manager}');
  INSERT INTO retail_stores(id,owner_user_id,name) VALUES('${store}','${owner}','QA');
- INSERT INTO retail_memberships(store_id,user_id,role) VALUES('${store}','${cashier}','cashier');
+ INSERT INTO retail_memberships(store_id,user_id,role) VALUES('${store}','${cashier}','cashier'),('${store}','${manager}','manager');
  INSERT INTO retail_products(id,store_id,name,price_minor,purchase_price_minor) VALUES('${product}','${store}','Unit item',1000,700);
  INSERT INTO retail_barcodes(store_id,code,product_id) VALUES('${store}','UNIT','${product}');
  INSERT INTO retail_stock_balances(store_id,product_id,quantity) VALUES('${store}','${product}',10);
@@ -117,6 +117,7 @@ test('cashier cannot rewrite balances, ledger rows, settings or clear tables',as
  for(const sql of ['update retail_customers set balance_minor=0','delete from retail_customer_ledger','truncate retail_customers'])await assert.rejects(()=>as(cashier,sql),/permission denied/i);
  await db.exec(`insert into retail_store_settings(store_id,settings_json) values('${store}','{}')`);
  const rows=await as(cashier,"update retail_store_settings set settings_json='{}' returning store_id");assert.equal(rows.length,0);
+ assert.equal((await as(manager,"update retail_store_settings set settings_json='{}' returning store_id")).length,0,'manager must not override owner-only permission settings');
 });
 test('weighted checkout and refund preserve kilogram and price snapshots',async()=>{
  await db.exec(`update retail_products set base_unit='kg',plu='00001',price_minor=1250 where id='${product}';update retail_barcodes set code='2700001';update retail_stock_balances set quantity=2;`);

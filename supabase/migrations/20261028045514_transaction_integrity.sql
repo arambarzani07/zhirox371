@@ -55,6 +55,17 @@ BEGIN
   EXECUTE format('REVOKE TRUNCATE ON public.%I FROM PUBLIC,anon,authenticated',t);
  END LOOP;
 END $secure$;
+-- Settings are readable by active POS members, but owner-only controls stay owner-only.
+DROP POLICY IF EXISTS manager_access ON public.retail_store_settings;
+CREATE POLICY settings_read_v21 ON public.retail_store_settings FOR SELECT TO authenticated
+ USING(retail_internal.has_role(store_id,ARRAY['manager','cashier']));
+CREATE POLICY settings_owner_v21 ON public.retail_store_settings FOR ALL TO authenticated
+ USING(EXISTS(SELECT 1 FROM public.retail_stores s WHERE s.id=retail_store_settings.store_id AND s.owner_user_id=(SELECT auth.uid())))
+ WITH CHECK(EXISTS(SELECT 1 FROM public.retail_stores s WHERE s.id=retail_store_settings.store_id AND s.owner_user_id=(SELECT auth.uid())));
+DROP POLICY IF EXISTS manager_access ON public.retail_staff_profiles;
+CREATE POLICY staff_owner_v21 ON public.retail_staff_profiles FOR ALL TO authenticated
+ USING(EXISTS(SELECT 1 FROM public.retail_stores s WHERE s.id=retail_staff_profiles.store_id AND s.owner_user_id=(SELECT auth.uid())))
+ WITH CHECK(EXISTS(SELECT 1 FROM public.retail_stores s WHERE s.id=retail_staff_profiles.store_id AND s.owner_user_id=(SELECT auth.uid())));
 -- Keep PINs out of clear-text persistence. Current login continues to use Supabase Auth.
 REVOKE SELECT,INSERT,UPDATE ON public.retail_staff_profiles FROM authenticated;
 GRANT SELECT(store_id,user_id,full_name,job_title,phone,email,role,active,note,actor_id,updated_at) ON public.retail_staff_profiles TO authenticated;
