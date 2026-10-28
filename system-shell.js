@@ -23,10 +23,24 @@
   main.addEventListener('click',e=>{
    const sub=e.target.closest('[data-sub]'),selected=main.querySelector('[data-module][aria-expanded="true"]');
    if(!sub||!selected)return;
-   const m=Number(selected.dataset.module),s=Number(sub.dataset.sub);let url=null;
-   if(m===9&&s===0)url='./workspace.html?view=prices&section=labels';
-   if(m===9&&s===1)url='./workspace.html?view=barcodes&section=labels';
-   if((m===9&&s===2)||(m===10&&s>0)||(m===11&&s<2))url='./modules.html?group='+m+'&sub='+s;
+   const m=Number(selected.dataset.module),s=Number(sub.dataset.sub);
+   const op=(view,part)=>'./operations.html?view='+view+(part?'&sub='+part:'');
+   const pending=(group,part)=>'./modules.html?group='+group+'&sub='+part;
+   const routes=[
+    ['cash','receipts','payments','returns'].map(x=>op(x)),
+    ['new','list','prices','barcodes'].map(x=>'./workspace.html?view='+x),
+    ['status','low','expiry','movements'].map(x=>op('stock',x)),
+    ['directory','debts','history','payments'].map(x=>op('customers',x)),
+    ['orders','suppliers','receiving','accounts'].map(x=>op('suppliers',x)),
+    ['treasury','revenue','expenses','cashflow'].map(x=>op('finance',x)),
+    ['sales','profit','inventory','insights'].map(x=>op('reports',x)),
+    [op('staff','users'),op('staff','permissions'),'./diagnostics.html',op('staff','system')],
+    ['new','discounts','coupons','campaigns'].map(x=>op('offers',x)),
+    ['./workspace.html?view=prices&section=labels','./workspace.html?view=barcodes&section=labels',pending(9,2),'./diagnostics.html'],
+    [op('shift'),pending(10,1),pending(10,2),pending(10,3)],
+    [pending(11,0),pending(11,1),op('audit'),'./qa.html']
+   ];
+   const url=routes[m]?.[s];
    if(url){e.preventDefault();e.stopImmediatePropagation();window.location.assign(url);}
   },true);return;
  }
