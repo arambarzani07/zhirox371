@@ -108,6 +108,9 @@
    $("sheet").hidden=false;
    $("print").disabled=false;
    msg("");
+   if(params.get("auto")==="1"||params.get("print")==="1"){
+     setTimeout(()=>{window.print();},350);
+   }
  }
  paper(params.get("paper"));
  $("paper").addEventListener("change",event=>paper(event.target.value));
