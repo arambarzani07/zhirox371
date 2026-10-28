@@ -9,11 +9,11 @@ export function makeLocalSessionCodec(secret, clock=()=>Date.now()) {
   if (typeof secret !== "string" || Buffer.byteLength(secret)<32) throw Error("session secret too short");
   const sign = value => createHmac("sha256",secret).update(value).digest("base64url");
   return {
-    issue({user_id,store_id,role},lifetimeMs=15*60_000) {
-      if (!uuid.test(user_id) || !uuid.test(store_id) || !roles.has(role)
+    issue({user_id,store_id,role,session_version=1},lifetimeMs=15*60_000) {
+      if (!uuid.test(user_id) || !uuid.test(store_id) || !roles.has(role) || !Number.isSafeInteger(session_version) || session_version<1
         || !Number.isSafeInteger(lifetimeMs) || lifetimeMs<1000 || lifetimeMs>60*60_000)
         throw Error("invalid principal");
-      const payload=enc({v:1,user_id,store_id,role,exp:clock()+lifetimeMs});
+      const payload=enc({v:2,user_id,store_id,role,sv:session_version,exp:clock()+lifetimeMs});
       return payload+"."+sign(payload);
     },
     verify(token,requiredStore,allowedRoles=["owner","manager","cashier"]) {
@@ -25,7 +25,7 @@ export function makeLocalSessionCodec(secret, clock=()=>Date.now()) {
       if (expected.length!==given.length || !timingSafeEqual(expected,given)) return null;
       try {
         const p=JSON.parse(Buffer.from(parts[0],"base64url").toString("utf8"));
-        if (p.v!==1 || !uuid.test(p.user_id) || !uuid.test(p.store_id)
+        if (p.v!==2 || !Number.isSafeInteger(p.sv) || p.sv<1 || !uuid.test(p.user_id) || !uuid.test(p.store_id)
           || !roles.has(p.role) || !allowedRoles.includes(p.role)
           || !Number.isSafeInteger(p.exp) || p.exp<=clock()
           || (requiredStore && p.store_id!==requiredStore)) return null;
