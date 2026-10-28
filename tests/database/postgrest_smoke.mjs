@@ -35,3 +35,10 @@ const payment={p_store:store,p_customer:party.id,p_entry_type:'payment_received'
 ok(await db.rpc('retail_record_customer_ledger_v19',payment),'atomic debt payment');ok(await db.rpc('retail_record_customer_ledger_v19',payment),'payment replay');
 assert.equal(ok(await db.from('retail_customers').select('balance_minor').eq('id',party.id).single(),'balance after payment').balance_minor,600);
 console.log('PASS: actual production upgrade through real local Auth/JWT/PostgREST: product, stock, customer, atomic credit/payment, replay, tenant isolation and cost permissions');
+const state=ok(await db.rpc('retail_return_state_v22',{p_store:store,p_sale:sale}),'real return state');assert.equal(state.items.length,1);
+const session=ok(await db.from('retail_cash_sessions').select('id').eq('store_id',store).eq('status','open').single(),'read shift');
+const refund=ok(await db.rpc('retail_return_item_v22',{p_store:store,p_sale:sale,p_line:state.items[0].id,p_quantity:1,p_session:session.id,p_request:randomUUID(),p_note:'Local API QA'}),'linked credit return');
+assert.equal(refund.debt_reduced_minor,600);assert.equal(refund.cash_refunded_minor,400);
+assert.equal(ok(await db.from('retail_customers').select('balance_minor').eq('id',party.id).single(),'after credit return').balance_minor,0);
+const report=ok(await db.rpc('retail_report_v22',{p_store:store,p_kind:'sales'}),'real report RPC');assert.equal(Number(report.summary.net_minor),0);assert.equal(Number(report.summary.refund_minor),1000);
+console.log('PASS: V22 real PostgREST linked credit return, exact cash/debt split and complete report RPC');

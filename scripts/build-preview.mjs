@@ -2,7 +2,7 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const pages={};
-const fixture=read('tests/browser/qa_supabase_fixture.js').replace('name:"QA Only"','name:"سوپەرمارکێتی کانی چنار"');
+const fixture=(read('tests/browser/qa_supabase_fixture.js')+read('tests/browser/qa_v22_fixture.js')).replace('name:"QA Only"','name:"سوپەرمارکێتی کانی چنار"');
 const previewBoot=`if(!crypto.randomUUID)crypto.randomUUID=()=>{const a=crypto.getRandomValues(new Uint8Array(16));a[6]=(a[6]&15)|64;a[8]=(a[8]&63)|128;const h=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20)};localStorage.setItem('retail_store_settings_v19_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',JSON.stringify({storeName:'سوپەرمارکێتی کانی چنار'}));`;
 for(const name of ['index.html','workspace.html','operations.html','receipt-print.html','diagnostics.html','qa.html']){
  let html=read(name);

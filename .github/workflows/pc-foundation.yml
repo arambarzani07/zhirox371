@@ -69,6 +69,13 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/fixture.sql
       - name: Concurrent checkout, request replay, cash movement and shift-close verification
         run: node --test --test-concurrency=1 tests/integration/concurrency.test.mjs
+      - name: Install actual upgrade for concurrent receipt-return tests
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE service_role NOLOGIN'
+          psql -X -v ON_ERROR_STOP=1 -f tests/v12/rls_mirror.sql
+          psql -X -v ON_ERROR_STOP=1 -f db/v19_complete_production_upgrade.sql
+      - name: Concurrent partial/full returns and credit payment races
+        run: node --test --test-concurrency=1 tests/integration/returns_concurrency.test.mjs
   browser-readability:
     runs-on: ubuntu-latest
     steps:
@@ -123,6 +130,8 @@ jobs:
         run: node tests/browser/v18_catalog_scaling.mjs
       - name: Verify V20 PC weighted-pack cart, duplicate scan and stale-price checkout guard
         run: node tests/browser/v20_smart_cashier.mjs
+      - name: Verify linked returns, server report totals and safe API failures
+        run: node tests/browser/v22_returns_reports.mjs
   v12-real-auth-rls:
     name: V12 — Real local Supabase Auth / JWT / PostgREST / RLS
     runs-on: ubuntu-latest

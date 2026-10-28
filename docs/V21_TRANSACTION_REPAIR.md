@@ -1,5 +1,7 @@
 # V21 transaction integrity repair candidate
 
+Historical stage notes: V22 supersedes the paused return flows and capped report paths below; see [V22_RETURNS_REPORTS.md](V22_RETURNS_REPORTS.md).
+
 This branch is a reviewable source change, not a hosted database deployment. The PC Home's five locked files are unchanged. Do not run this against a hosted database until actual schema/ACL preflight, backup and restore verification, and owner-approved maintenance are complete.
 
 ## Install contract

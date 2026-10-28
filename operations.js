@@ -31,7 +31,7 @@ let financeEntriesList=[],shiftSessionsHistory=[];
 let allSaleItems=[],productCostsMap=new Map();
 let staffProfilesMap=new Map(),storeSettings={},lastServerPingMs=null;
 let offersList=[],discountRulesList=[],couponsList=[],campaignsList=[],activePosPromo=null;
-let allReceipts=[],receiptsOffset=0,selectedReturnSaleId=null,allMovements=[],shiftSummaryData=null,lastCompletedSale=null,itemReturnAttempt=null;
+let allReceipts=[],receiptsOffset=0,selectedReturnSaleId=null,selectedReturnLineId=null,returnReceiptLines=[],returnDetailToken=0,allMovements=[],shiftSummaryData=null,lastCompletedSale=null,itemReturnAttempt=null;
 const prefixCache=new Map();
 const money=n=>Number(n).toLocaleString("en-US")+" IQD";
 const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نییە":
@@ -1645,6 +1645,7 @@ function customerEntryTypeMeta(entryType){
    case "debt_sale":return {label:"فرۆشتن بە قەرز (پسووڵە)",cls:"warn",isDebit:true};
    case "debt_add":return {label:"تۆمارکردنی قەرز",cls:"danger",isDebit:true};
    case "opening_balance":return {label:"قەرزی سەرەتا / پێشوو",cls:"warn",isDebit:true};
+   case "sale_return":return {label:"گەڕاندنەوەی پسووڵە",cls:"ok",isDebit:false};
    case "paid_purchase":return {label:"کڕینی نەقدی (دراوە)",cls:"info",isDebit:false};
    case "payment_received":return {label:"پارەدانی کڕیار (دانەوەی قەرز)",cls:"ok",isDebit:false};
    default:return {label:"ڕێکخستنی حیساب",cls:"info",isDebit:true};
@@ -3082,69 +3083,14 @@ function saveLocalProductCosts(){
  try{localStorage.setItem(k,JSON.stringify(obj));}catch(_e){}
 }
 async function loadReportsData(){
- if(!store)return;
- const localCosts=loadLocalProductCosts();
- productCostsMap=new Map();
- for(const [pid,entry] of Object.entries(localCosts)){
-   if(entry&&Number.isFinite(Number(entry.unit_cost_minor))){
-     productCostsMap.set(pid,{unit_cost_minor:Math.max(0,Math.round(Number(entry.unit_cost_minor))),note:entry.note||""});
-   }
- }
- if(!db)return;
- try{
-   const cRes=await db.from("retail_product_costs")
-     .select("product_id,unit_cost_minor,note,updated_at")
-     .eq("store_id",store.id).limit(2000);
-   if(!cRes.error&&Array.isArray(cRes.data)){
-     for(const r of cRes.data){
-       productCostsMap.set(r.product_id,{unit_cost_minor:Math.max(0,Math.round(Number(r.unit_cost_minor||0))),note:r.note||""});
-     }
-     saveLocalProductCosts();
-   }
- }catch(_e){}
- try{
-   let sRes=await db.from("retail_sales")
-     .select("id,receipt_no,total_minor,discount_minor,cash_received_minor,change_due_minor,cashier_id,status,refunded,created_at")
-     .eq("store_id",store.id).eq("status","posted")
-     .order("created_at",{ascending:false}).limit(300);
-   if(["42703","PGRST204","PGRST205"].includes(sRes.error?.code)){
-     sRes=await db.from("retail_sales")
-       .select("id,receipt_no,total_minor,cash_received_minor,change_due_minor,cashier_id,status,created_at")
-       .eq("store_id",store.id).eq("status","posted")
-       .order("created_at",{ascending:false}).limit(300);
-   }
-   if(!sRes.error&&Array.isArray(sRes.data))allReceipts=sRes.data;
- }catch(_e){}
- try{
-   let iRes=await db.from("retail_sale_items")
-     .select("sale_id,product_id,quantity,unit_price_minor,product_name_snapshot,package_type,package_barcode,units_per_package,base_units,created_at")
-     .eq("store_id",store.id).order("created_at",{ascending:false}).limit(1500);
-   if(["42703","PGRST204","PGRST205"].includes(iRes.error?.code)){
-     iRes=await db.from("retail_sale_items")
-       .select("sale_id,product_id,quantity,unit_price_minor,product_name_snapshot")
-       .eq("store_id",store.id).limit(1500);
-   }
-   if(!iRes.error&&Array.isArray(iRes.data))allSaleItems=iRes.data;
- }catch(_e){}
+ // Only the optional current-cost editor uses this small cache. Reports use server aggregates.
+ if(!store||!db||!canManage())return;
+ try{const {data,error}=await db.from("retail_product_costs").select("product_id,unit_cost_minor,note,updated_at").eq("store_id",store.id).limit(100);
+ if(!error&&Array.isArray(data)){productCostsMap=new Map(data.map(r=>[r.product_id,{unit_cost_minor:Number(r.unit_cost_minor),note:r.note||""}]));}}catch(error){msg("rep-profit-msg",safe(error),"error");}
 }
 function getProductUnitCostInfo(productId){
- const p=products.find(x=>x.id===productId);
- const retailPrice=Math.max(0,Number(p?.price_minor||0));
- if(productCostsMap.has(productId)){
-   const saved=productCostsMap.get(productId);
-   return {unitCost:saved.unit_cost_minor,source:"تێچووی تۆمارکراو",exact:true,note:saved.note||""};
- }
- const poMatch=purchaseOrdersList.find(o=>o.product_id===productId&&Number(o.unit_cost_minor)>0);
- if(poMatch){
-   return {unitCost:Math.round(Number(poMatch.unit_cost_minor)),source:"لە داواکاری کڕین ("+(poMatch.po_no||"PO")+")",exact:true,note:poMatch.supplier_name||""};
- }
- const supMatch=supplierLedgerList.find(l=>l.product_id===productId&&Number(l.quantity)>0&&Number(l.amount_minor)>0);
- if(supMatch){
-   const uCost=Math.round(Number(supMatch.amount_minor)/Number(supMatch.quantity));
-   if(uCost>0)return {unitCost:uCost,source:"لە وەسڵی دابینکەر",exact:true,note:supMatch.invoice_no||""};
- }
- const estimated=retailPrice>0?Math.round(retailPrice*0.8):0;
- return {unitCost:estimated,source:"خەمڵێندراو (80%ی نرخی فرۆشتن)",exact:false,note:""};
+ const saved=productCostsMap.get(productId);
+ return saved?{unitCost:saved.unit_cost_minor,source:"تێچووی تۆمارکراو",exact:true,note:saved.note||""}:{unitCost:null,source:"تێچوو تۆمار نەکراوە",exact:false,note:""};
 }
 function populateReportCostSelect(){
  const sel=$("rep-cost-product");
@@ -3156,7 +3102,7 @@ function populateReportCostSelect(){
    const opt=document.createElement("option");
    opt.value=p.id;
    const cInfo=getProductUnitCostInfo(p.id);
-   opt.textContent=p.name+" — فرۆشتن: "+money(p.price_minor)+" | تێچوو: "+money(cInfo.unitCost);
+   opt.textContent=p.name+" — فرۆشتن: "+money(p.price_minor)+" | تێچوو: "+(cInfo.unitCost===null?"—":money(cInfo.unitCost));
    sel.append(opt);
  }
  if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;
@@ -3170,7 +3116,7 @@ function syncReportCostFormPreview(fillCostInput=true){
  const cInfo=getProductUnitCostInfo(pid);
  if($("rep-cost-retail-preview"))$("rep-cost-retail-preview").value=money(retail)+(p.base_unit==="kg"?" / کگم":" / دانە");
  if(fillCostInput&&$("rep-cost-value")){
-   $("rep-cost-value").value=String(cInfo.unitCost);
+   $("rep-cost-value").value=cInfo.unitCost===null?"":String(cInfo.unitCost);
    if($("rep-cost-note"))$("rep-cost-note").value=cInfo.note||"";
  }
  const enteredCost=Math.max(0,Math.round(Number($("rep-cost-value")?.value||0)));
@@ -3208,918 +3154,17 @@ function matchReportDateRange(isoStr,filterMode,fromDateStr="",toDateStr=""){
  return true;
 }
 async function refreshReportsSection(sub=repSub){
- await Promise.all([
-   loadInventory(),
-   loadCustomersAndLedger(),
-   loadSuppliersAndPurchasing(),
-   loadFinanceEntries(),
-   loadReportsData()
- ]);
  populateReportCostSelect();
- if(sub==="sales")renderReportsSalesView();
- if(sub==="profit")renderReportsProfitView();
- if(sub==="inventory")renderReportsInventoryView();
- if(sub==="insights")renderReportsInsightsView();
+ return window.RetailReportsV22.render(sub);
 }
-function computeSalesAnalytics(dateFilter="all",fromDate="",toDate=""){
- const salesInPeriod=allReceipts.filter(s=>matchReportDateRange(s.created_at,dateFilter,fromDate,toDate));
- const activeSales=salesInPeriod.filter(s=>!s.refunded);
- const refundedSales=salesInPeriod.filter(s=>s.refunded);
- const activeSaleIds=new Set(activeSales.map(s=>s.id));
- const saleTimeMap=new Map(salesInPeriod.map(s=>[s.id,s.created_at]));
-
- const netRevenue=activeSales.reduce((n,s)=>n+Number(s.total_minor||0),0);
- const discountTotal=activeSales.reduce((n,s)=>n+Number(s.discount_minor||0),0);
- const grossRevenue=netRevenue+discountTotal;
- const refundedTotal=refundedSales.reduce((n,s)=>n+Number(s.total_minor||0),0);
- const avgBasket=activeSales.length>0?Math.round(netRevenue/activeSales.length):0;
-
- const debtSalesEntries=customerLedgerList.filter(e=>
-   (e.entry_type==="debt_sale"||e.entry_type==="debt_add")&&
-   matchReportDateRange(e.created_at,dateFilter,fromDate,toDate)
- );
- const debtSalesTotal=debtSalesEntries.reduce((n,e)=>n+Number(e.amount_minor||0),0);
- const cashSalesTotal=Math.max(0,netRevenue-debtSalesEntries.filter(e=>e.sale_id&&activeSaleIds.has(e.sale_id)).reduce((n,e)=>n+Number(e.amount_minor||0),0));
-
- const byProduct=new Map();
- for(const item of allSaleItems){
-   if(!activeSaleIds.has(item.sale_id))continue;
-   const pid=item.product_id;
-   const p=products.find(x=>x.id===pid);
-   const isKg=p?.base_unit==="kg";
-   const qty=Number(item.quantity||0);
-   const baseUnits=Number(item.base_units)!=null&&Number(item.base_units)>0?Number(item.base_units):(qty*Number(item.units_per_package||1));
-   const lineRevenue=Math.round(qty*Number(item.unit_price_minor||0));
-   const costInfo=getProductUnitCostInfo(pid);
-   const lineCost=Math.round(baseUnits*costInfo.unitCost);
-   const cur=byProduct.get(pid)||{
-     product_id:pid,
-     name:item.product_name_snapshot||p?.name||"کاڵای سڕاوە",
-     base_unit:p?.base_unit||"unit",
-     baseUnitsSold:0,
-     packagesSold:0,
-     receiptIds:new Set(),
-     revenue:0,
-     cogs:0,
-     unitPrice:Number(p?.price_minor||item.unit_price_minor||0),
-     unitCost:costInfo.unitCost,
-     costSource:costInfo.source,
-     costExact:costInfo.exact
-   };
-   cur.baseUnitsSold=Number((cur.baseUnitsSold+(isKg?baseUnits:Math.round(baseUnits))).toFixed(3));
-   cur.packagesSold+=qty;
-   cur.receiptIds.add(item.sale_id);
-   cur.revenue+=lineRevenue;
-   cur.cogs+=lineCost;
-   byProduct.set(pid,cur);
- }
-
- const productRows=[...byProduct.values()].map(r=>({
-   ...r,
-   receiptCount:r.receiptIds.size,
-   profit:r.revenue-r.cogs,
-   marginPct:r.revenue>0?Math.round(((r.revenue-r.cogs)/r.revenue)*100):0,
-   sharePct:grossRevenue>0?Math.round((r.revenue/grossRevenue)*100):0
- })).sort((a,b)=>b.revenue-a.revenue);
-
- const byDay=new Map();
- const byHour=new Map();
- for(const s of salesInPeriod){
-   const dt=s.created_at?new Date(s.created_at):new Date();
-   const dayKey=dt.toISOString().slice(0,10);
-   const hourKey=String(dt.getHours()).padStart(2,"0")+":00 - "+String(dt.getHours()).padStart(2,"0")+":59";
-   const dRow=byDay.get(dayKey)||{day:dayKey,activeCount:0,refundCount:0,gross:0,discount:0,refunded:0,net:0};
-   if(s.refunded){
-     dRow.refundCount++;
-     dRow.refunded+=Number(s.total_minor||0);
-   }else{
-     dRow.activeCount++;
-     dRow.net+=Number(s.total_minor||0);
-     dRow.discount+=Number(s.discount_minor||0);
-     dRow.gross+=Number(s.total_minor||0)+Number(s.discount_minor||0);
-   }
-   byDay.set(dayKey,dRow);
-
-   if(!s.refunded){
-     const hRow=byHour.get(hourKey)||{hour:hourKey,hourNum:dt.getHours(),count:0,net:0};
-     hRow.count++;
-     hRow.net+=Number(s.total_minor||0);
-     byHour.set(hourKey,hRow);
-   }
- }
- const dailyRows=[...byDay.values()].sort((a,b)=>b.day.localeCompare(a.day));
- const hourlyRows=[...byHour.values()].sort((a,b)=>b.net-a.net);
-
- return {
-   salesInPeriod,
-   activeSales,
-   refundedSales,
-   netRevenue,
-   grossRevenue,
-   discountTotal,
-   refundedTotal,
-   avgBasket,
-   cashSalesTotal,
-   debtSalesTotal,
-   productRows,
-   dailyRows,
-   hourlyRows,
-   saleTimeMap
- };
-}
-function renderReportsSalesView(){
- const dateFilter=String($("rep-sales-date-filter")?.value||"all");
- const fromWrap=$("rep-sales-from-wrap"),toWrap=$("rep-sales-to-wrap");
- if(fromWrap)fromWrap.hidden=dateFilter!=="custom";
- if(toWrap)toWrap.hidden=dateFilter!=="custom";
- const fromDate=String($("rep-sales-from")?.value||"");
- const toDate=String($("rep-sales-to")?.value||"");
- const groupMode=String($("rep-sales-group-mode")?.value||"products");
- const q=String($("rep-sales-search")?.value||"").trim().toLowerCase();
-
- const stats=computeSalesAnalytics(dateFilter,fromDate,toDate);
- if($("rep-sales-kpi-net"))$("rep-sales-kpi-net").textContent=money(stats.netRevenue);
- if($("rep-sales-kpi-count"))$("rep-sales-kpi-count").textContent=stats.activeSales.length.toLocaleString("en-US")+" پسووڵە (ناوەند: "+money(stats.avgBasket)+")";
- if($("rep-sales-kpi-discounts"))$("rep-sales-kpi-discounts").textContent="داشکاندن: "+money(stats.discountTotal)+" | گەڕاوە: "+money(stats.refundedTotal);
- if($("rep-sales-kpi-mix"))$("rep-sales-kpi-mix").textContent=money(stats.cashSalesTotal)+" نەقد / "+money(stats.debtSalesTotal)+" قەرز";
-
- const mainRoot=$("rep-sales-main-table");
- const secRoot=$("rep-sales-secondary-table");
- if(!mainRoot||!secRoot)return;
- mainRoot.replaceChildren();
- secRoot.replaceChildren();
-
- if(groupMode==="products"){
-   const rows=stats.productRows.filter(r=>!q||String(r.name||"").toLowerCase().includes(q));
-   const h3=document.createElement("h3");
-   h3.textContent="ڕیزبەندی پڕفرۆشترین کاڵاکان بەپێی داهات و بڕی فرۆشراو ("+rows.length+" کاڵا)";
-   mainRoot.append(h3);
-   if(!rows.length){
-     const empty=document.createElement("div");empty.className="blank";
-     empty.textContent="هیچ فرۆشتنێکی کاڵا لەم ماوەیەدا تۆمار نەکراوە";
-     mainRoot.append(empty);
-   }else{
-     const table=document.createElement("table");
-     table.innerHTML="<thead><tr><th>پلە</th><th>ناوی کاڵا</th><th>بڕی فرۆشراو</th><th>ژمارەی پسووڵە</th><th>نرخی تاک</th><th>کۆی داهاتی فرۆشتن</th><th>پشکی فرۆشتن (%)</th></tr></thead><tbody></tbody>";
-     rows.forEach((r,idx)=>{
-       const tr=document.createElement("tr");
-       const tdRank=document.createElement("td");tdRank.dir="ltr";tdRank.style.fontWeight="900";tdRank.textContent="#"+(idx+1);
-       const tdName=document.createElement("td");tdName.style.fontWeight="850";tdName.textContent=r.name;
-       const tdQty=document.createElement("td");tdQty.dir="ltr";tdQty.style.fontWeight="800";
-       tdQty.textContent=(r.base_unit==="kg"?Number(r.baseUnitsSold).toFixed(3)+" کگم":r.baseUnitsSold+" دانە");
-       const tdRec=document.createElement("td");tdRec.dir="ltr";tdRec.textContent=r.receiptCount+" پسووڵە";
-       const tdPrice=document.createElement("td");tdPrice.dir="ltr";tdPrice.textContent=money(r.unitPrice);
-       const tdRev=document.createElement("td");tdRev.dir="ltr";tdRev.style.fontWeight="900";tdRev.style.color="#15803d";tdRev.textContent=money(r.revenue);
-       const tdShare=document.createElement("td");
-       const barWrap=document.createElement("div");barWrap.style.display="flex";barWrap.style.alignItems="center";barWrap.style.gap="8px";barWrap.dir="ltr";
-       const track=document.createElement("div");track.style.flex="1";track.style.height="8px";track.style.background="#e2e8f0";track.style.borderRadius="4px";track.style.overflow="hidden";
-       const fill=document.createElement("div");fill.style.height="100%";fill.style.width=Math.min(100,Math.max(4,r.sharePct))+"%";fill.style.background="#2563eb";
-       track.append(fill);
-       const pctSpan=document.createElement("span");pctSpan.style.fontWeight="800";pctSpan.style.fontSize="12px";pctSpan.textContent=r.sharePct+"%";
-       barWrap.append(track,pctSpan);
-       tdShare.append(barWrap);
-       tr.append(tdRank,tdName,tdQty,tdRec,tdPrice,tdRev,tdShare);
-       table.tBodies[0].append(tr);
-     });
-     mainRoot.append(table);
-   }
-   if(stats.dailyRows.length){
-     const secH3=document.createElement("h3");secH3.textContent="پوختەی ڕۆژانەی فرۆشتن";
-     secRoot.append(secH3);
-     renderDailySalesTable(secRoot,stats.dailyRows);
-   }
- }else if(groupMode==="daily"){
-   const h3=document.createElement("h3");h3.textContent="ڕاپۆرتی ڕۆژانەی فرۆشتن و داهاتی پوخت ("+stats.dailyRows.length+" ڕۆژ)";
-   mainRoot.append(h3);
-   renderDailySalesTable(mainRoot,stats.dailyRows);
- }else if(groupMode==="hourly"){
-   const h3=document.createElement("h3");h3.textContent="شیکاریی کاتژمێرەکانی لووتکەی فرۆشتن (Peak Shopping Hours)";
-   mainRoot.append(h3);
-   if(!stats.hourlyRows.length){
-     const empty=document.createElement("div");empty.className="blank";empty.textContent="هیچ داتایەکی کاتژمێری فرۆشتن نییە";
-     mainRoot.append(empty);
-   }else{
-     const maxNet=Math.max(1,...stats.hourlyRows.map(h=>h.net));
-     const table=document.createElement("table");
-     table.innerHTML="<thead><tr><th>کاتژمێر</th><th>ژمارەی پسووڵە</th><th>ناوەندی پسووڵە</th><th>کۆی فرۆشتنی پوخت</th><th>ئاستی قەرەباڵغی</th></tr></thead><tbody></tbody>";
-     for(const h of stats.hourlyRows){
-       const tr=document.createElement("tr");
-       const pct=Math.round((h.net/maxNet)*100);
-       const tdHr=document.createElement("td");tdHr.dir="ltr";tdHr.style.fontWeight="850";tdHr.textContent=h.hour;
-       const tdCnt=document.createElement("td");tdCnt.dir="ltr";tdCnt.textContent=h.count+" پسووڵە";
-       const tdAvg=document.createElement("td");tdAvg.dir="ltr";tdAvg.textContent=money(h.count>0?Math.round(h.net/h.count):0);
-       const tdNet=document.createElement("td");tdNet.dir="ltr";tdNet.style.fontWeight="900";tdNet.style.color="#15803d";tdNet.textContent=money(h.net);
-       const tdBar=document.createElement("td");
-       const badge=document.createElement("span");
-       badge.className="stock-badge "+(pct>=75?"ok":pct>=40?"info":"warn");
-       badge.textContent=pct>=75?"کاتژمێری لووتکە ("+pct+"%)":pct>=40?"مامناوەند ("+pct+"%)":"ئاسایی ("+pct+"%)";
-       tdBar.append(badge);
-       tr.append(tdHr,tdCnt,tdAvg,tdNet,tdBar);
-       table.tBodies[0].append(tr);
-     }
-     mainRoot.append(table);
-   }
- }else{
-   const rows=stats.salesInPeriod.filter(s=>{
-     if(!q)return true;
-     const rNo=String(s.receipt_no??"").padStart(6,"0");
-     return rNo.includes(q)||String(s.total_minor||"").includes(q);
-   });
-   const h3=document.createElement("h3");h3.textContent="لیستی پسووڵەکانی فرۆشتن لە ماوەی هەڵبژێردراودا ("+rows.length+" پسووڵە)";
-   mainRoot.append(h3);
-   if(!rows.length){
-     const empty=document.createElement("div");empty.className="blank";empty.textContent="هیچ پسووڵەیەک نەدۆزرایەوە";
-     mainRoot.append(empty);
-   }else{
-     const table=document.createElement("table");
-     table.innerHTML="<thead><tr><th>ژمارەی پسووڵە</th><th>کات و بەروار</th><th>دۆخ</th><th>داشکاندن</th><th>کۆی پسووڵە (پوخت)</th><th>پارەی وەرگیراو</th><th>کردار</th></tr></thead><tbody></tbody>";
-     for(const s of rows){
-       const tr=document.createElement("tr");
-       const rNo="#"+String(s.receipt_no??"").padStart(6,"0");
-       const tdNo=document.createElement("td");tdNo.dir="ltr";tdNo.style.fontWeight="850";tdNo.textContent=rNo;
-       const tdTime=document.createElement("td");tdTime.textContent=s.created_at?new Date(s.created_at).toLocaleString("en-GB"):"—";
-       const tdSt=document.createElement("td");
-       const b=document.createElement("span");b.className="stock-badge "+(s.refunded?"danger":"ok");
-       b.textContent=s.refunded?"گەڕاوە":"چالاک";
-       tdSt.append(b);
-       const tdDisc=document.createElement("td");tdDisc.dir="ltr";tdDisc.textContent=money(s.discount_minor||0);
-       const tdTot=document.createElement("td");tdTot.dir="ltr";tdTot.style.fontWeight="900";tdTot.textContent=money(s.total_minor||0);
-       const tdCash=document.createElement("td");tdCash.dir="ltr";tdCash.textContent=money(s.cash_received_minor||0);
-       const tdAct=document.createElement("td");
-       tdAct.append(printLink(s.id,"58","58mm"),printLink(s.id,"80","80mm"));
-       tr.append(tdNo,tdTime,tdSt,tdDisc,tdTot,tdCash,tdAct);
-       table.tBodies[0].append(tr);
-     }
-     mainRoot.append(table);
-   }
- }
-}
-function renderDailySalesTable(container,dailyRows){
- if(!dailyRows.length){
-   const empty=document.createElement("div");empty.className="blank";empty.textContent="هیچ فرۆشتنێک لەم ماوەیەدا نییە";
-   container.append(empty);
-   return;
- }
- const table=document.createElement("table");
- table.innerHTML="<thead><tr><th>بەروار</th><th>پسووڵەی چالاک</th><th>کۆی فرۆشتن (پێش داشکاندن)</th><th>داشکاندن</th><th>پسووڵەی گەڕاوە</th><th>داهاتی فرۆشتنی پوخت</th></tr></thead><tbody></tbody>";
- for(const d of dailyRows){
-   const tr=document.createElement("tr");
-   const tdDay=document.createElement("td");tdDay.dir="ltr";tdDay.style.fontWeight="850";tdDay.textContent=d.day;
-   const tdCnt=document.createElement("td");tdCnt.dir="ltr";tdCnt.textContent=d.activeCount+" پسووڵە";
-   const tdGross=document.createElement("td");tdGross.dir="ltr";tdGross.textContent=money(d.gross);
-   const tdDisc=document.createElement("td");tdDisc.dir="ltr";tdDisc.style.color="#d97706";tdDisc.textContent=money(d.discount);
-   const tdRef=document.createElement("td");tdRef.dir="ltr";tdRef.style.color="#dc2626";tdRef.textContent=money(d.refunded)+" ("+d.refundCount+")";
-   const tdNet=document.createElement("td");tdNet.dir="ltr";tdNet.style.fontWeight="900";tdNet.style.color="#15803d";tdNet.textContent=money(d.net);
-   tr.append(tdDay,tdCnt,tdGross,tdDisc,tdRef,tdNet);
-   table.tBodies[0].append(tr);
- }
- container.append(table);
-}
-function renderReportsSalesPrintBox(){
- const box=$("rep-sales-print-box");
- if(!box)return;
- const dateFilter=String($("rep-sales-date-filter")?.value||"all");
- const fromDate=String($("rep-sales-from")?.value||"");
- const toDate=String($("rep-sales-to")?.value||"");
- const stats=computeSalesAnalytics(dateFilter,fromDate,toDate);
- box.replaceChildren();
- box.hidden=false;
- const head=document.createElement("div");
- head.style.display="flex";head.style.justifyContent="space-between";head.style.alignItems="center";head.style.flexWrap="wrap";head.style.gap="8px";
- const h3=document.createElement("h3");h3.style.margin="0";
- h3.textContent="ڕاپۆرتی فەرمیی فرۆشتنی مارکێت — "+new Date().toLocaleDateString("en-GB");
- const act=document.createElement("div");act.style.display="flex";act.style.gap="8px";
- const pBtn=document.createElement("button");pBtn.type="button";pBtn.className="primary";pBtn.style.height="34px";pBtn.textContent="🖨 چاپکردنی ڕاپۆرت";
- pBtn.addEventListener("click",()=>window.print());
- const cBtn=document.createElement("button");cBtn.type="button";cBtn.className="secondary";cBtn.style.height="34px";cBtn.textContent="داخستن";
- cBtn.addEventListener("click",()=>{box.hidden=true;});
- act.append(pBtn,cBtn);
- head.append(h3,act);
- box.append(head);
- const metrics=document.createElement("div");metrics.className="receipt-metrics";
- for(const [lbl,val] of [
-   ["کۆی فرۆشتنی پوخت",money(stats.netRevenue)],
-   ["ژمارەی پسووڵەی چالاک",String(stats.activeSales.length)],
-   ["ناوەندی بەهای پسووڵە",money(stats.avgBasket)],
-   ["کۆی داشکاندن",money(stats.discountTotal)],
-   ["پسووڵەی گەڕاوە",money(stats.refundedTotal)+" ("+stats.refundedSales.length+")"],
-   ["فرۆشتنی نەقد / قەرز",money(stats.cashSalesTotal)+" / "+money(stats.debtSalesTotal)]
- ]){
-   const sp=document.createElement("span"),st=document.createElement("strong");
-   sp.textContent=lbl+": ";st.textContent=val;sp.append(st);metrics.append(sp);
- }
- box.append(metrics);
-}
-function computeProfitAnalytics(dateFilter="all"){
- const salesStats=computeSalesAnalytics(dateFilter);
- const otherRevs=financeEntriesList.filter(e=>e.entry_kind==="revenue"&&matchReportDateRange(e.created_at,dateFilter));
- const otherRevTotal=otherRevs.reduce((n,e)=>n+Number(e.amount_minor||0),0);
- const opExpenses=financeEntriesList.filter(e=>e.entry_kind==="expense"&&matchReportDateRange(e.created_at,dateFilter));
- const opExpenseTotal=opExpenses.reduce((n,e)=>n+Number(e.amount_minor||0),0);
-
- const soldMap=new Map(salesStats.productRows.map(r=>[r.product_id,r]));
- const allProdRows=[];
- let totalItemRevenue=0,totalCogs=0;
- for(const r of salesStats.productRows){
-   totalItemRevenue+=r.revenue;
-   totalCogs+=r.cogs;
- }
- const netSalesRevenue=salesStats.netRevenue;
- const grossProfit=netSalesRevenue-totalCogs;
- const grossMarginPct=netSalesRevenue>0?Math.round((grossProfit/netSalesRevenue)*100):0;
- const totalRevenueWithOther=netSalesRevenue+otherRevTotal;
- const netProfit=grossProfit+otherRevTotal-opExpenseTotal;
- const netMarginPct=totalRevenueWithOther>0?Math.round((netProfit/totalRevenueWithOther)*100):0;
-
- for(const p of products.filter(x=>x.active!==false)){
-   const sold=soldMap.get(p.id);
-   const costInfo=getProductUnitCostInfo(p.id);
-   const retailPrice=Math.max(0,Number(p.price_minor||0));
-   const unitMargin=retailPrice-costInfo.unitCost;
-   const unitMarginPct=retailPrice>0?Math.round((unitMargin/retailPrice)*100):0;
-   const qtySold=sold?sold.baseUnitsSold:0;
-   const rev=sold?sold.revenue:0;
-   const cogs=sold?sold.cogs:0;
-   const prof=sold?(sold.revenue-sold.cogs):0;
-   allProdRows.push({
-     product_id:p.id,
-     name:p.name,
-     base_unit:p.base_unit||"unit",
-     retailPrice,
-     unitCost:costInfo.unitCost,
-     costSource:costInfo.source,
-     costExact:costInfo.exact,
-     unitMargin,
-     unitMarginPct,
-     qtySold,
-     revenue:rev,
-     cogs,
-     profit:prof
-   });
- }
- allProdRows.sort((a,b)=>b.profit-a.profit||b.unitMarginPct-a.unitMarginPct);
-
- return {
-   netSalesRevenue,
-   otherRevTotal,
-   totalRevenueWithOther,
-   totalCogs,
-   grossProfit,
-   grossMarginPct,
-   opExpenseTotal,
-   netProfit,
-   netMarginPct,
-   discountTotal:salesStats.discountTotal,
-   allProdRows
- };
-}
-function renderReportsProfitView(){
- const dateFilter=String($("rep-profit-date-filter")?.value||"all");
- const filterMode=String($("rep-profit-filter")?.value||"all");
- const q=String($("rep-profit-search")?.value||"").trim().toLowerCase();
- const pStats=computeProfitAnalytics(dateFilter);
-
- if($("rep-profit-kpi-revenue"))$("rep-profit-kpi-revenue").textContent=money(pStats.totalRevenueWithOther);
- if($("rep-profit-kpi-cogs"))$("rep-profit-kpi-cogs").textContent=money(pStats.totalCogs);
- if($("rep-profit-kpi-gross")){
-   $("rep-profit-kpi-gross").textContent=(pStats.grossProfit>=0?"+":"−")+money(Math.abs(pStats.grossProfit))+" ("+pStats.grossMarginPct+"%)";
-   $("rep-profit-kpi-gross").style.color=pStats.grossProfit>=0?"#15803d":"#dc2626";
- }
- if($("rep-profit-kpi-net")){
-   $("rep-profit-kpi-net").textContent=(pStats.netProfit>=0?"+":"−")+money(Math.abs(pStats.netProfit))+" ("+pStats.netMarginPct+"%)";
-   $("rep-profit-kpi-net").style.color=pStats.netProfit>=0?"#15803d":"#dc2626";
- }
-
- const pnlCard=$("rep-profit-pnl-card");
- if(pnlCard){
-   pnlCard.replaceChildren();
-   const title=document.createElement("h3");title.style.margin="0 0 10px";title.style.fontSize="15px";
-   title.textContent="پوختەی کەشفی قازانج و زیان (Income Statement / P&L)";
-   pnlCard.append(title);
-   const grid=document.createElement("div");
-   grid.style.display="grid";grid.style.gridTemplateColumns="repeat(auto-fit,minmax(210px,1fr))";grid.style.gap="10px";
-   for(const [label,val,color] of [
-     ["١. داهاتی فرۆشتنی کاشێر (پوخت)",money(pStats.netSalesRevenue),"#168db7"],
-     ["٢. داهاتەکانی تری فرۆشگا","+"+money(pStats.otherRevTotal),"#0d9488"],
-     ["٣. کەمکردنی تێچووی کاڵا (COGS)","−"+money(pStats.totalCogs),"#d97706"],
-     ["٤. قازانجی سەرەتایی (Gross Profit)",(pStats.grossProfit>=0?"+":"−")+money(Math.abs(pStats.grossProfit))+" ("+pStats.grossMarginPct+"%)",pStats.grossProfit>=0?"#15803d":"#dc2626"],
-     ["٥. خەرجییەکانی کارپێکردنی مارکێت","−"+money(pStats.opExpenseTotal),"#dc2626"],
-     ["٦. صافی قازانجی کۆتایی (Net Profit)",(pStats.netProfit>=0?"+":"−")+money(Math.abs(pStats.netProfit))+" ("+pStats.netMarginPct+"%)",pStats.netProfit>=0?"#15803d":"#dc2626"]
-   ]){
-     const item=document.createElement("div");
-     item.style.padding="10px 12px";item.style.background="#fff";item.style.border="1px solid #e2e8f0";item.style.borderRadius="9px";
-     const sp=document.createElement("div");sp.style.fontSize="12px";sp.style.color="#64748b";sp.textContent=label;
-     const st=document.createElement("div");st.style.fontSize="15px";st.style.fontWeight="900";st.style.marginTop="4px";st.style.direction="ltr";st.style.textAlign="right";st.style.color=color;
-     st.textContent=val;
-     item.append(sp,st);grid.append(item);
-   }
-   pnlCard.append(grid);
- }
-
- const root=$("rep-profit-list");
- if(!root)return;
- root.replaceChildren();
- const filtered=pStats.allProdRows.filter(r=>{
-   if(filterMode==="sold"&&!(r.qtySold>0))return false;
-   if(filterMode==="high_margin"&&r.unitMarginPct<20)return false;
-   if(filterMode==="low_margin"&&r.unitMarginPct>=10)return false;
-   if(!q)return true;
-   return String(r.name||"").toLowerCase().includes(q)||String(r.costSource||"").toLowerCase().includes(q);
- });
-
- if(!filtered.length){
-   const empty=document.createElement("div");empty.className="blank";
-   empty.textContent="هیچ کاڵایەک بەم پاڵاوتنە نەدۆزرایەوە";
-   root.append(empty);
-   return;
- }
-
- const table=document.createElement("table");
- table.innerHTML="<thead><tr><th>کاڵا</th><th>نرخی تێچوو (Cost)</th><th>نرخی فرۆشتن</th><th>قازانجی هەر یەکەیەک</th><th>ڕێژەی قازانج (%)</th><th>بڕی فرۆشراو</th><th>کۆی داهات</th><th>کۆی تێچوو</th><th>قازانجی پوختی کاڵا</th><th>کردار</th></tr></thead><tbody></tbody>";
- for(const r of filtered){
-   const tr=document.createElement("tr");
-   const tdName=document.createElement("td");tdName.style.fontWeight="850";tdName.textContent=r.name;
-   const tdCost=document.createElement("td");
-   const costVal=document.createElement("div");costVal.dir="ltr";costVal.style.fontWeight="800";costVal.textContent=money(r.unitCost);
-   const costSrc=document.createElement("span");costSrc.style.fontSize="11px";costSrc.style.color=r.costExact?"#15803d":"#d97706";costSrc.textContent=r.costSource;
-   tdCost.append(costVal,costSrc);
-   const tdPrice=document.createElement("td");tdPrice.dir="ltr";tdPrice.style.fontWeight="800";tdPrice.textContent=money(r.retailPrice);
-   const tdUMarg=document.createElement("td");tdUMarg.dir="ltr";tdUMarg.style.fontWeight="850";
-   tdUMarg.style.color=r.unitMargin>=0?"#15803d":"#dc2626";
-   tdUMarg.textContent=(r.unitMargin>=0?"+":"−")+money(Math.abs(r.unitMargin));
-   const tdPct=document.createElement("td");
-   const badge=document.createElement("span");
-   badge.className="stock-badge "+(r.unitMarginPct>=20?"ok":r.unitMarginPct>=10?"info":r.unitMarginPct>0?"warn":"danger");
-   badge.textContent=r.unitMarginPct+"%";
-   tdPct.append(badge);
-   const tdSold=document.createElement("td");tdSold.dir="ltr";
-   tdSold.textContent=r.base_unit==="kg"?Number(r.qtySold).toFixed(3)+" کگم":r.qtySold+" دانە";
-   const tdRev=document.createElement("td");tdRev.dir="ltr";tdRev.textContent=money(r.revenue);
-   const tdCogs=document.createElement("td");tdCogs.dir="ltr";tdCogs.textContent=money(r.cogs);
-   const tdProf=document.createElement("td");tdProf.dir="ltr";tdProf.style.fontWeight="900";
-   tdProf.style.color=r.profit>=0?"#15803d":"#dc2626";
-   tdProf.textContent=(r.profit>=0?"+":"−")+money(Math.abs(r.profit));
-   const tdAct=document.createElement("td");
-   const editBtn=document.createElement("button");
-   editBtn.type="button";editBtn.className="stock-pick-btn";
-   editBtn.dataset.repEditCost=r.product_id;
-   editBtn.textContent="دەستکاری تێچوو";
-   tdAct.append(editBtn);
-   tr.append(tdName,tdCost,tdPrice,tdUMarg,tdPct,tdSold,tdRev,tdCogs,tdProf,tdAct);
-   table.tBodies[0].append(tr);
- }
- root.append(table);
-}
-function renderReportsProfitPrintBox(){
- const box=$("rep-profit-print-box");
- if(!box)return;
- const dateFilter=String($("rep-profit-date-filter")?.value||"all");
- const pStats=computeProfitAnalytics(dateFilter);
- box.replaceChildren();
- box.hidden=false;
- const head=document.createElement("div");
- head.style.display="flex";head.style.justifyContent="space-between";head.style.alignItems="center";head.style.flexWrap="wrap";head.style.gap="8px";
- const h3=document.createElement("h3");h3.style.margin="0";
- h3.textContent="کەشفی فەرمیی قازانج و زیان (P&L Statement) — "+new Date().toLocaleDateString("en-GB");
- const act=document.createElement("div");act.style.display="flex";act.style.gap="8px";
- const pBtn=document.createElement("button");pBtn.type="button";pBtn.className="primary";pBtn.style.height="34px";pBtn.textContent="🖨 چاپکردنی کەشفی قازانج";
- pBtn.addEventListener("click",()=>window.print());
- const cBtn=document.createElement("button");cBtn.type="button";cBtn.className="secondary";cBtn.style.height="34px";cBtn.textContent="داخستن";
- cBtn.addEventListener("click",()=>{box.hidden=true;});
- act.append(pBtn,cBtn);
- head.append(h3,act);
- box.append(head);
- const metrics=document.createElement("div");metrics.className="receipt-metrics";
- for(const [lbl,val] of [
-   ["داهاتی فرۆشتنی کاشێر",money(pStats.netSalesRevenue)],
-   ["داهاتەکانی تر",money(pStats.otherRevTotal)],
-   ["تێچووی کاڵای فرۆشراو (COGS)",money(pStats.totalCogs)],
-   ["قازانجی سەرەتایی (Gross Profit)",money(pStats.grossProfit)+" ("+pStats.grossMarginPct+"%)"],
-   ["خەرجییەکانی کارپێکردن",money(pStats.opExpenseTotal)],
-   ["صافی قازانجی کۆتایی (Net Profit)",(pStats.netProfit>=0?"+":"−")+money(Math.abs(pStats.netProfit))+" ("+pStats.netMarginPct+"%)"]
- ]){
-   const sp=document.createElement("span"),st=document.createElement("strong");
-   sp.textContent=lbl+": ";st.textContent=val;sp.append(st);metrics.append(sp);
- }
- box.append(metrics);
-}
-function computeInventoryValuationRows(){
- const salesStats=computeSalesAnalytics("all");
- const soldMap=new Map(salesStats.productRows.map(r=>[r.product_id,r]));
- const threshold=Math.max(1,Number($("low-threshold-input")?.value||localStorage.getItem("retail_low_threshold")||5));
-
- let totalRetailVal=0,totalCostVal=0,healthyCount=0,lowCount=0,outCount=0,expiringCount=0;
- const rows=[];
-
- for(const p of products.filter(x=>x.active!==false)){
-   const qty=Math.max(0,Number(balances.get(p.id)||0));
-   const retailPrice=Math.max(0,Number(p.price_minor||0));
-   const costInfo=getProductUnitCostInfo(p.id);
-   const retailVal=Math.round(qty*retailPrice);
-   const costVal=Math.round(qty*costInfo.unitCost);
-   const expectedProfit=retailVal-costVal;
-   totalRetailVal+=retailVal;
-   totalCostVal+=costVal;
-
-   if(qty<=0)outCount++;
-   else if(qty<=threshold)lowCount++;
-   else healthyCount++;
-
-   const prodExpiries=stockExpiries.filter(b=>b.product_id===p.id&&b.status!=="written_off");
-   let minDaysToExpiry=null;
-   for(const b of prodExpiries){
-     const d=computeDaysUntilExpiry(b.expiry_date);
-     if(minDaysToExpiry===null||d<minDaysToExpiry)minDaysToExpiry=d;
-   }
-   if(minDaysToExpiry!==null&&minDaysToExpiry<=30)expiringCount++;
-
-   const sold=soldMap.get(p.id);
-   const qtySold=sold?sold.baseUnitsSold:0;
-   const velocity=qtySold>=10?"fast":qtySold>=2?"normal":qty>0?"dead":"none";
-   const code=barcodes.find(b=>b.product_id===p.id&&b.unit_type==="unit"&&b.active!==false)?.code||p.sku||p.plu||"—";
-
-   rows.push({
-     product_id:p.id,
-     name:p.name,
-     code,
-     base_unit:p.base_unit||"unit",
-     qty,
-     unitCost:costInfo.unitCost,
-     retailPrice,
-     costVal,
-     retailVal,
-     expectedProfit,
-     qtySold,
-     velocity,
-     minDaysToExpiry,
-     isLowOrOut:qty<=threshold
-   });
- }
-
- const writtenOffBatches=stockExpiries.filter(b=>b.status==="written_off");
- const shrinkageVal=writtenOffBatches.reduce((sum,b)=>{
-   const c=getProductUnitCostInfo(b.product_id);
-   return sum+Math.round(Number(b.quantity||0)*c.unitCost);
- },0);
-
- return {
-   rows,
-   totalRetailVal,
-   totalCostVal,
-   totalExpectedProfit:totalRetailVal-totalCostVal,
-   healthyCount,
-   lowCount,
-   outCount,
-   expiringCount,
-   shrinkageVal
- };
-}
-function filterAndSortInventoryReportRows(){
- const invData=computeInventoryValuationRows();
- const q=String($("rep-inv-search")?.value||"").trim().toLowerCase();
- const filterMode=String($("rep-inv-filter")?.value||"all");
- const sortMode=String($("rep-inv-sort")?.value||"value_desc");
-
- const filtered=invData.rows.filter(r=>{
-   if(filterMode==="high_value"&&r.costVal<=0)return false;
-   if(filterMode==="fast_moving"&&r.velocity!=="fast"&&!(r.qtySold>=3))return false;
-   if(filterMode==="dead_stock"&&!(r.qty>0&&r.qtySold===0))return false;
-   if(filterMode==="low_out"&&!r.isLowOrOut)return false;
-   if(filterMode==="expiry_risk"&&(r.minDaysToExpiry===null||r.minDaysToExpiry>30))return false;
-   if(!q)return true;
-   return String(r.name||"").toLowerCase().includes(q)||String(r.code||"").toLowerCase().includes(q);
- });
-
- filtered.sort((a,b)=>{
-   if(sortMode==="sold_desc")return b.qtySold-a.qtySold||b.retailVal-a.retailVal;
-   if(sortMode==="qty_asc")return a.qty-b.qty;
-   if(sortMode==="name_asc")return String(a.name||"").localeCompare(String(b.name||""),"ckb");
-   return b.costVal-a.costVal||b.retailVal-a.retailVal;
- });
-
- return {invData,filtered};
-}
-function renderReportsInventoryView(){
- const {invData,filtered}=filterAndSortInventoryReportRows();
- if($("rep-inv-kpi-retail-val"))$("rep-inv-kpi-retail-val").textContent=money(invData.totalRetailVal);
- if($("rep-inv-kpi-cost-val"))$("rep-inv-kpi-cost-val").textContent=money(invData.totalCostVal);
- if($("rep-inv-kpi-expected-profit"))$("rep-inv-kpi-expected-profit").textContent="+"+money(Math.max(0,invData.totalExpectedProfit));
- if($("rep-inv-kpi-health")){
-   $("rep-inv-kpi-health").textContent=invData.healthyCount+" ساغ | "+invData.lowCount+" کەم | "+invData.outCount+" سفر | زیانی تەلەف: "+money(invData.shrinkageVal);
- }
-
- const root=$("rep-inv-list");
- if(!root)return;
- root.replaceChildren();
- if(!filtered.length){
-   const empty=document.createElement("div");empty.className="blank";
-   empty.textContent="هیچ کاڵایەک لە ڕاپۆرتی کۆگادا بەم پاڵاوتنە نەدۆزرایەوە";
-   root.append(empty);
-   return;
- }
-
- const table=document.createElement("table");
- table.innerHTML="<thead><tr><th>کاڵا</th><th>بارکۆد / کۆد</th><th>بڕی کۆگا</th><th>نرخی تێچوو</th><th>نرخی فرۆشتن</th><th>بەهای سەرمایە (تێچوو)</th><th>بەهای فرۆشتنی کۆگا</th><th>قازانجی چاوەڕوانکراو</th><th>بڕی فرۆشراو</th><th>خێرایی جووڵە و دۆخ</th></tr></thead><tbody></tbody>";
- for(const r of filtered){
-   const tr=document.createElement("tr");
-   const tdName=document.createElement("td");tdName.style.fontWeight="850";tdName.textContent=r.name;
-   const tdCode=document.createElement("td");tdCode.dir="ltr";tdCode.textContent=r.code;
-   const tdQty=document.createElement("td");tdQty.dir="ltr";tdQty.style.fontWeight="900";
-   tdQty.style.color=r.qty<=0?"#dc2626":r.isLowOrOut?"#d97706":"#172b45";
-   tdQty.textContent=r.base_unit==="kg"?Number(r.qty).toFixed(3)+" کگم":r.qty+" دانە";
-   const tdUCost=document.createElement("td");tdUCost.dir="ltr";tdUCost.textContent=money(r.unitCost);
-   const tdUPrice=document.createElement("td");tdUPrice.dir="ltr";tdUPrice.textContent=money(r.retailPrice);
-   const tdCVal=document.createElement("td");tdCVal.dir="ltr";tdCVal.style.fontWeight="850";tdCVal.style.color="#d97706";tdCVal.textContent=money(r.costVal);
-   const tdRVal=document.createElement("td");tdRVal.dir="ltr";tdRVal.style.fontWeight="850";tdRVal.style.color="#168db7";tdRVal.textContent=money(r.retailVal);
-   const tdProf=document.createElement("td");tdProf.dir="ltr";tdProf.style.fontWeight="850";tdProf.style.color="#15803d";tdProf.textContent="+"+money(Math.max(0,r.expectedProfit));
-   const tdSold=document.createElement("td");tdSold.dir="ltr";tdSold.textContent=r.base_unit==="kg"?Number(r.qtySold).toFixed(3)+" کگم":r.qtySold+" دانە";
-   const tdSt=document.createElement("td");
-   const badge=document.createElement("span");
-   if(r.qty<=0){
-     badge.className="stock-badge danger";badge.textContent="تەواوبووە (٠)";
-   }else if(r.minDaysToExpiry!==null&&r.minDaysToExpiry<=14){
-     badge.className="stock-badge danger";badge.textContent="مەترسی بەسەرچوون ("+r.minDaysToExpiry+" ڕۆژ)";
-   }else if(r.velocity==="fast"){
-     badge.className="stock-badge ok";badge.textContent="خێرافرۆش (Fast)";
-   }else if(r.velocity==="dead"){
-     badge.className="stock-badge warn";badge.textContent="خاو / بێ جووڵە";
-   }else{
-     badge.className="stock-badge info";badge.textContent="جووڵەی ئاسایی";
-   }
-   tdSt.append(badge);
-   tr.append(tdName,tdCode,tdQty,tdUCost,tdUPrice,tdCVal,tdRVal,tdProf,tdSold,tdSt);
-   table.tBodies[0].append(tr);
- }
- root.append(table);
-}
-function renderReportsInventoryPrintBox(){
- const box=$("rep-inv-print-box");
- if(!box)return;
- const {invData}=filterAndSortInventoryReportRows();
- box.replaceChildren();
- box.hidden=false;
- const head=document.createElement("div");
- head.style.display="flex";head.style.justifyContent="space-between";head.style.alignItems="center";head.style.flexWrap="wrap";head.style.gap="8px";
- const h3=document.createElement("h3");h3.style.margin="0";
- h3.textContent="ڕاپۆرتی فەرمیی بەهای کۆگا و سەرمایەی مارکێت — "+new Date().toLocaleDateString("en-GB");
- const act=document.createElement("div");act.style.display="flex";act.style.gap="8px";
- const pBtn=document.createElement("button");pBtn.type="button";pBtn.className="primary";pBtn.style.height="34px";pBtn.textContent="🖨 چاپکردنی ڕاپۆرتی کۆگا";
- pBtn.addEventListener("click",()=>window.print());
- const cBtn=document.createElement("button");cBtn.type="button";cBtn.className="secondary";cBtn.style.height="34px";cBtn.textContent="داخستن";
- cBtn.addEventListener("click",()=>{box.hidden=true;});
- act.append(pBtn,cBtn);
- head.append(h3,act);
- box.append(head);
- const metrics=document.createElement("div");metrics.className="receipt-metrics";
- for(const [lbl,val] of [
-   ["کۆی بەهای کۆگا بە نرخی فرۆشتن",money(invData.totalRetailVal)],
-   ["کۆی سەرمایەی کۆگا بە نرخی تێچوو",money(invData.totalCostVal)],
-   ["قازانجی چاوەڕوانکراوی ناو کۆگا",money(invData.totalExpectedProfit)],
-   ["کاڵای ساغ / کەمبوو / تەواوبوو",invData.healthyCount+" / "+invData.lowCount+" / "+invData.outCount],
-   ["زیانی تەلەفبوو و بەسەرچوو",money(invData.shrinkageVal)]
- ]){
-   const sp=document.createElement("span"),st=document.createElement("strong");
-   sp.textContent=lbl+": ";st.textContent=val;sp.append(st);metrics.append(sp);
- }
- box.append(metrics);
-}
-function computeSmartInsightsData(){
- const invData=computeInventoryValuationRows();
- const pStats=computeProfitAnalytics("all");
- const threshold=Math.max(1,Number($("low-threshold-input")?.value||localStorage.getItem("retail_low_threshold")||5));
-
- const sortedByRev=[...invData.rows].map(r=>{
-   const pRow=pStats.allProdRows.find(x=>x.product_id===r.product_id);
-   return {
-     ...r,
-     revenue:pRow?pRow.revenue:0,
-     profit:pRow?pRow.profit:0,
-     unitMarginPct:pRow?pRow.unitMarginPct:0
-   };
- }).sort((a,b)=>b.revenue-a.revenue||b.costVal-a.costVal);
-
- const totalRev=Math.max(1,sortedByRev.reduce((s,r)=>s+r.revenue,0));
- let cumRev=0;
- const abcRows=sortedByRev.map((r,idx)=>{
-   cumRev+=r.revenue;
-   const cumPct=Math.round((cumRev/totalRev)*100);
-   let abcClass="C";
-   if(r.revenue>0&&(cumPct<=80||idx===0))abcClass="A";
-   else if(r.revenue>0&&cumPct<=95)abcClass="B";
-   else abcClass="C";
-
-   const needsReorder=r.qty<=threshold&&(r.qtySold>0||abcClass==="A");
-   const isDeadCapital=r.qty>threshold&&r.qtySold===0&&r.costVal>0;
-   const isLowMargin=r.unitMarginPct<10;
-
-   let recommendation="بارودۆخی کاڵا هاوسەنگە و فرۆشتنی ئاساییە";
-   let actionKind="none";
-   if(needsReorder){
-     recommendation="کاڵای پڕفرۆشە و بڕەکەی لە کۆگا کەمە ("+r.qty+") — پێویستە دەستبەجێ داوا بکرێتەوە";
-     actionKind="reorder";
-   }else if(r.minDaysToExpiry!==null&&r.minDaysToExpiry<=21&&r.qty>0){
-     recommendation="تەنها "+r.minDaysToExpiry+" ڕۆژی ماوە بۆ بەسەرچوون — داشکاندنی ٢٠٪ بکە بۆ فرۆشتنی خێرا";
-     actionKind="discount";
-   }else if(isDeadCapital){
-     recommendation="بڕی "+money(r.costVal)+" سەرمایە لەم کاڵایەدا خەوتووە بێ فرۆشتن — بیخە ناو ئۆفەر";
-     actionKind="clearance";
-   }else if(isLowMargin){
-     recommendation="ڕێژەی قازانجی ئەم کاڵایە تەنها "+r.unitMarginPct+"% ـە — پێداچوونەوە بە نرخی فرۆشتن یان تێچوو بکە";
-     actionKind="margin";
-   }else if(abcClass==="A"){
-     recommendation="کاڵای ستراتیژیی پۆلی A — هەمیشە دڵنیابە لە بوونی بڕی پێویست لەسەر ڕەفە";
-     actionKind="keep_stocked";
-   }
-
-   return {
-     ...r,
-     abcClass,
-     needsReorder,
-     isDeadCapital,
-     isLowMargin,
-     recommendation,
-     actionKind
-   };
- });
-
- const classACount=abcRows.filter(r=>r.abcClass==="A").length;
- const reorderRows=abcRows.filter(r=>r.needsReorder||r.qty<=0);
- const deadStockVal=abcRows.filter(r=>r.isDeadCapital).reduce((s,r)=>s+r.costVal,0);
- const overdueCustomers=customersList.filter(c=>c.active!==false&&Number(c.balance_minor||0)>0&&(
-   (c.credit_limit_minor>0&&Number(c.balance_minor)>Number(c.credit_limit_minor))||
-   (c.due_date&&new Date(c.due_date).getTime()<Date.now())
- ));
- const totalCustomerDebt=customersList.filter(c=>c.active!==false).reduce((s,c)=>s+Math.max(0,Number(c.balance_minor||0)),0);
-
- let score=100;
- if(invData.outCount>0)score-=Math.min(20,invData.outCount*4);
- if(invData.lowCount>2)score-=Math.min(15,invData.lowCount*2);
- if(overdueCustomers.length>0)score-=Math.min(15,overdueCustomers.length*5);
- if(pStats.netProfit<0)score-=15;
- score=Math.max(40,Math.min(100,score));
-
- return {
-   abcRows,
-   classACount,
-   reorderRows,
-   deadStockVal,
-   overdueCustomers,
-   totalCustomerDebt,
-   score,
-   pStats,
-   invData
- };
-}
-function renderReportsInsightsView(){
- const ins=computeSmartInsightsData();
- const q=String($("rep-ins-search")?.value||"").trim().toLowerCase();
- const filterMode=String($("rep-ins-filter")?.value||"all");
-
- if($("rep-ins-kpi-score")){
-   const label=ins.score>=85?"نایاب":ins.score>=70?"باش":"پێویستی بە سەرنجە";
-   $("rep-ins-kpi-score").textContent=ins.score+" / 100 ("+label+")";
-   $("rep-ins-kpi-score").style.color=ins.score>=80?"#15803d":ins.score>=65?"#d97706":"#dc2626";
- }
- if($("rep-ins-kpi-class-a"))$("rep-ins-kpi-class-a").textContent=ins.classACount+" کاڵا (٨٠٪ی داهات)";
- if($("rep-ins-kpi-reorder"))$("rep-ins-kpi-reorder").textContent=ins.reorderRows.length+" کاڵا پێویستە بکڕدرێت";
- if($("rep-ins-kpi-risk"))$("rep-ins-kpi-risk").textContent="خەوتوو: "+money(ins.deadStockVal)+" | قەرز: "+money(ins.totalCustomerDebt);
-
- const cardsRoot=$("rep-ins-cards");
- if(cardsRoot){
-   cardsRoot.replaceChildren();
-   const grid=document.createElement("div");
-   grid.style.display="grid";grid.style.gridTemplateColumns="repeat(auto-fit,minmax(290px,1fr))";grid.style.gap="12px";
-
-   const cardSpecs=[
-     {
-       title:"📦 ١. پێشنیاری داواکردنەوەی خێرای کاڵا (Smart Reorder)",
-       badge:ins.reorderRows.length+" کاڵا",
-       badgeCls:ins.reorderRows.length>0?"warn":"ok",
-       body:ins.reorderRows.length>0?
-         ("کاڵاکانی وەک «"+ins.reorderRows.slice(0,3).map(x=>x.name).join("، ")+"» لە کۆگا کەمبوونەتەوە یان سفر بوون. بە یەک کلیک داواکاری کڕینیان بۆ دروست بکە."):
-         "هەموو کاڵا پڕفرۆشەکانت بڕی پێویستیان لە کۆگادا هەیە.",
-       btnText:"+ دروستکردنی داواکاری کڕین لە کۆگا",
-       action:"go_po"
-     },
-     {
-       title:"💡 ٢. شیکاریی سەرمایەی خەوتوو و داشکاندن (Clearance)",
-       badge:money(ins.deadStockVal),
-       badgeCls:ins.deadStockVal>0?"info":"ok",
-       body:ins.deadStockVal>0?
-         ("بڕی "+money(ins.deadStockVal)+" سەرمایە لە کاڵای پۆلی C بێ فرۆشتن ماوەتەوە. پێشنیار دەکرێت داشکاندنی ١٠٪ تا ١٥٪یان بۆ بکرێت بۆ گەڕانەوەی سیولە."):
-         "هیچ سەرمایەیەکی خەوتووی بێ جووڵە لە کۆگادا نییە.",
-       btnText:"بینینی کاڵاکانی پۆلی C",
-       action:"filter_c"
-     },
-     {
-       title:"💳 ٣. چاودێریی قەرزی کڕیاران و سیولەی نەقدی",
-       badge:ins.overdueCustomers.length+" کڕیاری هۆشداریدار",
-       badgeCls:ins.overdueCustomers.length>0?"danger":"ok",
-       body:ins.totalCustomerDebt>0?
-         ("کۆی قەرزی لای کڕیاران "+money(ins.totalCustomerDebt)+" ـە"+(ins.overdueCustomers.length>0?" و "+ins.overdueCustomers.length+" کڕیار سنوور یان مۆڵەتی قەرزیان تێپەڕاندووە.":" و لە ژێر کۆنترۆڵدایە.")):
-         "هیچ قەرزێکی کڕیار لەسەر مارکێت نییە.",
-       btnText:"چوون بۆ وەرگرتنەوەی قەرزی کڕیاران",
-       action:"go_debts"
-     }
-   ];
-
-   for(const c of cardSpecs){
-     const box=document.createElement("div");
-     box.className="stock-adjust-card";box.style.margin="0";box.style.display="flex";box.style.flexDirection="column";box.style.justifyContent="space-between";box.style.gap="10px";
-     const top=document.createElement("div");top.style.display="flex";top.style.justifyContent="space-between";top.style.alignItems="center";top.style.gap="8px";
-     const st=document.createElement("strong");st.style.fontSize="14px";st.textContent=c.title;
-     const b=document.createElement("span");b.className="stock-badge "+c.badgeCls;b.textContent=c.badge;
-     top.append(st,b);
-     const p=document.createElement("p");p.style.margin="0";p.style.fontSize="12.5px";p.style.color="#475569";p.style.lineHeight="1.6";p.textContent=c.body;
-     const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.style.height="34px";btn.style.alignSelf="flex-start";
-     btn.dataset.insQuickAction=c.action;
-     btn.textContent=c.btnText;
-     box.append(top,p,btn);
-     grid.append(box);
-   }
-   cardsRoot.append(grid);
- }
-
- const root=$("rep-ins-abc-list");
- if(!root)return;
- root.replaceChildren();
- const filtered=ins.abcRows.filter(r=>{
-   if(filterMode==="reorder"&&!r.needsReorder&&r.qty>0)return false;
-   if(filterMode==="abc_a"&&r.abcClass!=="A")return false;
-   if(filterMode==="abc_b"&&r.abcClass!=="B")return false;
-   if(filterMode==="abc_c"&&r.abcClass!=="C")return false;
-   if(filterMode==="margin_alert"&&!r.isLowMargin)return false;
-   if(!q)return true;
-   return String(r.name||"").toLowerCase().includes(q)||String(r.recommendation||"").toLowerCase().includes(q)||("پۆلی "+r.abcClass.toLowerCase()).includes(q);
- });
-
- if(!filtered.length){
-   const empty=document.createElement("div");empty.className="blank";empty.textContent="هیچ کاڵایەک لەم پۆلێنەدا نییە";
-   root.append(empty);
-   return;
- }
-
- const table=document.createElement("table");
- table.innerHTML="<thead><tr><th>پۆلێنی ABC</th><th>ناوی کاڵا</th><th>بڕی ئێستای کۆگا</th><th>بڕی فرۆشراو</th><th>داهاتی فرۆشتن</th><th>ڕێژەی قازانج</th><th>ڕاسپاردەی سیستەمی زیرەک</th><th>کرداری خێرا</th></tr></thead><tbody></tbody>";
- for(const r of filtered){
-   const tr=document.createElement("tr");
-   const tdAbc=document.createElement("td");
-   const badge=document.createElement("span");
-   badge.className="stock-badge "+(r.abcClass==="A"?"ok":r.abcClass==="B"?"info":"warn");
-   badge.textContent="پۆلی "+r.abcClass+(r.abcClass==="A"?" (ستراتیژی)":r.abcClass==="B"?" (گرنگ)":" (خاو)");
-   tdAbc.append(badge);
-   const tdName=document.createElement("td");tdName.style.fontWeight="850";tdName.textContent=r.name;
-   const tdQty=document.createElement("td");tdQty.dir="ltr";tdQty.style.fontWeight="850";
-   tdQty.style.color=r.qty<=0?"#dc2626":r.isLowOrOut?"#d97706":"#172b45";
-   tdQty.textContent=r.base_unit==="kg"?Number(r.qty).toFixed(3)+" کگم":r.qty+" دانە";
-   const tdSold=document.createElement("td");tdSold.dir="ltr";tdSold.textContent=r.base_unit==="kg"?Number(r.qtySold).toFixed(3)+" کگم":r.qtySold+" دانە";
-   const tdRev=document.createElement("td");tdRev.dir="ltr";tdRev.style.fontWeight="850";tdRev.textContent=money(r.revenue);
-   const tdMarg=document.createElement("td");tdMarg.dir="ltr";tdMarg.style.fontWeight="800";
-   tdMarg.style.color=r.unitMarginPct>=15?"#15803d":r.unitMarginPct>=10?"#168db7":"#dc2626";
-   tdMarg.textContent=r.unitMarginPct+"%";
-   const tdRec=document.createElement("td");tdRec.style.fontSize="12px";tdRec.textContent=r.recommendation;
-   const tdAct=document.createElement("td");
-   const poBtn=document.createElement("button");
-   poBtn.type="button";poBtn.className="stock-pick-btn";
-   poBtn.dataset.insOrderProd=r.product_id;
-   poBtn.textContent="+ داواکردنی کڕین";
-   tdAct.append(poBtn);
-   tr.append(tdAbc,tdName,tdQty,tdSold,tdRev,tdMarg,tdRec,tdAct);
-   table.tBodies[0].append(tr);
- }
- root.append(table);
-}
-function renderReportsInsightsPrintBox(){
- const box=$("rep-ins-print-box");
- if(!box)return;
- const ins=computeSmartInsightsData();
- box.replaceChildren();
- box.hidden=false;
- const head=document.createElement("div");
- head.style.display="flex";head.style.justifyContent="space-between";head.style.alignItems="center";head.style.flexWrap="wrap";head.style.gap="8px";
- const h3=document.createElement("h3");h3.style.margin="0";
- h3.textContent="ڕاپۆرتی شیکاریی زیرەک و پۆلێنی ستراتیژیی ABC — "+new Date().toLocaleDateString("en-GB");
- const act=document.createElement("div");act.style.display="flex";act.style.gap="8px";
- const pBtn=document.createElement("button");pBtn.type="button";pBtn.className="primary";pBtn.style.height="34px";pBtn.textContent="🖨 چاپکردنی شیکاریی زیرەک";
- pBtn.addEventListener("click",()=>window.print());
- const cBtn=document.createElement("button");cBtn.type="button";cBtn.className="secondary";cBtn.style.height="34px";cBtn.textContent="داخستن";
- cBtn.addEventListener("click",()=>{box.hidden=true;});
- act.append(pBtn,cBtn);
- head.append(h3,act);
- box.append(head);
- const metrics=document.createElement("div");metrics.className="receipt-metrics";
- for(const [lbl,val] of [
-   ["نمرەی تەندروستیی مارکێت",ins.score+" / 100"],
-   ["کاڵاکانی پۆلی A (٨٠٪ی داهات)",ins.classACount+" کاڵا"],
-   ["کاڵای پێویست بە داواکردنەوە",ins.reorderRows.length+" کاڵا"],
-   ["سەرمایەی خەوتووی بێ فرۆشتن",money(ins.deadStockVal)],
-   ["کۆی قەرزی کڕیاران",money(ins.totalCustomerDebt)]
- ]){
-   const sp=document.createElement("span"),st=document.createElement("strong");
-   sp.textContent=lbl+": ";st.textContent=val;sp.append(st);metrics.append(sp);
- }
- box.append(metrics);
-}
+function renderReportsSalesView(){return window.RetailReportsV22.render("sales");}
+function renderReportsProfitView(){return window.RetailReportsV22.render("profit");}
+function renderReportsInventoryView(){return window.RetailReportsV22.render("inventory");}
+function renderReportsInsightsView(){return window.RetailReportsV22.render("insights");}
+function renderReportsSalesPrintBox(){return window.RetailReportsV22.print("sales");}
+function renderReportsProfitPrintBox(){return window.RetailReportsV22.print("profit");}
+function renderReportsInventoryPrintBox(){return window.RetailReportsV22.print("inventory");}
+function renderReportsInsightsPrintBox(){return window.RetailReportsV22.print("insights");}
 function cartChanged(){if(pendingCheckout){syncPending();return}requestId=null;msg("checkout-msg","");renderCart();renderParkedBar();syncPending();}
 function stockUsed(productId,excludeIndex=-1){return Number(cart.reduce((n,line,i)=>n+(i===excludeIndex||line.id!==productId?0:line.qty*line.units),0).toFixed(3))}
 function saleLabel(line){return line.name+(line.scaleLabel?" ("+line.scaleLabel+")":line.mode==="carton"?" (کارتۆن)":products.find(p=>p.id===line.id)?.base_unit==="kg"?" (کیلۆگرام)":" (دانە)")}
@@ -5514,6 +4559,7 @@ async function returnSale(saleId,targetMsgId="receipts-msg"){
    returnAttempt=null;persistReturnAttempt();
    await loadInventory();
    await refreshShift();
+   await loadCustomersAndLedger();
    await refreshReceipts();
    await showReceipt(saleId);
    if(tab==="returns"){
@@ -5561,8 +4607,8 @@ function updateReceiptsMetrics(rows){
  const list=rows||[];
  const activeSales=list.filter(s=>!s.refunded);
  const refundedSales=list.filter(s=>s.refunded);
- const activeTotal=activeSales.reduce((n,s)=>n+Number(s.total_minor||0),0);
- const refundedTotal=refundedSales.reduce((n,s)=>n+Number(s.total_minor||0),0);
+ const activeTotal=activeSales.reduce((n,s)=>n+Number(s.total_minor||0)-Number(s.returned_minor_total||0),0);
+ const refundedTotal=list.reduce((n,s)=>n+Number(s.returned_minor_total??(s.refunded?s.total_minor:0)),0);
  const discountTotal=list.reduce((n,s)=>n+Number(s.discount_minor||0),0);
  if($("receipts-metric-count"))$("receipts-metric-count").textContent=list.length.toLocaleString("en-US");
  if($("receipts-metric-active"))$("receipts-metric-active").textContent=money(activeTotal);
@@ -5616,7 +4662,7 @@ async function refreshReceipts(){
  if(!db||!store)return;
  msg("receipts-msg","");
  let {data,error}=await db.from("retail_sales")
- .select("id,receipt_no,total_minor,discount_minor,cash_received_minor,change_due_minor,cashier_id,status,refunded,created_at")
+ .select("id,receipt_no,total_minor,discount_minor,cash_received_minor,change_due_minor,cashier_id,status,refunded,returned_minor_total,created_at")
  .eq("store_id",store.id).eq("status","posted")
  .order("created_at",{ascending:false}).limit(100);
  if(["42703","PGRST204","PGRST205"].includes(error?.code)){
@@ -5679,7 +4725,7 @@ async function showReceipt(saleId){
  const table=document.createElement("table");table.innerHTML="<thead><tr><th>کاڵا</th><th>بڕ</th><th>نرخ</th><th>کۆ</th></tr></thead><tbody></tbody>";
  for(const line of items.data||[]){
    const tr=document.createElement("tr"),p=products.find(x=>x.id===line.product_id);
-   const unitInfo=line.package_type==="carton"&&Number(line.units_per_package)>=2?
+   const unitInfo=line.base_unit_snapshot==="kg"?" — "+String(line.quantity)+" kg":line.package_type==="carton"&&Number(line.units_per_package)>=2?
      " — "+String(line.quantity)+" کارتۆن × "+String(line.units_per_package)+" دانە":
      line.package_type==="unit"?" — "+String(line.quantity)+" دانە":"";
    for(const v of [(line.product_name_snapshot||p?.name||line.product_id)+unitInfo,
@@ -5854,66 +4900,38 @@ async function refreshPayments(){
  renderPaymentsList();
 }
 function updateReturnItemBarcodes(){
- const prodSel=$("return-item-product"),codeSel=$("return-item-barcode"),qtyIn=$("return-item-qty"),refundIn=$("return-item-refund");
- if(!prodSel||!codeSel)return;
- const prodId=prodSel.value;
- const p=products.find(x=>x.id===prodId);
- const isKg=p?.base_unit==="kg";
- if(qtyIn){
-   qtyIn.step=isKg?"0.001":"1";
-   qtyIn.min=isKg?"0.001":"1";
-   if(!Number(qtyIn.value)||Number(qtyIn.value)<=0)qtyIn.value="1";
- }
- const oldCode=codeSel.value;
- codeSel.replaceChildren();
- const pCodes=barcodes.filter(b=>b.product_id===prodId&&b.active!==false&&!b.is_scale);
- for(const b of pCodes){
-   const opt=document.createElement("option");
-   opt.value=b.code;
-   const packLabel=b.unit_type==="carton"?"کارتۆن ("+b.units_per_scan+" دانە) — "+money(b.price_minor??p?.price_minor??0):
-     (isKg?"کیلۆگرام — "+money(p?.price_minor??0):"دانە — "+money(b.price_minor??p?.price_minor??0));
-   opt.textContent=b.code+" ("+packLabel+")";
-   codeSel.append(opt);
- }
- if([...codeSel.options].some(o=>o.value===oldCode))codeSel.value=oldCode;
- const selectedBarcode=pCodes.find(b=>b.code===codeSel.value)||pCodes[0];
- const unitPrice=Number(selectedBarcode?.price_minor??p?.price_minor??0);
- const qty=Number(qtyIn?.value||1);
- if(refundIn&&Number.isFinite(qty)&&qty>0&&unitPrice>=0){
-   refundIn.value=String(Math.round(qty*unitPrice));
- }
+ const line=returnReceiptLines.find(x=>x.id===$("return-item-product")?.value);
+ selectedReturnLineId=line?.id||null;
+ const codeSel=$("return-item-barcode"),qtyIn=$("return-item-qty"),refundIn=$("return-item-refund");
+ if(codeSel){codeSel.replaceChildren();if(line){const option=document.createElement("option");option.value=line.package_barcode||"";option.textContent=line.package_barcode||"—";codeSel.append(option);}codeSel.disabled=true;}
+ if(!line){if(refundIn)refundIn.value="";return;}
+ const kg=line.base_unit_snapshot==="kg";
+ if(qtyIn){qtyIn.step=kg?"0.001":"1";qtyIn.min=kg?"0.001":"1";qtyIn.max=String(line.remaining_quantity);if(!(Number(qtyIn.value)>0)||Number(qtyIn.value)>Number(line.remaining_quantity))qtyIn.value=String(line.remaining_quantity);}
+ const qty=Number(qtyIn?.value||0);
+ if(!Number.isFinite(qty)||qty<=0||qty>Number(line.remaining_quantity)){if(refundIn)refundIn.value="";return;}
+ const total=BigInt(Math.round(Number(line.quantity)*1000)),next=BigInt(Math.round((Number(line.returned_quantity)+qty)*1000));
+ const refund=(2n*BigInt(line.net_minor)*next+total)/(2n*total)-BigInt(line.returned_minor);
+ if(refundIn)refundIn.value=qty>0&&qty<=Number(line.remaining_quantity)?String(refund):"";
 }
 function populateReturnItemProducts(){
- const prodSel=$("return-item-product");
- if(!prodSel)return;
- const old=prodSel.value;
- prodSel.replaceChildren();
- for(const p of products.filter(x=>x.active!==false)){
-   const opt=document.createElement("option");
-   opt.value=p.id;
-   opt.textContent=p.name+" ("+money(p.price_minor)+")";
-   prodSel.append(opt);
+ const select=$("return-item-product");if(!select)return;
+ const previous=selectedReturnLineId;select.replaceChildren();
+ for(const line of returnReceiptLines.filter(x=>Number(x.remaining_quantity)>0)){
+  const option=document.createElement("option");option.value=line.id;option.textContent=(line.product_name_snapshot||line.product_id)+" — "+line.remaining_quantity+" "+(line.base_unit_snapshot==="kg"?"kg":line.package_type==="carton"?"کارتۆن":"دانە");select.append(option);
  }
- if([...prodSel.options].some(o=>o.value===old))prodSel.value=old;
+ if([...select.options].some(o=>o.value===previous))select.value=previous;
  updateReturnItemBarcodes();
 }
 async function showReturnReceiptDetail(saleId){
  if(!db||!store||!saleId)return;
  selectedReturnSaleId=saleId;
- let [head,items]=await Promise.all([
-   db.from("retail_sales").select("id,receipt_no,total_minor,discount_minor,cash_received_minor,change_due_minor,created_at,cashier_id,refunded")
-     .eq("store_id",store.id).eq("id",saleId).eq("status","posted").single(),
-   db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot,package_type,package_barcode,units_per_package,base_units")
-     .eq("store_id",store.id).eq("sale_id",saleId).limit(200)
- ]);
- if(["42703","PGRST204","PGRST205"].includes(head.error?.code))
-   head=await db.from("retail_sales").select("id,receipt_no,total_minor,cash_received_minor,change_due_minor,created_at,cashier_id")
-     .eq("store_id",store.id).eq("id",saleId).eq("status","posted").single();
- if(["42703","PGRST204","PGRST205"].includes(items.error?.code))
-   items=await db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot")
-     .eq("store_id",store.id).eq("sale_id",saleId).limit(200);
- if(head.error||items.error||!head.data){msg("returns-msg",safe(head.error||items.error),"error");return;}
- const sale=head.data;
+ selectedReturnLineId=null;returnReceiptLines=[];populateReturnItemProducts();
+ const oldBox=$("returns-selected-box");if(oldBox)oldBox.hidden=true;
+ const token=++returnDetailToken;
+ const {data,error}=await db.rpc("retail_return_state_v22",{p_store:store.id,p_sale:saleId});
+ if(token!==returnDetailToken)return;
+ if(error||!data?.sale){msg("returns-msg",safe(error||new Error("پسووڵە نەدۆزرایەوە")),"error");return;}
+ const sale=data.sale,items={data:data.items||[]};returnReceiptLines=items.data;populateReturnItemProducts();
  const box=$("returns-selected-box");
  if(!box)return;
  box.replaceChildren();box.hidden=false;
@@ -5948,35 +4966,25 @@ async function showReturnReceiptDetail(saleId){
  table.innerHTML="<thead><tr><th>کاڵا</th><th>بڕ</th><th>نرخی تاک</th><th>کۆی ڕیز</th><th>کردار</th></tr></thead><tbody></tbody>";
  for(const line of items.data||[]){
    const tr=document.createElement("tr"),p=products.find(x=>x.id===line.product_id);
-   const lineSum=Number(line.quantity)*Number(line.unit_price_minor);
+   const lineSum=Number(line.net_minor);
    const unitInfo=line.package_type==="carton"&&Number(line.units_per_package)>=2?
      " — "+String(line.quantity)+" کارتۆن × "+String(line.units_per_package)+" دانە":
      line.package_type==="unit"?" — "+String(line.quantity)+" دانە":"";
    for(const v of [(line.product_name_snapshot||p?.name||line.product_id)+unitInfo,
-      String(line.quantity),money(line.unit_price_minor),money(lineSum)]){
+      String(line.quantity)+" / ماوە: "+String(line.remaining_quantity),money(line.unit_price_minor),money(lineSum)]){
      const td=document.createElement("td");td.textContent=v;tr.append(td);
    }
    const tdAct=document.createElement("td");
-   if(!sale.refunded){
+   if(!sale.refunded&&Number(line.remaining_quantity)>0){
      const pickItemBtn=document.createElement("button");
      pickItemBtn.type="button";pickItemBtn.className="receipt-action";
      pickItemBtn.textContent="گەڕاندنەوەی ئەم کاڵایە";
      pickItemBtn.addEventListener("click",()=>{
-       const prodSel=$("return-item-product");
-       if(prodSel&&[...prodSel.options].some(o=>o.value===line.product_id)){
-         prodSel.value=line.product_id;
-         updateReturnItemBarcodes();
-         const codeSel=$("return-item-barcode");
-         if(codeSel&&line.package_barcode&&[...codeSel.options].some(o=>o.value===line.package_barcode)){
-           codeSel.value=line.package_barcode;
-         }
-         const isKg=p?.base_unit==="kg";
-         const qtyVal=isKg&&Number(line.base_units)>0?Number(line.base_units):Number(line.quantity||1);
-         if($("return-item-qty"))$("return-item-qty").value=String(qtyVal);
-         if($("return-item-refund"))$("return-item-refund").value=String(lineSum);
-         if($("return-item-note"))$("return-item-note").value="گەڕاندنەوەی کاڵا لە پسووڵەی #"+String(sale.receipt_no).padStart(6,"0");
-         $("return-item-qty")?.focus();
-       }
+       selectedReturnLineId=line.id;
+       if($("return-item-product"))$("return-item-product").value=line.id;
+       if($("return-item-qty"))$("return-item-qty").value=String(line.remaining_quantity);
+       updateReturnItemBarcodes();
+       $("return-item-qty")?.focus();
      });
      tdAct.append(pickItemBtn);
    }else{
@@ -6248,25 +5256,17 @@ async function init(){
  });
  $("returns-lookup-form")?.addEventListener("submit",async e=>{
   e.preventDefault();if(!db||!store||busy)return;
-  const raw=String($("returns-search-input")?.value||"").trim().replace(/^#/,"");
-  renderReturnsList();
-  if(!raw)return;
-  const direct=allReceipts.find(s=>String(s.receipt_no)===String(Number(raw))||String(s.receipt_no).padStart(6,"0")===raw||String(s.id).toLowerCase()===raw.toLowerCase());
-  if(direct){
-   await showReturnReceiptDetail(direct.id);
-   msg("returns-msg","پسووڵەی #"+String(direct.receipt_no).padStart(6,"0")+" دۆزرایەوە","success");
-   return;
-  }
+  const raw=String($("returns-search-input")?.value||"").trim();if(!raw)return;
+  selectedReturnSaleId=null;selectedReturnLineId=null;returnReceiptLines=[];returnDetailToken++;
+  populateReturnItemProducts();if($("returns-selected-box"))$("returns-selected-box").hidden=true;
+  lock(true);msg("returns-msg","");
   try{
-   const byItem=await db.from("retail_sale_items").select("sale_id").eq("store_id",store.id).eq("package_barcode",raw).limit(10);
-   const matchedSaleId=byItem?.data?.[0]?.sale_id;
-   if(matchedSaleId){
-    await showReturnReceiptDetail(matchedSaleId);
-    msg("returns-msg","پسووڵەی پەیوەندیدار بە بارکۆدی "+raw+" دۆزرایەوە","success");
-    return;
-   }
-  }catch(_e){}
-  msg("returns-msg","هیچ پسووڵەیەک بەم ژمارەیە یان بارکۆدە نەدۆزرایەوە","error");
+   const {data,error}=await db.rpc("retail_find_return_receipt_v22",{p_store:store.id,p_query:raw});
+   if(error)throw error;
+   if(data?.ambiguous){msg("returns-msg","ئەم بارکۆدە لە چەند پسووڵەیەکدا هەیە؛ ژمارەی پسووڵە دیاری بکە","error");return;}
+   if(!data?.found){msg("returns-msg","پسووڵە نەدۆزرایەوە","error");return;}
+   await showReturnReceiptDetail(data.sale_id);
+  }catch(err){msg("returns-msg",safe(err),"error");}finally{lock(false);}
  });
  $("returns-list")?.addEventListener("click",e=>{
   const ret=e.target.closest("[data-return-sale]");
@@ -6277,9 +5277,15 @@ async function init(){
  $("return-item-product")?.addEventListener("change",updateReturnItemBarcodes);
  $("return-item-barcode")?.addEventListener("change",updateReturnItemBarcodes);
  $("return-item-qty")?.addEventListener("input",updateReturnItemBarcodes);
- $("returns-item-form")?.addEventListener("submit",e=>{
-  e.preventDefault();
-  msg("returns-msg","گەڕاندنەوەی تاکەکاڵا تا بەستنەوەی پارێزراو بە ڕیزی پسووڵە ڕاگیراوە؛ گەڕاندنەوەی تەواوی پسووڵە بەکاربهێنە","error");
+ $("returns-item-form")?.addEventListener("submit",async e=>{
+  e.preventDefault();if(!db||!store||busy)return;
+  if(!shiftSession||!selectedReturnSaleId||!selectedReturnLineId){msg("returns-msg","سەرەتا شێفت بکەرەوە و ڕیزی پسووڵە هەڵبژێرە","error");return;}
+  lock(true);msg("returns-msg","");
+  try{
+   const result=await financialRpc("return-item","retail_return_item_v22",{p_store:store.id,p_sale:selectedReturnSaleId,p_line:selectedReturnLineId,p_quantity:Number($("return-item-qty")?.value||0),p_session:shiftSession.id,p_note:$("return-item-note")?.value.trim()||""});
+   await loadInventory();await refreshShift();await loadCustomersAndLedger();await refreshReceipts();await showReturnReceiptDetail(selectedReturnSaleId);
+   msg("returns-msg","گەڕاندنەوە تۆمارکرا — پارە: "+money(result.cash_refunded_minor)+" | کەمکردنەوەی قەرز: "+money(result.debt_reduced_minor),"success");
+  }catch(err){msg("returns-msg",safe(err),"error");}finally{lock(false);}
  });
  if(!window.supabase||!config?.supabaseUrl||!config?.publishableKey){
    viewPanel("login");msg("login-msg","پەیوەندی Supabase بەردەست نییە","error");return;
@@ -8097,22 +7103,7 @@ $("rep-sales-from")?.addEventListener("change",renderReportsSalesView);
 $("rep-sales-to")?.addEventListener("change",renderReportsSalesView);
 $("rep-sales-refresh")?.addEventListener("click",()=>{if(!busy)void refreshReportsSection("sales");});
 $("rep-sales-print-btn")?.addEventListener("click",renderReportsSalesPrintBox);
-$("rep-sales-export-csv")?.addEventListener("click",()=>{
- const dateFilter=String($("rep-sales-date-filter")?.value||"all");
- const fromDate=String($("rep-sales-from")?.value||"");
- const toDate=String($("rep-sales-to")?.value||"");
- const stats=computeSalesAnalytics(dateFilter,fromDate,toDate);
- const groupMode=String($("rep-sales-group-mode")?.value||"products");
- if(groupMode==="daily"){
-   const rows=stats.dailyRows.map(d=>[d.day,d.activeCount,d.gross,d.discount,d.refunded,d.net]);
-   exportOperationsCsv("sales_daily_report_"+new Date().toISOString().slice(0,10)+".csv",
-     ["بەروار","ژمارەی پسووڵەی چالاک","کۆی فرۆشتن (IQD)","داشکاندن (IQD)","گەڕاوە (IQD)","فرۆشتنی پوخت (IQD)"],rows);
- }else{
-   const rows=stats.productRows.map((r,idx)=>[idx+1,r.name,r.baseUnitsSold,r.base_unit==="kg"?"کگم":"دانە",r.receiptCount,r.unitPrice,r.revenue,r.sharePct+"%"]);
-   exportOperationsCsv("top_selling_products_"+new Date().toISOString().slice(0,10)+".csv",
-     ["پلە","کاڵا","بڕی فرۆشراو","یەکە","ژمارەی پسووڵە","نرخی تاک (IQD)","کۆی داهات (IQD)","پشکی فرۆشتن"],rows);
- }
-});
+$("rep-sales-export-csv")?.addEventListener("click",()=>window.RetailReportsV22.exportPage("sales"));
 $("rep-cost-product")?.addEventListener("change",()=>syncReportCostFormPreview(true));
 $("rep-cost-value")?.addEventListener("input",()=>syncReportCostFormPreview(false));
 $("rep-cost-form")?.addEventListener("submit",async e=>{
@@ -8128,25 +7119,14 @@ $("rep-cost-form")?.addEventListener("submit",async e=>{
  }
  lock(true);msg("rep-profit-msg","");
  try{
-   productCostsMap.set(productId,{unit_cost_minor:unitCost,note});
-   saveLocalProductCosts();
-   if(db){
-     try{
-       await db.from("retail_product_costs").upsert({
-         store_id:store.id,
-         product_id:productId,
-         unit_cost_minor:unitCost,
-         note:note||null,
-         actor_id:user?.id||null,
-         updated_at:new Date().toISOString()
-       },{onConflict:"store_id,product_id"});
-     }catch(_e){}
-   }
+   const {error}=await db.from("retail_product_costs").upsert({store_id:store.id,product_id:productId,unit_cost_minor:unitCost,note:note||null,actor_id:user.id,updated_at:new Date().toISOString()},{onConflict:"store_id,product_id"});
+   if(error)throw error;
+   productCostsMap.set(productId,{unit_cost_minor:unitCost,note});saveLocalProductCosts();
    populateReportCostSelect();
    if($("rep-cost-product"))$("rep-cost-product").value=productId;
    syncReportCostFormPreview(true);
    renderReportsProfitView();
-   msg("rep-profit-msg","نرخی تێچووی «"+p.name+"» کرا بە "+money(unitCost)+" و قازانج نوێکرایەوە","success");
+   msg("rep-profit-msg","نرخی تێچووی «"+p.name+"» کرا بە "+money(unitCost)+" وەک تێچووی ئێستا پاشەکەوت کرا","success");
  }catch(err){
    msg("rep-profit-msg",safe(err),"error");
  }finally{
@@ -8158,15 +7138,7 @@ $("rep-profit-filter")?.addEventListener("change",renderReportsProfitView);
 $("rep-profit-date-filter")?.addEventListener("change",renderReportsProfitView);
 $("rep-profit-refresh")?.addEventListener("click",()=>{if(!busy)void refreshReportsSection("profit");});
 $("rep-profit-print-btn")?.addEventListener("click",renderReportsProfitPrintBox);
-$("rep-profit-export-csv")?.addEventListener("click",()=>{
- const dateFilter=String($("rep-profit-date-filter")?.value||"all");
- const pStats=computeProfitAnalytics(dateFilter);
- const rows=pStats.allProdRows.map(r=>[
-   r.name,r.unitCost,r.costSource,r.retailPrice,r.unitMargin,r.unitMarginPct+"%",r.qtySold,r.revenue,r.cogs,r.profit
- ]);
- exportOperationsCsv("profit_and_loss_report_"+new Date().toISOString().slice(0,10)+".csv",
-   ["کاڵا","نرخی تێچوو (IQD)","سەرچاوەی تێچوو","نرخی فرۆشتن (IQD)","قازانجی تاک (IQD)","ڕێژەی قازانج","بڕی فرۆشراو","کۆی داهات (IQD)","کۆی تێچوو (IQD)","قازانجی پوخت (IQD)"],rows);
-});
+$("rep-profit-export-csv")?.addEventListener("click",()=>window.RetailReportsV22.exportPage("profit"));
 $("rep-profit-list")?.addEventListener("click",e=>{
  const editBtn=e.target.closest("[data-rep-edit-cost]");
  if(!editBtn||busy)return;
@@ -8183,26 +7155,12 @@ $("rep-inv-filter")?.addEventListener("change",renderReportsInventoryView);
 $("rep-inv-sort")?.addEventListener("change",renderReportsInventoryView);
 $("rep-inv-refresh")?.addEventListener("click",()=>{if(!busy)void refreshReportsSection("inventory");});
 $("rep-inv-print-btn")?.addEventListener("click",renderReportsInventoryPrintBox);
-$("rep-inv-export-csv")?.addEventListener("click",()=>{
- const {filtered}=filterAndSortInventoryReportRows();
- const rows=filtered.map(r=>[
-   r.name,r.code,r.qty,r.base_unit==="kg"?"کگم":"دانە",r.unitCost,r.retailPrice,r.costVal,r.retailVal,r.expectedProfit,r.qtySold
- ]);
- exportOperationsCsv("inventory_valuation_report_"+new Date().toISOString().slice(0,10)+".csv",
-   ["کاڵا","بارکۆد / کۆد","بڕی کۆگا","یەکە","نرخی تێچوو (IQD)","نرخی فرۆشتن (IQD)","بەهای تێچووی کۆگا (IQD)","بەهای فرۆشتنی کۆگا (IQD)","قازانجی چاوەڕوانکراو (IQD)","بڕی فرۆشراو"],rows);
-});
+$("rep-inv-export-csv")?.addEventListener("click",()=>window.RetailReportsV22.exportPage("inventory"));
 $("rep-ins-search")?.addEventListener("input",renderReportsInsightsView);
 $("rep-ins-filter")?.addEventListener("change",renderReportsInsightsView);
 $("rep-ins-refresh")?.addEventListener("click",()=>{if(!busy)void refreshReportsSection("insights");});
 $("rep-ins-print-btn")?.addEventListener("click",renderReportsInsightsPrintBox);
-$("rep-ins-export-csv")?.addEventListener("click",()=>{
- const ins=computeSmartInsightsData();
- const rows=ins.abcRows.map(r=>[
-   "پۆلی "+r.abcClass,r.name,r.qty,r.qtySold,r.revenue,r.unitMarginPct+"%",r.recommendation
- ]);
- exportOperationsCsv("smart_abc_insights_"+new Date().toISOString().slice(0,10)+".csv",
-   ["پۆلێنی ABC","کاڵا","بڕی ئێستای کۆگا","بڕی فرۆشراو","کۆی داهات (IQD)","ڕێژەی قازانج","ڕاسپاردەی سیستەمی زیرەک"],rows);
-});
+$("rep-ins-export-csv")?.addEventListener("click",()=>window.RetailReportsV22.exportPage("insights"));
 $("rep-ins-cards")?.addEventListener("click",e=>{
  const btn=e.target.closest("[data-ins-quick-action]");
  if(!btn||busy)return;
@@ -9351,5 +8309,6 @@ $("shift-close-form").addEventListener("submit",async e=>{
  }catch(err){msg("shift-msg",safe(err),"error");}
  finally{lock(false)}
 });
+window.RetailReportsV22.configure({getClient:()=>db,getStore:()=>store,safe,exportCsv:exportOperationsCsv});
 void init();
 })();

@@ -164,6 +164,7 @@ select option{color:#0f172a;font-size:14px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <script src="./config.js"></script>
 <script src="./cashier-v20-core.js"></script>
+<script src="./reports-v22.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./ui-contrast-lock.css">
 </head>
@@ -947,8 +948,8 @@ select option{color:#0f172a;font-size:14px}
 <label class="field" style="max-width:175px">ماوەی کات<select id="rep-sales-date-filter"><option value="all">هەموو کاتێک</option><option value="today">ئەمڕۆ</option><option value="yesterday">دوێنێ</option><option value="7d">٧ ڕۆژی ڕابردوو</option><option value="30d">٣٠ ڕۆژی ڕابردوو</option><option value="custom">ماوەی دیاریکراو</option></select></label>
 <label class="field" id="rep-sales-from-wrap" hidden style="max-width:155px">لە بەرواری<input id="rep-sales-from" type="date" style="direction:ltr"></label>
 <label class="field" id="rep-sales-to-wrap" hidden style="max-width:155px">بۆ بەرواری<input id="rep-sales-to" type="date" style="direction:ltr"></label>
-<button type="button" class="secondary" id="rep-sales-print-btn">🖨 چاپی ڕاپۆرتی فرۆشتن</button>
-<button type="button" class="secondary" id="rep-sales-export-csv">⬇ هەناردەی فرۆشتن (CSV)</button>
+<button type="button" class="secondary" id="rep-sales-print-btn">🖨 چاپی پەڕەی ئێستا</button>
+<button type="button" class="secondary" id="rep-sales-export-csv">⬇ هەناردەی پەڕەی ئێستا (CSV)</button>
 <button type="button" class="secondary" id="rep-sales-refresh">نوێکردنەوە</button>
 </div>
 <div class="msg" id="rep-sales-msg" role="status"></div>
@@ -986,8 +987,8 @@ select option{color:#0f172a;font-size:14px}
 <label class="field">گەڕان لە قازانجی کاڵاکان<input id="rep-profit-search" maxlength="120" autocomplete="off" placeholder="ناوی کاڵا یان بارکۆد..."></label>
 <label class="field" style="max-width:225px">پاڵاوتنی کاڵاکان<select id="rep-profit-filter"><option value="all">هەموو کاڵاکان (فرۆشراو و نەفرۆشراو)</option><option value="sold">تەنها کاڵا فرۆشراوەکان</option><option value="high_margin">زۆرترین ڕێژەی قازانج (≥ 20%)</option><option value="low_margin">کەمترین قازانج یان زیان (&lt; 10%)</option></select></label>
 <label class="field" style="max-width:180px">ماوەی کات<select id="rep-profit-date-filter"><option value="all">هەموو کاتێک</option><option value="today">ئەمڕۆ</option><option value="7d">٧ ڕۆژی ڕابردوو</option><option value="30d">٣٠ ڕۆژی ڕابردوو</option></select></label>
-<button type="button" class="secondary" id="rep-profit-print-btn">🖨 چاپی کەشفی قازانج و زیان (P&amp;L)</button>
-<button type="button" class="secondary" id="rep-profit-export-csv">⬇ هەناردەی قازانج (CSV)</button>
+<button type="button" class="secondary" id="rep-profit-print-btn">🖨 چاپی پەڕەی ئێستا</button>
+<button type="button" class="secondary" id="rep-profit-export-csv">⬇ هەناردەی پەڕەی ئێستا (CSV)</button>
 <button type="button" class="secondary" id="rep-profit-refresh">نوێکردنەوە</button>
 </div>
 <div id="rep-profit-list"></div>
@@ -998,7 +999,7 @@ select option{color:#0f172a;font-size:14px}
 <div><span>کۆی بەهای کۆگا بە نرخی فرۆشتن</span><strong id="rep-inv-kpi-retail-val" style="color:#168db7">0 IQD</strong></div>
 <div><span>کۆی سەرمایەی کۆگا بە نرخی تێچوو</span><strong id="rep-inv-kpi-cost-val" style="color:#d97706">0 IQD</strong></div>
 <div><span>قازانجی چاوەڕوانکراوی ناو کۆگا</span><strong id="rep-inv-kpi-expected-profit" style="color:#15803d">0 IQD</strong></div>
-<div><span>تەندروستیی کۆگا و زیانی تەلەفبوو</span><strong id="rep-inv-kpi-health" style="color:#7c3aed">0 کاڵا</strong></div>
+<div><span>کاڵای کەمبوو و تەواوبوو</span><strong id="rep-inv-kpi-health" style="color:#7c3aed">0 کاڵا</strong></div>
 </div>
 
 <div id="rep-inv-print-box" class="receipt-detail" hidden style="margin-bottom:14px"></div>
@@ -1007,19 +1008,20 @@ select option{color:#0f172a;font-size:14px}
 <label class="field">گەڕان لە ڕاپۆرتی کۆگا<input id="rep-inv-search" maxlength="120" autocomplete="off" placeholder="ناوی کاڵا، بارکۆد یان کۆد..."></label>
 <label class="field" style="max-width:235px">پۆلێنی شیکاریی کۆگا<select id="rep-inv-filter"><option value="all">هەموو کاڵاکانی ناو کۆگا</option><option value="high_value">زۆرترین سەرمایەی ناو کۆگا</option><option value="fast_moving">کاڵای خێرافرۆش (Fast Moving)</option><option value="dead_stock">کاڵای خاو / نەفرۆشراو (Dead Stock)</option><option value="low_out">کاڵای کەمبوو و تەواوبوو</option><option value="expiry_risk">نزیک لە بەسەرچوون یان بەسەرچوو</option></select></label>
 <label class="field" style="max-width:205px">ڕیزبەندکردن بەپێی<select id="rep-inv-sort"><option value="value_desc">زۆرترین بەهای سەرمایە</option><option value="sold_desc">زۆرترین بڕی فرۆشراو</option><option value="qty_asc">کەمترین بڕی کۆگا</option><option value="name_asc">ناوی کاڵا (ئەلفوبێ)</option></select></label>
-<button type="button" class="secondary" id="rep-inv-print-btn">🖨 چاپی ڕاپۆرتی بەهای کۆگا</button>
-<button type="button" class="secondary" id="rep-inv-export-csv">⬇ هەناردەی ڕاپۆرتی کۆگا (CSV)</button>
+<button type="button" class="secondary" id="rep-inv-print-btn">🖨 چاپی پەڕەی ئێستا</button>
+<button type="button" class="secondary" id="rep-inv-export-csv">⬇ هەناردەی پەڕەی ئێستا (CSV)</button>
 <button type="button" class="secondary" id="rep-inv-refresh">نوێکردنەوە</button>
 </div>
+<div class="msg" id="rep-inv-msg" role="status"></div>
 <div id="rep-inv-list"></div>
 </div>
 
 <div id="rep-sub-insights" hidden>
 <div class="shift-metrics" id="rep-ins-kpi-bar">
-<div><span>نمرەی تەندروستیی گشتیی مارکێت</span><strong id="rep-ins-kpi-score" style="color:#15803d">100 / 100</strong></div>
+<div><span>کاڵاکانی کەمبوو</span><strong id="rep-ins-kpi-score" style="color:#15803d">100 / 100</strong></div>
 <div><span>پۆلی A — کاڵا ستراتیژییەکان (٨٠٪ی داهات)</span><strong id="rep-ins-kpi-class-a" style="color:#168db7">0 کاڵا</strong></div>
-<div><span>پێشنیاری داواکردنەوەی دەستبەجێ</span><strong id="rep-ins-kpi-reorder" style="color:#d97706">0 کاڵا</strong></div>
-<div><span>سەرمایەی خەوتوو و قەرزی دواکەوتوو</span><strong id="rep-ins-kpi-risk" style="color:#dc2626">0 IQD</strong></div>
+<div><span>کاڵاکانی تەواوبوو</span><strong id="rep-ins-kpi-reorder" style="color:#d97706">0 کاڵا</strong></div>
+<div><span>قەرزی دواکەوتووی کڕیاران</span><strong id="rep-ins-kpi-risk" style="color:#dc2626">0 IQD</strong></div>
 </div>
 
 <div id="rep-ins-print-box" class="receipt-detail" hidden style="margin-bottom:14px"></div>
@@ -1027,8 +1029,8 @@ select option{color:#0f172a;font-size:14px}
 <div class="formrow" style="margin-bottom:12px">
 <label class="field">گەڕان لە شیکاریی زیرەک و پۆلێنی ABC<input id="rep-ins-search" maxlength="120" autocomplete="off" placeholder="ناوی کاڵا، جۆری ڕاسپاردە یان پۆلی A/B/C..."></label>
 <label class="field" style="max-width:240px">پاڵاوتنی شیکاریی زیرەک<select id="rep-ins-filter"><option value="all">هەموو ڕاسپاردە و پۆلێنەکانی ABC</option><option value="reorder">پێویست بە داواکردنەوەی خێرا (Reorder)</option><option value="abc_a">پۆلی A — کاڵا زێڕین و پڕفرۆشەکان</option><option value="abc_b">پۆلی B — کاڵا مامناوەندەکان</option><option value="abc_c">پۆلی C — کاڵای خاو (پێشنیاری داشکاندن)</option><option value="margin_alert">هۆشداری کەمیی ڕێژەی قازانج (&lt; 10%)</option></select></label>
-<button type="button" class="secondary" id="rep-ins-print-btn">🖨 چاپی ڕاپۆرتی شیکاریی زیرەک</button>
-<button type="button" class="secondary" id="rep-ins-export-csv">⬇ هەناردەی شیکاریی زیرەک (CSV)</button>
+<button type="button" class="secondary" id="rep-ins-print-btn">🖨 چاپی پەڕەی ئێستا</button>
+<button type="button" class="secondary" id="rep-ins-export-csv">⬇ هەناردەی پەڕەی ئێستا (CSV)</button>
 <button type="button" class="secondary" id="rep-ins-refresh">نوێکردنەوە</button>
 </div>
 <div class="msg" id="rep-ins-msg" role="status"></div>

@@ -5,13 +5,14 @@ import {PGlite} from '@electric-sql/pglite';
 const uuid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const owner=uuid(1),cashier=uuid(2),stranger=uuid(3),manager=uuid(4),store=uuid(10),product=uuid(20),customer=uuid(30),supplier=uuid(40),shift=uuid(50);
 const upgrade=readFileSync('db/v19_complete_production_upgrade.sql','utf8');
-const migration=readFileSync('supabase/migrations/'+readdirSync('supabase/migrations').find(n=>n.endsWith('_transaction_integrity.sql')),'utf8');
+const migrations=readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort().map(n=>readFileSync('supabase/migrations/'+n,'utf8'));
+const migration=migrations[0];
 let db;
 before(async()=>{
  db=new PGlite();await db.exec('create role service_role');
  for(const f of ['tests/integration/fixture.sql','tests/v12/rls_mirror.sql'])await db.exec(readFileSync(f,'utf8'));
  await db.exec("CREATE FUNCTION public.retail_checkout_packs_v16(uuid,uuid,jsonb,bigint) RETURNS uuid LANGUAGE sql AS 'SELECT NULL::uuid'; CREATE FUNCTION public.retail_update_product_v15(uuid,uuid,bigint,jsonb) RETURNS jsonb LANGUAGE sql AS 'SELECT NULL::jsonb';");
- await db.exec(upgrade);await db.exec(migration);
+ await db.exec(upgrade);for(const migration of migrations)await db.exec(migration);
 });
 after(async()=>{await db?.close();});
 beforeEach(async()=>{
@@ -44,7 +45,7 @@ async function purchase(request=uuid(120),method='credit'){
 }
 test('corrected production bundle and integrity migration both install twice',async()=>{
  assert.ok(upgrade.includes(migration.replace(/^BEGIN;$/m,'').replace(/^COMMIT;$/m,'').trim()),'Standalone artifact must embed the exact reviewed integrity migration');
- await db.exec(upgrade);await db.exec(migration);
+ await db.exec(upgrade);for(const migration of migrations)await db.exec(migration);
  assert.equal(await scalar("select has_table_privilege('authenticated','retail_customers','TRUNCATE')"),false);
 });
 test('barcode RPC matches cashier contract, enforces tenant access and omits costs',async()=>{
@@ -100,18 +101,19 @@ test('purchase cash shortfall rolls back stock, invoice, supplier and cost chang
 test('full cash refund restores stock, pays cash once and requires membership',async()=>{
  const sale=(await as(owner,'select retail_checkout_packs_v16($1,$2,$3::jsonb,1000,0) as sale',[store,uuid(130),JSON.stringify(items)]))[0].sale;
  const args=[store,sale,shift,uuid(131)];
- await assert.rejects(()=>as(stranger,'select retail_return_sale_v19($1,$2,$3,$4)',args),/permission required/i);
+ await assert.rejects(()=>as(stranger,'select retail_return_sale_v19($1,$2,$3,$4)',args),/permission required|access denied/i);
  await as(owner,'select retail_return_sale_v19($1,$2,$3,$4)',args);await as(owner,'select retail_return_sale_v19($1,$2,$3,$4)',args);
  assert.equal(Number(await scalar('select quantity from retail_stock_balances')),10);
  assert.equal(Number(await scalar('select sum(amount_minor) from retail_cash_movements')),1000);
  assert.equal(Number(await scalar("select count(*) from retail_stock_events where reason='sale_return'")),1);
 });
-test('credit refunds fail closed and roll back attempted cash and stock writes',async()=>{
+test('credit refunds reconcile only outstanding receipt debt and pay the paid cash portion',async()=>{
  const sale=await credit();
- await assert.rejects(()=>as(owner,'select retail_return_sale_v19($1,$2,$3,$4)',[store,sale,shift,uuid(140)]),/debt reconciliation/i);
- assert.equal(Number(await scalar('select quantity from retail_stock_balances')),9);
- assert.equal(await scalar('select refunded from retail_sales'),false);
- assert.equal(Number(await scalar('select count(*) from retail_cash_movements')),1);
+ const [r]=await as(owner,'select retail_return_sale_v19($1,$2,$3,$4) as result',[store,sale,shift,uuid(140)]);
+ assert.equal(r.result.debt_reduced_minor,800);assert.equal(r.result.cash_refunded_minor,200);
+ assert.equal(Number(await scalar('select quantity from retail_stock_balances')),10);
+ assert.equal(await scalar('select refunded from retail_sales'),true);
+ assert.equal(Number(await scalar('select balance_minor from retail_customers')),2000);
 });
 test('cashier cannot rewrite balances, ledger rows, settings or clear tables',async()=>{
  for(const sql of ['update retail_customers set balance_minor=0','delete from retail_customer_ledger','truncate retail_customers'])await assert.rejects(()=>as(cashier,sql),/permission denied/i);
@@ -167,4 +169,122 @@ test('production artifact includes real stock receipt endpoints with idempotent 
  const kg=[store,'UNIT',0.245,'purchase',uuid(191)];
  await as(owner,'select retail_receive_weight_v19($1,$2,$3,$4,$5)',kg);await as(owner,'select retail_receive_weight_v19($1,$2,$3,$4,$5)',kg);
  assert.equal(Number(await scalar('select quantity from retail_stock_balances')),12.245);
+});
+async function cashSale(qty=1,discount=0,request=uuid(200)){
+ const lines=[{barcode:'UNIT',quantity:qty,expected_price_minor:1000,expected_units:1}];
+ return (await as(owner,'select retail_checkout_packs_v16($1,$2,$3::jsonb,$4,$5) as id',[store,request,JSON.stringify(lines),qty*1000-discount,discount]))[0].id;
+}
+async function itemReturn(sale,quantity,request=uuid(201),line){
+ line??=await scalar('select id from retail_sale_items where sale_id=$1 order by id limit 1',[sale]);
+ return (await as(owner,'select retail_return_item_v22($1,$2,$3,$4,$5,$6) as result',[store,sale,line,quantity,shift,request]))[0].result;
+}
+async function report(kind='sales',extra={}){
+ const args={p_store:store,p_kind:kind,p_from:null,p_to:null,p_group:'products',p_search:'',p_filter:'all',p_sort:'default',p_offset:0,p_limit:50,...extra};
+ return (await as(owner,'select retail_report_v22($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) as result',Object.values(args)))[0].result;
+}
+test('partial discount refunds round cumulatively and full return pays only the remainder',async()=>{
+ const sale=await cashSale(3,100);const first=await itemReturn(sale,1);assert.equal(first.refunded_minor,967);
+ assert.equal((await itemReturn(sale,1)).return_id,first.return_id);
+ await assert.rejects(()=>itemReturn(sale,2,uuid(201)),/different actor or payload/);
+ const [full]=await as(owner,'select retail_return_sale_v19($1,$2,$3,$4) as result',[store,sale,shift,uuid(202)]);
+ assert.equal(full.result.refunded_minor,1933);assert.equal(full.result.fully_refunded,true);
+ assert.equal(Number(await scalar('select sum(amount_minor) from retail_cash_movements')),2900);
+ assert.equal(Number(await scalar('select quantity from retail_stock_balances')),10);
+ assert.equal(Number(await scalar('select returned_quantity from retail_sale_items')),3);
+ await assert.rejects(()=>itemReturn(sale,1,uuid(203)),/fully refunded/i);
+ await db.exec("update retail_cash_sessions set status='closed'");assert.equal((await itemReturn(sale,1)).return_id,first.return_id);
+});
+test('excess, fractional unit and unrelated receipt lines cannot alter cash or stock',async()=>{
+ const sale=await cashSale(2);
+ await assert.rejects(()=>itemReturn(sale,3),/exceeds remaining/);
+ await assert.rejects(()=>itemReturn(sale,0.5,uuid(202)),/invalid units/);
+ const other=await cashSale(1,0,uuid(203));const line=await scalar('select id from retail_sale_items where sale_id=$1',[other]);
+ await assert.rejects(()=>itemReturn(sale,1,uuid(204),line),/does not belong/);
+ assert.equal(Number(await scalar('select count(*) from retail_sale_returns_v22')),0);
+ assert.equal(Number(await scalar('select count(*) from retail_cash_movements')),0);
+});
+test('partial refund cash shortage rolls back line state, stock, journal and refund ledger',async()=>{
+ const sale=await cashSale();await db.exec('update retail_cash_sessions set opening_cash_minor=0');
+ await as(owner,"select retail_cash_movement($1,$2,$3,'cash_out',1000,'Empty drawer')",[store,shift,uuid(204)]);
+ await assert.rejects(()=>itemReturn(sale,1),/insufficient cash/i);
+ assert.equal(Number(await scalar('select quantity from retail_stock_balances')),9);
+ assert.equal(Number(await scalar('select returned_quantity from retail_sale_items')),0);
+ assert.equal(Number(await scalar('select count(*) from retail_sale_returns_v22')),0);
+ assert.equal(Number(await scalar("select count(*) from retail_internal.financial_requests where action='sale.return_v22'")),0);
+});
+test('paid-off credit receipt refunds cash without reducing unrelated debt',async()=>{
+ await db.exec('update retail_customers set balance_minor=0');const sale=await credit();await ledger(uuid(210),800);
+ const r=await itemReturn(sale,1);assert.equal(r.debt_reduced_minor,0);assert.equal(r.cash_refunded_minor,1000);
+ assert.equal(Number(await scalar('select balance_minor from retail_customers')),0);
+});
+test('FIFO debt allocation distinguishes two receipts and does not refund another sale debt',async()=>{
+ await db.exec('update retail_customers set balance_minor=0');const a=await credit(uuid(211));
+ // Ensure deterministic chronology, independent of UUID order in a fast transaction test.
+ await db.exec("update retail_customer_ledger set created_at=created_at-interval '1 second'");
+ const b=await credit(uuid(212));await ledger(uuid(213),800);
+ const rb=await itemReturn(b,1,uuid(214));assert.equal(rb.debt_reduced_minor,800);assert.equal(rb.cash_refunded_minor,200);
+ const ra=await itemReturn(a,1,uuid(215));assert.equal(ra.debt_reduced_minor,0);assert.equal(ra.cash_refunded_minor,1000);
+ assert.equal(Number(await scalar('select balance_minor from retail_customers')),0);
+});
+test('legacy account opening gap is treated as earlier debt rather than payment for a new receipt',async()=>{
+ const sale=await credit();await ledger(uuid(216),1000);
+ const r=await itemReturn(sale,1);assert.equal(r.debt_reduced_minor,800);assert.equal(r.cash_refunded_minor,200);
+ assert.equal(Number(await scalar('select balance_minor from retail_customers')),1000);
+});
+test('weighted partial returns preserve thousandths and exact cumulative refunds',async()=>{
+ await db.exec(`update retail_products set base_unit='kg',plu='00001',price_minor=1250;update retail_barcodes set code='2700001';update retail_stock_balances set quantity=2;`);
+ const [s]=await as(owner,'select retail_checkout_weight_v19($1,$2,$3::jsonb,600,0) as id',[store,uuid(220),JSON.stringify([{barcode:'2700001004806',quantity:1,expected_price_minor:600,expected_units:1}])]);
+ assert.equal((await itemReturn(s.id,0.1)).refunded_minor,125);
+ assert.equal((await itemReturn(s.id,0.38,uuid(221))).refunded_minor,475);
+ assert.equal(Number(await scalar('select quantity from retail_stock_balances')),2);
+});
+test('report aggregates all 450 receipts and 1800 lines, beyond previous client limits',async()=>{
+ await db.exec(`INSERT INTO retail_sales(id,store_id,cashier_id,status,total_minor,receipt_no,request_id) SELECT gen_random_uuid(),'${store}','${owner}','posted',4000,g,gen_random_uuid() FROM generate_series(1000,1449) g;
+ INSERT INTO retail_sale_items(store_id,sale_id,product_id,quantity,unit_price_minor,product_name_snapshot,base_units) SELECT '${store}',s.id,'${product}',1,1000,'Bulk line',1 FROM retail_sales s CROSS JOIN generate_series(1,4);`);
+ const r=await report();assert.equal(r.summary.sale_count,450);assert.equal(Number(r.summary.net_minor),1800000);assert.equal(Number(r.summary.cost_minor),1260000);assert.equal(Number(r.summary.net_profit_minor),540000);
+ const page=await report('sales',{p_group:'receipts',p_offset:400});assert.equal(page.total_count,450);assert.equal(page.items.length,50);
+});
+test('historical cost snapshots survive later price/cost edits and unknown costs stay unknown',async()=>{
+ await cashSale();await db.exec(`update retail_products set price_minor=9000,purchase_price_minor=8500;insert into retail_product_costs(store_id,product_id,unit_cost_minor) values('${store}','${product}',8000);`);
+ const known=await report('profit');assert.equal(Number(known.summary.cost_minor),700);assert.equal(Number(known.summary.net_profit_minor),300);
+ await db.exec('update retail_sale_items set unit_cost_minor_snapshot=NULL');
+ const unknown=await report('profit');assert.equal(unknown.summary.cost_minor,null);assert.equal(unknown.summary.net_profit_minor,null);assert.equal(unknown.summary.unknown_cost_lines,1);
+});
+test('returns use their event date and are counted once after partial then full returns',async()=>{
+ const sale=await cashSale(2);await itemReturn(sale,1);await as(owner,'select retail_return_sale_v19($1,$2,$3,$4)',[store,sale,shift,uuid(230)]);
+ const all=await report();assert.equal(Number(all.summary.net_minor),0);assert.equal(Number(all.summary.refund_minor),2000);assert.equal(Number(all.summary.cost_minor),0);
+ await db.exec("update retail_sales set created_at='2026-10-14T10:00:00Z';update retail_sale_returns_v22 set created_at='2026-10-15T10:00:00Z';");
+ const refundDay=await report('sales',{p_from:'2026-10-15T00:00:00+03:00',p_to:'2026-10-16T00:00:00+03:00'});
+ assert.equal(refundDay.summary.sale_count,0);assert.equal(Number(refundDay.summary.net_minor),-2000);assert.equal(Number(refundDay.summary.cost_minor),-1400);
+});
+test('inventory counts and pages cover all products and expose unknown valuation',async()=>{
+ await db.exec(`insert into retail_products(store_id,name,price_minor) select '${store}','Extra '||g,250 from generate_series(1,120) g;`);
+ const r=await report('inventory');assert.equal(r.inventory.product_count,121);assert.equal(r.total_count,121);assert.equal(r.items.length,50);
+ assert.equal(Number(r.inventory.value_minor),7000);assert.equal(r.inventory.out_count,120);
+ await db.exec('update retail_products set purchase_price_minor=NULL');const missing=await report('inventory');assert.equal(missing.inventory.value_minor,null);assert.equal(missing.inventory.unknown_cost_products,1);
+ await assert.rejects(()=>as(cashier,'select retail_report_v22($1)',[store]),/Manager permission required/);
+});
+test('old receipt lookup is not limited to the most recent 100 and barcode ambiguity is explicit',async()=>{
+ const first=await cashSale(1);await cashSale(1,0,uuid(250));
+ const [found]=await as(owner,'select retail_find_return_receipt_v22($1,$2) as result',[store,'1']);assert.equal(found.result.sale_id,first);
+ const [barcode]=await as(owner,'select retail_find_return_receipt_v22($1,$2) as result',[store,'UNIT']);assert.equal(barcode.result.ambiguous,true);
+});
+test('unrelated cash movement IDs cannot be reused as a return request',async()=>{
+ const sale=await cashSale();await as(owner,"select retail_cash_movement($1,$2,$3,'cash_out',1000,'Receipt return #1')",[store,shift,uuid(251)]);
+ await assert.rejects(()=>itemReturn(sale,1,uuid(251)),/another cash movement/);
+ assert.equal(Number(await scalar('select quantity from retail_stock_balances')),9);assert.equal(Number(await scalar('select count(*) from retail_sale_returns_v22')),0);
+});
+test('owner return settings are enforced by the database for cashiers',async()=>{
+ const sale=await cashSale();await db.exec(`INSERT INTO retail_store_settings(store_id,settings_json) VALUES('${store}','{"permCashierRefund":"manager_only"}');INSERT INTO retail_cash_sessions(store_id,cashier_id,opening_cash_minor) VALUES('${store}','${cashier}',5000);`);
+ const session=await scalar('select id from retail_cash_sessions where cashier_id=$1',[cashier]),line=await scalar('select id from retail_sale_items');
+ await assert.rejects(()=>as(cashier,'select retail_return_item_v22($1,$2,$3,1,$4,$5)',[store,sale,line,session,uuid(252)]),/disabled by owner/);
+ assert.equal(Number(await scalar('select quantity from retail_stock_balances')),9);
+});
+test('period reports mark legacy refunds with unknown dates as incomplete',async()=>{
+ await cashSale();await db.exec("update retail_sales set refunded=true,refunded_at=NULL,created_at='2026-10-01T12:00:00Z'");
+ const period=await report('profit',{p_from:'2026-10-10T00:00:00Z',p_to:'2026-10-11T00:00:00Z'});assert.equal(period.summary.unknown_refund_dates,1);assert.equal(period.summary.net_minor,null);assert.equal(period.summary.net_profit_minor,null);
+ const all=await report();assert.equal(Number(all.summary.net_minor),0);
+});
+test('stock valuation includes inactive products that still carry inventory',async()=>{
+ await db.exec('update retail_products set active=false');const inventory=await report('inventory');assert.equal(inventory.inventory.product_count,1);assert.equal(inventory.total_count,1);assert.equal(Number(inventory.inventory.value_minor),7000);
 });

@@ -1,8 +1,8 @@
 # سیستەمی کاشێر — Retail OS
 
-## V21 repair candidate — 2026-10-28
+## V21/V22 repair candidate — 2026-10-28
 
-Transaction/security repair is prepared for review; **not deployed to hosted Supabase**. Install order, verified behavior and remaining release blockers are in [docs/V21_TRANSACTION_REPAIR.md](docs/V21_TRANSACTION_REPAIR.md). Use `npm run test:database` for the actual production SQL regression suite. Historical version notes below do not describe the current hosted database state.
+Transaction/security repair, receipt-linked partial/credit returns and server-side reports are prepared for review; **not deployed to hosted Supabase**. Install order, verified behavior and remaining release blockers are in [docs/V21_TRANSACTION_REPAIR.md](docs/V21_TRANSACTION_REPAIR.md). Use `npm run test:database` for the actual production SQL regression suite. V22 behavior and boundaries are in [docs/V22_RETURNS_REPORTS.md](docs/V22_RETURNS_REPORTS.md). Historical version notes below do not describe the current hosted database state.
 
 ## دۆخ
 V8 — Auth, Protected Checkout, Cash Shifts, Receipts, Hardware Diagnostics and Concurrent PostgreSQL QA. Development only; NOT production-ready.
