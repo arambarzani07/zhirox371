@@ -10,6 +10,7 @@
   const requestedTab = new URLSearchParams(window.location.search).get("view");
 
   function show(id) {
+    if(id!=="products-panel")clearLabelState();
     for (const name of ["auth-panel","store-panel","products-panel"]) $(name).hidden = name !== id;
     $("logout").hidden = id === "auth-panel";
     $("who").textContent = user && id !== "auth-panel" ? user.email || "" : "";
@@ -269,7 +270,9 @@
       } else cHint.hidden = true;
     }
   }
-  let currentLabel=null,batchLabels=[],batchReady=false,printingBatch=false,batchBusy=false;
+  let currentLabel=null,batchLabels=[],batchReady=false,printingBatch=false,batchBusy=false,labelEpoch=0;
+  function labelContext(){return `${store?.id}|${user?.id}|${labelEpoch}`;}
+  function clearLabelState(){labelEpoch++;currentLabel=null;batchLabels=[];invalidateBatch();$("batch-label-list").replaceChildren();$("barcode-label-box").hidden=true;$("label-print-root")?.remove();document.body.classList.remove("printing-labels");}
   function buildBarcodeSvg(code){return window.RetailLabelTools.svg(code);}
   function showLabel(item){
     currentLabel=window.RetailLabelTools.item(item);
@@ -278,14 +281,14 @@
     const svg=buildBarcodeSvg(item.code);svg.id="label-barcode-svg";$("label-barcode-holder").replaceChildren(svg);$("barcode-label-box").hidden=false;
   }
   async function openLabelPreview(item){
-    try{if(!db||!store)throw new Error("سەرەتا بچۆ ژوورەوە");const [confirmed]=await window.RetailLabelTools.confirm(db,store.id,[{...item,copies:1}]);showLabel(confirmed);}
+    try{if(!db||!store)throw new Error("سەرەتا بچۆ ژوورەوە");const context=labelContext();const [confirmed]=await window.RetailLabelTools.confirm(db,store.id,[{...item,copies:1}]);if(context!==labelContext())return;showLabel(confirmed);}
     catch(error){$("barcode-label-box").hidden=true;message("system-message",explain(error),"error");}
   }
   function printLabels(nodes,size="50x30"){
     if(size==="38x25"&&nodes.some(x=>Number(x.querySelector("svg")?.getAttribute("width"))/2>170))throw new Error("بارکۆدەکە بۆ لیبڵی ٣٨ ملیمەتری درێژە؛ قەبارەی ٥٠ ملیمەتری هەڵبژێرە");
     document.getElementById("label-print-root")?.remove();
     const root=document.createElement("div");root.id="label-print-root";
-    for(const node of nodes){const copy=node.cloneNode(true);copy.removeAttribute("id");copy.className="batch-print-label"+(size==="38x25"?" size-small":"");root.append(copy);}
+    for(const node of nodes){const copy=node.cloneNode(true);copy.removeAttribute("id");for(const el of copy.querySelectorAll("[id]"))el.removeAttribute("id");copy.className="batch-print-label"+(size==="38x25"?" size-small":"");root.append(copy);}
     const style=document.createElement("style");style.textContent="@page{size:"+(size==="38x25"?"38mm 25mm":"50mm 30mm")+";margin:0}";root.append(style);
     document.body.append(root);document.body.classList.add("printing-labels");window.print();
   }
@@ -295,17 +298,17 @@
     invalidateBatch();$("batch-label-panel").hidden=false;const root=$("batch-label-list");root.replaceChildren();
     for(const row of batchLabels){const line=document.createElement("div");line.className="batch-queue-row";const text=document.createElement("span");text.textContent=row.name+" — "+row.code;
       const copies=document.createElement("input");copies.type="number";copies.min="1";copies.max="50";copies.value=row.copies;copies.setAttribute("aria-label","ژمارەی کۆپی "+row.code);copies.oninput=()=>{row.copies=copies.value;invalidateBatch();};
-      const remove=document.createElement("button");remove.type="button";remove.textContent="لابردن";remove.onclick=()=>{batchLabels=batchLabels.filter(x=>x!==row);renderBatch();};line.append(text,copies,remove);root.append(line);}
+      const remove=document.createElement("button");remove.type="button";remove.className="secondary";remove.textContent="لابردن";remove.onclick=()=>{batchLabels=batchLabels.filter(x=>x!==row);renderBatch();};line.append(text,copies,remove);root.append(line);}
   }
   $("label-queue-btn").onclick=()=>{if(!currentLabel||batchBusy)return;const old=batchLabels.find(x=>x.code===currentLabel.code);if(!old)batchLabels.push({...currentLabel,copies:1});renderBatch();};
   $("batch-clear").onclick=()=>{batchLabels=[];renderBatch();message("batch-message","");};
   $("batch-prepare").onclick=async()=>{const btn=$("batch-prepare");setBatchBusy(true);invalidateBatch();try{
-    batchLabels=await window.RetailLabelTools.confirm(db,store.id,batchLabels);const root=$("batch-label-preview");
+    const context=labelContext(),fresh=await window.RetailLabelTools.confirm(db,store.id,batchLabels);if(context!==labelContext())return;batchLabels=fresh;const root=$("batch-label-preview");
     for(const row of batchLabels)for(let i=0;i<Number(row.copies);i++){const card=document.createElement("article");card.className="batch-print-label";for(const text of [store.name,row.name+" ("+row.unitLabel+")",fmtIqd(row.priceMinor)]){const p=document.createElement("div");p.textContent=text;card.append(p);}card.append(buildBarcodeSvg(row.code));const code=document.createElement("div");code.textContent=row.code;code.dir="ltr";card.append(code);root.append(card);}
     batchReady=true;$("batch-print").disabled=false;message("batch-message","نرخەکان پشتڕاست کرانەوە؛ پێشبینینەکە بپشکنە. چاپ تۆمارێکی کۆگا یان نرخ ناگۆڕێت.","success");
    }catch(error){message("batch-message",explain(error),"error");}finally{setBatchBusy(false);}};
   $("batch-print").onclick=async()=>{if(!batchReady)return;const btn=$("batch-print");setBatchBusy(true);try{
-    const fresh=await window.RetailLabelTools.confirm(db,store.id,batchLabels);if(fresh.some((x,i)=>x.priceMinor!==batchLabels[i].priceMinor||x.name!==batchLabels[i].name)){invalidateBatch();throw new Error("نرخ یان ناوی کاڵا گۆڕدراوە؛ پێشبینین دووبارە ئامادە بکە");}
+    const context=labelContext(),fresh=await window.RetailLabelTools.confirm(db,store.id,batchLabels);if(context!==labelContext())return;if(fresh.some((x,i)=>x.priceMinor!==batchLabels[i].priceMinor||x.name!==batchLabels[i].name)){invalidateBatch();throw new Error("نرخ یان ناوی کاڵا گۆڕدراوە؛ پێشبینین دووبارە ئامادە بکە");}
     printingBatch=true;printLabels([...$("batch-label-preview").children]);
    }catch(error){invalidateBatch();message("batch-message",explain(error),"error");}finally{setBatchBusy(false);}};
   window.addEventListener("afterprint",()=>{document.body.classList.remove("printing-labels");$("label-print-root")?.remove();printingBatch=false;});
@@ -640,6 +643,7 @@
     const {data,error} = await db.from("retail_stores")
       .select("id,name,currency,owner_user_id").order("created_at",{ascending:true}).limit(1).maybeSingle();
     if (error) {show("auth-panel");message("auth-message", explain(error), "error");return;}
+    if(store?.id!==data?.id)clearLabelState();
     store = data;
     if (!store) {show("store-panel");return;}
     show("products-panel");
@@ -950,7 +954,7 @@
     });
   }
   if($("label-print-btn")){
-    $("label-print-btn").addEventListener("click",async()=>{try{if(!currentLabel)return;const [fresh]=await window.RetailLabelTools.confirm(db,store.id,[{...currentLabel,copies:1}]);if(fresh.priceMinor!==currentLabel.priceMinor||fresh.name!==currentLabel.name){showLabel(fresh);throw new Error("نرخ یان ناو گۆڕدراوە؛ لیبڵە نوێکە بپشکنە و دووبارە چاپ بکە");}printLabels([$("label-card")],$("label-size").value);}catch(error){message("system-message",explain(error),"error");}});
+    $("label-print-btn").addEventListener("click",async()=>{try{if(!currentLabel)return;const context=labelContext();const [fresh]=await window.RetailLabelTools.confirm(db,store.id,[{...currentLabel,copies:1}]);if(context!==labelContext())return;if(fresh.priceMinor!==currentLabel.priceMinor||fresh.name!==currentLabel.name){showLabel(fresh);throw new Error("نرخ یان ناو گۆڕدراوە؛ لیبڵە نوێکە بپشکنە و دووبارە چاپ بکە");}printLabels([$("label-card")],$("label-size").value);}catch(error){message("system-message",explain(error),"error");}});
   }
   if($("label-close-btn")){
     $("label-close-btn").addEventListener("click",()=>{

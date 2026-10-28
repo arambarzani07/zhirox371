@@ -1,6 +1,6 @@
 # V26 — batch labels and real barcode encoding
 
-The Labels / Bulk print destination now opens the authenticated product workspace rather than a placeholder. Open a price/barcode label, add it to the queue, set 1–50 copies per code, prepare a maximum of 200 labels, review them and print. The queue stays in memory through catalog pagination and clears on page reload; no local queue is presented as a central server record.
+The Labels / Bulk print destination now opens the authenticated product workspace rather than a placeholder. Open a price/barcode label, add it to the queue, set 1–50 copies per code, prepare a maximum of 200 labels, review them and print. Logout and store changes clear queued labels and invalidate in-flight label responses. The queue stays in memory through catalog pagination and clears on page reload; no local queue is presented as a central server record.
 
 Every preview is resolved through the existing store-scoped `retail_resolve_barcode_v18` RPC. Preparation refreshes all queued codes and prices. Printing revalidates them again and blocks changed prices/names, inactive codes and network failures. Barcode identifiers remain strings. No prices, stock or sales are written.
 

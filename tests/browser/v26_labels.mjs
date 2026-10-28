@@ -12,5 +12,6 @@ try{
  assert.equal(await page.locator('#label-print-root article').count(),3);assert.match(await page.locator('#label-print-root').innerText(),/1,750/);
  await page.emulateMedia({media:'print'});assert.equal(await page.locator('.viewport').isVisible(),false);assert.equal(await page.locator('#label-print-root').isVisible(),true);
  assert.deepEqual(await page.locator('#label-print-root article').first().evaluate(el=>[Math.round(el.getBoundingClientRect().width),Math.round(el.getBoundingClientRect().height)]),[189,113]);
+ await page.emulateMedia({media:'screen'});await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await page.locator('#logout').click();await page.locator('#auth-panel').waitFor({state:'visible'});assert.equal(await page.locator('#batch-label-list input').count(),0,'logout must remove another session’s queued data');
  console.log('PASS V26: batch copies, server refresh, stale-price blocking, standard barcode SVG and 50x30mm print-only output');
 }finally{await browser.close();}
