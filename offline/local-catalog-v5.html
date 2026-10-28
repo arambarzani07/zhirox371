@@ -105,7 +105,7 @@ const DEMO_PRODUCTS=[
 ];
 let token=null, mode="products",rows=DEMO_PRODUCTS,selectedId=rows[0]?.id||null,
 nextCursor=null,cursor=null,previous=[],search="",busy=false;
-const format=n=>Number(n).toLocaleString("en-US");
+const format=n=>BigInt(String(n)).toLocaleString("en-US");
 function isLow(p){return BigInt(p.stock_base_units)<10n}
 function status(p){return BigInt(p.stock_base_units)===0n?["نەماوە","zero"]:isLow(p)?["کەمە","warn"]:["بەردەستە",""]}
 function setMessage(v,error=false){$("message").textContent=v;$("message").className="state"+(error?" error":"")}
