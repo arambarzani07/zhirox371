@@ -45,5 +45,9 @@ test("retired barcode aliases cannot resolve at cashier; existing hosted schema 
  assert.match(cashier,/PGRST204/);
  assert.match(cashier,/retail_scan_catalog_v16/);
  assert.match(cashier,/b\.active!==false/);
- assert.doesNotMatch(cashier,/retail_update_product_v15/);
+ const editor=cashier.slice(cashier.indexOf("async function saveOpsCatalogProduct(e){"),cashier.indexOf("async function refreshLowStockView(){"));
+ assert.match(editor,/retail_product_snapshot_v19/);
+ assert.match(editor,/retail_update_product_v15/);
+ assert.match(editor,/p_expected_version:Number\(original.version\)/);
+ assert.doesNotMatch(editor,/db\.from\(["']retail_products|db\.from\(["']retail_barcodes/);
 });

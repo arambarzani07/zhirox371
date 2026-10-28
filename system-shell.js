@@ -39,7 +39,7 @@
   const sale=document.createElement('button');sale.type='button';sale.textContent='فرۆشتنی نوێ';sale.dataset.shellCash='';sale.onclick=()=>originals.get('cash').click();cashier.append(sale);
   for(const key of ['receipts','payments','returns'])cashier.append(originals.get(key));
   nav.replaceChildren();nav.after(cashier);
- }else{nav=document.createElement('nav');main.prepend(nav);}
+ }else{nav=document.createElement('nav');const title=main.querySelector('h1');if(title)title.after(nav);else main.prepend(nav);}
  nav.classList.add('system-nav');nav.setAttribute('aria-label','بەشە سەرەکییەکان');
  for(const [i,[key,label,url]] of groups.entries()){
   const b=originals.get(key)||action(label,url);b.dataset.systemGroup=key;
