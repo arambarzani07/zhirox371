@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZHIROX V4 — تاقیکردنەوەی کاشێری ناوخۆیی</title>
+<style>
+*{box-sizing:border-box}body{font-family:system-ui,"Segoe UI",Tahoma,sans-serif;background:#f4f7fb;color:#172b45;margin:0}
+header{background:#fff;border-bottom:1px solid #dce5ef;padding:18px 24px;text-align:center;font-weight:900;font-size:21px}
+main{max-width:1060px;margin:auto;padding:22px}.notice{border:1px solid #edc887;background:#fffaea;padding:12px;border-radius:12px;font-weight:700}
+.panel{background:#fff;border:1px solid #dae4ef;border-radius:15px;padding:20px;margin-top:16px}
+h2{font-size:19px;margin:0 0 16px}label{display:grid;gap:7px;font-weight:800;font-size:14px}input{height:45px;padding:10px;border:1px solid #b9c9d9;border-radius:9px;font:inherit;min-width:0}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px}
+button{background:#203c61;color:#fff;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:800;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}.minor{background:#e6edf5;color:#1c3350}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+table{width:100%;border-collapse:collapse;margin-top:12px}th,td{padding:12px;border-bottom:1px solid #e3eaf2;text-align:right}
+.message{margin-top:12px;min-height:24px;font-weight:750}.error{color:#a12323}.success{color:#06774c}
+small{color:#526780}strong{font-variant-numeric:tabular-nums} [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>سوپەرمارکێتی کانی چنار — ZHIROX V4</header>
+<main>
+<div class="notice">⚠️ ئەم پەڕەیە تەنها بۆ تاقیکردنەوەی Local PostgreSQL ـە. بۆ فرۆشتنی ڕاستەقینە ئامادە نییە. کارتۆن، کێش، داشکاندن، قەرز و شێفت هێشتا بە Local API پەیوەست نەکراون.</div>
+<section class="panel" id="login-panel">
+<h2>چوونەژوورەوەی ناوخۆیی</h2>
+<form id="login-form" class="form">
+<label>ناسنامەی فرۆشگا<input id="store" required autocomplete="off" placeholder="Store UUID" dir="ltr"></label>
+<label>ناوی کاشێر<input id="username" required autocomplete="username"></label>
+<label>وشەی نهێنی<input id="password" type="password" required autocomplete="current-password"></label>
+<button type="submit">چوونەژوورەوە</button>
+</form>
+<div class="message" id="login-status" role="status"></div>
+</section>
+<section class="panel" id="cashier-panel" hidden>
+<div class="actions" style="justify-content:space-between;margin-top:0">
+<h2>فرۆشتنی ناوخۆیی — دانە</h2>
+<button class="minor" id="logout" type="button">دەرچوون</button>
+</div>
+<form id="scan-form" class="form">
+<label>بارکۆد<input id="barcode" placeholder="سکان بکە" autocomplete="off" required autofocus></label>
+<button type="submit">زیادکردنی کاڵا</button>
+</form>
+<div class="message" id="scan-status" role="status"></div>
+<table>
+<thead><tr><th>کاڵا</th><th>دانە</th><th>نرخی دانە</th><th>کۆ</th></tr></thead>
+<tbody id="lines"></tbody>
+</table>
+<div class="actions">
+<strong id="total">0 IQD</strong>
+<button id="checkout" type="button" disabled>تۆمارکردنی فرۆشتن</button>
+<button class="minor" id="clear" type="button">پاککردنەوەی سەبەتە</button>
+</div>
+<div class="message" id="checkout-status" role="status"></div>
+<small>نرخ و کۆگا لە Local PostgreSQL وەردەگیرێن. کۆی کۆتایی لەلایەن سێرڤەر پشتڕاست دەکرێتەوە. ئەگەر وەڵام نەگەڕایەوە، هەمان request_id دووبارە دەنێردرێت.</small>
+</section>
+</main>
+<script>
+"use strict";
+(()=>{
+const $=id=>document.getElementById(id);
+const state={token:null,cart:new Map(),pending:null,busy:false};
+const key="zhirox_v4_pilot_pending";
+const msg=(id,text,error=false)=>{const el=$(id);el.textContent=text;el.className="message "+(error?"error":"success")};
+const money=n=>n.toLocaleString("en-US")+" IQD";
+function render(){
+ $("lines").replaceChildren();
+ let total=0n;
+ for(const line of state.cart.values()){
+  const amount=BigInt(line.price_minor)*BigInt(line.qty);total+=amount;
+  const tr=document.createElement("tr");
+  for(const value of [line.name,String(line.qty),money(BigInt(line.price_minor)),money(amount)]){
+   const td=document.createElement("td");td.textContent=value;tr.append(td);
+  }
+  $("lines").append(tr);
+ }
+ $("total").textContent=money(total);
+ $("checkout").disabled=state.busy||(!state.cart.size&&!state.pending);
+}
+async function api(path,options={}){
+ const response=await fetch(path,{...options,headers:{"Content-Type":"application/json",...(state.token?{Authorization:"Bearer "+state.token}:{}),...options.headers}});
+ let data={};try{data=await response.json()}catch{}
+ if(!response.ok) throw Error(data.error||("http_"+response.status));
+ return data;
+}
+function restorePending(){
+ try {
+  const raw=JSON.parse(sessionStorage.getItem(key)||"null");
+  if(raw?.request_id && Array.isArray(raw.lines) && raw.lines.length){
+   state.pending=raw;
+   msg("checkout-status","مامەڵەیەکی نادیار هەیە؛ دوای چوونەژوورەوە دووبارە هەمان داواکاری بنێرە.");
+  }
+ }catch{state.pending=null}
+}
+$("login-form").addEventListener("submit",async e=>{
+ e.preventDefault();msg("login-status","");
+ try{
+  const data=await api("/api/local/v3/login",{method:"POST",body:JSON.stringify({
+    store_id:$("store").value.trim(),username:$("username").value.trim(),password:$("password").value
+  })});
+  state.token=data.token;$("password").value="";
+  $("login-panel").hidden=true;$("cashier-panel").hidden=false;$("barcode").focus();
+  restorePending();render();
+ }catch{msg("login-status","چوونەژوورەوە سەرکەوتوو نەبوو.",true)}
+});
+$("scan-form").addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(state.busy || state.pending)return msg("scan-status","سەرەتا مامەڵە چاوەڕوانەکە یەکلا بکەرەوە.",true);
+ try{
+  const code=$("barcode").value.trim();
+  const data=await api("/api/local/v4/barcode?code="+encodeURIComponent(code));
+  const p=data.product,old=state.cart.get(p.id);
+  if(old && old.price_minor!==p.price_minor) throw Error("stale_price");
+  const next=(old?.qty||0)+1;
+  if(BigInt(next)>BigInt(p.stock_base_units))throw Error("insufficient_stock");
+  state.cart.set(p.id,{product_id:p.id,name:p.name,price_minor:p.price_minor,qty:next});
+  $("barcode").value="";render();$("barcode").focus();msg("scan-status","کاڵا زیادکرا");
+ }catch(err){msg("scan-status","بارکۆد نەدۆزرایەوە یان ئەم جۆرە فرۆشتنە پشتگیری ناکرێت: "+err.message,true)}
+});
+$("checkout").addEventListener("click",async()=>{
+ if(state.busy||(!state.pending&&!state.cart.size))return;
+ try{
+  state.busy=true;render();
+  if(!state.pending){
+   const request_id=crypto.randomUUID();
+   state.pending={request_id,lines:[...state.cart.values()].map(x=>({product_id:x.product_id,qty:x.qty}))};
+   sessionStorage.setItem(key,JSON.stringify(state.pending));
+  }
+  const result=await api("/api/local/v3/checkout",{method:"POST",body:JSON.stringify(state.pending)});
+  sessionStorage.removeItem(key);state.pending=null;state.cart.clear();render();
+  msg("checkout-status","پسووڵە تۆمارکرا #"+result.receipt.receipt_no);
+ }catch(err){
+  msg("checkout-status","ئەنجامی مامەڵە دڵنیا نییە. هەمان داواکاری دووبارە بنێرە؛ سەبەتە مەگۆڕە. "+err.message,true);
+ }finally{state.busy=false;render()}
+});
+$("clear").addEventListener("click",()=>{
+ if(state.pending)return msg("checkout-status","مامەڵەی چاوەڕوانە هەیە؛ پاککردنەوەی نەپێناسراوی داواکاری ڕێپێدراو نییە.",true);
+ state.cart.clear();render();msg("scan-status","");
+});
+$("logout").addEventListener("click",()=>{
+ state.token=null;state.cart.clear();render();$("cashier-panel").hidden=true;$("login-panel").hidden=false;
+});
+render();
+})();
+</script>
+</body></html>
