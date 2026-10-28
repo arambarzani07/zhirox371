@@ -6,16 +6,16 @@ on:
       - 'docs/full-offline-foundation-v1.md'
       - '.github/workflows/offline-foundation.yml'
   push:
-    branches: [main, 'feature/full-offline-foundation-v1']
+    branches: [main, 'feature/full-offline-foundation-v1', 'feature/offline-local-auth-v3']
     paths:
       - 'offline/**'
       - 'docs/full-offline-foundation-v1.md'
       - '.github/workflows/offline-foundation.yml'
+permissions:
+  contents: read
 jobs:
   node-tests:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,3 +23,36 @@ jobs:
           node-version: '22'
       - run: npm test
       - run: node --test offline/tests/*.test.mjs
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_local_test
+          POSTGRES_USER: localtest
+          POSTGRES_PASSWORD: localtest_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U localtest -d zhirox_local_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: localtest
+      PGPASSWORD: localtest_password
+      PGDATABASE: zhirox_local_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Apply migrations in disposable database
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/001_core.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/002_atomic_checkout.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/003_local_users.sql
+      - name: Test checkout rollback, idempotency and stock
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/001_checkout_smoke.sql
