@@ -42,6 +42,7 @@ async function purchase(request=uuid(120),method='credit'){
  return as(owner,'select retail_receive_purchase_v21($1,$2,$3::jsonb) as result',[store,request,JSON.stringify({product_id:product,supplier_id:supplier,quantity:2,unit_cost:700,invoice_no:'INV-1',payment_method:method})]);
 }
 test('corrected production bundle and integrity migration both install twice',async()=>{
+ assert.ok(upgrade.includes(migration.replace(/^BEGIN;$/m,'').replace(/^COMMIT;$/m,'').trim()),'Standalone artifact must embed the exact reviewed integrity migration');
  await db.exec(upgrade);await db.exec(migration);
  assert.equal(await scalar("select has_table_privilege('authenticated','retail_customers','TRUNCATE')"),false);
 });

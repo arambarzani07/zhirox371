@@ -5,8 +5,8 @@ This branch is a reviewable source change, not a hosted database deployment. The
 ## Install contract
 
 1. Existing Retail OS V8+ relational/Auth foundation is required. This is an upgrade, not a fresh Supabase project bootstrap.
-2. Review and apply `db/v19_complete_production_upgrade.sql` as a single transaction.
-3. Apply `supabase/migrations/20261028045514_transaction_integrity.sql` as a single transaction.
+2. Review and apply `db/v19_complete_production_upgrade.sql` as a single transaction. Its final region embeds the exact V21 integrity code, so no permissive intermediate upgrade state is committed.
+3. Apply/record `supabase/migrations/20261028045514_transaction_integrity.sql` through the reviewed migration workflow; reapplying its already embedded repair is idempotent. Run `node scripts/sync-upgrade.mjs` after editing that migration, then rerun database tests.
 4. Deploy the matching frontend only with both SQL changes. Old clients that directly write balances are intentionally rejected. Do not roll back only the frontend or only the SQL.
 5. Inspect effective grants, policies and inherited privileges on the actual hosted database before approving release. Local fixtures cannot establish hosted schema parity.
 
