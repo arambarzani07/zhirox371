@@ -78,6 +78,9 @@ test("product form owns barcode definitions; cashier remains read-only and uses 
  assert.match(cash,/retail_scan_catalog_v16/);
  assert.match(cash,/retail_checkout_packs_v16/);
  assert.match(cash,/b\.unit_type==="carton"/);
- assert.doesNotMatch(cash,/retail_register_product_v14|retail_create_product/);
+ const catalogHandler=cash.slice(cash.indexOf("async function saveOpsCatalogProduct(e){"),cash.indexOf("async function refreshLowStockView(){"));
+ assert.match(catalogHandler,/retail_register_product_v14/);
+ assert.match(catalogHandler,/role!=="owner"/);
+ assert.doesNotMatch(catalogHandler,/db\.from\(["']retail_products|db\.from\(["']retail_barcodes/);
  assert.match(cash,/retail_checkout_cash/);
 });
