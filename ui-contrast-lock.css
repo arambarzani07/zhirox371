@@ -74,17 +74,22 @@
   body > .viewport > .desktop > main :is(
     button:not(.primary):not(.active):not([aria-selected="true"]):not(:disabled),
     .tab:not(.active),.nav button:not(.active),.receipt-action,
+    .stock-subnav button:not(.active),.stock-sub-nav button:not(.active),.stock-subtab:not(.active),
     .catalog-stock-btn,.catalog-label-btn,.stock-pick-btn,.stock-edit-link,.quick-cash-btn,.return-btn
   ) {
     color: #172b45 !important;
     -webkit-text-fill-color: #172b45 !important;
   }
   body > .viewport > .desktop > main :is(
-    button.primary,.tab.active,.nav button.active,.filter.active
+    button.primary,.tab.active,.nav button.active,.filter.active,
+    .stock-subnav button.active,.stock-sub-nav button.active,.stock-subtab.active
   ),
   body > .viewport > .desktop > main :is(
-    button.primary,.tab.active,.nav button.active,.filter.active
+    button.primary,.tab.active,.nav button.active,.filter.active,
+    .stock-subnav button.active,.stock-sub-nav button.active,.stock-subtab.active
   ) :is(span,strong,b) {
+    background-color: #203e66 !important;
+    border-color: #203e66 !important;
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     opacity: 1 !important;
