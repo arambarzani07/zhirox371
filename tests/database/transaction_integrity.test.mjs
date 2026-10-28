@@ -10,6 +10,7 @@ let db;
 before(async()=>{
  db=new PGlite();await db.exec('create role service_role');
  for(const f of ['tests/integration/fixture.sql','tests/v12/rls_mirror.sql'])await db.exec(readFileSync(f,'utf8'));
+ await db.exec("CREATE FUNCTION public.retail_checkout_packs_v16(uuid,uuid,jsonb,bigint) RETURNS uuid LANGUAGE sql AS 'SELECT NULL::uuid'; CREATE FUNCTION public.retail_update_product_v15(uuid,uuid,bigint,jsonb) RETURNS jsonb LANGUAGE sql AS 'SELECT NULL::jsonb';");
  await db.exec(upgrade);await db.exec(migration);
 });
 after(async()=>{await db?.close();});

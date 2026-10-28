@@ -142,6 +142,11 @@ jobs:
         run: |
           supabase --version
           supabase init --yes
+          # This job installs its V8/V12 foundation explicitly in the next step.
+          # Do not auto-apply a V21 upgrade to an otherwise empty local database.
+          mkdir -p /tmp/retail-reviewed-upgrade-migrations
+          mv supabase/migrations/*.sql /tmp/retail-reviewed-upgrade-migrations/
+          trap 'mv /tmp/retail-reviewed-upgrade-migrations/*.sql supabase/migrations/' EXIT
           supabase start
       - name: Apply verified retail contract ONLY to disposable local DB
         env:
@@ -160,6 +165,12 @@ jobs:
         run: npm install --no-save --no-package-lock @supabase/supabase-js@2.118.0
       - name: Real signup, JWT, RBAC, tenant RLS and local-only TRUNCATE regression test
         run: node tests/v12/auth_rls_e2e.mjs
+      - name: Install actual standalone production upgrade on the populated disposable stack
+        env:
+          PGPASSWORD: postgres
+        run: psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f db/v19_complete_production_upgrade.sql
+      - name: Verify actual upgrade RPCs through real local Auth and PostgREST
+        run: node tests/database/postgrest_smoke.mjs
       - name: Stop and remove disposable Supabase stack
         if: always()
         run: supabase stop --no-backup || true

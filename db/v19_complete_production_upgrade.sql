@@ -325,6 +325,7 @@ GRANT EXECUTE ON FUNCTION public.retail_resolve_barcode_v18(uuid, text) TO authe
 
 -- ٨. فانکشنی فرۆشتنی پاکێج، کارتۆن و بارکۆدی تەرازوو (V16)
 DROP FUNCTION IF EXISTS public.retail_checkout_packs_v16(uuid,uuid,jsonb,bigint);
+DROP FUNCTION IF EXISTS public.retail_checkout_packs_v16(uuid,uuid,jsonb,bigint);
 CREATE OR REPLACE FUNCTION public.retail_checkout_packs_v16(
   p_store uuid,
   p_request uuid,
@@ -793,6 +794,7 @@ END;
 $$;
 
 
+DROP FUNCTION IF EXISTS public.retail_update_product_v15(uuid,uuid,bigint,jsonb);
 CREATE OR REPLACE FUNCTION public.retail_update_product_v15(
  p_store_id uuid, p_product_id uuid, p_expected_version integer, p_catalog jsonb)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
