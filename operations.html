@@ -165,6 +165,7 @@ select option{color:#0f172a;font-size:14px}
 <script src="./config.js"></script>
 <script src="./cashier-v20-core.js"></script>
 <script src="./reports-v22.js"></script>
+<script src="./purchasing-v23.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./ui-contrast-lock.css">
 </head>
@@ -642,7 +643,7 @@ select option{color:#0f172a;font-size:14px}
 <label class="field">دابینکەر / کۆمپانیا<select id="po-supplier"><option value="">دابینکەری گشتی</option></select></label>
 <label class="field">کاڵا<select id="po-product" required></select></label>
 <label class="field" style="max-width:130px">بڕی داواکراو<input id="po-qty" type="number" min="0.001" step="0.001" value="10" required style="direction:ltr"></label>
-<label class="field" style="max-width:160px">نرخی تێچووی تاک (IQD)<input id="po-unit-cost" type="number" min="0" step="1" value="0" required style="direction:ltr"></label>
+<label class="field" style="max-width:160px">نرخی تێچووی تاک (IQD)<input id="po-unit-cost" type="number" min="0" step="1" required style="direction:ltr"></label>
 <label class="field" style="max-width:170px">کۆی تێچوو (IQD)<input id="po-total-cost" readonly style="direction:ltr;background:#eef3f9;font-weight:800"></label>
 <label class="field" style="max-width:175px">بەرواری چاوەڕوانکراو<input id="po-expected-date" type="date" style="direction:ltr"></label>
 <label class="field">تێبینی داواکاری<input id="po-note" maxlength="160" placeholder="ناوی مەندووب، تایبەتمەندی یان تێبینی..."></label>
@@ -713,7 +714,7 @@ select option{color:#0f172a;font-size:14px}
 <label class="field" style="max-width:165px">ژمارەی وەسڵی کڕین<input id="rec-invoice-no" maxlength="60" placeholder="INV-001" style="direction:ltr"></label>
 <label class="field">کاڵای وەرگیراو<select id="rec-product" required></select></label>
 <label class="field" style="max-width:130px">بڕی هاتوو<input id="rec-qty" type="number" min="0.001" step="0.001" value="1" required style="direction:ltr"></label>
-<label class="field" style="max-width:160px">نرخی تێچووی تاک (IQD)<input id="rec-unit-cost" type="number" min="0" step="1" value="0" required style="direction:ltr"></label>
+<label class="field" style="max-width:160px">نرخی تێچووی تاک (IQD)<input id="rec-unit-cost" type="number" min="0" step="1" required style="direction:ltr"></label>
 <label class="field" style="max-width:170px">کۆی وەسڵ (IQD)<input id="rec-total-cost" readonly style="direction:ltr;background:#eef3f9;font-weight:800"></label>
 <label class="field" style="max-width:240px">شێوازی پارەدان<select id="rec-payment-mode"><option value="credit">بە قەرز (زیادکردن بۆ حیسابی دابینکەر)</option><option value="cash_drawer">نەقد لە سندووقی کاشێر (ڕاکێشان لە شێفت)</option><option value="cash_external">نەقد لە قاسەی سەرەکی / دەرەوەی شێفت</option></select></label>
 <label class="field" style="max-width:175px">بەرواری بەسەرچوون (ئارەزوومەندانە)<input id="rec-expiry-date" type="date" style="direction:ltr"></label>

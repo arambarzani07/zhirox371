@@ -1959,9 +1959,8 @@ function syncPoTotalCost(autoUnit=false){
    qtyIn.min=isKg?"0.001":"1";
  }
  if(autoUnit&&unitIn&&p){
-   const retailPrice=Number(p.price_minor||0);
-   const estCost=retailPrice>0?Math.max(250,Math.round((retailPrice*0.8)/250)*250):0;
-   unitIn.value=String(estCost);
+   const cost=getProductUnitCostInfo(p.id).unitCost;
+   unitIn.value=cost===null?"":String(cost);
  }
  const qty=Math.max(0,Number(qtyIn?.value||0));
  const unitCost=Math.max(0,Number(unitIn?.value||0));
@@ -1978,9 +1977,8 @@ function syncRecTotalCost(autoUnit=false){
    qtyIn.min=isKg?"0.001":"1";
  }
  if(autoUnit&&unitIn&&p){
-   const retailPrice=Number(p.price_minor||0);
-   const estCost=retailPrice>0?Math.max(250,Math.round((retailPrice*0.8)/250)*250):0;
-   unitIn.value=String(estCost);
+   const cost=getProductUnitCostInfo(p.id).unitCost;
+   unitIn.value=cost===null?"":String(cost);
  }
  const qty=Math.max(0,Number(qtyIn?.value||0));
  const unitCost=Math.max(0,Number(unitIn?.value||0));
@@ -6424,7 +6422,9 @@ $("po-form")?.addEventListener("submit",async e=>{
  const supplierId=String($("po-supplier")?.value||"");
  const productId=String($("po-product")?.value||"");
  const qty=Number($("po-qty")?.value||0);
- const unitCost=Math.max(0,Math.round(Number($("po-unit-cost")?.value||0)));
+ const rawCost=String($("po-unit-cost")?.value??"").trim();
+ const unitCost=Number(rawCost);
+ if(!rawCost||!Number.isSafeInteger(unitCost)||unitCost<0){msg("po-msg","نرخی ڕاستەقینەی وەسڵەکە بە IQD بنووسە","error");return;}
  const expectedDate=String($("po-expected-date")?.value||"").trim()||null;
  const note=String($("po-note")?.value||"").trim();
  const p=products.find(x=>x.id===productId);
@@ -6456,16 +6456,7 @@ $("po-form")?.addEventListener("submit",async e=>{
  };
  lock(true);msg("po-msg","");
  try{
-   if(db){
-     try{
-       await db.from("retail_purchase_orders").insert({
-         id:newPo.id,store_id:store.id,po_no:poNo,supplier_id:newPo.supplier_id,supplier_name:newPo.supplier_name,
-         product_id:newPo.product_id,product_name:newPo.product_name,quantity:newPo.quantity,
-         unit_cost_minor:unitCost,total_cost_minor:totalCost,expected_date:expectedDate,
-         status:"pending",note:note||null,actor_id:user?.id||null
-       });
-     }catch(_e){}
-   }
+   await window.PurchasingV23.insertOrders(db,store.id,[newPo]);
    purchaseOrdersList.unshift(newPo);
    saveLocalPurchaseOrders(purchaseOrdersList);
    if($("po-note"))$("po-note").value="";
@@ -6489,7 +6480,7 @@ $("po-import-low-stock")?.addEventListener("click",async()=>{
  const supplierId=String($("po-supplier")?.value||"");
  const sup=suppliersList.find(s=>s.id===supplierId);
  const expectedDate=String($("po-expected-date")?.value||new Date(Date.now()+2*86400000).toISOString().slice(0,10));
- let createdCount=0;
+ let createdCount=0,missingCost=0;const drafts=[];
  lock(true);msg("po-msg","");
  try{
    for(const p of lowItems){
@@ -6498,10 +6489,10 @@ $("po-import-low-stock")?.addEventListener("click",async()=>{
      const curQty=Math.max(0,Number(balances.get(p.id)||0));
      const isKg=p.base_unit==="kg";
      const qty=Math.max(1,Number((targetLevel-curQty).toFixed(isKg?3:0)));
-     const retailPrice=Number(p.price_minor||0);
-     const unitCost=retailPrice>0?Math.max(250,Math.round((retailPrice*0.8)/250)*250):0;
+     const unitCost=getProductUnitCostInfo(p.id).unitCost;
+     if(unitCost===null){missingCost++;continue;}
      const totalCost=Math.round(qty*unitCost);
-     const poNo="PO-"+new Date().toISOString().slice(2,10).replace(/-/g,"")+"-"+String(purchaseOrdersList.length+1).padStart(3,"0");
+     const poNo="PO-"+new Date().toISOString().slice(2,10).replace(/-/g,"")+"-"+String(purchaseOrdersList.length+drafts.length+1).padStart(3,"0");
      const newPo={
        id:crypto.randomUUID(),
        store_id:store.id,
@@ -6520,22 +6511,16 @@ $("po-import-low-stock")?.addEventListener("click",async()=>{
        created_at:new Date().toISOString(),
        updated_at:new Date().toISOString()
      };
-     if(db){
-       try{
-         await db.from("retail_purchase_orders").insert({
-           id:newPo.id,store_id:store.id,po_no:poNo,supplier_id:newPo.supplier_id,supplier_name:newPo.supplier_name,
-           product_id:newPo.product_id,product_name:newPo.product_name,quantity:newPo.quantity,
-           unit_cost_minor:unitCost,total_cost_minor:totalCost,expected_date:expectedDate,
-           status:"pending",note:newPo.note,actor_id:user?.id||null
-         });
-       }catch(_e){}
-     }
-     purchaseOrdersList.unshift(newPo);
-     createdCount++;
+     drafts.push(newPo);
+   }
+   if(drafts.length){
+     await window.PurchasingV23.insertOrders(db,store.id,drafts);
+     purchaseOrdersList.unshift(...drafts);createdCount=drafts.length;
    }
    saveLocalPurchaseOrders(purchaseOrdersList);
    renderPurchaseOrdersView();
-   msg("po-msg",createdCount>0?(createdCount+" داواکاری نوێ بۆ کاڵا کەمبووەکانی کۆگا بە سەرکەوتوویی دروستکرا"):"هەموو کاڵا کەمبووەکان پێشتر داواکاری چاوەڕوانکراویان بۆ کراوە","success");
+   msg("po-msg",createdCount+" داواکاری تۆمارکرا"+(missingCost?" — "+missingCost+" کاڵا بەهۆی نەبوونی تێچووی تۆمارکراو جێهێڵدرا؛ نرخی وەسڵەکە بە دەست بنووسە":""),missingCost?"info":"success");
+ }catch(err){msg("po-msg",safe(err),"error");
  }finally{
    lock(false);
  }
@@ -6575,16 +6560,13 @@ $("po-list")?.addEventListener("click",async e=>{
  if(cancelBtn){
    const po=purchaseOrdersList.find(x=>x.id===cancelBtn.dataset.poCancel);
    if(!po)return;
-   po.status="cancelled";
-   po.updated_at=new Date().toISOString();
-   saveLocalPurchaseOrders(purchaseOrdersList);
-   if(db){
-     try{
-       await db.from("retail_purchase_orders").update({status:"cancelled",updated_at:po.updated_at}).eq("store_id",store.id).eq("id",po.id);
-     }catch(_e){}
-   }
-   renderPurchaseOrdersView();
-   msg("po-msg","داواکاری "+po.po_no+" هەڵوەشێندرایەوە","success");
+   lock(true);msg("po-msg","");
+   try{
+     await window.PurchasingV23.cancelOrder(db,store.id,po.id);
+     po.status="cancelled";po.updated_at=new Date().toISOString();
+     saveLocalPurchaseOrders(purchaseOrdersList);renderPurchaseOrdersView();
+     msg("po-msg","داواکاری "+po.po_no+" هەڵوەشێندرایەوە","success");
+   }catch(err){msg("po-msg",safe(err),"error");}finally{lock(false);}
    return;
  }
  const printBtn=e.target.closest("[data-po-print]");
@@ -6701,7 +6683,9 @@ $("receiving-form")?.addEventListener("submit",async e=>{
  const invoiceNo=String($("rec-invoice-no")?.value||"").trim()||("INV-"+new Date().toISOString().slice(2,10).replace(/-/g,"")+"-"+String(supplierLedgerList.length+1).padStart(3,"0"));
  const productId=String($("rec-product")?.value||"");
  const qty=Number($("rec-qty")?.value||0);
- const unitCost=Math.max(0,Math.round(Number($("rec-unit-cost")?.value||0)));
+ const rawCost=String($("rec-unit-cost")?.value??"").trim();
+ const unitCost=Number(rawCost);
+ if(!rawCost||!Number.isSafeInteger(unitCost)||unitCost<0){msg("rec-msg","نرخی ڕاستەقینەی وەسڵەکە بە IQD بنووسە","error");return;}
  const paymentMode=String($("rec-payment-mode")?.value||"credit");
  const expiryDate=String($("rec-expiry-date")?.value||"").trim();
  const note=String($("rec-note")?.value||"").trim();

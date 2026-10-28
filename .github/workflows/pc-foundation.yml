@@ -130,6 +130,8 @@ jobs:
         run: node tests/browser/v18_catalog_scaling.mjs
       - name: Verify V20 PC weighted-pack cart, duplicate scan and stale-price checkout guard
         run: node tests/browser/v20_smart_cashier.mjs
+      - name: Verify confirmed purchase writes, unknown costs and stale cancellation
+        run: node tests/browser/v23_purchasing.mjs
       - name: Verify linked returns, server report totals and safe API failures
         run: node tests/browser/v22_returns_reports.mjs
   v12-real-auth-rls:
