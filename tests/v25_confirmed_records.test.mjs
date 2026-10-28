@@ -27,7 +27,8 @@ test('production config keeps the actual SDK and never provisions a local owner 
 test('every root page has unique HTML IDs after concurrent feature integration',async()=>{
  const {readdirSync,readFileSync}=await import('node:fs');
  for(const file of readdirSync('.').filter(f=>f.endsWith('.html')&&f!=='preview.html')){
-  const ids=[...readFileSync(file,'utf8').matchAll(/<[a-z][^>]*\bid="([^"]+)"/gi)].map(m=>m[1]);
+  const html=readFileSync(file,'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,'');
+  const ids=[...html.matchAll(/<[a-z][^>]*\bid="([^"]+)"/gi)].map(m=>m[1]);
   assert.equal(new Set(ids).size,ids.length,'duplicate IDs in '+file);
  }
 });
