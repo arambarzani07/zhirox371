@@ -36,7 +36,7 @@
     ['sales','profit','inventory','insights'].map(x=>op('reports',x)),
     [op('staff','users'),op('staff','permissions'),'./diagnostics.html',op('staff','system')],
     ['new','discounts','coupons','campaigns'].map(x=>op('offers',x)),
-    ['./workspace.html?view=prices&section=labels','./workspace.html?view=barcodes&section=labels',pending(9,2),'./diagnostics.html'],
+    ['./workspace.html?view=prices&section=labels','./workspace.html?view=barcodes&section=labels',pending(9,2),'./diagnostics.html?section=labels'],
     [op('shift'),pending(10,1),pending(10,2),pending(10,3)],
     [pending(11,0),pending(11,1),op('audit'),'./qa.html']
    ];
@@ -70,7 +70,7 @@
   for(const h of main.querySelectorAll('section:not([hidden]) > h2'))h.classList.toggle('system-repeat-heading',!!heading&&h.textContent.trim()===heading.textContent.trim());
  }
  window.RetailSystemShell=Object.freeze({select,groups,children});
- if(operations)select('cash');else if(document.getElementById('products-panel'))select(param.get('section')==='labels'?'labels':'products');else select(document.title.includes('ئامێر')?'staff':'audit');
+ if(operations)select('cash');else if(document.getElementById('products-panel'))select(param.get('section')==='labels'?'labels':'products');else select(param.get('section')==='labels'?'labels':document.title.includes('ئامێر')?'staff':'audit');
  // Shared behavior and status presentation across every form, without changing data operations.
  for(const el of main.querySelectorAll('input[type=number]'))el.inputMode=el.step?.includes('.')?'decimal':'numeric';
  document.addEventListener('click',e=>{if(e.target.closest('button[type="submit"],.primary'))document.querySelectorAll('.msg:not(:empty),.message:not(:empty)').forEach(x=>x.setAttribute('role','status'));});

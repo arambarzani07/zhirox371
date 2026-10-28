@@ -30,5 +30,14 @@ try{
  await page.locator('#import-text').fill('name,barcode,price\nMilk,00123,1500');await page.locator('#import-submit').click();
  await page.waitForFunction(()=>window.__retailQA.called.some(x=>x.name==='retail_create_product'));
  const calls=await page.evaluate(()=>window.__retailQA.called.filter(x=>x.name==='retail_create_product'));assert.equal(calls.length,1);assert.equal(calls[0].args.p_barcode,'00123');assert.equal(calls[0].args.p_name,'Milk');
+ await page.goto(origin+'/operations.html?view=offers&sub=new');await page.locator('#offers-panel').waitFor({state:'visible'});
+ assert.equal(await page.evaluate(()=>window.__retailQA.retail_offers?.length||0),0,'empty server must stay empty, no sample offers');
+ await page.locator('#off-title').fill('Rejected offer');await page.locator('#off-product').selectOption('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');await page.locator('#off-discount-iqd').fill('250');
+ await page.locator('#offer-new-form button[type=submit]').click();
+ await page.waitForFunction(()=>document.querySelector('#off-new-msg')?.textContent.includes('QA mutation denied'));
+ assert.doesNotMatch(await page.locator('#offers-new-list').innerText(),/Rejected offer/);
+ await page.goto(origin+'/diagnostics.html?section=labels');await page.locator('.system-nav').waitFor({state:'visible'});
+ assert.equal(await page.locator('.system-current').getAttribute('data-system-group'),'labels');
+ console.log('PASS V25: no sample promotions, rejected writes do not become local success, print template stays in Labels');
  assert.deepEqual(errors,[]);console.log('PASS V24: shared nav selection and header-aware CSV preflight; no header product or silent stock loss');
 }finally{await browser.close()}

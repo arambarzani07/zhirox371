@@ -288,3 +288,57 @@ test('period reports mark legacy refunds with unknown dates as incomplete',async
 test('stock valuation includes inactive products that still carry inventory',async()=>{
  await db.exec('update retail_products set active=false');const inventory=await report('inventory');assert.equal(inventory.inventory.product_count,1);assert.equal(inventory.total_count,1);assert.equal(Number(inventory.inventory.value_minor),7000);
 });
+
+const financeEntry=(kind='safe_deposit',amount=1000,wallet='safe')=>({entry_kind:kind,amount_minor:amount,wallet,category:'QA',note:'QA confirmed transaction'});
+const finance=async(request,entry,session=null,actor=owner)=>(await as(actor,'select retail_record_finance_v25($1,$2,$3::jsonb,$4) as result',[store,request,JSON.stringify(entry),session]))[0].result;
+const financeState=async(session=null)=>(await as(owner,'select retail_finance_state_v25($1,$2) as result',[store,session]))[0].result;
+test('finance safe and drawer transfer commits once and replays after shift closure',async()=>{
+ await finance(uuid(800),financeEntry());
+ const entry=financeEntry('safe_to_drawer',400);
+ const result=await finance(uuid(801),entry,shift);
+ assert.equal(result.state.safe_balance_minor,600);assert.equal(result.state.drawer_balance_minor,5400);
+ assert.equal(Number(await scalar('select count(*) from retail_cash_movements')),1);
+ await db.exec(`update retail_cash_sessions set status='closed' where id='${shift}'`);
+ assert.deepEqual(await finance(uuid(801),entry,shift),result);
+ await assert.rejects(()=>finance(uuid(801),financeEntry('safe_to_drawer',401),shift),/different actor or payload/i);
+ assert.equal(Number(await scalar('select count(*) from retail_finance_entries')),2);
+});
+test('finance rejects overdrafts, fractional amounts and non-manager actors without side effects',async()=>{
+ await assert.rejects(()=>finance(uuid(802),financeEntry('safe_withdraw',1)),/Insufficient safe balance/);
+ await assert.rejects(()=>finance(uuid(803),financeEntry('drawer_to_safe',5001),shift),/Insufficient cash in drawer/);
+ await assert.rejects(()=>finance(uuid(804),financeEntry('safe_deposit',1.5)),/invalid input syntax/);
+ for(const actor of [cashier,stranger])await assert.rejects(()=>finance(uuid(805),financeEntry(),null,actor),/Manager permission required/);
+ assert.equal(Number(await scalar('select count(*) from retail_finance_entries')),0);
+ assert.equal(Number(await scalar('select count(*) from retail_internal.financial_requests')),0);
+});
+test('finance rollback removes drawer mutation when finance insert fails',async()=>{
+ await db.exec("CREATE FUNCTION public.qa_reject_finance() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'QA reject insert';END$$; CREATE TRIGGER qa_reject_finance BEFORE INSERT ON retail_finance_entries FOR EACH ROW EXECUTE FUNCTION public.qa_reject_finance();");
+ try{await assert.rejects(()=>finance(uuid(806),financeEntry('drawer_to_safe',100),shift),/QA reject insert/);
+ assert.equal(Number(await scalar('select count(*) from retail_cash_movements')),0);
+ assert.equal(Number(await scalar('select count(*) from retail_internal.financial_requests')),0);
+ assert.equal((await financeState(shift)).drawer_balance_minor,5000);
+ }finally{await db.exec('DROP TRIGGER qa_reject_finance ON retail_finance_entries; DROP FUNCTION public.qa_reject_finance();');}
+});
+test('finance totals cover more than the visible history limit and direct writes are denied',async()=>{
+ await db.exec(`INSERT INTO retail_finance_entries(store_id,entry_kind,category,amount_minor,wallet) SELECT '${store}','safe_deposit','QA',1,'safe' FROM generate_series(1,501)`);
+ const state=await financeState(shift);assert.equal(state.safe_balance_minor,501);assert.equal(state.customer_receivables_minor,2000);assert.equal(state.supplier_payables_minor,3000);
+ await assert.rejects(()=>as(owner,"insert into retail_finance_entries(store_id,entry_kind,category,amount_minor) values($1,'safe_deposit','QA',1)",[store]),/permission denied/);
+});
+test('finance replay rechecks manager permission after a role downgrade',async()=>{
+ const entry=financeEntry();await finance(uuid(807),entry,null,manager);
+ await db.exec(`update retail_memberships set role='cashier' where user_id='${manager}'`);
+ await assert.rejects(()=>finance(uuid(807),entry,null,manager),/Manager permission required/);
+});
+test('promotion policies allow cashier reading but deny cashier and outsider changes',async()=>{
+ for(const table of ['retail_campaigns','retail_offers','retail_discount_rules','retail_coupons']){
+  const policies=(await db.query("select policyname,qual,with_check from pg_policies where tablename=$1",[table])).rows;
+  assert.equal(policies.length,2);
+  assert.equal(await scalar(`select has_table_privilege('anon','${table}','SELECT')`),false);
+  assert.equal(await scalar(`select has_table_privilege('authenticated','${table}','TRUNCATE')`),false);
+  await as(cashier,`select id from ${table}`);
+ }
+ await as(owner,'insert into retail_campaigns(id,store_id,name) values($1,$2,$3)',[uuid(808),store,'QA']);
+ await assert.rejects(()=>as(cashier,'insert into retail_campaigns(store_id,name) values($1,$2)',[store,'Forbidden']),/row-level security/);
+ assert.equal((await as(stranger,'select id from retail_campaigns')).length,0);
+ assert.equal((await as(cashier,"update retail_campaigns set name='Forbidden' returning id")).length,0);
+});
