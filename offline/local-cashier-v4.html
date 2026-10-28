@@ -76,7 +76,7 @@ function render(){
   $("lines").append(tr);
  }
  $("total").textContent=money(total);
- $("checkout").disabled=state.busy||state.cart.size===0;
+ $("checkout").disabled=state.busy||(!state.cart.size&&!state.pending);
 }
 async function api(path,options={}){
  const response=await fetch(path,{...options,headers:{"Content-Type":"application/json",...(state.token?{Authorization:"Bearer "+state.token}:{}),...options.headers}});
@@ -101,7 +101,7 @@ $("login-form").addEventListener("submit",async e=>{
   })});
   state.token=data.token;$("password").value="";
   $("login-panel").hidden=true;$("cashier-panel").hidden=false;$("barcode").focus();
-  restorePending();
+  restorePending();render();
  }catch{msg("login-status","چوونەژوورەوە سەرکەوتوو نەبوو.",true)}
 });
 $("scan-form").addEventListener("submit",async e=>{
