@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZHIROX V5 — ناوەندی کاڵا</title>
+<style>
+:root{font-family:system-ui,"Segoe UI",Tahoma,sans-serif;color:#172b45;background:#f4f7fb;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;min-width:1020px}button,input{font:inherit}button{cursor:pointer}
+.banner{height:49px;display:grid;place-items:center;background:#142b46;color:white;font-size:19px;font-weight:900;letter-spacing:.1px}
+.top{background:white;border-bottom:1px solid #dce4ec;display:flex;justify-content:space-between;align-items:center;padding:13px 24px;gap:12px}
+.brand{font-size:21px;font-weight:950}.brand em{font-size:11px;color:#64748b;font-style:normal;padding-right:7px}
+.top .group{display:flex;align-items:center;gap:9px}
+.pill{padding:6px 11px;border-radius:40px;font-size:12px;font-weight:850;background:#fff7ed;color:#a15e12;border:1px solid #f2d6ad}
+.pill.live{background:#e9f9f2;color:#087448;border-color:#bcebd3}
+.btn{background:#1d3b60;border:1px solid #1d3b60;color:white;border-radius:9px;padding:10px 14px;font-weight:850;white-space:nowrap}
+.btn.alt{background:#fff;border-color:#cbd7e2;color:#213953}.btn:disabled{opacity:.45;cursor:default}
+.layout{display:grid;grid-template-columns:188px minmax(0,1fr) 260px;gap:14px;max-width:1660px;margin:auto;padding:18px;align-items:start}
+.side,.panel,.detail{background:#fff;border:1px solid #dbe4ee;border-radius:13px;overflow:hidden}
+.side{padding:13px}.side h3{font-size:13px;color:#64748b;margin:6px 8px 12px}
+.nav-btn{display:flex;width:100%;text-align:right;align-items:center;gap:9px;margin:5px 0;background:transparent;border:0;border-radius:9px;color:#334b66;padding:12px 10px;font-weight:800}
+.nav-btn.active{background:#eaf3fd;color:#1354a4}.nav-btn:focus-visible,.btn:focus-visible,input:focus-visible{outline:3px solid #a7cfff;outline-offset:2px}
+.icon{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:#edf3f9}
+.section{font-size:12px;font-weight:850;color:#6b7c91;margin:17px 8px 7px}
+.center{min-width:0}.title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:3px 2px 16px}
+h1{font-size:24px;margin:0;font-weight:950}.subtitle{font-size:12px;color:#718096;margin-top:4px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.metric{padding:14px 17px;background:white;border-radius:11px;border:1px solid #dbe4ee}
+.metric .label{font-size:12px;color:#66768b;font-weight:800}.metric strong{display:block;font-size:25px;margin-top:5px;font-variant-numeric:tabular-nums}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px;flex-wrap:wrap}
+.search{display:flex;gap:7px;flex:1;min-width:290px}.search input{height:42px;padding:9px 13px;border:1px solid #ccd9e6;border-radius:9px;width:100%;direction:rtl}
+.table-box{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}th{background:#f7f9fc;color:#66788e;font-size:12px;text-align:right;font-weight:850;padding:13px 14px;white-space:nowrap}
+td{padding:14px;border-top:1px solid #edf0f5;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr[data-id]{cursor:pointer}tr[data-id]:hover{background:#f6faff}tr.selected{background:#eaf3ff}
+.name{font-weight:850;white-space:normal;min-width:135px}.muted{color:#6b7b90}.num{direction:ltr;display:inline-block}
+.tag{font-size:11px;font-weight:850;padding:5px 8px;border-radius:50px;background:#e8f8ee;color:#12804c}
+.tag.warn{background:#fff1e6;color:#aa590d}.tag.zero{background:#feeeee;color:#af3030}
+.footer{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-top:1px solid #edf0f5;font-size:12px;color:#66788e}
+.detail{padding:18px}.detail h2{font-size:17px;margin:0 0 8px;font-weight:950}.detail .product-name{font-size:18px;font-weight:900;margin:13px 0}.detail .pair{border-top:1px solid #edf0f5;padding:11px 0;display:flex;gap:10px;justify-content:space-between;font-size:13px}
+.detail .pair strong{font-variant-numeric:tabular-nums;direction:ltr}.detail .code{direction:ltr;word-break:break-all;font-family:ui-monospace,monospace;font-size:12px;background:#f3f7fc;padding:8px;margin:6px 0;border-radius:6px}
+.info{font-size:12px;color:#64748b;line-height:1.85;margin-top:15px}.alert{margin-bottom:12px;border:1px solid #f1ddb2;background:#fffcf2;color:#885a1c;padding:10px 14px;border-radius:9px;font-size:12px;font-weight:800}
+.state{font-size:12px;font-weight:800;color:#475569;margin-top:10px;min-height:18px}.error{color:#aa2929}
+.login{padding:15px;margin-bottom:14px}.login-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.login label{font-size:12px;font-weight:850}.login input{display:block;width:100%;border:1px solid #c8d7e7;border-radius:8px;height:38px;padding:8px;margin-top:5px}
+[hidden]{display:none!important}@media(max-width:1100px){.layout{grid-template-columns:165px minmax(0,1fr) 240px}}
+</style>
+</head>
+<body>
+<div class="banner">سوپەرمارکێتی کانی چنار</div>
+<header class="top">
+<div class="brand">◈ ZHIROX <em>Local Catalog V5 · PC</em></div>
+<div class="group"><span class="pill" id="status">داتای نموونەیی — Preview</span><button type="button" class="btn alt" id="login-toggle">پەیوەستکردنی داتابەیسی ناوخۆیی</button></div>
+</header>
+<main class="layout">
+<aside class="side">
+<h3>ناوەندی بەڕێوەبردن</h3>
+<button class="nav-btn active" type="button" data-mode="products"><span class="icon">▦</span> لیستی کاڵاکان</button>
+<button class="nav-btn" type="button" data-mode="barcodes"><span class="icon">▥</span> بارکۆدەکان</button>
+<button class="nav-btn" type="button" data-mode="prices"><span class="icon">◈</span> نرخەکان</button>
+<button class="nav-btn" type="button" data-mode="stock"><span class="icon">▤</span> کۆگا</button>
+<div class="section">پشکنینی سیستم</div>
+<button class="nav-btn" type="button" id="refresh"><span class="icon">↻</span> نوێکردنەوە</button>
+</aside>
+<section class="center">
+<div class="title-row"><div><h1 id="section-title">لیستی کاڵاکان</h1><div class="subtitle">زانیاریی کاڵاکان لە PostgreSQL ـی ناوخۆیی</div></div><span class="pill" id="display-kind">Read-Only</span></div>
+<div class="alert">ئەمە ڕووکاری ڕاستەقینەی کۆدی V5 ـە؛ تا Login نەکرێت تەنها داتای نموونەیی پیشان دەدرێت. نرخی کارتۆن و بارکۆدی کێشدار هێشتا پەیوەست نەکراون.</div>
+<section class="panel login" id="login-panel" hidden>
+<h2 style="margin:0 0 11px;font-size:15px">چوونەژوورەوەی ناوخۆیی</h2>
+<form id="login-form">
+<div class="login-grid"><label>ناسنامەی فرۆشگا<input id="store" placeholder="Store UUID" required dir="ltr"></label><label>ناوی بەکارهێنەر<input id="user" placeholder="Username" required autocomplete="username"></label><label>وشەی نهێنی<input id="password" placeholder="Password" type="password" autocomplete="current-password" required></label></div>
+<div style="margin-top:10px"><button class="btn" type="submit">چوونەژوورەوە</button></div>
+</form><div id="login-message" class="state" role="status"></div>
+</section>
+<div class="metrics">
+<div class="metric"><span class="label">کاڵاکانی ئەم پەڕەیە</span><strong id="count">0</strong></div>
+<div class="metric"><span class="label">کاڵای کەم لە کۆگا</span><strong id="low">0</strong></div>
+<div class="metric"><span class="label">بارکۆدی چالاک</span><strong id="barcode-count">0</strong></div>
+</div>
+<section class="panel">
+<div class="toolbar">
+<form id="search-form" class="search"><input id="search" placeholder="گەڕان بە ناوی کاڵا یان بارکۆد..." autocomplete="off" aria-label="گەڕان"><button class="btn" type="submit">گەڕان</button></form>
+<button class="btn alt" type="button" id="clear-search">پاککردنەوە</button>
+</div>
+<div class="table-box"><table><thead><tr><th>ناوی کاڵا</th><th>بارکۆدی سەرەکی</th><th>نرخ (IQD)</th><th>ماوەی کۆگا</th><th>دۆخ</th></tr></thead><tbody id="product-rows"></tbody></table></div>
+<div class="footer"><span id="paging-info">0 کاڵا</span><div class="group"><button class="btn alt" type="button" id="prev">پێشوو</button><button class="btn alt" type="button" id="next">دواتر</button></div></div>
+</section>
+<div class="state" id="message" role="status"></div>
+</section>
+<aside class="detail" id="detail">
+<h2>زانیاریی کاڵا</h2>
+<div id="detail-inner"><div class="info">کاڵایەک لە خشتەکە هەڵبژێرە بۆ بینینی نرخ، بارکۆدەکان و بڕی کۆگا.</div></div>
+</aside>
+</main>
+<script>
+"use strict";
+(()=>{
+const $=id=>document.getElementById(id);
+const DEMO_PRODUCTS=[
+{id:"00000000-0000-4000-8000-000000000001",name:"شیری پاکەت",price_minor:"1500",stock_base_units:"45",barcodes:[{code:"6260053183974",quantity_base_units:1}]},
+{id:"00000000-0000-4000-8000-000000000002",name:"ڕۆنی خواردن",price_minor:"3250",stock_base_units:"18",barcodes:[{code:"6260001112223",quantity_base_units:1}]},
+{id:"00000000-0000-4000-8000-000000000003",name:"برنجی کیلۆیی",price_minor:"2250",stock_base_units:"8",barcodes:[{code:"6260001112230",quantity_base_units:1}]},
+{id:"00000000-0000-4000-8000-000000000004",name:"شەکری پاکەت",price_minor:"1750",stock_base_units:"64",barcodes:[{code:"6260001112261",quantity_base_units:1}]},
+{id:"00000000-0000-4000-8000-000000000005",name:"ئاوی خواردنەوە",price_minor:"500",stock_base_units:"120",barcodes:[{code:"6260001112254",quantity_base_units:1},{code:"6260001112292",quantity_base_units:12}]},
+{id:"00000000-0000-4000-8000-000000000006",name:"چاوی ڕەش",price_minor:"4500",stock_base_units:"6",barcodes:[{code:"6260001112285",quantity_base_units:1}]},
+{id:"00000000-0000-4000-8000-000000000007",name:"بیسکویت",price_minor:"1000",stock_base_units:"0",barcodes:[{code:"6260001112278",quantity_base_units:1}]}
+];
+let token=null, mode="products",rows=DEMO_PRODUCTS,selectedId=rows[0]?.id||null,
+nextCursor=null,cursor=null,previous=[],search="",busy=false;
+const format=n=>BigInt(String(n)).toLocaleString("en-US");
+function isLow(p){return BigInt(p.stock_base_units)<10n}
+function status(p){return BigInt(p.stock_base_units)===0n?["نەماوە","zero"]:isLow(p)?["کەمە","warn"]:["بەردەستە",""]}
+function setMessage(v,error=false){$("message").textContent=v;$("message").className="state"+(error?" error":"")}
+function viewRows(){if(token)return rows;return rows.filter(p=>!search||p.name.includes(search)||p.barcodes.some(b=>b.code===search))}
+function render(){
+ const items=viewRows();
+ $("count").textContent=format(items.length);
+ $("low").textContent=format(items.filter(isLow).length);
+ $("barcode-count").textContent=format(items.reduce((n,p)=>n+p.barcodes.length,0));
+ $("section-title").textContent=({products:"لیستی کاڵاکان",barcodes:"ناوەندی بارکۆدەکان",prices:"ناوەندی نرخەکان",stock:"دۆخی کۆگا"})[mode];
+ document.querySelectorAll("[data-mode]").forEach(b=>{b.classList.toggle("active",b.dataset.mode===mode)});
+ $("product-rows").replaceChildren();
+ for(const p of items){
+   const tr=document.createElement("tr");tr.dataset.id=p.id;
+   if(p.id===selectedId)tr.className="selected";
+   const [s,kind]=status(p);
+   const cells=[p.name,p.barcodes[0]?.code||"—",format(p.price_minor),format(p.stock_base_units),s];
+   cells.forEach((v,i)=>{const td=document.createElement("td");
+     if(i===0)td.className="name";else if(i===1)td.className="muted";
+     if(i===4){const t=document.createElement("span");t.className="tag "+kind;t.textContent=v;td.append(t)}
+     else {const span=document.createElement("span");span.textContent=v;if(i>0&&i<4)span.className="num";td.append(span)}
+     tr.append(td);
+   });tr.addEventListener("click",()=>{selectedId=p.id;render()});$("product-rows").append(tr);
+ }
+ if(!items.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=5;td.textContent="هیچ کاڵایەک نەدۆزرایەوە";td.style.textAlign="center";tr.append(td);$("product-rows").append(tr)}
+ $("paging-info").textContent=format(items.length)+" کاڵا — "+(token?"داتابەیسی ناوخۆیی":"داتای نموونەیی");
+ $("prev").disabled=!token||previous.length===0||busy;
+ $("next").disabled=!token||!nextCursor||busy;
+ const found=items.find(p=>p.id===selectedId)||items[0];
+ if(found)selectedId=found.id;
+ const holder=$("detail-inner");holder.replaceChildren();
+ if(!found){holder.textContent="هیچ زانیارییەک نییە";return}
+ const name=document.createElement("div");name.className="product-name";name.textContent=found.name;holder.append(name);
+ function pair(label,value){const div=document.createElement("div");div.className="pair";const a=document.createElement("span");a.textContent=label;const b=document.createElement("strong");b.textContent=value;div.append(a,b);holder.append(div)}
+ pair("نرخی دانە",format(found.price_minor)+" IQD");pair("کۆگای بنەڕەتی",format(found.stock_base_units));pair("ژمارەی بارکۆد",String(found.barcodes.length));
+ for(const b of found.barcodes){const code=document.createElement("div");code.className="code";code.textContent=b.code+" · "+b.quantity_base_units+" دانە";holder.append(code)}
+ const info=document.createElement("div");info.className="info";info.textContent="تەنها خوێندنەوە. بارکۆدی کارتۆن وەک زانیاری پیشان دەدرێت، بەڵام Checkout ـی کارتۆن هێشتا چالاک نییە.";holder.append(info);
+}
+async function fetchPage(){
+ if(!token){render();return}
+ busy=true;render();setMessage("خوێندنەوەی کاڵاکان...");
+ try{
+   const url=new URL("/api/local/v5/products",location.href);
+   url.searchParams.set("search",search);url.searchParams.set("limit","20");
+   if(cursor)url.searchParams.set("cursor",cursor);
+   const response=await fetch(url.pathname+url.search,{headers:{Authorization:"Bearer "+token}});
+   const data=await response.json();
+   if(!response.ok)throw Error(data.error||"request_failed");
+   rows=data.items;nextCursor=data.next_cursor;selectedId=rows[0]?.id||null;
+   setMessage("زانیاریی کاڵاکان لە Local PostgreSQL خوێندرایەوە.");
+ }catch(err){rows=[];nextCursor=null;setMessage("هەڵەی پەیوەندیی ناوخۆیی: "+err.message,true)}
+ finally{busy=false;render()}
+}
+$("login-toggle").addEventListener("click",()=>{
+ if(token){token=null;rows=DEMO_PRODUCTS;cursor=null;previous=[];nextCursor=null;search="";$("search").value="";$("login-toggle").textContent="پەیوەستکردنی داتابەیسی ناوخۆیی";$("status").textContent="داتای نموونەیی — Preview";$("status").classList.remove("live");setMessage("");render();return}
+ $("login-panel").hidden=!$("login-panel").hidden;
+});
+$("login-form").addEventListener("submit",async e=>{
+ e.preventDefault();
+ try{
+ const response=await fetch("/api/local/v3/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+  store_id:$("store").value.trim(),username:$("user").value.trim(),password:$("password").value
+ })});
+ const data=await response.json();
+ if(!response.ok||!data.token)throw Error("invalid_credentials");
+ token=data.token;$("password").value="";$("login-panel").hidden=true;
+ $("status").classList.add("live");$("status").textContent="Local PostgreSQL";
+ $("login-toggle").textContent="دەرچوون";cursor=null;previous=[];search="";$("search").value="";
+ await fetchPage();
+ }catch{$("login-message").textContent="چوونەژوورەوە سەرکەوتوو نەبوو."}
+});
+$("search-form").addEventListener("submit",e=>{e.preventDefault();search=$("search").value.trim();cursor=null;previous=[];if(token)void fetchPage();else render()});
+$("clear-search").addEventListener("click",()=>{search="";$("search").value="";cursor=null;previous=[];if(token)void fetchPage();else render()});
+$("refresh").addEventListener("click",()=>{if(token)void fetchPage();else{search="";$("search").value="";render()}});
+$("next").addEventListener("click",()=>{if(!token||!nextCursor||busy)return;previous.push(cursor);cursor=nextCursor;void fetchPage()});
+$("prev").addEventListener("click",()=>{if(!token||!previous.length||busy)return;cursor=previous.pop();void fetchPage()});
+document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;render()}));
+render();
+})();
+</script>
+</body></html>
