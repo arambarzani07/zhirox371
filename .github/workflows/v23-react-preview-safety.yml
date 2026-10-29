@@ -1,0 +1,32 @@
+name: V23 React preview safety
+on:
+  pull_request:
+    paths:
+      - 'config.js'
+      - 'src/**'
+      - 'tests/v23_preview_mode_guard.test.mjs'
+      - 'docs/V23_RELEASE_SAFETY_GATE.md'
+      - '.github/workflows/v23-react-preview-safety.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'config.js'
+      - 'src/**'
+      - 'tests/v23_preview_mode_guard.test.mjs'
+      - '.github/workflows/v23-react-preview-safety.yml'
+permissions:
+  contents: read
+jobs:
+  preview-safety-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Fail-closed offline mock and DEMO-only receipt checks
+        run: node --test tests/v23_preview_mode_guard.test.mjs
+      - name: Install React preview dependencies (no deploy or database)
+        run: npm install --no-package-lock
+      - name: Typecheck and build the React PC preview
+        run: npm run build
