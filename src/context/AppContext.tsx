@@ -643,7 +643,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const paid = options.paidAmount !== undefined ? options.paidAmount : (options.paymentMethod === 'cash' ? grandTotal : 0);
     const change = options.paymentMethod === 'cash' && paid >= grandTotal ? paid - grandTotal : 0;
 
-    const receiptNum = `RCP-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // This React-only checkout persists to LocalStorage, not a trusted local PostgreSQL POS.
+    // Mark every resulting receipt as a DEMO document until an authenticated LAN API owns checkout.
+    const receiptNum = `DEMO-RCP-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const saleItems: SaleItem[] = cart.map(line => ({
       productId: line.productId,
@@ -734,7 +736,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveReceiptForModal(newReceipt);
     setCart([]);
 
-    addAuditLog('فرۆشتنی پسووڵە', `پسووڵەی ${receiptNum} بە سەرکەوتوویی تەواوبوو بە کۆی ${grandTotal.toLocaleString()} IQD (${options.paymentMethod === 'cash' ? 'نەختینە' : 'قەرز'})`);
+    addAuditLog('فرۆشتنی تاقیکردنەوە', `پسووڵەی نموونەیی ${receiptNum} بە سەرکەوتوویی تەواوبوو بە کۆی ${grandTotal.toLocaleString()} IQD (${options.paymentMethod === 'cash' ? 'نەختینە' : 'قەرز'})`);
 
     return { success: true, receipt: newReceipt };
   };
