@@ -50,11 +50,10 @@ try{
  await page.locator(".module").nth(1).focus();
  await page.keyboard.press("Enter");
  assert.equal(await page.locator(".drawer").count(),1);
- await page.locator("[data-sub='2']").click(); // Prices now has its own real workspace route.
- await page.waitForURL("**/workspace.html?view=prices");
- assert.equal(await page.locator("#prices-panel").count(),1);
- await page.locator("a.home").click();
- await page.waitForURL("**/index.html");
+ await page.locator("[data-sub='2']").click(); // price center placeholder inside Home
+ assert.equal(await page.locator(".page").count(),1);
+ assert.match(await page.locator(".pagehead h2").innerText(),/نرخەکان/);
+ await page.locator("[data-back]").click();
  assert.equal(await page.locator(".module").count(),12);
  await assertFixed(first);
  console.log("PASS: Escape, outside click, drawer click, focus restore, keyboard and Back; 12 cards stationary");

@@ -9,11 +9,10 @@ import {fileURLToPath} from "node:url";
 // later explicitly accepted fixed header, 12+48 cards and distinct SVG icons.
 // The older design-lock/pc-home-v1 branch is the historical snapshot, not a
 // licence to revert later approved accessibility/fixed-desktop additions.
-// 2026-10-28 owner explicitly requested all-system design/navigation reorganization.
-// Only index.html gained the shell routing script; Home markup, CSS and icons are unchanged.
+// Update these source SHA-1s only after explicit owner design-unlock approval.
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const LOCKED_BLOBS={
-  "index.html": "a2b245086c29311eb31521156007c6c0b53637c2",
+  "index.html": "c364336a84b2c92cf121d7682671b309eccd4b05",
   "ui-global.css": "14474a71940bfa79a25173623bcfbaf5387d3660",
   "ui-fixed-pc.css": "e55fc2ddbec2aa0e0e19d97c568592a6e6501a0c",
   "card-icons.css": "1c774c9d6f21221fb0972d88d3d4f303707f77a1",

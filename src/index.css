@@ -1,0 +1,37 @@
+@import "../ui-global.css";
+@import "../ui-fixed-pc.css";
+@import "../card-icons.css";
+@import "../ui-contrast-lock.css";
+
+/* Base Resets & Layout */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f5f7fa;
+  color: #213149;
+  font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+  direction: rtl;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.ws-link.active {
+  background: #1e3a8a !important;
+  color: #ffffff !important;
+  border-color: #1e3a8a !important;
+}
+
+@media print {
+  .market-banner, header, .tabs, .toolbar, .footer-actions, .catalog-buttons, button {
+    display: none !important;
+  }
+}

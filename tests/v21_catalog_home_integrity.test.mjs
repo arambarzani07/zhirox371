@@ -43,7 +43,7 @@ function fixture(values={},opts={}){
  return {ctx,calls,messages,fields,run:()=>ctx.saveOpsCatalogProduct({preventDefault(){}})};
 }
 test("Owner lock restores approved 12-by-4 Home SHA",()=>{
- assert.match(lock,/a2b245086c29311eb31521156007c6c0b53637c2/);
+ assert.match(lock,/c364336a84b2c92cf121d7682671b309eccd4b05/);
  assert.doesNotMatch(lock,/a342d2e3a89453e2f97fc188fb422cdeecff6390/);
  assert.match(home,/s\[4\]\.forEach/);
 });

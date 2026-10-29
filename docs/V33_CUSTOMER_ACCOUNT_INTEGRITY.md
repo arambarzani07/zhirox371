@@ -1,9 +1,0 @@
-# V33 — verified customer account display and signed debt changes
-
-Customer and ledger reads now require successful server replies, exact counts, store-matching rows and safe integer amounts. Loading/error clears old lists and printable summaries, blanks metrics and disables account/ledger actions and exports. Actor/store/request guards reject obsolete read replies after logout or a newer refresh. Persisted browser customer data is not used as a fallback.
-
-Both reads remain explicitly bounded: the first 500 active customers ordered by name/id and latest 500 ledger rows ordered by created_at/id. The visible count line shows loaded/total counts; balance aggregates refer to loaded customers. Filters apply to these loaded rows. Export filenames include the loaded scope; printed summaries explicitly identify loaded records. These are not complete customer statements or full-store totals. Server pagination and complete historical statements remain future work.
-
-Debt added/reduced totals use signed delta_minor, not transaction amount or a guessed entry-type sign. Full return value and actual debt reduction can differ; history now shows both face amount and signed debt change. Zero-delta cash purchases do not increase debt. After acknowledged writes the displayed change comes from the server response, duplicate entry IDs do not create duplicate local rows, and old-identity acknowledgments do not repopulate a logged-out screen. Write RPCs and durable request handling are unchanged.
-
-CSV serialization neutralizes formula starters in text while retaining numeric negative deltas. Missing historical balances do not fall back to a customer's current balance. Validation covers return/payment/cash-purchase arithmetic, read denial, unsafe totals, 500/501 scope, safe CSV and delayed logout reads, plus actual helpers through disposable local JWT/PostgREST/RLS. Production data and schema remain unchanged.

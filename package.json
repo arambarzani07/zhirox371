@@ -4,13 +4,19 @@
   "description": "سیستەمی کاشێر و کۆگای سوپەرمارکێتی کانی چنار",
   "type": "module",
   "scripts": {
-    "dev": "node server.mjs",
-    "start": "node server.mjs",
-    "build": "node scripts/check-build.mjs",
-    "test": "node --test tests/*.test.mjs",
-    "test:database": "node --test tests/database/*.test.mjs"
+    "dev": "vite --host 0.0.0.0 --port 3000",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 3000"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.3.14"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
   }
 }

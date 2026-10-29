@@ -15,7 +15,6 @@ function createOfflineWindow() {
     },
   };
   const win = {
-    RETAIL_DEMO_MODE: true,
     localStorage,
     navigator: { onLine: false },
     addEventListener: () => {},

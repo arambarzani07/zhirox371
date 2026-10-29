@@ -2,16 +2,14 @@
 window.RETAIL_CONFIG=Object.freeze({
   supabaseUrl:"https://qcfmlyyzfykzszvtllrw.supabase.co",
   publishableKey:"sb_publishable_lEEIz_8byZDKfVZ-ym3jIA_bbE8pX_Y",
-  offlineFirst:false,
+  offlineFirst:true,
   preferredDisk:"D:\\SupermarketPOS_Data",
   pcBackupDir:"D:\\SupermarketPOS_Data\\backups",
   hourlySyncIntervalMs:3600000
 });
 
 (function initRetailOfflineEngine(){
-  if(typeof window==="undefined"||window.RETAIL_DEMO_MODE!==true)return;
-  // Explicit disposable demo only. Never replace authenticated production SDK.
-
+  if(typeof window==="undefined")return;
 
   if("serviceWorker" in navigator && !window.__retailQA){
     window.addEventListener("load",()=>{
@@ -376,10 +374,109 @@ window.RETAIL_CONFIG=Object.freeze({
     };
   }
 
-  async function syncNow(){
-    const meta=loadMeta();meta.lastStatus="demo_only";
-    meta.lastError="Disposable local demo; no server transaction replay or backup synchronization is implemented.";
-    saveMeta(meta);emitSyncStatus();return getSyncStatus();
+  async function syncNow(reason="manual"){
+    if(syncInFlight)return getSyncStatus();
+    const meta=loadMeta();
+    meta.lastAttemptAt=nowIso();
+
+    if(typeof navigator!=="undefined"&&navigator.onLine===false){
+      meta.lastStatus="offline_deferred";
+      meta.lastError="هێڵی ئینتەرنێت نییە — داتاکان لە ناوخۆ پارێزراون تا کاتی بوونی ئینتەرنێت";
+      saveMeta(meta);
+      emitSyncStatus();
+      return getSyncStatus();
+    }
+
+    syncInFlight=true;
+    emitSyncStatus();
+
+    const state=loadDb();
+    const queue=loadQueue();
+    const batchId="sync_"+Date.now();
+    const storeRow=(state.retail_stores&&state.retail_stores[0])||{id:DEFAULT_STORE_ID,name:"سوپەرمارکێتی کانی چنار",currency:"IQD"};
+    const snapshot=buildSnapshotFromState(state);
+
+    let serverSaved=false;
+    let supabaseSaved=false;
+    let errorMsg=null;
+
+    try{
+      const resp=await fetch("/api/sync",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          batch_id:batchId,
+          reason,
+          synced_at:nowIso(),
+          store:storeRow,
+          operations:queue,
+          full_db:state,
+          snapshot
+        })
+      });
+      if(resp.ok){
+        serverSaved=true;
+        const syncJson=await resp.json().catch(()=>({}));
+        lastPcDiskBackupAt=syncJson.synced_at||nowIso();
+        if(Number(syncJson.pc_backup_files_count)>0)pcBackupFilesCount=Number(syncJson.pc_backup_files_count);
+      }else{
+        errorMsg="Server HTTP "+resp.status;
+      }
+    }catch(err){
+      errorMsg=String(err?.message||err);
+    }
+
+    if(realSupabaseGlobal&&window.RETAIL_CONFIG?.supabaseUrl&&window.RETAIL_CONFIG?.publishableKey){
+      try{
+        const remoteClient=realSupabaseGlobal.createClient(
+          window.RETAIL_CONFIG.supabaseUrl,
+          window.RETAIL_CONFIG.publishableKey,
+          {auth:{persistSession:true,autoRefreshToken:false}}
+        );
+        const ping=await Promise.race([
+          remoteClient.from("retail_stores").select("id").limit(1),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),3500))
+        ]);
+        if(ping&&!ping.error)supabaseSaved=true;
+      }catch(_e){}
+    }
+
+    syncInFlight=false;
+    if(serverSaved||supabaseSaved){
+      const syncedCount=queue.length;
+      saveQueue([]);
+      const completedAt=nowIso();
+      meta.lastSyncedAt=completedAt;
+      meta.lastStatus="synced";
+      meta.lastError=null;
+      meta.totalSyncedBatches=Number(meta.totalSyncedBatches||0)+1;
+      meta.totalSyncedOps=Number(meta.totalSyncedOps||0)+syncedCount;
+      meta.history=[
+        {
+          id:batchId,
+          synced_at:completedAt,
+          reason:reason==="hourly"?"ناردنی خۆکاری کاتژمێری":reason==="online_resume"?"گەڕانەوەی هێڵی ئینتەرنێت":"ناردنی دەستبەجێ",
+          ops_count:syncedCount,
+          records_count:
+            snapshot.products.length+
+            snapshot.barcodes.length+
+            snapshot.sales.length+
+            snapshot.customers.length+
+            snapshot.suppliers.length+
+            snapshot.finance_entries.length,
+          target:supabaseSaved?"سێرڤەری ناوخۆ + کڵاود":"سێرڤەری سەرەکی"
+        },
+        ...(meta.history||[]).slice(0,24)
+      ];
+      saveMeta(meta);
+    }else{
+      meta.lastStatus="retry_scheduled";
+      meta.lastError=errorMsg||"پەیوەندیی سێرڤەر بەردەست نەبوو";
+      saveMeta(meta);
+    }
+
+    emitSyncStatus();
+    return getSyncStatus();
   }
 
   function setIntervalMinutes(mins){

@@ -5,42 +5,15 @@
 (() => {
   const account={id:"11111111-1111-4111-8111-111111111111",email:"owner@qa.example"};
   const store={id:"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",owner_user_id:account.id,name:"QA Only",currency:"IQD"};
-  const seed={id:"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",name:"کاڵای تاقیگە",base_unit:"unit",price_minor:1000,active:true,currency:"IQD",store_id:store.id};
-  const initialState={
+  const seed={id:"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",name:"کاڵای تاقیگە",price_minor:1000,active:true,currency:"IQD",store_id:store.id};
+  const state={
     account,store,
     products:[seed],
     barcodes:[{store_id:store.id,product_id:seed.id,code:"4006381333931",unit_type:"unit",units_per_scan:1}],
     stock:[{store_id:store.id,product_id:seed.id,quantity:2}],
-    suppliers:[],purchaseOrders:[],supplierLedger:[],customers:[],customerLedger:[],sessions:[],movements:[],sales:[],saleItems:[],stockEvents:[],memberships:[],audit:[],
+    sessions:[],movements:[],sales:[],saleItems:[],stockEvents:[],memberships:[],audit:[],
     called:[],stockReceipts:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[],indexVersion:0
   };
-  // Only the self-contained preview shares disposable sample state across its iframe routes.
-  const state=window.__retailPreview&&window.parent!==window?
-    (window.parent.__retailPreviewState||(window.parent.__retailPreviewState=initialState)):initialState;
-  if(window.__retailPreview&&!state.customerExampleSeeded){
-    state.customerExampleSeeded=true;
-    const id='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-    state.customers.push({id,store_id:store.id,name:'کڕیاری نموونە',phone:'',address:'',credit_limit_minor:500000,balance_minor:300,active:true});
-    for(const [i,entry_type,amount_minor,delta_minor,balance_after_minor] of [[0,'debt_add',1000,1000,1000],[1,'sale_return',1000,-600,400],[2,'payment_received',100,-100,300],[3,'paid_purchase',5000,0,300]])state.customerLedger.push({id:'customer-example-'+i,store_id:store.id,customer_id:id,entry_type,amount_minor,delta_minor,balance_after_minor,payment_method:'ledger_only',note:'تۆماری نموونە',created_at:new Date(Date.now()-(4-i)*60000).toISOString()});
-  }
-  if(window.__retailPreview&&!state.movementExampleSeeded){
-    state.movementExampleSeeded=true;
-    const kg={...seed,id:'bbbbbbbb-bbbb-4bbb-8bbb-000000000002',name:'کاڵای کێشدار — نموونە',base_unit:'kg'};state.products.push(kg);state.barcodes.push({store_id:store.id,product_id:kg.id,code:'KG-SAMPLE-35',unit_type:'unit',units_per_scan:1});
-    for(let i=1;i<=263;i++)state.stockEvents.push({id:'eeeeeeee-3333-4333-8333-'+String(i).padStart(12,'0'),store_id:store.id,product_id:i%3===0?kg.id:seed.id,delta:i%2===0?-1:2,reason:i%2===0?'sale':'purchase',created_at:new Date(Date.now()-(264-i)*60000).toISOString()});
-  }
-  if(window.__retailPreview&&!state.customerHistoryExampleSeeded){
-    state.customerHistoryExampleSeeded=true;const c=state.customers.find(c=>c.id==='cccccccc-cccc-4ccc-8ccc-cccccccccccc');
-    if(c){c.phone='07501112233';for(let i=0;i<519;i++)state.customerLedger.push({id:'history-example-'+String(i).padStart(4,'0'),store_id:store.id,customer_id:c.id,entry_type:'paid_purchase',amount_minor:5000,delta_minor:0,balance_after_minor:0,payment_method:'ledger_only',note:'کڕینی نەقدی — نموونە',created_at:new Date(Date.now()-(i+5)*60000).toISOString()});}
-  }
-  if(window.__retailPreview&&!state.customerPaymentExampleSeeded){
-    state.customerPaymentExampleSeeded=true;
-    const c={id:'cccccccc-cccc-4ccc-8ccc-000000000037',store_id:store.id,name:'کڕیاری کۆن — نموونە',phone:'07504445566',active:false,balance_minor:0,credit_limit_minor:5000000};state.customers.push(c);
-    for(let i=0;i<522;i++)state.customerLedger.push({id:'payment-example-'+String(i).padStart(4,'0'),store_id:store.id,customer_id:c.id,entry_type:'payment_received',amount_minor:2500,delta_minor:-2500,balance_after_minor:(521-i)*2500,payment_method:i===520?null:i%2?'cash_drawer':'ledger_only',note:'پارەدانی کۆن — نموونە',created_at:new Date(Date.now()-(523-i)*60000).toISOString()});
-  }
-  if(window.__retailPreview&&!state.directoryExampleSeeded){
-    state.directoryExampleSeeded=true;
-    for(let i=0;i<622;i++)state.customers.push({id:'cccccccc-0038-4038-8038-'+String(i).padStart(12,'0'),store_id:store.id,name:String(i).padStart(4,'0')+' — کڕیاری نموونە',phone:'0750'+String(i).padStart(7,'0'),address:'ناونیشانی نموونە',note:'حیسابی نموونە',active:true,balance_minor:i%2?1000:0,credit_limit_minor:500000});
-  }
   const error=(code,message)=>({code,message});
   function isValidEan13(code){
     const clean=String(code||"").trim();
@@ -87,22 +60,8 @@
       scaleLabel:weightKg.toFixed(3)+" کگم"
     };
   }
-  if(window.__retailPreview&&!state.supplierExampleSeeded){
-    state.supplierExampleSeeded=true;
-    for(let i=0;i<523;i++){
-      const id='dddddddd-0041-4041-8041-'+String(i).padStart(12,'0'),name=String(i).padStart(4,'0')+' — دابینکەری نموونە',created_at=new Date(Date.now()-i*60000).toISOString();
-      state.suppliers.push({id,store_id:store.id,name,company:'کۆمپانیای نموونە',phone:'0751'+String(i).padStart(7,'0'),active:true,balance_minor:i%2?1000:0});
-      state.purchaseOrders.push({id:'eeeeeeee-0041-4041-8041-'+String(i).padStart(12,'0'),store_id:store.id,supplier_id:id,supplier_name:name,po_no:'PO-'+i,product_id:seed.id,product_name:seed.name,quantity:1,unit_cost_minor:1000,total_cost_minor:1000,status:'pending',created_at});
-      state.supplierLedger.push({id:'ffffffff-0041-4041-8041-'+String(i).padStart(12,'0'),store_id:store.id,supplier_id:id,supplier_name:name,entry_type:'purchase_credit',amount_minor:1000,delta_minor:1000,balance_after_minor:1000,created_at});
-    }
-  }
   function tableRows(name){
-    if(name==="retail_suppliers")return state.suppliers;
-    if(name==="retail_purchase_orders")return state.purchaseOrders;
-    if(name==="retail_supplier_ledger")return state.supplierLedger;
-    if(name==="retail_customers")return state.customers;
-    if(name==="retail_customer_ledger")return state.customerLedger;
-    if(name==="retail_stores")return state.store?[state.store,...(state.extraStores||[])]:[];
+    if(name==="retail_stores")return state.store?[state.store]:[];
     if(name==="retail_products")return state.products;
     if(name==="retail_barcodes")return state.barcodes;
     if(name==="retail_stock_balances")return state.stock;
@@ -113,50 +72,31 @@
     if(name==="retail_audit_events")return state.audit;
     if(name==="retail_sale_items")return state.saleItems;
     if(name==="retail_stock_events")return state.stockEvents;
-    if(['retail_finance_entries','retail_campaigns','retail_offers','retail_discount_rules','retail_coupons'].includes(name))return state[name]||(state[name]=[]);
     throw Error("Unknown QA table "+name);
   }
   function from(table){
-    const cond=[],sorts=[],lower=[],upper=[],patterns=[],sets=[],strictLower=[],strictUpper=[],notEqual=[];let limit=Infinity,updated=null,inserted=null,start=0,withCount=false,selected="";
+    const cond=[];let limit=Infinity,inserted=null,descending=false,sortKey=null;
     const query={
-      select(_columns,opts){selected=_columns;withCount=opts?.count==='exact';return this;},eq(key,val){cond.push([key,val]);return this;},
-      gte(key,val){lower.push([key,val]);return this;},lte(key,val){upper.push([key,val]);return this;},
-      ilike(key,val){patterns.push([key,val]);return this;},
-      neq(key,val){notEqual.push([key,val]);return this;},in(key,val){sets.push([key,val]);return this;},gt(key,val){strictLower.push([key,val]);return this;},lt(key,val){strictUpper.push([key,val]);return this;},
-      range(from,to){start=from;limit=to-from+1;return this;},
-      order(key,opts){sorts.push([key,opts?.ascending===false]);return this;},
+      select(){return this;},eq(key,val){cond.push([key,val]);return this;},
+      order(key,opts){sortKey=key;descending=opts?.ascending===false;return this;},
       limit(n){limit=n;return this;},
       insert(value){inserted=value;return this;},
-      update(value){updated=value;return this;},
-      upsert(){return {select:()=>({maybeSingle:async()=>({data:null,error:error('42501','QA mutation denied')})})};},
       getResult(){
-        if(updated!==null){if(table!=='retail_purchase_orders'||updated.status!=='cancelled')return {data:null,error:error('42501','QA update denied')};const matches=state.purchaseOrders.filter(row=>cond.every(([key,value])=>row[key]===value));for(const row of matches)Object.assign(row,updated);updated=null;return {data:matches,error:null};}
-
-        if(state.supplierReadError&&["retail_suppliers","retail_purchase_orders","retail_supplier_ledger"].includes(table)&&(!state.supplierReadError.table||state.supplierReadError.table===table)){const err=state.supplierReadError;state.supplierReadError=null;return {data:null,error:err,count:null};}
         if(inserted!==null){
           if(table!=="retail_stores")return {data:null,error:error("42501","Fixture insert not allowed")};
           state.store={id:store.id,...inserted};inserted=null;
           return {data:state.store,error:null};
         }
-        if(['retail_customers','retail_customer_ledger'].includes(table)&&state.customerReadError){const err=state.customerReadError;state.customerReadError=null;return {data:null,error:err,count:null};}
-        if(table==='retail_cash_movements'&&withCount&&state.paymentReadError){const err=state.paymentReadError;state.paymentReadError=null;return {data:null,error:err,count:null};}
-        if(table==='retail_cash_sessions'&&withCount&&state.shiftHistoryError){const err=state.shiftHistoryError;state.shiftHistoryError=null;return {data:null,error:err,count:null};}
-        if(table==='retail_cash_sessions'&&state.shiftReadError){const err=state.shiftReadError;state.shiftReadError=null;return {data:null,error:err};}
-        if(table==='retail_audit_events'&&withCount&&state.auditReadError){const err=state.auditReadError;state.auditReadError=null;return {data:null,error:err,count:null};}
-        if(table==='retail_customer_ledger'&&selected.includes('customer:retail_customers')&&state.customerHistoryError){const err=state.customerHistoryError;state.customerHistoryError=null;return {data:null,error:err,count:null};}
-        if(table==='retail_stock_events'&&withCount&&state.stockHistoryError){const err=state.stockHistoryError;state.stockHistoryError=null;return {data:null,error:err,count:null};}
-        if(table==='retail_sales'&&withCount&&state.receiptReadError){const err=state.receiptReadError;state.receiptReadError=null;return {data:null,error:err,count:null};}
-        let rows=[...tableRows(table)].filter(v=>notEqual.every(([key,val])=>v[key]!==val)&&sets.every(([key,values])=>values.includes(key==='details->>request_id'?v.details?.request_id:v[key]))&&strictLower.every(([key,value])=>Number(v[key])>Number(value))&&strictUpper.every(([key,value])=>v[key]!=null&&(key==='due_date'?v[key]<value:Number(v[key])<Number(value)))&&cond.every(([key,val])=>['receipt_no','amount_minor'].includes(key)?String(v[key])===String(val):v[key]===val)&&lower.every(([key,val])=>v[key]>=val)&&upper.every(([key,val])=>v[key]<=val)&&patterns.every(([key,pattern])=>{
-          let re='';for(let i=0;i<pattern.length;i++){let c=pattern[i];if(c==='\\'&&i+1<pattern.length){c=pattern[++i];re+=c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}else if(c==='%')re+='.*';else if(c==='_')re+='.';else re+=c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
-          return new RegExp('^'+re+'$','isu').test(String(v[key]??''));
-        }));
-        rows.sort((a,b)=>{for(const [key,descending] of sorts){const n=typeof a[key]==='number'&&typeof b[key]==='number'?a[key]-b[key]:String(a[key]??'').localeCompare(String(b[key]??''));if(n)return descending?-n:n;}return 0;});
-        const data=rows.slice(start,start+limit).map(row=>{if(table==="retail_customer_ledger"&&selected.includes("customer:retail_customers")){const c=state.customers.find(c=>c.id===row.customer_id&&c.store_id===row.store_id);return {...row,customer:c?{id:c.id,store_id:c.store_id,name:c.name,phone:c.phone}:null};}if(table!=="retail_stock_events"||!selected.includes("product:retail_products"))return row;const p=state.products.find(p=>p.id===row.product_id&&p.store_id===row.store_id);return {...row,product:p?{id:p.id,store_id:p.store_id,name:p.name,base_unit:p.base_unit||"unit"}:null};});
-        return {data,error:null,...(withCount?{count:rows.length}:{})};
+        let rows=[...tableRows(table)].filter(v=>cond.every(([key,val])=>v[key]===val));
+        if(sortKey)rows.sort((a,b)=>{
+          let n=String(a[sortKey]??"").localeCompare(String(b[sortKey]??""));
+          return descending?-n:n;
+        });
+        return {data:rows.slice(0,limit),error:null};
       },
       maybeSingle(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
       single(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
-      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_purchase_orders'&&withCount&&state.pausePurchaseOrderRead){state.pausePurchaseOrderRead=false;return new Promise(resolve=>{state.completePurchaseOrderRead=()=>{state.completePurchaseOrderRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_suppliers'&&withCount&&state.pauseSupplierRead){state.pauseSupplierRead=false;return new Promise(resolve=>{state.completeSupplierRead=()=>{state.completeSupplierRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_customers'&&!withCount&&state.pauseCustomerLookup){state.pauseCustomerLookup=false;return new Promise(resolve=>{state.completeCustomerLookup=()=>{state.completeCustomerLookup=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_customers'&&withCount&&state.pauseCustomerDirectory){state.pauseCustomerDirectory=false;return new Promise(resolve=>{state.completeCustomerDirectory=()=>{state.completeCustomerDirectory=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_customer_ledger'&&selected.includes('customer:retail_customers')&&state.pauseCustomerHistory){state.pauseCustomerHistory=false;return new Promise(resolve=>{state.completeCustomerHistory=()=>{state.completeCustomerHistory=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_stock_events'&&withCount&&state.pauseStockHistory){state.pauseStockHistory=false;return new Promise(resolve=>{state.completeStockHistory=()=>{state.completeStockHistory=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_customer_ledger'&&withCount&&state.pauseCustomerRead){state.pauseCustomerRead=false;return new Promise(resolve=>{state.completeCustomerRead=()=>{state.completeCustomerRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_cash_sessions'&&withCount&&state.pauseShiftHistory){state.pauseShiftHistory=false;return new Promise(resolve=>{state.completeShiftHistory=()=>{state.completeShiftHistory=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_cash_movements'&&withCount&&state.pausePaymentRead){state.pausePaymentRead=false;return new Promise(resolve=>{state.completePaymentRead=()=>{state.completePaymentRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
+      then(onSuccess,onFailure){return Promise.resolve(this.getResult()).then(onSuccess,onFailure);}
     };
     return query;
   }
@@ -204,7 +144,6 @@
       unit_sale_price_iqd:p.price_minor,unit_alias_barcodes:[],carton:null,currency:"IQD"};
   }
   function rpc(name,args){
-    if(name==='retail_finance_state_v25')return Promise.resolve({data:{safe_balance_minor:0,drawer_balance_minor:0,customer_receivables_minor:0,supplier_payables_minor:0},error:null});
     state.called.push({name,args});
     if(state.forceRpcError){const err=state.forceRpcError;state.forceRpcError=null;return Promise.resolve({data:null,error:err});}
     let data=null,err=null;
@@ -443,11 +382,10 @@
         data=state.sessions[0].id;
       }
     }else if(name==="retail_shift_summary"){
-      if(state.shiftSummaryError){const err=state.shiftSummaryError;state.shiftSummaryError=null;return {data:null,error:err};}
       const session=state.sessions.find(x=>x.id===args.p_session);
       const sales=state.sales.filter(x=>x.cash_session_id===args.p_session).reduce((n,x)=>n+x.total_minor,0);
       const movements=state.movements.filter(x=>x.session_id===args.p_session).reduce((n,x)=>n+(x.kind==="cash_in"?x.amount_minor:-x.amount_minor),0);
-      data={session_id:session.id,status:session.status,opening:session.opening_cash_minor,sales,movements,expected:session.opening_cash_minor+sales+movements};
+      data={opening:session.opening_cash_minor,sales,movements,expected:session.opening_cash_minor+sales+movements};
     }else if(name==="retail_cash_movement"){
       const row=state.movements.find(x=>x.request_id===args.p_request);
       if(row)data=row.id;
@@ -470,13 +408,13 @@
           state.indexVersion=(state.indexVersion||0)+1;
           const id="ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0");
           const sale={id,store_id:store.id,
-            receipt_no:state.nextReceipt,total_minor:total,refunded:false,returned_minor_total:0,cash_received_minor:args.p_cash_received,
+            receipt_no:state.nextReceipt,total_minor:total,cash_received_minor:args.p_cash_received,
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,cashier_id:account.id,status:"posted",
             created_at:new Date().toISOString()};
           state.sales.push(sale);
           for(const x of items){
             const p=idx.productById.get(x.product_id);
-            state.saleItems.push({id:crypto.randomUUID(),store_id:store.id,sale_id:id,product_id:x.product_id,quantity:x.quantity,
+            state.saleItems.push({store_id:store.id,sale_id:id,product_id:x.product_id,quantity:x.quantity,
               unit_price_minor:p?.price_minor||0,package_type:"unit",units_per_package:1,base_units:x.quantity,
               product_name_snapshot:p?.name||""});
           }
@@ -542,16 +480,16 @@
             stockRow.quantity=Number((stockRow.quantity-n).toFixed(3));
             state.stockEvents.push({
               id:"eeeeeeee-0000-4000-8000-"+String(state.stockEvents.length+1).padStart(12,"0"),
-              store_id:store.id,product_id:prodId,delta:-n,reason:"sale",sale_id:id,created_at:new Date().toISOString()
+              store_id:store.id,product_id:prodId,delta:-n,reason:"sale",sale_id:id
             });
           }
           state.indexVersion=(state.indexVersion||0)+1;
           state.sales.push({id,store_id:store.id,receipt_no:state.nextReceipt,
-            total_minor:total,discount_minor:discount,refunded:false,returned_minor_total:0,cash_received_minor:args.p_cash_received,
+            total_minor:total,discount_minor:discount,cash_received_minor:args.p_cash_received,
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,
             cashier_id:account.id,status:"posted",refunded:false,request_id:args.p_request,
             request_payload:payload,created_at:new Date().toISOString()});
-          for(const entry of saleLines)state.saleItems.push({id:crypto.randomUUID(),...entry,store_id:store.id,sale_id:id});
+          for(const entry of saleLines)state.saleItems.push({...entry,store_id:store.id,sale_id:id});
           data=id;
         }
       }
@@ -600,7 +538,7 @@
                 else{row={store_id:store.id,product_id:productId,quantity:baseUnits};state.stock.push(row);}
                 state.stockEvents.push({
                   id:"eeeeeeee-1111-4000-8000-"+String(state.stockEvents.length+1).padStart(12,"0"),
-                  store_id:store.id,product_id:productId,delta:baseUnits,reason:"sale_return",sale_id:sale.id,created_at:new Date().toISOString()
+                  store_id:store.id,product_id:productId,delta:baseUnits,reason:"sale_return",sale_id:sale.id
                 });
                 restoredUnits=Number((restoredUnits+baseUnits).toFixed(3));
               }
@@ -677,7 +615,6 @@
           if(row){row.quantity+=total;data=row.quantity;}
           else{row={store_id:store.id,product_id:productId,quantity:total};state.stock.push(row);data=row.quantity;}
           state.indexVersion=(state.indexVersion||0)+1;
-          state.stockEvents.push({id:crypto.randomUUID(),store_id:store.id,product_id:productId,delta:total,reason:args.p_reason,created_at:new Date().toISOString()});
           state.stockReceipts.push({request:args.p_request,lines,base_units:total,total:data,
             reason:args.p_reason,fingerprint});
           state.audit.push({id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
@@ -709,7 +646,6 @@
         if(row){row.quantity+=change;data=row.quantity;}
         else{row={store_id:store.id,product_id:item.id,quantity:change};state.stock.push(row);data=row.quantity;}
         state.indexVersion=(state.indexVersion||0)+1;
-        state.stockEvents.push({id:crypto.randomUUID(),store_id:store.id,product_id:item.id,delta:change,reason:args.p_reason,created_at:new Date().toISOString()});
         state.stockReceipts.push({request:args.p_request,code:args.p_barcode,packages:args.p_packages,
           units:args.p_expected_units,reason:args.p_reason,base_units:change,total:data});
         state.audit.push({id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(state.audit.length+1).padStart(12,"0"),
