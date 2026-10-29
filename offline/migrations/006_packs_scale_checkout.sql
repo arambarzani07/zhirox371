@@ -16,6 +16,11 @@ ALTER TABLE zhirox_local.barcodes
 -- There is NO automatic legacy unit->gram conversion, to prevent corrupt stock.
 -- A carton barcode specifies units_per_scan via quantity_base_units and
 -- an independent sale_price_minor; unit aliases must map to one unit.
+-- Preserve the scanned package/weight on receipt lines (legacy rows stay NULL).
+ALTER TABLE zhirox_local.sale_lines
+  ADD COLUMN IF NOT EXISTS barcode_snapshot text,
+  ADD COLUMN IF NOT EXISTS sale_mode_snapshot text,
+  ADD COLUMN IF NOT EXISTS scan_quantity integer;
 CREATE OR REPLACE FUNCTION zhirox_local.checkout_packs_scale_v26(
   p_store uuid,p_cashier uuid,p_request uuid,p_lines jsonb,
   p_expected_total_minor bigint
@@ -151,10 +156,12 @@ BEGIN
  FOR v_rec IN SELECT value AS item FROM jsonb_array_elements(v_items) LOOP
    v_index:=v_index+1;
    INSERT INTO zhirox_local.sale_lines(store_id,sale_id,line_no,product_id,
-      name_snapshot,quantity_base_units,unit_price_minor,line_total_minor)
+      name_snapshot,quantity_base_units,unit_price_minor,line_total_minor,
+      barcode_snapshot,sale_mode_snapshot,scan_quantity)
    VALUES(p_store,v_id,v_index,(v_rec.item->>'product_id')::uuid,
       v_rec.item->>'name',(v_rec.item->>'base_qty')::bigint,
-      (v_rec.item->>'unit_price')::bigint,(v_rec.item->>'line_total')::bigint);
+      (v_rec.item->>'unit_price')::bigint,(v_rec.item->>'line_total')::bigint,
+      v_rec.item->>'barcode',v_rec.item->>'mode',(v_rec.item->>'qty')::integer);
  END LOOP;
  FOR v_rec IN
    SELECT (x->>'product_id')::uuid AS product_id,
