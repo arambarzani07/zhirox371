@@ -249,6 +249,7 @@ select option{color:#0f172a;font-size:14px}
 <script src="./card-icons.js"></script>
 <script src="./system-shell.js" defer></script>
 <script src="./receipt-history.js"></script>
+<script src="./audit-history.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./system-ui.css">
 <link rel="stylesheet" href="./ui-contrast-lock.css">
@@ -1853,11 +1854,15 @@ select option{color:#0f172a;font-size:14px}
 
 <div id="audit-sub-changes">
 <div class="formrow" style="margin-bottom:12px">
-<label class="field">گەڕان لە تۆماری گۆڕانکارییەکان (Audit Log)<input id="audit-search-input" maxlength="80" placeholder="بەدوای کردار یان بەکارهێنەردا بگەڕێ..."></label>
+<label class="field">گەڕان لە تۆماری گۆڕانکارییەکان<input id="audit-search-input" maxlength="80" autocomplete="off"></label>
+<label class="field">گەڕان بە<select id="audit-search-field"><option value="action">کردار</option><option value="actor_id">ناسنامەی بەکارهێنەر</option><option value="subject_id">ناسنامەی بابەت</option></select></label>
+<label class="field">ماوەی کات<select id="audit-date-filter"><option value="all">هەموو کاتێک</option><option value="today">ئەمڕۆ</option><option value="7d">7 ڕۆژی ڕابردوو</option><option value="30d">30 ڕۆژی ڕابردوو</option></select></label>
 <button type="button" class="secondary" id="audit-refresh-btn">نوێکردنەوە</button>
-<button type="button" class="secondary" id="audit-export-csv">⬇ هەناردەی تۆماری چاودێری (CSV)</button>
+<button type="button" class="secondary" id="audit-export-csv">هەناردەی ئەم پەڕەیە (CSV)</button>
 </div>
+<div class="msg" id="audit-msg" role="status"></div>
 <div id="audit-list"></div>
+<div class="pager" id="audit-pagination"><button type="button" class="secondary" id="audit-prev">پێشوو</button><span class="pager-info" id="audit-page-info" role="status" aria-live="polite">0 / 0</span><button type="button" class="secondary" id="audit-next">دواتر</button></div>
 </div>
 
 <div id="audit-sub-qa" hidden>

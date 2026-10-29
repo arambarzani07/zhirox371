@@ -37,6 +37,7 @@ let financeEntriesList=[],shiftSessionsHistory=[],financeState=null;
 let allSaleItems=[],productCostsMap=new Map();
 let staffProfilesMap=new Map(),storeSettings={},lastServerPingMs=null;
 let offersList=[],discountRulesList=[],couponsList=[],campaignsList=[],activePosPromo=null;
+let auditPageRows=[],auditPageOffset=0,auditPageTotal=0,auditPageFilters=null,auditListToken=0,auditLoading=false,auditQueryTimer=null;
 let returnPageRows=[],returnPageOffset=0,returnPageTotal=0,returnPageFilters=null,returnListToken=0,returnLookupToken=0,returnLoading=false;
 let receiptPageRows=[],receiptPageTotal=0,receiptListEpoch=0,receiptDetailEpoch=0,receiptFilters=null,receiptLoading=false;
 let allReceipts=[],receiptsOffset=0,selectedReturnSaleId=null,selectedReturnLineId=null,returnReceiptLines=[],returnDetailToken=0,allMovements=[],shiftSummaryData=null,lastCompletedSale=null,itemReturnAttempt=null;
@@ -56,7 +57,7 @@ const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نیی�
  /Failed to fetch|NetworkError/i.test(e?.message||"")?"پەیوەندیی سێرڤەر/ئینتەرنێت بپشکنە":
  (e?.message||"کردارەکە سەرکەوتوو نەبوو"));
 function msg(id,value="",kind=""){const x=$(id);if(!x)return;x.textContent=value;x.className="msg"+(kind?" "+kind:"");}
-function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();syncReceiptPager();syncReturnPager();}
+function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();syncReceiptPager();syncReturnPager();syncAuditPager();}
 function pendingKey(){return store&&user?"retail_pending_checkout_"+store.id+"_"+user.id:null}
 function parkedKey(){return store&&user?"retail_parked_carts_"+store.id+"_"+user.id:null}
 function returnKey(){return store&&user?"retail_pending_return_"+store.id+"_"+user.id:null}
@@ -562,6 +563,7 @@ function selectTab(next){
  if(next==="staff"&&role!=="owner")next="cash";
  if(["stock","suppliers","finance","reports","audit"].includes(next)&&!canManage())next="cash";
  tab=next;
+ if(next!=="audit"){++auditListToken;auditLoading=false;clearTimeout(auditQueryTimer);}
  if(next!=="returns"){++returnListToken;++returnLookupToken;++returnDetailToken;returnLoading=false;}
  for(const x of ["cash","stock","customers","suppliers","finance","reports","staff","offers","labels","audit","receipts","shift","payments","returns"]){
    const panel=$(x+"-panel");
@@ -4511,14 +4513,36 @@ function renderOffersCampaignsView(){
  }
  root.append(table);
 }
-async function refreshAudit(){
- if(!canManage())return;
- const {data,error}=await db.from("retail_audit_events").select("action,actor_id,subject_id,created_at")
- .eq("store_id",store.id).order("created_at",{ascending:false}).limit(100);
- if(error){msg("system-msg",safe(error),"error");return}
- renderTable("audit-list",["کات","کردار","بەکارهێنەر"],(data||[]).map(x=>[
- new Date(x.created_at).toLocaleString("en-GB"),x.action,x.actor_id
- ]));
+function syncAuditPager(){
+ $("audit-page-info").textContent=auditPageRows.length?(auditPageOffset+1)+"–"+(auditPageOffset+auditPageRows.length)+" / "+auditPageTotal:"0 / "+auditPageTotal;
+ $("audit-prev").disabled=busy||auditLoading||auditPageOffset<=0;
+ $("audit-next").disabled=busy||auditLoading||auditPageOffset+50>=auditPageTotal;
+ $("audit-export-csv").disabled=busy||auditLoading||!auditPageRows.length||!canManage()||!user;
+}
+async function refreshAudit(reset=true){
+ if(!canManage()||!store||!user||tab!=="audit")return;
+ const token=++auditListToken,storeId=store.id,actor=user.id;
+ auditPageRows=[];auditPageTotal=0;auditLoading=true;$("audit-list").replaceChildren();syncAuditPager();msg("audit-msg","وەرگرتنی تۆمارەکان…");
+ const current=()=>token===auditListToken&&store?.id===storeId&&user?.id===actor&&tab==="audit"&&canManage();
+ try{
+  if(reset||!auditPageFilters){auditPageOffset=0;auditPageFilters=window.RetailAuditHistory.criteria({query:$("audit-search-input").value,field:$("audit-search-field").value,period:$("audit-date-filter").value});}
+  let result=await window.RetailAuditHistory.read({db,store:storeId,filters:auditPageFilters,offset:auditPageOffset});if(!current())return;
+  if(auditPageOffset>0&&!result.rows.length&&result.total<=auditPageOffset){
+   auditPageOffset=result.total?Math.floor((result.total-1)/50)*50:0;
+   result=await window.RetailAuditHistory.read({db,store:storeId,filters:auditPageFilters,offset:auditPageOffset});if(!current())return;
+  }
+  auditPageRows=result.rows;auditPageTotal=result.total;
+  renderTable("audit-list",["کات","کردار","ناسنامەی بەکارهێنەر","ناسنامەی بابەت"],auditPageRows.map(x=>[new Date(x.created_at).toLocaleString("en-GB",{timeZone:"Asia/Baghdad"}),x.action,x.actor_id,x.subject_id||"—"]));
+  msg("audit-msg",auditPageRows.length?"":"هیچ تۆمارێک نەدۆزرایەوە");
+ }catch(error){
+  if(!current())return;
+  auditPageRows=[];auditPageTotal=0;auditPageFilters=null;$("audit-list").replaceChildren();msg("audit-msg",safe(error),"error");
+ }finally{if(token===auditListToken){auditLoading=false;syncAuditPager();}}
+}
+function invalidateAuditQuery(){
+ clearTimeout(auditQueryTimer);++auditListToken;auditPageRows=[];auditPageTotal=0;auditPageFilters=null;
+ $("audit-list").replaceChildren();auditLoading=true;syncAuditPager();
+ auditQueryTimer=setTimeout(()=>{if(!busy)void refreshAudit(true);else{auditLoading=false;syncAuditPager();}},200);
 }
 function printLink(saleId,paper,label){
  const a=document.createElement("a");
@@ -5389,10 +5413,11 @@ $("login-form").addEventListener("submit",async e=>{
  finally{btn.disabled=false;}
 });
 $("logout").onclick=async()=>{
+ clearTimeout(auditQueryTimer);++auditListToken;auditPageRows=[];auditPageTotal=0;auditPageOffset=0;auditPageFilters=null;auditLoading=false;$("audit-list").replaceChildren();$("audit-search-input").value="";msg("audit-msg","");
  ++returnListToken;++returnLookupToken;returnPageRows=[];returnPageTotal=0;returnPageOffset=0;returnPageFilters=null;returnLoading=false;clearReturnSelection();$("returns-list").replaceChildren();$("returns-search-input").value="";$("return-item-note").value="";syncReturnPager();
  ++receiptListEpoch;++receiptDetailEpoch;receiptPageRows=[];receiptPageTotal=0;receiptFilters=null;receiptsOffset=0;receiptLoading=false;$("receipts-list").replaceChildren();$("receipt-detail").replaceChildren();$("receipt-detail").hidden=true;updateReceiptsMetrics([]);syncReceiptPager();
  user=null;store=null;role=null;products=[];barcodes=[];prefixCache.clear();cart=[];parkedCarts=[];requestId=null;pendingCheckout=null;shiftSession=null;pendingCashMovement=null;stockAttempt=null;returnAttempt=null;allReceipts=[];allMovements=[];selectedReturnSaleId=null;lastCompletedSale=null;viewPanel("login");
- msg("login-msg");
+ msg("login-msg");syncAuditPager();
  if(db)await db.auth.signOut();
 };
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{if(!busy)selectTab(b.dataset.tab)}));
@@ -9371,9 +9396,17 @@ $("approval-request-form")?.addEventListener("submit",e=>{
   msg("appr-msg","داوای مۆڵەت بۆ «"+requester+"» تۆمارکرا","success");
 });
 $("audit-refresh-btn")?.addEventListener("click",()=>{if(!busy)void refreshAudit();});
+$("audit-search-input")?.addEventListener("input",invalidateAuditQuery);
+$("audit-search-field")?.addEventListener("change",invalidateAuditQuery);
+$("audit-date-filter")?.addEventListener("change",invalidateAuditQuery);
+$("audit-prev")?.addEventListener("click",()=>{if(!busy&&!auditLoading&&auditPageOffset>=50){auditPageOffset-=50;void refreshAudit(false);}});
+$("audit-next")?.addEventListener("click",()=>{if(!busy&&!auditLoading&&auditPageOffset+50<auditPageTotal){auditPageOffset+=50;void refreshAudit(false);}});
 $("audit-export-csv")?.addEventListener("click",()=>{
-  const rows=[...document.querySelectorAll("#audit-list tbody tr")].map(tr=>[...tr.children].map(td=>td.textContent));
-  exportOperationsCsv("audit_events_"+new Date().toISOString().slice(0,10)+".csv",["کات","کردار","بەکارهێنەر"],rows);
+ if(busy||auditLoading||!canManage()||!user||!store||!auditPageRows.length||tab!=="audit")return;
+ const blob=new Blob([window.RetailAuditHistory.csv(auditPageRows)],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;
+ a.download="audit_page_"+(auditPageOffset+1)+"-"+(auditPageOffset+auditPageRows.length)+"_of_"+auditPageTotal+".csv";
+ document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
 });
 
 $("offline-sync-badge")?.addEventListener("click",()=>{

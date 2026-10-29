@@ -58,3 +58,9 @@ const receiptFilters=receiptApi.criteria({query:String(posted.receipt_no),status
 const receiptPage=await receiptApi.read({db,store,filters:receiptFilters});assert.equal(receiptPage.total,1);assert.equal(receiptPage.rows[0].id,sale);
 const hiddenReceipts=await receiptApi.read({db:outsider.client,store,filters:receiptFilters});assert.equal(hiddenReceipts.total,0);assert.equal(hiddenReceipts.rows.length,0);
 console.log('PASS: V28 actual receipt history helper through JWT/PostgREST exact count, server lookup/refund filter and tenant RLS');
+
+runInNewContext(readFileSync('audit-history.js','utf8'),{window:receiptWindow,Date});const auditApi=receiptWindow.RetailAuditHistory;
+const auditPage=await auditApi.read({db,store,filters:auditApi.criteria({query:'stock.receive_packs_v17'})});assert.equal(auditPage.total,1);assert.equal(auditPage.rows[0].action,'stock.receive_packs_v17');assert.equal('details' in auditPage.rows[0],false);
+const actorAudit=await auditApi.read({db,store,filters:auditApi.criteria({field:'actor_id',query:owner.id})});assert.ok(actorAudit.total>0);
+const hiddenAudit=await auditApi.read({db:outsider.client,store,filters:auditApi.criteria()});assert.equal(hiddenAudit.total,0);assert.equal(hiddenAudit.rows.length,0);
+console.log('PASS V30: actual audit helper through JWT/PostgREST, literal underscore search, actor filter and tenant RLS');

@@ -79,10 +79,11 @@
     throw Error("Unknown QA table "+name);
   }
   function from(table){
-    const cond=[],sorts=[],lower=[],upper=[];let limit=Infinity,inserted=null,start=0,withCount=false;
+    const cond=[],sorts=[],lower=[],upper=[],patterns=[];let limit=Infinity,inserted=null,start=0,withCount=false;
     const query={
       select(_columns,opts){withCount=opts?.count==='exact';return this;},eq(key,val){cond.push([key,val]);return this;},
       gte(key,val){lower.push([key,val]);return this;},lte(key,val){upper.push([key,val]);return this;},
+      ilike(key,val){patterns.push([key,val]);return this;},
       range(from,to){start=from;limit=to-from+1;return this;},
       order(key,opts){sorts.push([key,opts?.ascending===false]);return this;},
       limit(n){limit=n;return this;},
@@ -94,14 +95,18 @@
           state.store={id:store.id,...inserted};inserted=null;
           return {data:state.store,error:null};
         }
+        if(table==='retail_audit_events'&&withCount&&state.auditReadError){const err=state.auditReadError;state.auditReadError=null;return {data:null,error:err,count:null};}
         if(table==='retail_sales'&&withCount&&state.receiptReadError){const err=state.receiptReadError;state.receiptReadError=null;return {data:null,error:err,count:null};}
-        let rows=[...tableRows(table)].filter(v=>cond.every(([key,val])=>key==='receipt_no'?String(v[key])===String(val):v[key]===val)&&lower.every(([key,val])=>v[key]>=val)&&upper.every(([key,val])=>v[key]<=val));
+        let rows=[...tableRows(table)].filter(v=>cond.every(([key,val])=>key==='receipt_no'?String(v[key])===String(val):v[key]===val)&&lower.every(([key,val])=>v[key]>=val)&&upper.every(([key,val])=>v[key]<=val)&&patterns.every(([key,pattern])=>{
+          let re='';for(let i=0;i<pattern.length;i++){let c=pattern[i];if(c==='\\'&&i+1<pattern.length){c=pattern[++i];re+=c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}else if(c==='%')re+='.*';else if(c==='_')re+='.';else re+=c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+          return new RegExp('^'+re+'$','isu').test(String(v[key]??''));
+        }));
         rows.sort((a,b)=>{for(const [key,descending] of sorts){const n=String(a[key]??'').localeCompare(String(b[key]??''));if(n)return descending?-n:n;}return 0;});
         return {data:rows.slice(start,start+limit),error:null,...(withCount?{count:rows.length}:{})};
       },
       maybeSingle(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
       single(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
-      then(onSuccess,onFailure){return Promise.resolve(this.getResult()).then(onSuccess,onFailure);}
+      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
     };
     return query;
   }
