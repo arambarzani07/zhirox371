@@ -9,7 +9,7 @@ export interface LocalPilotItem {
   stock_base_units: number;
 }
 export interface PilotLine { product_id: string; qty: number }
-export interface PilotPending { request_id: string; lines: PilotLine[] }
+export interface PilotPending { request_id: string; lines: PilotLine[]; expected_total_minor: number }
 export interface PilotResult { sale_id: string; receipt_no: number; total_minor: number; replayed: boolean }
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const pilotEnabled=import.meta.env.DEV&&import.meta.env.VITE_ENABLE_LOCAL_PILOT==="true";
@@ -22,7 +22,14 @@ async function request<T>(path:string,init:RequestInit={},token?:string):Promise
     cache:"no-store",credentials:"omit",redirect:"error",
     headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{}),...init.headers}
   });
-  if(!response.ok)throw new Error("local_api_"+response.status);
+  if(!response.ok){
+    // A verified price mismatch is a definite rollback, not an uncertain
+    // network outcome. Other errors retain their original request UUID.
+    const failure=await response.json().catch(()=>null) as {error?:string}|null;
+    if(response.status===409&&failure?.error==="price_changed")
+      throw new Error("price_changed");
+    throw new Error("local_api_"+response.status);
+  }
   const data:unknown=await response.json();
   if(!data||typeof data!=="object"||!("ok" in data)||(data as {ok?:unknown}).ok!==true)
     throw new Error("invalid_local_response");
@@ -52,14 +59,16 @@ export async function scanLocal(token:string,barcode:string):Promise<LocalPilotI
 export function validPilotPending(value:unknown):value is PilotPending{
  if(!value||typeof value!=="object")return false;
  const p=value as PilotPending;
- return uuid.test(p.request_id||"")&&Array.isArray(p.lines)&&p.lines.length>0&&p.lines.length<=100&&
+ return uuid.test(p.request_id||"")&&
+   Number.isSafeInteger(p.expected_total_minor)&&p.expected_total_minor>=0&&
+   p.expected_total_minor<=9999999999999&&Array.isArray(p.lines)&&p.lines.length>0&&p.lines.length<=100&&
    p.lines.every(line=>line&&uuid.test(line.product_id||"")&&
       Number.isSafeInteger(line.qty)&&line.qty>0&&line.qty<=100);
 }
 export async function checkoutLocal(token:string,pending:PilotPending):Promise<PilotResult>{
  if(!validPilotPending(pending))throw new Error("invalid_checkout");
  const data=await request<{ok:true;receipt:{sale_id:string;receipt_no:string|number;total_minor:string|number;replayed:boolean}}>(
-  "/api/local/v3/checkout",{method:"POST",body:JSON.stringify(pending)},token
+  "/api/local/v25/checkout",{method:"POST",body:JSON.stringify(pending)},token
  );
  const rec=data.receipt;
  const total=Number(rec?.total_minor),number=Number(rec?.receipt_no);
@@ -67,8 +76,9 @@ export async function checkoutLocal(token:string,pending:PilotPending):Promise<P
    !Number.isSafeInteger(number)||number<1||typeof rec?.replayed!=="boolean")throw new Error("invalid_receipt");
  return {sale_id:rec.sale_id,receipt_no:number,total_minor:total,replayed:rec.replayed};
 }
-export function makePilotPending(lines:PilotLine[],id:string):PilotPending {
- const next={request_id:id,lines:lines.map(l=>({product_id:l.product_id,qty:l.qty}))};
+export function makePilotPending(lines:PilotLine[],id:string,expectedTotal:number):PilotPending {
+ const next={request_id:id,expected_total_minor:expectedTotal,
+   lines:lines.map(l=>({product_id:l.product_id,qty:l.qty}))};
  if(!validPilotPending(next))throw new Error("invalid_checkout");
  return next;
 }

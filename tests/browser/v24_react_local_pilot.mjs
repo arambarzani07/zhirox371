@@ -31,12 +31,14 @@ await page.route("**/api/local/**",async route=>{
        price_minor:"2500",stock_base_units:"10"
      }})});
  }
- if(path==="/api/local/v3/checkout"){
+ if(path==="/api/local/v25/checkout"){
    assert.equal(request.method(),"POST");attempts++;
    const body=request.postDataJSON();requests.push(body);
    assert.deepEqual(body.lines,[{product_id:prod,qty:1}]);
+   assert.equal(body.expected_total_minor,2500);
    assert.ok(!("store_id" in body)&&!("cashier_id" in body));
    assert.match(body.request_id,/^[a-f0-9-]{36}$/i);
+   if(attempts===3)return route.fulfill({status:409,contentType:"application/json",body:'{"error":"price_changed"}'});
    if(attempts===1)return route.fulfill({status:503,contentType:"application/json",
        body:'{"error":"local_database_unavailable"}'});
    return route.fulfill({status:200,contentType:"application/json",
@@ -67,6 +69,14 @@ try {
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە/).waitFor();
  assert.equal(attempts,2);
  assert.equal(requests[0].request_id,requests[1].request_id);
+ assert.equal(await page.evaluate(k=>sessionStorage.getItem(k),sessionKey),null);
+ // Server rejects the next checkout because its authoritative price changed.
+ await page.getByPlaceholder("بارکۆدی دانە بسکانە").fill("6260053183974");
+ await page.getByRole("button",{name:"سکان",exact:true}).click();
+ await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
+ await page.getByText(/نرخی کاڵا لە سێرڤەر گۆڕاوە/).waitFor();
+ assert.equal(attempts,3);
+ assert.notEqual(requests[2].request_id,requests[1].request_id);
  assert.equal(await page.evaluate(k=>sessionStorage.getItem(k),sessionKey),null);
  assert.equal(await page.getByRole("button",{name:/پسووڵەکانی ئەمڕۆ \(0\)/}).count(),1,
    "isolated local checkout must not mutate React DEMO receipt list");

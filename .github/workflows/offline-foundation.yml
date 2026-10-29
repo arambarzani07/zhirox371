@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm test
+      # React root has no npm test script; run the isolated local API tests directly.
       - run: node --test offline/tests/*.test.mjs
   postgres-smoke:
     runs-on: ubuntu-latest
@@ -55,5 +55,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/migrations/002_atomic_checkout.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/003_local_users.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/004_catalog_indexes.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/005_price_locked_checkout.sql
       - name: Test checkout rollback, idempotency and stock
-        run: psql -v ON_ERROR_STOP=1 -f offline/tests/001_checkout_smoke.sql
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/tests/001_checkout_smoke.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/005_price_locked_checkout.sql
