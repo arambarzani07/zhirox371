@@ -98,6 +98,8 @@ jobs:
           done
           cat /tmp/retail-preview-server.log
           exit 1
+      - name: Check server-paginated receipt history and complete receipt lookup
+        run: node tests/browser/v28_receipt_history.mjs
       - name: Read all 60 card labels in real browser, including narrow dark viewport
         run: node tests/browser/pc_card_readability.mjs
       - name: Enforce AAA ink/background contrast for all 60 cards in desktop and iPhone dark mode

@@ -248,6 +248,7 @@ select option{color:#0f172a;font-size:14px}
 <script src="./confirmed-records.js"></script>
 <script src="./card-icons.js"></script>
 <script src="./system-shell.js" defer></script>
+<script src="./receipt-history.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./system-ui.css">
 <link rel="stylesheet" href="./ui-contrast-lock.css">
@@ -1899,10 +1900,10 @@ select option{color:#0f172a;font-size:14px}
 <section id="receipts-panel" class="surface" hidden>
 <div class="receipt-head"><h2>پسووڵەکان</h2><button class="secondary" id="receipts-refresh" type="button">نوێکردنەوە</button></div>
 <div class="shift-metrics" id="receipts-summary">
-<div><span>کۆی پسووڵەکان</span><strong id="receipts-metric-count">0</strong></div>
-<div><span>فرۆشتنی چالاک (پوخت)</span><strong id="receipts-metric-active">0 IQD</strong></div>
-<div><span>پسووڵەی گەڕاوە</span><strong id="receipts-metric-refunded">0 IQD</strong></div>
-<div><span>کۆی داشکاندن</span><strong id="receipts-metric-discount">0 IQD</strong></div>
+<div><span>پسووڵەکانی ئەم پەڕەیە</span><strong id="receipts-metric-count">0</strong></div>
+<div><span>پوختی ئەم پەڕەیە</span><strong id="receipts-metric-active">0 IQD</strong></div>
+<div><span>گەڕاوەی ئەم پەڕەیە</span><strong id="receipts-metric-refunded">0 IQD</strong></div>
+<div><span>داشکاندنی ئەم پەڕەیە</span><strong id="receipts-metric-discount">0 IQD</strong></div>
 </div>
 <div class="stock-adjust-card" id="receipt-header-config-box" style="margin-bottom:12px;background:#f8fafc">
 <h3 style="margin:0 0 8px;font-size:14px">🖨 ناونیشان و ژمارەی تەلەفۆنی سەر پسووڵە (چاپی 58mm و 80mm)</h3>
@@ -1915,7 +1916,7 @@ select option{color:#0f172a;font-size:14px}
 </div>
 </div>
 <div class="formrow" style="margin-bottom:12px">
-<label class="field">گەڕان بە ژمارەی پسووڵە<input id="receipts-search" maxlength="60" autocomplete="off" placeholder="ژمارەی پسووڵە بنووسە (وەک 1 یان 000001)"></label>
+<label class="field">گەڕان بە ژمارەی پسووڵە<input id="receipts-search" maxlength="20" inputmode="numeric" autocomplete="off" placeholder="ژمارەی تەواو، وەک 1 یان 000001"></label>
 <label class="field" style="max-width:200px">دۆخی پسووڵە<select id="receipts-status-filter"><option value="all">هەموو پسووڵەکان</option><option value="active">فرۆشراو (چالاک)</option><option value="refunded">گەڕاوە</option></select></label>
 <label class="field" style="max-width:200px">ماوەی کات<select id="receipts-date-filter"><option value="all">هەموو کاتێک</option><option value="today">ئەمڕۆ</option><option value="7d">٧ ڕۆژی ڕابردوو</option><option value="30d">٣٠ ڕۆژی ڕابردوو</option></select></label>
 </div>

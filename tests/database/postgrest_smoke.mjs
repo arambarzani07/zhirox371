@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import {createClient} from '@supabase/supabase-js';
 const local=JSON.parse(execFileSync('supabase',['status','-o','json'],{encoding:'utf8'}));
 const url=local.API_URL||local.api_url,anon=local.ANON_KEY||local.anon_key,service=local.SERVICE_ROLE_KEY||local.service_role_key;
@@ -48,3 +50,11 @@ const workflow=ok(await db.rpc('retail_workflow_write_v27',workflowArgs),'workfl
 assert.equal(ok(await db.rpc('retail_workflow_list_v27',{p_store:store,p_topic:'attendance'}),'workflow list').rows[0].id,workflowId);
 assert.ok((await db.from('retail_workflow_records').update({status:'archived'}).eq('id',workflowId)).error,'direct workflow writes must be denied');
 console.log('PASS: V27 real authenticated workflow RPC, durable replay, server read and denied direct write');
+
+const receiptWindow={};runInNewContext(readFileSync('receipt-history.js','utf8'),{window:receiptWindow,Date});
+const receiptApi=receiptWindow.RetailReceiptHistory;
+const posted=ok(await db.from('retail_sales').select('receipt_no').eq('id',sale).single(),'receipt search identity');
+const receiptFilters=receiptApi.criteria({query:String(posted.receipt_no),status:'refunded'});
+const receiptPage=await receiptApi.read({db,store,filters:receiptFilters});assert.equal(receiptPage.total,1);assert.equal(receiptPage.rows[0].id,sale);
+const hiddenReceipts=await receiptApi.read({db:outsider.client,store,filters:receiptFilters});assert.equal(hiddenReceipts.total,0);assert.equal(hiddenReceipts.rows.length,0);
+console.log('PASS: V28 actual receipt history helper through JWT/PostgREST exact count, server lookup/refund filter and tenant RLS');

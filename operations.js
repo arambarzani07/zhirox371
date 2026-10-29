@@ -37,6 +37,7 @@ let financeEntriesList=[],shiftSessionsHistory=[],financeState=null;
 let allSaleItems=[],productCostsMap=new Map();
 let staffProfilesMap=new Map(),storeSettings={},lastServerPingMs=null;
 let offersList=[],discountRulesList=[],couponsList=[],campaignsList=[],activePosPromo=null;
+let receiptPageRows=[],receiptPageTotal=0,receiptListEpoch=0,receiptDetailEpoch=0,receiptFilters=null,receiptLoading=false;
 let allReceipts=[],receiptsOffset=0,selectedReturnSaleId=null,selectedReturnLineId=null,returnReceiptLines=[],returnDetailToken=0,allMovements=[],shiftSummaryData=null,lastCompletedSale=null,itemReturnAttempt=null;
 let attendanceList=[],workHoursList=[],evaluationsList=[],batchLabelsQueue=[],customAlertsList=[],approvalRequestsList=[],auditEventsCache=[];
 const prefixCache=new Map();
@@ -54,7 +55,7 @@ const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نیی�
  /Failed to fetch|NetworkError/i.test(e?.message||"")?"پەیوەندیی سێرڤەر/ئینتەرنێت بپشکنە":
  (e?.message||"کردارەکە سەرکەوتوو نەبوو"));
 function msg(id,value="",kind=""){const x=$(id);if(!x)return;x.textContent=value;x.className="msg"+(kind?" "+kind:"");}
-function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();}
+function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();syncReceiptPager();}
 function pendingKey(){return store&&user?"retail_pending_checkout_"+store.id+"_"+user.id:null}
 function parkedKey(){return store&&user?"retail_parked_carts_"+store.id+"_"+user.id:null}
 function returnKey(){return store&&user?"retail_pending_return_"+store.id+"_"+user.id:null}
@@ -4605,30 +4606,6 @@ async function returnSale(saleId,targetMsgId="receipts-msg"){
    lock(false);
  }
 }
-function filterReceiptsList(rows){
- const q=String($("receipts-search")?.value||"").trim().replace(/^#/,"").toLowerCase();
- const statusFilter=String($("receipts-status-filter")?.value||"all");
- const dateFilter=String($("receipts-date-filter")?.value||"all");
- const now=Date.now();
- return (rows||[]).filter(sale=>{
-   if(statusFilter==="active"&&sale.refunded)return false;
-   if(statusFilter==="refunded"&&!sale.refunded)return false;
-   if(dateFilter!=="all"&&sale.created_at){
-     const ts=new Date(sale.created_at).getTime();
-     if(Number.isFinite(ts)){
-       if(dateFilter==="today"){
-         const d=new Date(ts),t=new Date();
-         if(d.getFullYear()!==t.getFullYear()||d.getMonth()!==t.getMonth()||d.getDate()!==t.getDate())return false;
-       }else if(dateFilter==="7d"&&(now-ts)>7*86400000)return false;
-       else if(dateFilter==="30d"&&(now-ts)>30*86400000)return false;
-     }
-   }
-   if(!q)return true;
-   const rNo=String(sale.receipt_no??"");
-   const padded=rNo.padStart(6,"0");
-   return rNo.includes(q)||padded.includes(q)||String(sale.id||"").toLowerCase().includes(q);
- });
-}
 function updateReceiptsMetrics(rows){
  const list=rows||[];
  const activeSales=list.filter(s=>!s.refunded);
@@ -4645,23 +4622,16 @@ async function renderReceiptsView(autoShowFirst=true){
  const root=$("receipts-list");
  if(!root)return;
  root.replaceChildren();
- updateReceiptsMetrics(allReceipts);
- const filtered=filterReceiptsList(allReceipts);
+ updateReceiptsMetrics(receiptPageRows);
+ const pageRows=receiptPageRows;
  const pager=$("receipts-pagination");
- if(!filtered.length){
-   if(pager)pager.hidden=true;
+ if(!pageRows.length){
+   syncReceiptPager();
    const empty=document.createElement("div");empty.className="blank";empty.textContent="هیچ پسووڵەیەک نییە";root.append(empty);
    return;
  }
- if(receiptsOffset>=filtered.length)receiptsOffset=0;
- const pageRows=filtered.slice(receiptsOffset,receiptsOffset+RECEIPTS_PAGE_SIZE);
- if(pager){
-   pager.hidden=filtered.length<=RECEIPTS_PAGE_SIZE&&receiptsOffset===0;
-   const start=receiptsOffset+1,end=Math.min(receiptsOffset+pageRows.length,filtered.length);
-   if($("receipts-page-info"))$("receipts-page-info").textContent=start+"–"+end+" / "+filtered.length;
-   if($("receipts-prev"))$("receipts-prev").disabled=busy||receiptsOffset<=0;
-   if($("receipts-next"))$("receipts-next").disabled=busy||receiptsOffset+RECEIPTS_PAGE_SIZE>=filtered.length;
- }
+
+ syncReceiptPager();
  const table=document.createElement("table");
  table.innerHTML="<thead><tr><th>ژمارەی پسووڵە</th><th>کات</th><th>داشکاندن</th><th>کۆی گشتی</th><th>کردار</th></tr></thead><tbody></tbody>";
  for(const sale of pageRows){
@@ -4684,7 +4654,38 @@ async function renderReceiptsView(autoShowFirst=true){
    await showReceipt(pageRows[0].id);
  }
 }
+function syncReceiptPager(){
+ const pager=$("receipts-pagination");if(!pager)return;
+ pager.hidden=false;
+ $("receipts-page-info").textContent=receiptPageRows.length?(receiptsOffset+1)+"–"+(receiptsOffset+receiptPageRows.length)+" / "+receiptPageTotal:"0 / "+receiptPageTotal;
+ $("receipts-prev").disabled=busy||receiptLoading||receiptsOffset<=0;
+ $("receipts-next").disabled=busy||receiptLoading||receiptsOffset+RECEIPTS_PAGE_SIZE>=receiptPageTotal;
+}
+async function refreshReceiptHistory(reset=false){
+ if(!db||!store||!user)return;
+ const epoch=++receiptListEpoch,storeId=store.id,actor=user.id;
+ ++receiptDetailEpoch;$("receipt-detail").hidden=true;$("receipt-detail").replaceChildren();
+ receiptPageRows=[];receiptPageTotal=0;receiptLoading=true;
+ $("receipts-list").replaceChildren();updateReceiptsMetrics([]);syncReceiptPager();msg("receipts-msg","وەرگرتنی پسووڵەکان…");
+ try{
+  if(reset||!receiptFilters){receiptsOffset=0;receiptFilters=window.RetailReceiptHistory.criteria({query:$("receipts-search").value,status:$("receipts-status-filter").value,period:$("receipts-date-filter").value});}
+  const current=()=>epoch===receiptListEpoch&&store?.id===storeId&&user?.id===actor&&tab==="receipts";
+  let result=await window.RetailReceiptHistory.read({db,store:storeId,filters:receiptFilters,offset:receiptsOffset});
+  if(!current())return;
+  if(receiptsOffset>0&&!result.rows.length&&result.total<=receiptsOffset){
+   receiptsOffset=result.total?Math.floor((result.total-1)/RECEIPTS_PAGE_SIZE)*RECEIPTS_PAGE_SIZE:0;
+   result=await window.RetailReceiptHistory.read({db,store:storeId,filters:receiptFilters,offset:receiptsOffset});if(!current())return;
+  }
+  receiptPageRows=result.rows;receiptPageTotal=result.total;receiptLoading=false;
+  msg("receipts-msg","");await renderReceiptsView(true);
+ }catch(error){
+  if(epoch!==receiptListEpoch||store?.id!==storeId||user?.id!==actor||tab!=="receipts")return;
+  receiptFilters=null;receiptLoading=false;receiptPageRows=[];receiptPageTotal=0;$("receipts-list").replaceChildren();updateReceiptsMetrics([]);
+  msg("receipts-msg",["42703","PGRST204","PGRST205"].includes(error?.code)?"پێکهاتەی پسووڵەکان لە سێرڤەر نوێ بکەرەوە":safe(error),"error");
+ }finally{if(epoch===receiptListEpoch){receiptLoading=false;syncReceiptPager();}}
+}
 async function refreshReceipts(){
+ if(tab==="receipts")return refreshReceiptHistory(true);
  if(!db||!store)return;
  msg("receipts-msg","");
  let {data,error}=await db.from("retail_sales")
@@ -4699,23 +4700,27 @@ async function refreshReceipts(){
  }
  if(error){msg("receipts-msg",safe(error),"error");return}
  allReceipts=data||[];
- if(allReceipts.length===100)msg("receipts-msg","تەنها 100 پسووڵەی دواهەم.");
- await renderReceiptsView(true);
+ // Legacy report/return caches remain bounded; receipt browsing uses independent server pages.
 }
 async function showReceipt(saleId){
- if(!db||!store)return;
+ if(!db||!store||!user)return;
+ const epoch=++receiptDetailEpoch,storeId=store.id,actor=user.id,sourceTab=tab;
+ const detailCurrent=()=>epoch===receiptDetailEpoch&&store?.id===storeId&&user?.id===actor&&tab===sourceTab;
+ $("receipt-detail").hidden=true;$("receipt-detail").replaceChildren();
  let [head,items]=await Promise.all([
    db.from("retail_sales").select("id,receipt_no,total_minor,discount_minor,cash_received_minor,change_due_minor,created_at,cashier_id,refunded")
      .eq("store_id",store.id).eq("id",saleId).eq("status","posted").single(),
    db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot,package_type,package_barcode,units_per_package,base_units")
      .eq("store_id",store.id).eq("sale_id",saleId).limit(200)
  ]);
+ if(!detailCurrent())return;
  if(["42703","PGRST204","PGRST205"].includes(head.error?.code))
    head=await db.from("retail_sales").select("id,receipt_no,total_minor,cash_received_minor,change_due_minor,created_at,cashier_id")
      .eq("store_id",store.id).eq("id",saleId).eq("status","posted").single();
  if(["42703","PGRST204","PGRST205"].includes(items.error?.code))
    items=await db.from("retail_sale_items").select("product_id,quantity,unit_price_minor,product_name_snapshot")
      .eq("store_id",store.id).eq("sale_id",saleId).limit(200);
+ if(!detailCurrent())return;
  if(head.error||items.error){msg("receipts-msg",safe(head.error||items.error),"error");return}
  const sale=head.data;
  const box=$("receipt-detail");box.replaceChildren();box.hidden=false;
@@ -4787,28 +4792,28 @@ $("receipt-cfg-save-btn")?.addEventListener("click",async()=>{
    }catch(_e){}
  }
  await persistStoreSettingsToServer({storeName,storeAddress,storePhone,receiptFooter});
- if(allReceipts[0]?.id)await showReceipt(allReceipts[0].id);
+ if(receiptPageRows[0]?.id)await showReceipt(receiptPageRows[0].id);
  msg("receipts-msg","ناونیشان و ژمارەی تەلەفۆنی سەر پسووڵە پاشەکەوت کرا و لەسەر هەموو پسووڵەیەک دەردەکەوێت ✓","success");
 });
 $("receipts-refresh").addEventListener("click",()=>{if(!busy){receiptsOffset=0;void refreshReceipts();}});
 if($("receipts-search")){
- $("receipts-search").addEventListener("input",()=>{receiptsOffset=0;void renderReceiptsView(true);});
+ $("receipts-search").addEventListener("input",()=>{void refreshReceiptHistory(true);});
 }
 if($("receipts-status-filter")){
- $("receipts-status-filter").addEventListener("change",()=>{receiptsOffset=0;void renderReceiptsView(true);});
+ $("receipts-status-filter").addEventListener("change",()=>{void refreshReceiptHistory(true);});
 }
 if($("receipts-date-filter")){
- $("receipts-date-filter").addEventListener("change",()=>{receiptsOffset=0;void renderReceiptsView(true);});
+ $("receipts-date-filter").addEventListener("change",()=>{void refreshReceiptHistory(true);});
 }
 if($("receipts-prev")){
  $("receipts-prev").addEventListener("click",()=>{
-   if(!busy&&receiptsOffset>=RECEIPTS_PAGE_SIZE){receiptsOffset-=RECEIPTS_PAGE_SIZE;void renderReceiptsView(true);}
+   if(!busy&&!receiptLoading&&receiptsOffset>=RECEIPTS_PAGE_SIZE){receiptsOffset-=RECEIPTS_PAGE_SIZE;void refreshReceiptHistory();}
  });
 }
 if($("receipts-next")){
  $("receipts-next").addEventListener("click",()=>{
-   const total=filterReceiptsList(allReceipts).length;
-   if(!busy&&receiptsOffset+RECEIPTS_PAGE_SIZE<total){receiptsOffset+=RECEIPTS_PAGE_SIZE;void renderReceiptsView(true);}
+   const total=receiptPageTotal;
+   if(!busy&&!receiptLoading&&receiptsOffset+RECEIPTS_PAGE_SIZE<total){receiptsOffset+=RECEIPTS_PAGE_SIZE;void refreshReceiptHistory();}
  });
 }
 $("receipts-list").addEventListener("click",e=>{
@@ -5370,9 +5375,10 @@ $("login-form").addEventListener("submit",async e=>{
  finally{btn.disabled=false;}
 });
 $("logout").onclick=async()=>{
- if(db)await db.auth.signOut();
+ ++receiptListEpoch;++receiptDetailEpoch;receiptPageRows=[];receiptPageTotal=0;receiptFilters=null;receiptsOffset=0;receiptLoading=false;$("receipts-list").replaceChildren();$("receipt-detail").replaceChildren();$("receipt-detail").hidden=true;updateReceiptsMetrics([]);syncReceiptPager();
  user=null;store=null;role=null;products=[];barcodes=[];prefixCache.clear();cart=[];parkedCarts=[];requestId=null;pendingCheckout=null;shiftSession=null;pendingCashMovement=null;stockAttempt=null;returnAttempt=null;allReceipts=[];allMovements=[];selectedReturnSaleId=null;lastCompletedSale=null;viewPanel("login");
  msg("login-msg");
+ if(db)await db.auth.signOut();
 };
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{if(!busy)selectTab(b.dataset.tab)}));
 // A single field accepts unit primary, unit aliases, carton primary and
