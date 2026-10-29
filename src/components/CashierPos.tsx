@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { money } from '../utils/retailHelpers';
 import { PaymentMethod, Product } from '../types';
+import { LocalPostgresPilotV24 } from './LocalPostgresPilotV24';
+import { pilotEnabled } from '../localPilotV24';
 
 export const CashierPos: React.FC = () => {
   const {
@@ -128,6 +130,7 @@ export const CashierPos: React.FC = () => {
       <div role="status" aria-label="دۆخی تاقیکردنەوەی کاشێر" style={{padding:'9px 14px',marginBottom:'12px',border:'1px solid #a85d16',borderRadius:'8px',background:'#fff7ed',color:'#7c2d12',fontSize:'13px',fontWeight:850,textAlign:'center'}}>
         تاقیکردنەوە — داتای ئەم کاشێرە لە وێبگەڕ پاشەکەوت دەکرێت؛ فرۆشتنی ڕاستەقینە نییە
       </div>
+      {pilotEnabled && <LocalPostgresPilotV24 />}
       {/* Top POS Toolbar */}
       <div
         style={{
