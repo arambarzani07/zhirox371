@@ -1,0 +1,141 @@
+import React,{useEffect,useState} from 'react';
+import {checkoutLocal,loginLocal,makePilotPending,scanLocal,validPilotPending} from '../localPilotV24';
+import type {LocalPilotItem,PilotPending,PilotResult} from '../localPilotV24';
+
+type Line={item:LocalPilotItem;qty:number};
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const money=(n:number)=>n.toLocaleString("en-US")+" IQD";
+const pendingKey=(id:string)=>"zhirox-v24-local-pending:"+id;
+const box:React.CSSProperties={border:"1px solid #b1bed0",borderRadius:12,padding:16,background:"white",marginBottom:16};
+const inputStyle:React.CSSProperties={height:38,margin:4,padding:"5px 9px",border:"1px solid #aabed7",borderRadius:6};
+export const LocalPostgresPilotV24:React.FC=()=>{
+ const [open,setOpen]=useState(false);
+ const [store,setStore]=useState("");
+ const [username,setUsername]=useState("");
+ const [password,setPassword]=useState("");
+ const [token,setToken]=useState("");
+ const [scan,setScan]=useState("");
+ const [cart,setCart]=useState<Line[]>([]);
+ const [pending,setPending]=useState<PilotPending|null>(null);
+ const [last,setLast]=useState<PilotResult|null>(null);
+ const [error,setError]=useState("");
+ const [busy,setBusy]=useState(false);
+ const [expiresAt,setExpiresAt]=useState(0);
+ // No access token or password is written to LocalStorage or SessionStorage.
+ useEffect(()=>{if(!open)return;setError("");},[open]);
+ const available=Boolean(token&&expiresAt>Date.now());
+ const submitLogin=async(e:React.FormEvent)=>{
+   e.preventDefault();if(busy)return;
+   setBusy(true);setError("");
+   try {
+     const session=await loginLocal(store,username,password);
+     // Guard an unresolved request from another store, even across reload.
+     const raw=sessionStorage.getItem(pendingKey(store));
+     const parsed=raw?JSON.parse(raw) as unknown:null;
+     if(raw&&!validPilotPending(parsed))throw new Error("هەڵە لە مامەڵەی چاوەڕوانە؛ بەدەستی مەیسڕەوە");
+     setPending(parsed as PilotPending|null);
+     setToken(session.token);setExpiresAt(Date.now()+session.expires_in_seconds*1000);
+     setCart([]);setLast(null);
+   }catch{setToken("");setError("چوونەژوورەوە سەرکەوتوو نەبوو یان داواکارییەکی ناتەواو هەیە");}
+   finally {setPassword("");setBusy(false);}
+ };
+ const submitScan=async(e:React.FormEvent)=>{
+   e.preventDefault();if(!available||busy||pending)return;
+   const barcode=scan.trim();setBusy(true);setError("");
+   try{
+     const p=await scanLocal(token,barcode);
+     const existing=cart.find(x=>x.item.id===p.id);
+     if(existing&&existing.item.price_minor!==p.price_minor)
+       throw new Error("نرخی کاڵا گۆڕاوە؛ پێویستە سەبەتە نوێ بکرێتەوە");
+     const currentQty=existing?.qty||0;
+     if(currentQty+1>100||currentQty+1>p.stock_base_units)
+       throw new Error("بڕی کۆگا بەش ناکات");
+     setCart(prev=>existing?prev.map(x=>x.item.id===p.id?{item:p,qty:x.qty+1}:x):[...prev,{item:p,qty:1}]);
+     setScan("");
+   }catch(err){setError(err instanceof Error?err.message:"سکان نەکرا");}
+   finally {setBusy(false);}
+ };
+ const total=cart.reduce((sum,l)=>sum+l.qty*l.item.price_minor,0);
+ const submitCheckout=async(e:React.FormEvent)=>{
+   e.preventDefault();if(!available||busy||(!pending&&!cart.length))return;
+   let request: PilotPending;
+   try {
+     if(pending)request=pending;
+     else{
+       if(cart.some(x=>!Number.isSafeInteger(x.qty)||x.qty<1||x.qty>x.item.stock_base_units))
+         throw new Error("بڕی کۆگا نادروستە");
+       request=makePilotPending(cart.map(x=>({product_id:x.item.id,qty:x.qty})),crypto.randomUUID());
+       // Persist before sending: uncertain network results MUST retry the same UUID.
+       sessionStorage.setItem(pendingKey(store),JSON.stringify(request));
+       setPending(request);
+     }
+   }catch(err){setError(err instanceof Error?err.message:"هەڵە لە سەبەتە");return;}
+   setBusy(true);setError("");
+   try{
+     const receipt=await checkoutLocal(token,request);
+     sessionStorage.removeItem(pendingKey(store));
+     setPending(null);setCart([]);setLast(receipt);
+   }catch{
+     setError("ئەنجامی فرۆشتن دڵنیا نییە؛ تەنها هەمان داواکاری دووبارە بنێرە. سەبەتە مەگۆڕە.");
+   }finally{setBusy(false);}
+ };
+ const changeQty=(id:string,delta:number)=>{
+   if(busy||pending)return;
+   setCart(prev=>prev.flatMap(x=>x.item.id!==id?[x]:x.qty+delta>0?[{...x,qty:Math.min(100,Math.min(x.item.stock_base_units,x.qty+delta))}]:[]));
+ };
+ return <section style={box} dir="rtl" aria-label="تاقیکردنەوەی PostgreSQL ـی ناوخۆیی">
+   <button type="button" onClick={()=>setOpen(x=>!x)} style={{fontWeight:850,padding:9}}>
+     {open?"داخستنی":"کردنەوەی"} V24 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
+   </button>
+   {open&&<div style={{marginTop:12}}>
+     <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
+       تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ نەختینە و دانە تەنها.
+       کارتۆن، کیلۆگرام، داشکاندن، قەرز و فرۆشتنی Production پشتگیری ناکرێن.
+       ئەم بەشە بە سەبەتەی Demo تێکەڵ نابێت.
+     </div>
+     {!available?<form onSubmit={submitLogin} style={{marginTop:12}}>
+       <input style={{...inputStyle,width:320}} value={store} onChange={e=>setStore(e.target.value.trim())}
+          placeholder="UUID ـی فرۆشگا" required aria-label="UUID ـی فرۆشگا"/>
+       <input style={inputStyle} value={username} onChange={e=>setUsername(e.target.value)} placeholder="ناوی بەکارهێنەر" required/>
+       <input style={inputStyle} value={password} onChange={e=>setPassword(e.target.value)} type="password"
+          placeholder="وشەی نهێنی ناوخۆیی" required autoComplete="off"/>
+       <button disabled={busy||!uuid.test(store)} type="submit">چوونەژوورەوەی تاقیکردنەوە</button>
+     </form>:<>
+       <div style={{marginTop:10}}>پەیوەندی ناوخۆیی چالاکە — تەنها هەمان PC</div>
+       <form onSubmit={submitScan} style={{display:"flex",gap:8,marginTop:10}}>
+         <input style={{...inputStyle,flex:1}} value={scan} onChange={e=>setScan(e.target.value)}
+           aria-label="بارکۆدی کاڵای دانە" placeholder="بارکۆدی دانە بسکانە" disabled={busy||!!pending}/>
+         <button type="submit" disabled={busy||!!pending}>سکان</button>
+       </form>
+       <table style={{borderCollapse:"collapse",width:"100%",marginTop:10}}>
+         <thead><tr>{["ژمارە","ناوی کاڵا","یەکە","نرخ","بڕ","کۆ"].map(x=><th key={x} style={{border:"1px solid #555",padding:6}}>{x}</th>)}</tr></thead>
+         <tbody>{cart.map((x,i)=><tr key={x.item.id}>
+           {[i+1,x.item.name,"دانە",money(x.item.price_minor)].map((v,k)=><td key={k} style={{border:"1px solid #555",padding:7}}>{v}</td>)}
+           <td style={{border:"1px solid #555",padding:7}}>
+             <button disabled={busy||!!pending} type="button" onClick={()=>changeQty(x.item.id,-1)}>−</button>
+             <strong style={{margin:7}}>{x.qty}</strong>
+             <button disabled={busy||!!pending} type="button" onClick={()=>changeQty(x.item.id,1)}>+</button>
+           </td><td style={{border:"1px solid #555",padding:7}}>{money(x.qty*x.item.price_minor)}</td>
+         </tr>)}</tbody>
+       </table>
+       <strong style={{display:"block",margin:"10px 0"}}>کۆی نموونەیی: {money(total)}</strong>
+       <form onSubmit={submitCheckout}>
+         <button type="submit" disabled={busy||(!pending&&!cart.length)} style={{fontWeight:850}}>
+           {pending?"دووبارە ناردنی هەمان داواکاری":"تاقیکردنەوەی فرۆشتنی Atomic"}
+         </button>
+       </form>
+       {pending&&<div role="alert" style={{color:"#9a3412",marginTop:8}}>
+         مامەڵەی چاوەڕوانە هەیە؛ بۆ ڕێگریکردن لە دووبارەفرۆشتن سەبەتە قوفڵ کراوە.
+       </div>}
+       {last&&<div role="status" style={{marginTop:8,fontWeight:850}}>
+         پسووڵەی PostgreSQL ـی تاقیکردنەوە: #{last.receipt_no} — {money(last.total_minor)}
+         {last.replayed?" (دووبارە ناردن، فرۆشتنی نوێ نییە)":""}
+       </div>}
+       <button type="button" style={{marginTop:10}} onClick={()=>{setToken("");setExpiresAt(0);setCart([]);setLast(null);}}>
+         دەرچوون لە تاقیکردنەوە
+       </button>
+     </>}
+     {error&&<div role="alert" style={{color:"#a21d1d",fontWeight:800,padding:8}}>{error}</div>}
+   </div>}
+ </section>;
+};
