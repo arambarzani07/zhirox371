@@ -64,7 +64,7 @@ export const LocalPostgresPilotV24:React.FC=()=>{
      else{
        if(cart.some(x=>!Number.isSafeInteger(x.qty)||x.qty<1||x.qty>x.item.stock_base_units))
          throw new Error("بڕی کۆگا نادروستە");
-       request=makePilotPending(cart.map(x=>({product_id:x.item.id,qty:x.qty})),crypto.randomUUID());
+       request=makePilotPending(cart.map(x=>({product_id:x.item.id,qty:x.qty})),crypto.randomUUID(),total);
        // Persist before sending: uncertain network results MUST retry the same UUID.
        sessionStorage.setItem(pendingKey(store),JSON.stringify(request));
        setPending(request);
@@ -75,8 +75,16 @@ export const LocalPostgresPilotV24:React.FC=()=>{
      const receipt=await checkoutLocal(token,request);
      sessionStorage.removeItem(pendingKey(store));
      setPending(null);setCart([]);setLast(receipt);
-   }catch{
-     setError("ئەنجامی فرۆشتن دڵنیا نییە؛ تەنها هەمان داواکاری دووبارە بنێرە. سەبەتە مەگۆڕە.");
+   }catch(err){
+     if(err instanceof Error && err.message==="price_changed"){
+       // SQL P2501 is a definitive rollback. Clear the old quote so the
+       // cashier must rescan every item at the new authoritative server price.
+       sessionStorage.removeItem(pendingKey(store));
+       setPending(null);setCart([]);setScan("");
+       setError("نرخی کاڵا لە سێرڤەر گۆڕاوە؛ هیچ فرۆشتنێک تۆمار نەکرا. کاڵاکان دووبارە بسکانە.");
+     }else{
+       setError("ئەنجامی فرۆشتن دڵنیا نییە؛ تەنها هەمان داواکاری دووبارە بنێرە. سەبەتە مەگۆڕە.");
+     }
    }finally{setBusy(false);}
  };
  const changeQty=(id:string,delta:number)=>{
@@ -89,7 +97,7 @@ export const LocalPostgresPilotV24:React.FC=()=>{
    </button>
    {open&&<div style={{marginTop:12}}>
      <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
-       تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ نەختینە و دانە تەنها.
+       تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ نەختینە و دانە تەنها. نرخی کۆتایی لە سێرڤەر پشتڕاست دەکرێتەوە.
        کارتۆن، کیلۆگرام، داشکاندن، قەرز و فرۆشتنی Production پشتگیری ناکرێن.
        ئەم بەشە بە سەبەتەی Demo تێکەڵ نابێت.
      </div>
