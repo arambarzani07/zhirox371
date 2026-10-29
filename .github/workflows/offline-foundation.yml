@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm test
+      # React root has no npm test script; run the isolated local API tests directly.
       - run: node --test offline/tests/*.test.mjs
   postgres-smoke:
     runs-on: ubuntu-latest
