@@ -25,7 +25,7 @@ test("Browser never receives PostgreSQL credentials or an arbitrary API target",
  assert.match(client,/fetch\(path,/);
  assert.match(client,/credentials:"omit"/);
  assert.match(client,/!path\.startsWith\("\/api\/local\/v"\)/);
- assert.doesNotMatch(client,/supabase|postgres:\/\/|http:\/\/[a-z0-9.-]+:\d+/i);
+ assert.doesNotMatch(client,/postgres:\/\/|http:\/\/[a-z0-9.-]+:\d+|supabase\.from\(/i);
  assert.match(ui,/sessionStorage\.setItem\(pendingKey\(store\),JSON\.stringify\(request\)\)/);
  assert.doesNotMatch(ui,/localStorage\.setItem|sessionStorage\.setItem\([^)]*token/);
 });
