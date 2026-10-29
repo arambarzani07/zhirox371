@@ -98,6 +98,8 @@ jobs:
           done
           cat /tmp/retail-preview-server.log
           exit 1
+      - name: Verify active shift lookup, full history pages and unverified balance guards
+        run: node tests/browser/v32_shift_history.mjs
       - name: Check audit pagination, search, CSV scope and stale-session protection
         run: node tests/browser/v30_audit_history.mjs
       - name: Check paginated returns, old receipt selection and stale detail protection

@@ -96,6 +96,7 @@
           return {data:state.store,error:null};
         }
         if(table==='retail_cash_movements'&&withCount&&state.paymentReadError){const err=state.paymentReadError;state.paymentReadError=null;return {data:null,error:err,count:null};}
+        if(table==='retail_cash_sessions'&&withCount&&state.shiftHistoryError){const err=state.shiftHistoryError;state.shiftHistoryError=null;return {data:null,error:err,count:null};}
         if(table==='retail_cash_sessions'&&state.shiftReadError){const err=state.shiftReadError;state.shiftReadError=null;return {data:null,error:err};}
         if(table==='retail_audit_events'&&withCount&&state.auditReadError){const err=state.auditReadError;state.auditReadError=null;return {data:null,error:err,count:null};}
         if(table==='retail_sales'&&withCount&&state.receiptReadError){const err=state.receiptReadError;state.receiptReadError=null;return {data:null,error:err,count:null};}
@@ -108,7 +109,7 @@
       },
       maybeSingle(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
       single(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
-      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_cash_movements'&&withCount&&state.pausePaymentRead){state.pausePaymentRead=false;return new Promise(resolve=>{state.completePaymentRead=()=>{state.completePaymentRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
+      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_cash_sessions'&&withCount&&state.pauseShiftHistory){state.pauseShiftHistory=false;return new Promise(resolve=>{state.completeShiftHistory=()=>{state.completeShiftHistory=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_cash_movements'&&withCount&&state.pausePaymentRead){state.pausePaymentRead=false;return new Promise(resolve=>{state.completePaymentRead=()=>{state.completePaymentRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
     };
     return query;
   }
@@ -395,10 +396,11 @@
         data=state.sessions[0].id;
       }
     }else if(name==="retail_shift_summary"){
+      if(state.shiftSummaryError){const err=state.shiftSummaryError;state.shiftSummaryError=null;return {data:null,error:err};}
       const session=state.sessions.find(x=>x.id===args.p_session);
       const sales=state.sales.filter(x=>x.cash_session_id===args.p_session).reduce((n,x)=>n+x.total_minor,0);
       const movements=state.movements.filter(x=>x.session_id===args.p_session).reduce((n,x)=>n+(x.kind==="cash_in"?x.amount_minor:-x.amount_minor),0);
-      data={opening:session.opening_cash_minor,sales,movements,expected:session.opening_cash_minor+sales+movements};
+      data={session_id:session.id,status:session.status,opening:session.opening_cash_minor,sales,movements,expected:session.opening_cash_minor+sales+movements};
     }else if(name==="retail_cash_movement"){
       const row=state.movements.find(x=>x.request_id===args.p_request);
       if(row)data=row.id;

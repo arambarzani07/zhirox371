@@ -72,3 +72,11 @@ const paymentPage=await paymentApi.read({db,store,session:session.id,filters:pay
 const amountPage=await paymentApi.read({db,store,session:session.id,filters:paymentApi.criteria({field:'amount_minor',query:'173'})});assert.equal(amountPage.total,1);
 const hiddenPayments=await paymentApi.read({db:outsider.client,store,session:session.id,filters:paymentFilters});assert.equal(hiddenPayments.total,0);
 console.log('PASS V31: actual cash helper through JWT/PostgREST, literal pattern, exact amount, shift scope and tenant RLS');
+
+runInNewContext(readFileSync('shift-history.js','utf8'),{window:receiptWindow,Date});const shiftApi=receiptWindow.RetailShiftHistory;
+const activeShift=await shiftApi.current({db,store,actor:owner.id});assert.equal(activeShift.id,session.id);
+assert.equal(shiftApi.summary(ok(await db.rpc('retail_shift_summary',{p_store:store,p_session:session.id}),'verified summary'),session.id).session_id,session.id);
+const shiftPage=await shiftApi.read({db,store,actor:owner.id,filters:shiftApi.criteria({status:'open'})});assert.equal(shiftPage.total,1);assert.equal(shiftPage.rows[0].id,session.id);
+assert.equal(await shiftApi.current({db:outsider.client,store,actor:owner.id}),null);
+assert.equal((await shiftApi.read({db:outsider.client,store,actor:owner.id,filters:shiftApi.criteria()})).total,0);
+console.log('PASS V32: actual active shift, verified summary, paginated own-cashier history and tenant RLS through local JWT/PostgREST');

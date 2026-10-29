@@ -251,6 +251,7 @@ select option{color:#0f172a;font-size:14px}
 <script src="./receipt-history.js"></script>
 <script src="./audit-history.js"></script>
 <script src="./payments-history.js"></script>
+<script src="./shift-history.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./system-ui.css">
 <link rel="stylesheet" href="./ui-contrast-lock.css">
@@ -419,6 +420,7 @@ select option{color:#0f172a;font-size:14px}
 </div>
 <div id="shift-sub-shifts">
 <div class="receipt-head"><h3>بەڕێوەبردنی شێفتی کاشێر و سندووق</h3><button class="secondary" id="shift-refresh" type="button">نوێکردنەوە</button></div>
+<div id="shift-state" class="msg" role="status"></div>
 <div id="shift-current" class="shift-info" hidden>
 <div class="shift-metrics">
 <div><span>پارەی سەرەتا</span><strong id="shift-opening">0 IQD</strong></div>
@@ -428,7 +430,7 @@ select option{color:#0f172a;font-size:14px}
 <div><span>قازانجی خەمڵێنراو</span><strong id="shift-profit">0 IQD</strong></div>
 </div>
 </div>
-<div style="padding:20px 24px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:14px;margin-top:12px">
+<div id="shift-open-box" style="padding:20px 24px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:14px;margin-top:12px">
 <h3 style="margin-top:0">کردنەوەی شێفتی نوێی کاشێر</h3>
 <form id="shift-open-form" class="formrow">
 <label class="field">پارەی سەرەتا (IQD)<input type="number" name="opening" min="0" max="9999999999999" step="1" required placeholder="0"></label>
@@ -444,7 +446,7 @@ select option{color:#0f172a;font-size:14px}
 <label class="field">هۆکار<input name="note" maxlength="160" required autocomplete="off"></label>
 <button class="primary" type="submit">تۆمارکردن</button>
 </form>
-<div class="footer-actions"><button class="secondary" id="movement-retry" type="button" hidden>پشکنینەوە</button></div>
+
 </div>
 <div style="padding:20px 24px;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:14px;margin-top:16px">
 <h3 style="margin-top:0;color:#9a3412">داخستنی شێفت و پاکتاوکردنی کۆتایی</h3>
@@ -454,9 +456,14 @@ select option{color:#0f172a;font-size:14px}
 </form>
 </div>
 </div>
+<div class="footer-actions"><button class="secondary" id="movement-retry" type="button" hidden>پشکنینەوە</button></div>
 <div class="msg" id="shift-msg" role="status"></div>
 <div id="shift-report" class="shift-report" hidden></div>
+<h3>مێژووی شێفتەکانم</h3>
+<div class="formrow"><label class="field">دۆخ<select id="shift-status-filter"><option value="all">هەموو شێفتەکان</option><option value="open">کراوە</option><option value="closed">داخراوە</option></select></label><label class="field">ماوەی کات<select id="shift-date-filter"><option value="all">هەموو کاتێک</option><option value="today">ئەمڕۆ</option><option value="7d">٧ ڕۆژی ڕابردوو</option><option value="30d">٣٠ ڕۆژی ڕابردوو</option></select></label></div>
 <div id="shift-history"></div>
+<div class="pager"><button id="shift-prev" class="secondary" type="button">پێشوو</button><span id="shift-page-info" class="pager-info" role="status" aria-live="polite">0 / 0</span><button id="shift-next" class="secondary" type="button">دواتر</button></div>
+<div id="shift-history-msg" class="msg" role="status"></div>
 </div>
 
 <div id="shift-sub-attendance" hidden>
