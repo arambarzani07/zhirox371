@@ -17,7 +17,7 @@ main{padding:38px 44px 58px;max-width:1440px;margin:auto}h1{font-size:23px;font-
 .surface{background:#fff;border:1px solid #e5eaf0;border-radius:16px;padding:23px}
 .head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}
 .link{color:#42658b;text-decoration:none;border:1px solid #dde6f1;border-radius:9px;padding:10px 14px;font-size:13px;background:#f8fafc;font-weight:700}
-.filters{display:flex;gap:9px;margin-bottom:18px}
+.filters{display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap}.qa-search{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-weight:750}.qa-search input{font:inherit;flex:1;min-width:160px;border:1px solid #dce4ee;border-radius:9px;padding:10px;color:inherit}.qa-count{margin:0 0 16px;font-size:13px;color:#536985}.detail a{display:inline-block;margin-top:12px}[hidden]{display:none!important}
 .filters button{border:1px solid #e1e7ef;color:#64758d;background:#f7f9fc;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:750}
 .filters button.active{background:#284973;border-color:#284973;color:#fff}
 .layout{display:grid;grid-template-columns:1.2fr .9fr;gap:16px}
@@ -36,7 +36,10 @@ main{padding:38px 44px 58px;max-width:1440px;margin:auto}h1{font-size:23px;font-
 </style>
 <link rel="stylesheet" href="./ui-global.css">
 <link rel="stylesheet" href="./ui-fixed-pc.css">
+<link rel="stylesheet" href="./system-ui.css">
 <link rel="stylesheet" href="./ui-contrast-lock.css">
+<script src="./card-icons.js"></script>
+<script src="./system-shell.js" defer></script>
 </head>
 <body>
 <div class="market-banner">سوپەرمارکێتی کانی چنار</div><div class="viewport"><div class="desktop">
@@ -44,16 +47,19 @@ main{padding:38px 44px 58px;max-width:1440px;margin:auto}h1{font-size:23px;font-
 <main>
 <h1>پشکنینی مامەڵەکان</h1>
 <div class="row">
-<div class="metric"><span>دۆخی پڕۆژە</span><strong style="font-size:17px">QA / V8</strong></div>
-<div class="metric"><span>تاقیکردنەوە</span><strong>10</strong><span>هاوکات</span></div>
-<div class="metric"><span>داتابەیس</span><strong style="font-size:17px">PostgreSQL 16</strong></div>
+<div class="metric"><span>پۆششی پشکنین</span><strong style="font-size:17px">V27</strong></div>
+<div class="metric"><span>سناریۆکان</span><strong id="qa-total">—</strong></div>
+<div class="metric"><span>جۆری ئەم پەڕەیە</span><strong style="font-size:17px">ڕێبەری پشکنین</strong></div>
 </div>
 <section class="surface">
 <div class="head"><h2>تاقیکردنەوەکان</h2><a class="link" href="https://github.com/arambarzani07/zhirox371/actions/workflows/pc-foundation.yml" target="_blank" rel="noopener noreferrer">ئەنجامی تاقیکردنەوە</a></div>
-<div class="filters"><button type="button" data-filter="all" class="active">هەمووی</button><button type="button" data-filter="sale">فرۆشتن</button><button type="button" data-filter="shift">شێفت و سندووق</button><button type="button" data-filter="auth">دەسەڵات</button></div>
+
+<label class="qa-search">گەڕان لە سناریۆکان<input id="qa-query" type="search" autocomplete="off"></label>
+<div class="filters" aria-label="پۆلی سناریۆکان"><button type="button" data-filter="all" class="active">هەمووی</button><button type="button" data-filter="sale">فرۆشتن</button><button type="button" data-filter="shift">شێفت و سندووق</button><button type="button" data-filter="auth">دەسەڵات</button><button type="button" data-filter="catalog">کاڵا و لیبڵ</button><button type="button" data-filter="finance">دارایی</button><button type="button" data-filter="staff">کارمەندان و چاودێری</button></div>
+<p class="qa-count" id="qa-count" role="status" aria-live="polite"></p>
 <div class="layout">
 <div class="testlist" id="cases"></div>
-<div class="detail"><h3 id="case-title"></h3><div class="line"></div><p id="case-description"></p><p class="tip" id="case-expected"></p></div>
+<div class="detail" id="qa-detail"><h3 id="case-title"></h3><div class="line"></div><p id="case-description"></p><p class="tip" id="case-expected"></p><a class="link" id="case-source" target="_blank" rel="noopener noreferrer">کۆدی تاقیکردنەوە</a></div>
 </div>
 </section>
 </main></div></div>
@@ -72,25 +78,48 @@ const items=[
 ["فرۆشتن بێ شێفت","shift","کاشێر بێ شێفتی کراوە داوای فرۆشتن دەکات.","هیچ فرۆشتن و کەمکردنەوەی کۆگا تۆمار ناکرێت."],
 ["بەکارهێنەری بێ مۆڵەت","auth","هەژمارێکی بێ مۆڵەتی کاشێر داوای فرۆشتن دەکات.","دەبێت ڕەت بکرێتەوە."],
 ["دووبارە پشکنینەوە دوای داخستنی شێفت","shift","هەمان داواکاری دوای داخستنی شێفت دەنێردرێتەوە.","هەمان پسووڵە دەگەڕێتەوە، بێ فرۆشتنی نوێ."],
-["١٢ داواکاری هاوکات بۆ سێ دانە","sale","١٢ داواکاری بۆ سێ دانە هاوکات دەبن.","تەنها سێ فرۆشتن سەرکەوتوو دەبێت و ژمارەی پسووڵەکان 1، 2، 3 دەبن."]
+["١٢ داواکاری هاوکات بۆ سێ دانە","sale","١٢ داواکاری بۆ سێ دانە هاوکات دەبن.","تەنها سێ فرۆشتن سەرکەوتوو دەبێت و ژمارەی پسووڵەکان یەکتا و بە ڕیز دەبن."],
+["بارکۆدی دانە و کارتۆن","catalog","بارکۆدی سەرەکی و جێگرەوەی دانە و کارتۆن بسکانە.","هەمان کاڵا بە پاکەتی دروست بناسرێتەوە؛ کۆی دانەکان لە کۆگا زیاتر نەبێت."],
+["CSV و پاراستنی زانیاری","catalog","فایلی هەڵە یان ستوونی نادیار پێش هاوردەکردن بپشکنە.","هەڵەکان پێش نووسین پیشان بدرێن؛ کۆگا و زانیاری بە بێدەنگی ون نەبن."],
+["گۆڕانی نرخ پێش چاپی لیبڵ","catalog","دوای پیشنمایش نرخ لە سێرڤەر بگۆڕدرێت.","چاپی نرخی کۆن ڕەت بکرێتەوە و پێویستی بە نوێکردنەوە دیار بێت."],
+["بارکۆدی لیبڵ و سفرەکانی سەرەتا","catalog","کۆدی CODE128 بە سفرەکانی سەرەتا و کۆدی زۆر چڕ بپشکنە.","کۆدی گونجاو بە دروستی بپارێزرێت؛ کۆدی زۆر چڕ چاپ نەکرێت. پشکنینی سکانەری ڕاستەقینە جیاوازە."],
+["گواستنەوەی پارە و هەڵوەشاندنەوە","finance","لە ناو مامەڵەی گواستنەوەدا هەڵەی تۆمارکردن دروست بکرێت.","جووڵەی پارە و تۆماری دارایی هەردووکیان هەڵبوەشێنەوە."],
+["دووبارەناردنی گواستنەوە","finance","هەمان داواکاریی گواستنەوە دووبارە بنێردرێت.","یەک مامەڵە تۆمار بێت؛ گۆڕینی ناوەڕۆک بە هەمان ناسنامە ڕەت بکرێتەوە."],
+["ئامادەبوون و بەرواری نادروست","staff","بەروار یان کاتی نادروست بۆ ئامادەبوون بنێردرێت.","تۆمارکردن ڕەت بکرێتەوە؛ کاتی نەنووسراو خۆکار دروست نەکرێت."],
+["کاتی کار و نرخی دیاریکراو","staff","کاتی ئاسایی، زیادەکار و نرخی هەردووکیان بە ڕوونی بنووسرێن.","سێرڤەر خەملاندن هەژمار بکات؛ کۆی کات لە 24 کاتژمێر زیاتر نەبێت و هیچ مووچەیەک نەدرێت."],
+["هەڵسەنگاندن بە بێ نمرەی پێشوەختە","staff","فۆرمی نوێ بکەرەوە و نمرەی 1 تا 5 هەڵبژێرە.","هیچ نمرەیەک پێشوەختە دانەنرێت؛ سێرڤەر تێکڕا هەژمار بکات."],
+["پەسەند و ڕەتکردنی هاوکات","staff","دوو بەڕێوەبەر هەمان داواکاری هاوکات پەسەند و ڕەت بکەنەوە.","تەنها یەک بڕیاری کۆتایی تۆمار بێت؛ دەسەڵات و پارە نەگۆڕێت."],
+["گەڕان لە پەڕەکانی دواتر","staff","زیاتر لە 50 تۆمار هەبێت و بە ناوی تۆمارێکی پەڕەی دواتر بگەڕێ.","گەڕان لە سەرجەم تۆمارە ڕێگەپێدراوەکان بێت؛ کۆی گشتی دروست بێت."],
+["گۆڕینی فرۆشگا و دەرچوون","auth","لە کاتی وەرگرتنی داتا فرۆشگا بگۆڕە یان لە هەژمارەکە دەرچۆ.","وەڵامی کۆن و داتای فرۆشگای تر پیشان نەدرێن؛ دەرچوون تۆمارە پیشاندراوەکان پاک بکاتەوە."]
 ];
-let filter="all",selected=0;
+const perScenario={10:"tests/browser/v16_units_cartons.mjs",11:"tests/v24_catalog_import.test.mjs",21:"tests/browser/v27_workflows.mjs"};
+const sources={sale:"tests/integration/concurrency.test.mjs",shift:"tests/integration/concurrency.test.mjs",auth:"tests/database/postgrest_smoke.mjs",catalog:"tests/browser/v26_labels.mjs",finance:"tests/database/transaction_integrity.test.mjs",staff:"tests/database/transaction_integrity.test.mjs"};
+// Each scenario is a guide to the checked-in suite, never a live pass/fail result.
+let filter="all",selected=0,query="";
+const normalize=value=>value.normalize("NFKC").toLocaleLowerCase().trim();
 function draw(){
+ const visible=items.map((x,i)=>({x,i})).filter(({x})=>(filter==="all"||x[1]===filter)&&normalize([x[0],x[2],x[3]].join(" ")).includes(query));
+ if(!visible.some(({i})=>i===selected))selected=visible[0]?.i??-1;
  root.replaceChildren();
- items.forEach((x,i)=>{if(filter!=="all"&&x[1]!==filter)return;
-  const b=document.createElement("button");b.type="button";b.className="test"+(i===selected?" active":"");
+ visible.forEach(({x,i})=>{
+  const b=document.createElement("button");b.type="button";b.className="test"+(i===selected?" active":"");b.setAttribute("aria-pressed",String(i===selected));
   const number=document.createElement("span");number.className="number";number.textContent=String(i+1).padStart(2,"0");
   const name=document.createElement("span");name.className="name";name.textContent=x[0];
   const arrow=document.createElement("span");arrow.textContent="↖";b.append(number,name,arrow);
   b.addEventListener("click",()=>{selected=i;draw()});root.append(b);
  });
- const row=items[selected];title.textContent=row[0];description.textContent=row[2];expected.textContent="ئەنجام: "+row[3];
+ document.getElementById("qa-total").textContent=String(items.length);
+ document.getElementById("qa-count").textContent=visible.length?`${visible.length} / ${items.length} سناریۆ`:"هیچ سناریۆیەک نەدۆزرایەوە";
+ document.getElementById("qa-detail").hidden=selected<0;
+ if(selected<0){title.textContent="";description.textContent="";expected.textContent="";document.getElementById("case-source").removeAttribute("href");return;}
+ const row=items[selected];title.textContent=row[0];description.textContent=row[2];expected.textContent="ئەنجامی چاوەڕوانکراو: "+row[3];
+ document.getElementById("case-source").href="https://github.com/arambarzani07/zhirox371/blob/05c5f740b7e829ea1276de97c8c95052ddd61f10/"+(perScenario[selected]||sources[row[1]]);
 }
 document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>{
- filter=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(y=>y.classList.toggle("active",y===b));
- if(filter!=="all"&&items[selected][1]!==filter)selected=items.findIndex(x=>x[1]===filter);
- draw();
+ filter=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(y=>{y.classList.toggle("active",y===b);y.setAttribute("aria-pressed",String(y===b));});draw();
 }));
+document.querySelector('[data-filter="all"]').setAttribute("aria-pressed","true");
+document.getElementById("qa-query").addEventListener("input",event=>{query=normalize(event.target.value);draw();});
 draw();
 })();
 </script>

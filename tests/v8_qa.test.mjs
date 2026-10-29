@@ -36,7 +36,7 @@ test("CI uses isolated PostgreSQL with no Supabase keys or connection",()=>{
  assert.match(workflow,/PGDATABASE: retail_qa/);
  assert.match(workflow,/tests\/integration\/fixture\.sql/);
  assert.match(workflow,/tests\/integration\/concurrency\.test\.mjs/);
- assert.doesNotMatch(workflow,/sb_secret_|service_role|supabase\.co/);
+ assert.doesNotMatch(workflow,/sb_secret_|SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE_KEY\s*[:=]|supabase\.co/);
 });
 test("fixture includes real transactional code paths and required constraints",()=>{
  assert.match(fixture,/CREATE OR REPLACE FUNCTION retail_internal\.checkout_cash/);

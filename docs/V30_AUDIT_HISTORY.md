@@ -1,0 +1,11 @@
+# V30 — usable audit history and scoped CSV
+
+The Changes destination now reads 50 audit records per server page with exact matching counts, stable created_at/id ordering and server filters across all accessible store records. Search supports literal action substrings or exact actor/subject UUIDs. Date filters use the shared Baghdad-day/rolling-window helper and a refresh cutoff; this is not an immutable database snapshot. Empty out-of-range pages clamp to the last page.
+
+Only event identifiers, actor, subject, action and timestamp are selected. Private event details and workflow snapshots are not fetched. Store SELECT/RLS and manager access remain authoritative; there are no migrations or mutations. Errors, malformed/cross-store replies and missing counts clear the list instead of substituting cached data. Query edits immediately disable export and invalidate old replies; tab/account/store changes and logout discard obsolete responses.
+
+The CSV button explicitly exports this page, with the page interval and filtered total in its filename. It serializes confirmed data rather than scraping DOM text, includes raw UTC timestamps and identifiers, quotes all cells, preserves UTF-8, and prefixes spreadsheet formula starters. This is not a full historical export. Action wildcard * is rejected; SQL LIKE percent/underscore characters are escaped literally.
+
+Validation: 192 Node tests including four audit query/validation/CSV tests and a regression compiling all nine offline preview pages. Browser regression covers 123 rows, paging, literal matching, actor validation, current-page downloads, formula neutralization, failed reads and a delayed response after logout. Actual helper reads are exercised through local Auth/JWT/PostgREST with literal underscore matching and tenant isolation. Existing SQL/concurrency checks remain unchanged. No hosted data has been read or modified by implementation or tests.
+
+The preview builder inserts bootstrap code and route queries with replacement callbacks, preserving JavaScript dollar replacement tokens verbatim. A regression validates every bundled classic script and checks special characters in navigation queries. This fixes a source-embedding defect discovered while reviewing the actual preview.

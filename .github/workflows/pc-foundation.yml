@@ -25,6 +25,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install locked database test dependency
+        run: npm ci
+      - name: Verify production upgrade and financial rollback against PostgreSQL WASM
+        run: npm run test:database
       - name: Run foundation, Home-lock and UI safety tests
         run: node --test tests/*.test.mjs
   postgres-concurrency:
@@ -65,6 +69,13 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/integration/fixture.sql
       - name: Concurrent checkout, request replay, cash movement and shift-close verification
         run: node --test --test-concurrency=1 tests/integration/concurrency.test.mjs
+      - name: Install actual upgrade for concurrent receipt-return tests
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE service_role NOLOGIN'
+          psql -X -v ON_ERROR_STOP=1 -f tests/v12/rls_mirror.sql
+          psql -X -v ON_ERROR_STOP=1 -f db/v19_complete_production_upgrade.sql
+      - name: Concurrent partial/full returns and credit payment races
+        run: node --test --test-concurrency=1 tests/integration/returns_concurrency.test.mjs
   browser-readability:
     runs-on: ubuntu-latest
     steps:
@@ -87,6 +98,34 @@ jobs:
           done
           cat /tmp/retail-preview-server.log
           exit 1
+      - name: Verify customer directory pages and out-of-cache customer actions
+        run: node tests/browser/v38_customer_directory.mjs
+      - name: V43 purchase-order page browser checks
+        run: node tests/browser/v43_purchase_order_pages.mjs
+      - name: V42 supplier directory browser checks
+        run: node tests/browser/v42_supplier_directory.mjs
+      - name: V41 supplier read integrity browser checks
+        run: node tests/browser/v41_supplier_accounts.mjs
+      - name: V40 customer form picker browser checks
+        run: node tests/browser/v40_customer_picker.mjs
+      - name: V39 customer debt browser checks
+        run: node tests/browser/v39_customer_debts.mjs
+      - name: Verify customer payment pages, cash separation and verified vouchers
+        run: node tests/browser/v37_customer_payments.mjs
+      - name: Verify complete customer ledger pagination and scoped statements
+        run: node tests/browser/v36_customer_history.mjs
+      - name: Verify canonical stock history pagination, filters and scoped unit totals
+        run: node tests/browser/v35_stock_history.mjs
+      - name: Verify customer read errors, signed return balances, loaded scope and safe CSV
+        run: node tests/browser/v33_customer_accounts.mjs
+      - name: Verify active shift lookup, full history pages and unverified balance guards
+        run: node tests/browser/v32_shift_history.mjs
+      - name: Check audit pagination, search, CSV scope and stale-session protection
+        run: node tests/browser/v30_audit_history.mjs
+      - name: Check paginated returns, old receipt selection and stale detail protection
+        run: node tests/browser/v29_returns_history.mjs
+      - name: Check server-paginated receipt history and complete receipt lookup
+        run: node tests/browser/v28_receipt_history.mjs
       - name: Read all 60 card labels in real browser, including narrow dark viewport
         run: node tests/browser/pc_card_readability.mjs
       - name: Enforce AAA ink/background contrast for all 60 cards in desktop and iPhone dark mode
@@ -107,6 +146,8 @@ jobs:
         run: node tests/browser/v15_product_editor.mjs
       - name: Verify V16 unit/carton/both PC flow with base-stock checkout in Chromium
         run: node tests/browser/v16_units_cartons.mjs
+      - name: Verify current-shift cash paging, search, read failure and stale logout
+        run: node tests/browser/v31_payments_history.mjs
       - name: Verify V17 PC stock receiving of unit and carton aliases
         run: node tests/browser/v17_stock_receiving.mjs
       - name: Verify V17.1 single-transaction mixed unit and carton receiving
@@ -119,6 +160,16 @@ jobs:
         run: node tests/browser/v18_catalog_scaling.mjs
       - name: Verify V20 PC weighted-pack cart, duplicate scan and stale-price checkout guard
         run: node tests/browser/v20_smart_cashier.mjs
+      - name: Verify all 48 destinations, shared design and CSV preflight
+        run: node tests/browser/v24_system_layout.mjs
+      - name: Verify all five workflow forms, confirmations, stale versions and store isolation
+        run: node tests/browser/v27_workflows.mjs
+      - name: Verify standard barcode labels, batch copies and stale-price print protection
+        run: node tests/browser/v26_labels.mjs
+      - name: Verify confirmed purchase writes, unknown costs and stale cancellation
+        run: node tests/browser/v23_purchasing.mjs
+      - name: Verify linked returns, server report totals and safe API failures
+        run: node tests/browser/v22_returns_reports.mjs
   v12-real-auth-rls:
     name: V12 — Real local Supabase Auth / JWT / PostgREST / RLS
     runs-on: ubuntu-latest
@@ -138,6 +189,11 @@ jobs:
         run: |
           supabase --version
           supabase init --yes
+          # This job installs its V8/V12 foundation explicitly in the next step.
+          # Do not auto-apply a V21 upgrade to an otherwise empty local database.
+          mkdir -p /tmp/retail-reviewed-upgrade-migrations
+          mv supabase/migrations/*.sql /tmp/retail-reviewed-upgrade-migrations/
+          trap 'mv /tmp/retail-reviewed-upgrade-migrations/*.sql supabase/migrations/' EXIT
           supabase start
       - name: Apply verified retail contract ONLY to disposable local DB
         env:
@@ -156,6 +212,14 @@ jobs:
         run: npm install --no-save --no-package-lock @supabase/supabase-js@2.118.0
       - name: Real signup, JWT, RBAC, tenant RLS and local-only TRUNCATE regression test
         run: node tests/v12/auth_rls_e2e.mjs
+      - name: Install actual standalone production upgrade on the populated disposable stack
+        env:
+          PGPASSWORD: postgres
+        run: psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 54322 -U postgres -d postgres -f db/v19_complete_production_upgrade.sql
+      - name: Inspect security advisors on the disposable local database
+        run: supabase db advisors --local --type security --level warn
+      - name: Verify actual upgrade RPCs through real local Auth and PostgREST
+        run: node tests/database/postgrest_smoke.mjs
       - name: Stop and remove disposable Supabase stack
         if: always()
         run: supabase stop --no-backup || true

@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {chromium} from 'playwright';
+const fixture=readFileSync('tests/browser/qa_supabase_fixture.js','utf8')+readFileSync('tests/browser/qa_v22_fixture.js','utf8');
+const seed=`(()=>{const q=window.__retailQA,now=Date.now();q.sessions.push({id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',store_id:q.store.id,cashier_id:q.account.id,opening_cash_minor:5000,opened_at:new Date(now).toISOString(),status:'open'});for(let i=1;i<=123;i++){const id='eeeeeeee-eeee-4eee-8eee-'+String(i).padStart(12,'0'),line='ffffffff-ffff-4fff-8fff-'+String(i).padStart(12,'0');q.sales.push({id,store_id:q.store.id,receipt_no:i,total_minor:i===1?2900:1000,discount_minor:i===1?100:0,cash_received_minor:i===1?2900:1000,change_due_minor:0,status:'posted',refunded:i===2,returned_minor_total:i===2?1000:0,created_at:new Date(now-(124-i)*1000).toISOString()});q.saleItems.push({id:line,store_id:q.store.id,sale_id:id,product_id:q.products[0].id,quantity:i===1?3:1,unit_price_minor:1000,product_name_snapshot:'QA '+i,package_type:'unit',package_barcode:i===1?'OLD-UNIQUE':'SHARED',units_per_package:1,base_units:i===1?3:1,base_unit_snapshot:'unit',net_minor:i===1?2900:1000,returned_quantity:i===2?1:0,returned_minor:i===2?1000:0});}q.sales.push({...q.sales[0],id:'foreign',store_id:'other-store',receipt_no:9999});})();`;
+const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:1190,height:850}}),errors=[];
+page.on('pageerror',e=>errors.push(e.message));await page.route('https://cdn.jsdelivr.net/**',r=>r.fulfill({contentType:'application/javascript',body:'/* isolated UI test */'}));await page.addInitScript({content:fixture+seed});
+const lookup=async raw=>{await page.locator('#returns-search-input').fill(raw);await page.locator('#returns-lookup-form button[type=submit]').click();};
+try{
+ await page.goto((process.env.PC_PREVIEW_ORIGIN||'http://127.0.0.1:8765')+'/operations.html?view=returns');
+ await page.waitForFunction(()=>document.querySelector('#returns-page-info')?.textContent==='1–50 / 123');
+ assert.equal(await page.locator('#returns-list tbody tr').count(),50);
+ await page.locator('#returns-next').click();await page.waitForFunction(()=>document.querySelector('#returns-page-info')?.textContent==='51–100 / 123');
+ await page.locator('#returns-next').click();await page.waitForFunction(()=>document.querySelector('#returns-page-info')?.textContent==='101–123 / 123');
+ assert.equal(await page.locator('#returns-list tbody tr').count(),23);assert.match(await page.locator('#returns-list').innerText(),/#000001/);assert.doesNotMatch(await page.locator('#returns-list').innerText(),/#009999/);
+ await lookup('000001');await page.waitForFunction(()=>document.querySelector('#returns-selected-box h3')?.textContent.includes('#000001'));
+ await page.locator('#return-item-qty').fill('1');await page.locator('#return-item-note').fill('Old receipt QA');await page.locator('#returns-item-form button[type=submit]').click();
+ await page.waitForFunction(()=>document.querySelector('#returns-msg')?.textContent.includes('967'));
+ const calls=await page.evaluate(()=>window.__retailQA.called.filter(x=>x.name==='retail_return_item_v22'));assert.equal(calls.length,1);assert.equal(calls[0].args.p_line,'ffffffff-ffff-4fff-8fff-000000000001');assert.equal('p_refund' in calls[0].args,false);
+ assert.equal(await page.locator('#return-item-qty').getAttribute('max'),'2');assert.match(await page.locator('#returns-page-info').innerText(),/101–123/);
+ await lookup('SHARED');await page.waitForFunction(()=>document.querySelector('#returns-msg')?.textContent.includes('چەند پسووڵە'));
+ assert.equal(await page.locator('#returns-item-form').isVisible(),false);assert.equal(await page.locator('#returns-selected-box').isVisible(),false);
+ await lookup('OLD-UNIQUE');await page.waitForFunction(()=>document.querySelector('#returns-selected-box h3')?.textContent.includes('#000001'));
+ await page.locator('#returns-filter-mode').selectOption('active');await page.waitForFunction(()=>document.querySelector('#returns-page-info')?.textContent==='1–50 / 122');
+ await page.evaluate(()=>{window.__retailQA.pauseReturnDetail=true;});await page.locator('#returns-list [data-inspect-return]').nth(1).click();await page.waitForFunction(()=>typeof window.__retailQA.completeReturnDetail==='function');
+ await page.locator('#returns-filter-mode').selectOption('refunded');await page.waitForFunction(()=>document.querySelector('#returns-selected-box h3')?.textContent.includes('#000002'));
+ await page.evaluate(()=>window.__retailQA.completeReturnDetail());assert.match(await page.locator('#returns-selected-box h3').innerText(),/#000002/);assert.equal(await page.locator('#returns-item-form').isVisible(),false);
+ await page.evaluate(()=>{window.__retailQA.receiptReadError={code:'42501',message:'Denied'};});await page.locator('#returns-refresh').click();await page.waitForFunction(()=>document.querySelector('#returns-msg')?.classList.contains('error'));
+ assert.equal(await page.locator('#returns-list table').count(),0);assert.equal(await page.locator('#returns-item-form').isVisible(),false);
+ await page.locator('#returns-refresh').click();await page.waitForFunction(()=>document.querySelector('#returns-list tbody tr'));
+ const created=await page.evaluate(async()=>{const q=window.__retailQA;const r=await window.supabase.createClient().rpc('retail_checkout_packs_v16',{p_store:q.store.id,p_request:crypto.randomUUID(),p_items:[{barcode:q.barcodes[0].code,quantity:1,expected_price_minor:1000,expected_units:1}],p_cash_received:1000,p_discount:0});if(r.error)throw Error(r.error.message);return {sale:r.data,line:q.saleItems.find(x=>x.sale_id===r.data)?.id};});
+ assert.match(created.line,/^[0-9a-f-]{36}$/);await lookup(created.sale);await page.waitForFunction(()=>document.querySelector('#return-item-qty')?.max==='1');assert.equal(await page.locator('#return-item-product').inputValue(),created.line);
+ await page.evaluate(()=>{window.__retailQA.pauseReturnDetail=true;});await page.locator('#returns-list [data-inspect-return]').first().click();await page.waitForFunction(()=>typeof window.__retailQA.completeReturnDetail==='function');
+ await page.locator('#logout').click();await page.evaluate(()=>window.__retailQA.completeReturnDetail());await page.locator('#login-panel').waitFor({state:'visible'});
+ assert.equal(await page.locator('#returns-list table').count(),0);assert.equal(await page.locator('#returns-selected-box').isVisible(),false);assert.equal(await page.locator('#return-item-product option').count(),0);
+ assert.deepEqual(errors,[]);console.log('PASS V29: server return pages, old receipt refund, ambiguous lookup, status changes, stale details, denied reads and logout');
+}finally{await browser.close();}

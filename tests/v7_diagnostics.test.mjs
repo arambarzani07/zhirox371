@@ -20,13 +20,13 @@ test("EAN-13 standard checksum handles known good and bad numeric barcodes",()=>
  }
 });
 
-test("prefix-27 supermarket-scale code extracts seven-digit item code without inventing weight or price",()=>{
+test("prefix-27 supermarket-scale code extracts five-digit PLU without inventing weight or price",()=>{
  const p=inspectBarcode("2700002029709");
  assert.equal(p.type,"EAN-13");
  assert.equal(p.length,13);
  assert.equal(p.validEan13,true);
  assert.equal(p.possibleScaleBarcode,true);
- assert.equal(p.scaleItemCode,"0000202");
+ assert.equal(p.scaleItemCode,"00002");
  assert.ok(!("price" in p));
  assert.ok(!("weight" in p));
 });

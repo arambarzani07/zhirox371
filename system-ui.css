@@ -1,0 +1,70 @@
+/* One PC design system for all internal modules. Home and thermal receipts keep their source styles. */
+@media screen{
+body.system-ui{--sys-line:#dde5ef;--sys-ink:#172b45;--sys-muted:#41566f;--sys-navy:#203e66;background:#f4f7fb;color:var(--sys-ink);}
+.system-ui main{padding:24px 32px 40px!important;max-width:1500px;}
+.system-ui header{padding-inline:32px!important;gap:24px;}
+.system-ui header .brand{font-size:18px;white-space:nowrap;}
+.system-ui header .head-actions,.system-ui header .right{display:flex;gap:12px;align-items:center;flex-wrap:nowrap;}
+.system-ui header .who,.system-ui header .smallinfo{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.system-old-link{display:none!important;}
+.system-ui h1{font-size:24px!important;line-height:1.7;margin:0 0 18px!important;font-weight:900!important;}
+.system-ui h2{font-size:19px!important;line-height:1.7;margin-bottom:16px;font-weight:900!important;}
+.system-ui h3{font-size:16px!important;line-height:1.6;font-weight:850!important;}
+.system-ui .system-nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));align-items:stretch;gap:8px!important;overflow:visible;white-space:normal;padding:4px 0 12px!important;margin:0 0 20px!important;border-bottom:1px solid var(--sys-line);scrollbar-width:thin;}
+.system-ui .system-nav>a,.system-ui .system-nav>button{display:inline-flex;min-width:0;width:100%;white-space:normal;flex:none;align-items:center;justify-content:center;gap:8px;min-height:44px!important;height:auto!important;padding:10px 14px!important;border:1px solid var(--sys-line)!important;border-radius:11px!important;background:#fff!important;color:var(--sys-ink)!important;-webkit-text-fill-color:var(--sys-ink)!important;text-decoration:none;font-size:13px!important;font-weight:850!important;box-shadow:0 2px 5px #203e6604;}
+.system-nav-icon svg{display:block;width:19px;height:19px;stroke:currentColor;}
+.system-ui .system-nav>.system-current{background:var(--sys-navy)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:var(--sys-navy)!important;}
+.system-ui .system-nav>.system-current span{color:#fff!important;-webkit-text-fill-color:#fff!important;}
+.system-ui :is(.system-cash-subtabs,.tabs,#stock-subtabs,#customers-subtabs,#suppliers-subtabs,#finance-subtabs,#reports-subtabs,#settings-subtabs,#offers-subtabs){display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px;padding:0;}
+.system-ui :is(.system-cash-subtabs,.tabs,#stock-subtabs,#customers-subtabs,#suppliers-subtabs,#finance-subtabs,#reports-subtabs,#settings-subtabs,#offers-subtabs)>button{min-height:40px!important;height:auto!important;border:1px solid var(--sys-line);border-radius:9px;padding:8px 16px;background:#fff;color:var(--sys-ink);font-weight:850;font-size:13px;}
+.system-ui :is(.system-cash-subtabs,.tabs,#stock-subtabs,#customers-subtabs,#suppliers-subtabs,#finance-subtabs,#reports-subtabs,#settings-subtabs,#offers-subtabs)>button.active{background:#eaf0f9!important;border-color:#9fb8da!important;color:#172b45!important;-webkit-text-fill-color:#172b45!important;box-shadow:inset 0 -3px 0 #274871;}
+.system-ui .system-repeat-heading{display:none;}
+.system-ui :is(.surface,.page,.panel,.catalog-group){border:1px solid var(--sys-line)!important;border-radius:15px!important;background:#fff!important;box-shadow:0 3px 12px #203e6604;padding:22px!important;}
+.system-ui section.surface+section.surface{margin-top:20px;}
+.system-ui .surface.narrow,.system-ui .surface.small{max-width:560px;margin:24px auto;}
+.system-ui :is(.field,.form-col){font-size:13px!important;font-weight:800!important;gap:8px!important;line-height:1.6;}
+.system-ui :is(input:not([type=radio]):not([type=checkbox]),select,textarea){border:1px solid #cbd8e7!important;border-radius:9px!important;background:#fff;color:var(--sys-ink);padding:10px 12px!important;font-size:14px!important;min-height:42px;max-width:100%;}
+.system-ui :is(input[readonly],input:disabled,select:disabled){background:#f3f6fa!important;}
+.system-ui textarea{line-height:1.8;}
+.system-ui input[type=number]{direction:ltr;text-align:right;}
+.system-ui :is(input[type=radio],input[type=checkbox]){accent-color:var(--sys-navy);}
+.system-ui .formrow{gap:14px!important;align-items:end;}
+.system-ui .formrow+.formrow{margin-top:14px;}
+.system-ui :is(.primary,.secondary,.receipt-action,.ws-link,.catalog-table-btn,.catalog-stock-btn,.catalog-label-btn){border-radius:9px!important;min-height:40px!important;padding:9px 16px!important;font-size:13px!important;font-weight:850!important;line-height:1.5;}
+.system-ui .primary{background:#203e66!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid #203e66!important;}
+.system-ui .secondary{background:#f5f8fc!important;border:1px solid var(--sys-line)!important;color:#172b45!important;-webkit-text-fill-color:#172b45!important;}
+.system-ui :is(button,a):focus-visible{outline:3px solid #5386c4;outline-offset:3px;}
+.system-ui button:disabled{cursor:not-allowed;background:#e4ebf3!important;color:#41566f!important;-webkit-text-fill-color:#41566f!important;}
+.system-ui :is(.msg,.message,.feedback){border-radius:9px;font-size:13px;line-height:1.9;}
+.system-ui :is(.msg,.message,.feedback):not(:empty){padding:10px 14px!important;margin-block:12px;background:#f1f5fa;border:1px solid var(--sys-line);}
+.system-ui :is(.msg,.message,.feedback).error{background:#fff2f1!important;border-color:#efb8b3!important;}
+.system-ui :is(.msg,.message,.feedback).success{background:#eef8f2!important;border-color:#b9ddc9!important;}
+.system-ui table{font-size:13px!important;border-collapse:separate;border-spacing:0;margin-top:16px;}
+.system-ui th{background:#f2f6fb!important;color:#30465f!important;font-weight:850;padding:13px 14px!important;line-height:1.6;}
+.system-ui td{padding:13px 14px!important;border-bottom:1px solid #e7edf5;line-height:1.7;vertical-align:middle;}
+.system-ui tbody tr:hover{background:#f8fafd;}
+.system-ui .blank,.system-ui .empty{background:#f8fafd;border:1px dashed #cbd8e7;border-radius:11px;padding:28px;line-height:1.9;color:#41566f;}
+.system-ui :is(.shift-metrics,.receipt-metrics){gap:12px!important;margin-block:16px 22px;}
+.system-ui .shift-metrics>div{background:#f7f9fc!important;border:1px solid var(--sys-line)!important;border-radius:12px!important;min-height:106px;padding:16px!important;display:flex;flex-direction:column;justify-content:space-between;gap:14px;}
+.system-ui .shift-metrics strong{font-size:21px!important;font-weight:900;}
+.system-ui .shift-metrics span{font-size:12px!important;line-height:1.8;}
+.system-ui .pager{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:16px;border-top:1px solid #edf1f6;margin-top:16px;}
+.system-ui .catalog-top-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;}
+.system-ui .catalog-pack-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.system-ui .catalog-pack-grid:has(>#carton-fields[hidden]){grid-template-columns:1fr;}
+.system-ui .catalog-row{gap:14px;}
+.system-ui .catalog-fields{gap:16px;}
+.system-ui .catalog-buttons{padding-top:16px;border-top:1px solid #edf1f6;margin-top:6px;gap:10px;}
+.system-ui #cash-panel{grid-template-columns:minmax(0,1.6fr) minmax(330px,1fr);gap:20px;align-items:start;}
+.system-ui #cash-panel>aside{position:sticky;top:0;}
+.system-ui #cash-panel #barcode{font-size:17px!important;min-height:50px;background:#f8fafd;}
+.system-ui #cash-panel .totals strong{font-size:29px;color:#203e66;}
+.system-ui #cash-panel .due{background:#eef6f2;border-radius:10px;padding:14px;}
+.system-ui #cash-panel .due strong{color:#13694e;}
+.system-ui .footer-actions #finish-sale{width:100%;min-height:48px!important;}
+.system-ui .quick-cash-row,.system-ui .quick-discount-row{display:flex;gap:6px;flex-wrap:wrap;margin-block:10px;}
+.system-ui .pos-shortcuts-bar{border-top:1px solid #e3eaf3;background:#f8fafd;padding:12px;margin-top:16px;}
+.system-ui .receipt-head,.system-ui .toolbar{gap:16px;margin-bottom:18px;align-items:center;}
+.system-ui #module-next a{display:inline-flex;margin-top:18px;padding:11px 18px;border:1px solid var(--sys-line);background:#f3f6fb;border-radius:9px;text-decoration:none;color:#172b45;}
+.system-ui [hidden]{display:none!important;}
+}
