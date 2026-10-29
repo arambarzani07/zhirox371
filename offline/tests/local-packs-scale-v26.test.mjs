@@ -14,7 +14,7 @@ const token=makeLocalSessionCodec(secret).issue({user_id:user,store_id:store,rol
 const authHeader={Authorization:"Bearer "+token};
 function mock(){
  const calls=[];
- const pool={query:async(sql,args)=>{
+ const pool={connect:async()=>({query:pool.query,release(){}}),query:async(sql,args)=>{
    calls.push({sql,args});
    if(sql.includes("FROM zhirox_local.local_users WHERE store_id=$1 AND id=$2"))
     return {rows:[{role:"cashier",enabled:true,session_version:1,locked_until:null}]};
