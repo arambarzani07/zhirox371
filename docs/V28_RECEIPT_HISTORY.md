@@ -7,3 +7,5 @@ Rows order by created_at then id descending. A refresh captures an upper timesta
 No migration, mutation or new permission is introduced. Existing authenticated SELECT/RLS controls remain authoritative; missing schema, denied reads, missing counts and wrong-store rows show errors without local fallback. Request epochs reject obsolete list/detail results. Logout clears displayed receipts. Legacy bounded caches used by other return/report screens are independent and are not represented as completed pagination by this change.
 
 Validation: 187 Node tests, build checks; browser CI adds 123-receipt pagination, lookup beyond the old newest-100 cap, status filtering, page metrics, denied-read clearing and logout. Four new unit tests cover bigint/input boundaries, Baghdad dates, query scope and fail-closed responses. No hosted data has been changed.
+
+The self-contained preview now retains its disposable sample sales, line items and stock across iframe navigation, so sample checkout → receipt print → history stays consistent. A top-level reload resets this sample session. The preview flag is absent from production pages; regular browser tests retain isolated state.

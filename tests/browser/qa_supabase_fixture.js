@@ -6,7 +6,7 @@
   const account={id:"11111111-1111-4111-8111-111111111111",email:"owner@qa.example"};
   const store={id:"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",owner_user_id:account.id,name:"QA Only",currency:"IQD"};
   const seed={id:"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",name:"کاڵای تاقیگە",price_minor:1000,active:true,currency:"IQD",store_id:store.id};
-  const state={
+  const initialState={
     account,store,
     products:[seed],
     barcodes:[{store_id:store.id,product_id:seed.id,code:"4006381333931",unit_type:"unit",units_per_scan:1}],
@@ -14,6 +14,9 @@
     sessions:[],movements:[],sales:[],saleItems:[],stockEvents:[],memberships:[],audit:[],
     called:[],stockReceipts:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[],indexVersion:0
   };
+  // Only the self-contained preview shares disposable sample state across its iframe routes.
+  const state=window.__retailPreview&&window.parent!==window?
+    (window.parent.__retailPreviewState||(window.parent.__retailPreviewState=initialState)):initialState;
   const error=(code,message)=>({code,message});
   function isValidEan13(code){
     const clean=String(code||"").trim();
