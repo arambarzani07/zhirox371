@@ -116,7 +116,7 @@ BEGIN
           AND active FOR UPDATE;
      IF NOT FOUND THEN RAISE EXCEPTION 'unit product not available' USING ERRCODE='22023'; END IF;
      IF (v_barcode.sale_mode='unit' AND v_barcode.quantity_base_units<>1)
-       OR (v_barcode.sale_mode='carton' AND v_barcode.quantity_base_units<2)
+       OR (v_barcode.sale_mode='carton' AND (v_barcode.quantity_base_units<2 OR v_barcode.sale_price_minor IS NULL))
      THEN RAISE EXCEPTION 'invalid package definition' USING ERRCODE='22023'; END IF;
      v_mode:=v_barcode.sale_mode;
      v_base_qty:=v_barcode.quantity_base_units::bigint*v_qty;
