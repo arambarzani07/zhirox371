@@ -407,3 +407,16 @@ test('workflow mutation rolls back record, history, audit and journal together o
  try{await assert.rejects(()=>workflowWrite(uuid(995),'attendance',attendanceV27),/QA audit unavailable/);for(const table of ['public.retail_workflow_records','retail_internal.workflow_history','retail_internal.financial_requests'])assert.equal(Number(await scalar('select count(*) from '+table)),0);}
  finally{await db.exec('DROP TRIGGER qa_workflow_audit ON retail_audit_events; DROP FUNCTION public.qa_reject_workflow_audit();');}
 });
+
+test('V5 shift summary contract verifies identity, complete cash totals and own-session access',async()=>{
+ const fixture=readFileSync('tests/integration/fixture.sql','utf8'),v5=readFileSync('db/v5_cash_shifts.sql','utf8');
+ for(const name of ['retail_internal.shift_summary','public.retail_shift_summary']){
+  const start=v5.indexOf('CREATE OR REPLACE FUNCTION '+name+'('),end=v5.indexOf('$function$\n;',start)+13;
+  assert.ok(fixture.includes(v5.slice(start,end)),'Fixture must use the unchanged V5 summary function');
+ }
+ await as(owner,"select retail_cash_movement($1,$2,$3,'cash_in',173,'summary QA')",[store,shift,uuid(999)]);
+ const [r]=await as(owner,'select retail_shift_summary($1,$2) as summary',[store,shift]);
+ assert.equal(r.summary.session_id,shift);assert.equal(r.summary.status,'open');assert.equal(r.summary.opening,5000);assert.equal(r.summary.movements,173);assert.equal(r.summary.expected,5173);
+ await assert.rejects(()=>as(cashier,'select retail_shift_summary($1,$2)',[store,shift]),/not owner/i);
+ await assert.rejects(()=>as(stranger,'select retail_shift_summary($1,$2)',[store,shift]),/permission required/i);
+});

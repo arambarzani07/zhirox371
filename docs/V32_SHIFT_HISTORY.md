@@ -7,3 +7,5 @@ Own-cashier history uses 50-row exact-count server pages, open/closed filters, B
 Legacy finance/staff report snapshots retain their independent latest-30-session cache and remain bounded. This change does not certify them as complete reports or implement other cashiers' history browsing.
 
 Validation includes helper tests, 123-row browser history with the active shift outside the latest 30 rows, tenant/cashier exclusion, summary denial and recovery, delayed logout responses, and actual helper calls through the disposable local Supabase JWT/PostgREST/RLS stack. No schema migration or hosted database write is required.
+
+The local SQL fixture now includes the unchanged V5 internal/public shift-summary functions, which were previously omitted from the disposable baseline. A database regression verifies complete totals, session identity and denied access to another cashier's session. This does not add a new production endpoint.

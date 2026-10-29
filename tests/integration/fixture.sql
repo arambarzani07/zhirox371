@@ -469,3 +469,53 @@ grant execute on function public.retail_shift_open(uuid,bigint) to authenticated
 
 -- Avoid direct financial writes from the authenticated testing role.
 revoke all on public.retail_stores,public.retail_memberships,public.retail_products,public.retail_stock_balances,public.retail_cash_sessions,public.retail_cash_movements,public.retail_sales,public.retail_sale_items,public.retail_stock_events,public.retail_receipt_counters,public.retail_audit_events from authenticated;
+
+
+-- V32: existing V5 read-only summary contract, copied unchanged from db/v5_cash_shifts.sql.
+CREATE OR REPLACE FUNCTION retail_internal.shift_summary(p_store uuid, p_session uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_actor uuid:=(select auth.uid());
+ v_row public.retail_cash_sessions%rowtype;
+ v_sales numeric:=0; v_moves numeric:=0; v_expected numeric;
+begin
+ if v_actor is null or not retail_internal.has_role(p_store,array['manager','cashier'])
+ then raise exception 'Cashier permission required' using errcode='42501';end if;
+ select * into v_row from public.retail_cash_sessions where id=p_session and store_id=p_store;
+ if not found or v_row.cashier_id<>v_actor then
+   raise exception 'Not owner of cash session' using errcode='42501';end if;
+ if v_row.status='closed' then
+   return jsonb_build_object('session_id',v_row.id,'status','closed',
+      'opening',v_row.opening_cash_minor,'sales',v_row.sales_total_minor,
+      'movements',v_row.movements_net_minor,'expected',v_row.expected_cash_minor,
+      'counted',v_row.counted_cash_minor,'variance',v_row.variance_minor);
+ end if;
+ select coalesce(sum(total_minor),0) into v_sales from public.retail_sales
+  where store_id=p_store and cash_session_id=p_session and status='posted';
+ select coalesce(sum(case when kind='cash_in' then amount_minor else -amount_minor end),0)
+ into v_moves from public.retail_cash_movements where store_id=p_store and session_id=p_session;
+ v_expected:=v_row.opening_cash_minor+v_sales+v_moves;
+ return jsonb_build_object('session_id',v_row.id,'status','open',
+ 'opening',v_row.opening_cash_minor,'sales',v_sales,'movements',v_moves,
+ 'expected',v_expected);
+end
+$function$
+;
+
+revoke all on function retail_internal.shift_summary(uuid,uuid) from public,anon;
+grant execute on function retail_internal.shift_summary(uuid,uuid) to authenticated;
+
+CREATE OR REPLACE FUNCTION public.retail_shift_summary(p_store uuid, p_session uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+ select retail_internal.shift_summary(p_store,p_session);
+$function$
+;
+
+revoke all on function public.retail_shift_summary(uuid,uuid) from public,anon;
+grant execute on function public.retail_shift_summary(uuid,uuid) to authenticated;
