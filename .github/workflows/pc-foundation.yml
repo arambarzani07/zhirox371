@@ -98,6 +98,8 @@ jobs:
           done
           cat /tmp/retail-preview-server.log
           exit 1
+      - name: Check paginated returns, old receipt selection and stale detail protection
+        run: node tests/browser/v29_returns_history.mjs
       - name: Check server-paginated receipt history and complete receipt lookup
         run: node tests/browser/v28_receipt_history.mjs
       - name: Read all 60 card labels in real browser, including narrow dark viewport

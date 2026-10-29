@@ -3,12 +3,22 @@
  const base=window.supabase.createClient,q=window.__retailQA;
  const original=base();
  window.supabase.createClient=(...args)=>{const client=base(...args);return {...client,rpc:async(name,args)=>{
-  if(!['retail_return_state_v22','retail_return_item_v22','retail_report_v22'].includes(name))return client.rpc(name,args);
+  if(!['retail_find_return_receipt_v22','retail_return_state_v22','retail_return_item_v22','retail_report_v22'].includes(name))return client.rpc(name,args);
   q.called.push({name,args});
   if(q.v22Error){const error=q.v22Error;q.v22Error=null;return {data:null,error};}
+  if(name==='retail_find_return_receipt_v22'){
+   const raw=String(args.p_query||'').trim().replace(/^#/,'');
+   const sales=q.sales.filter(s=>s.store_id===args.p_store&&s.status==='posted');
+   let sale=sales.find(s=>s.id===raw||(/^\d+$/.test(raw)&&BigInt(String(s.receipt_no))===BigInt(raw)));
+   if(sale)return {data:{found:true,sale_id:sale.id,receipt_no:sale.receipt_no},error:null};
+   const ids=[...new Set(q.saleItems.filter(i=>i.store_id===args.p_store&&i.package_barcode===raw&&sales.some(s=>s.id===i.sale_id)).map(i=>i.sale_id))];
+   return {data:ids.length===1?{found:true,sale_id:ids[0]}:{found:false,ambiguous:ids.length>1},error:null};
+  }
   if(name==='retail_return_state_v22'){
-   const sale=q.sales.find(s=>s.id===args.p_sale);if(!sale)return {data:null,error:{code:'22023',message:'Receipt not found'}};
-   return {data:{sale,items:q.saleItems.filter(l=>l.sale_id===sale.id).map(l=>({...l,base_unit_snapshot:l.base_unit_snapshot||'unit',net_minor:l.net_minor??Math.round(l.quantity*l.unit_price_minor),returned_quantity:l.returned_quantity||0,returned_minor:l.returned_minor||0,remaining_quantity:l.quantity-(l.returned_quantity||0)}))},error:null};
+   const sale=q.sales.find(s=>s.id===args.p_sale&&s.store_id===args.p_store&&s.status==='posted');if(!sale)return {data:null,error:{code:'22023',message:'Receipt not found'}};
+   const result={data:{sale,items:q.saleItems.filter(l=>l.sale_id===sale.id).map(l=>({...l,base_unit_snapshot:l.base_unit_snapshot||'unit',net_minor:l.net_minor??Math.round(l.quantity*l.unit_price_minor),returned_quantity:l.returned_quantity||0,returned_minor:l.returned_minor||0,remaining_quantity:l.quantity-(l.returned_quantity||0)}))},error:null};
+   if(q.pauseReturnDetail){q.pauseReturnDetail=false;const snapshot=structuredClone(result);return new Promise(resolve=>{q.completeReturnDetail=()=>{q.completeReturnDetail=null;resolve(snapshot);};});}
+   return result;
   }
   if(name==='retail_return_item_v22'){
    const line=q.saleItems.find(l=>l.id===args.p_line&&l.sale_id===args.p_sale);if(!line||!(args.p_quantity>0)||args.p_quantity>line.quantity-(line.returned_quantity||0))return {data:null,error:{code:'22023',message:'Return exceeds remaining sold quantity'}};

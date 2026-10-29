@@ -37,6 +37,7 @@ let financeEntriesList=[],shiftSessionsHistory=[],financeState=null;
 let allSaleItems=[],productCostsMap=new Map();
 let staffProfilesMap=new Map(),storeSettings={},lastServerPingMs=null;
 let offersList=[],discountRulesList=[],couponsList=[],campaignsList=[],activePosPromo=null;
+let returnPageRows=[],returnPageOffset=0,returnPageTotal=0,returnPageFilters=null,returnListToken=0,returnLookupToken=0,returnLoading=false;
 let receiptPageRows=[],receiptPageTotal=0,receiptListEpoch=0,receiptDetailEpoch=0,receiptFilters=null,receiptLoading=false;
 let allReceipts=[],receiptsOffset=0,selectedReturnSaleId=null,selectedReturnLineId=null,returnReceiptLines=[],returnDetailToken=0,allMovements=[],shiftSummaryData=null,lastCompletedSale=null,itemReturnAttempt=null;
 let attendanceList=[],workHoursList=[],evaluationsList=[],batchLabelsQueue=[],customAlertsList=[],approvalRequestsList=[],auditEventsCache=[];
@@ -55,7 +56,7 @@ const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نیی�
  /Failed to fetch|NetworkError/i.test(e?.message||"")?"پەیوەندیی سێرڤەر/ئینتەرنێت بپشکنە":
  (e?.message||"کردارەکە سەرکەوتوو نەبوو"));
 function msg(id,value="",kind=""){const x=$(id);if(!x)return;x.textContent=value;x.className="msg"+(kind?" "+kind:"");}
-function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();syncReceiptPager();}
+function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();syncReceiptPager();syncReturnPager();}
 function pendingKey(){return store&&user?"retail_pending_checkout_"+store.id+"_"+user.id:null}
 function parkedKey(){return store&&user?"retail_parked_carts_"+store.id+"_"+user.id:null}
 function returnKey(){return store&&user?"retail_pending_return_"+store.id+"_"+user.id:null}
@@ -561,6 +562,7 @@ function selectTab(next){
  if(next==="staff"&&role!=="owner")next="cash";
  if(["stock","suppliers","finance","reports","audit"].includes(next)&&!canManage())next="cash";
  tab=next;
+ if(next!=="returns"){++returnListToken;++returnLookupToken;++returnDetailToken;returnLoading=false;}
  for(const x of ["cash","stock","customers","suppliers","finance","reports","staff","offers","labels","audit","receipts","shift","payments","returns"]){
    const panel=$(x+"-panel");
    if(panel)panel.hidden=x!==next;
@@ -4587,12 +4589,10 @@ async function returnSale(saleId,targetMsgId="receipts-msg"){
    await loadInventory();
    await refreshShift();
    await loadCustomersAndLedger();
-   await refreshReceipts();
-   await showReceipt(saleId);
    if(tab==="returns"){
      selectedReturnSaleId=saleId;
-     await refreshReturns();
-   }
+     await refreshReturns(false);
+   }else{await refreshReceipts();await showReceipt(saleId);}
    msg(targetMsgId,"پسووڵەی #"+String(data?.receipt_no||"").padStart(6,"0")+" گەڕێندرایەوە و بڕی کاڵاکان گەڕایەوە بۆ کۆگا","success");
  }catch(err){
    if(["22023","42501","22P02","23505","23514","PGRST202","42883"].includes(err?.code)){
@@ -4965,7 +4965,7 @@ function updateReturnItemBarcodes(){
  selectedReturnLineId=line?.id||null;
  const codeSel=$("return-item-barcode"),qtyIn=$("return-item-qty"),refundIn=$("return-item-refund");
  if(codeSel){codeSel.replaceChildren();if(line){const option=document.createElement("option");option.value=line.package_barcode||"";option.textContent=line.package_barcode||"—";codeSel.append(option);}codeSel.disabled=true;}
- if(!line){if(refundIn)refundIn.value="";return;}
+ if(!line){if(refundIn)refundIn.value="";if(qtyIn){qtyIn.value="";qtyIn.removeAttribute("max");}return;}
  const kg=line.base_unit_snapshot==="kg";
  if(qtyIn){qtyIn.step=kg?"0.001":"1";qtyIn.min=kg?"0.001":"1";qtyIn.max=String(line.remaining_quantity);if(!(Number(qtyIn.value)>0)||Number(qtyIn.value)>Number(line.remaining_quantity))qtyIn.value=String(line.remaining_quantity);}
  const qty=Number(qtyIn?.value||0);
@@ -4983,16 +4983,23 @@ function populateReturnItemProducts(){
  if([...select.options].some(o=>o.value===previous))select.value=previous;
  updateReturnItemBarcodes();
 }
+function clearReturnSelection(){
+ ++returnDetailToken;selectedReturnSaleId=null;selectedReturnLineId=null;returnReceiptLines=[];populateReturnItemProducts();
+ $("returns-selected-box").hidden=true;$("returns-selected-box").replaceChildren();$("returns-item-form").hidden=true;
+}
 async function showReturnReceiptDetail(saleId){
- if(!db||!store||!saleId)return;
+ if(!db||!store||!user||!saleId||tab!=="returns")return;
+ const storeId=store.id,actor=user.id;
+ $("returns-item-form").hidden=true;
  selectedReturnSaleId=saleId;
  selectedReturnLineId=null;returnReceiptLines=[];populateReturnItemProducts();
  const oldBox=$("returns-selected-box");if(oldBox)oldBox.hidden=true;
  const token=++returnDetailToken;
  const {data,error}=await db.rpc("retail_return_state_v22",{p_store:store.id,p_sale:saleId});
- if(token!==returnDetailToken)return;
- if(error||!data?.sale){msg("returns-msg",safe(error||new Error("پسووڵە نەدۆزرایەوە")),"error");return;}
+ if(token!==returnDetailToken||store?.id!==storeId||user?.id!==actor||tab!=="returns")return;
+ if(error||!data?.sale||data.sale.id!==saleId||!Array.isArray(data.items)){msg("returns-msg",safe(error||new Error("پسووڵە نەدۆزرایەوە")),"error");return;}
  const sale=data.sale,items={data:data.items||[]};returnReceiptLines=items.data;populateReturnItemProducts();
+ $("returns-item-form").hidden=!!sale.refunded||!returnReceiptLines.some(line=>Number(line.remaining_quantity)>0);
  const box=$("returns-selected-box");
  if(!box)return;
  box.replaceChildren();box.hidden=false;
@@ -5060,22 +5067,8 @@ function renderReturnsList(){
  const root=$("returns-list");
  if(!root)return;
  root.replaceChildren();
- const refundedRows=allReceipts.filter(s=>s.refunded);
- const activeRows=allReceipts.filter(s=>!s.refunded);
- const refundedSum=refundedRows.reduce((n,s)=>n+Number(s.total_minor||0),0);
- if($("ret-metric-count"))$("ret-metric-count").textContent=refundedRows.length.toLocaleString("en-US");
- if($("ret-metric-amount"))$("ret-metric-amount").textContent=money(refundedSum);
- if($("ret-metric-active"))$("ret-metric-active").textContent=activeRows.length.toLocaleString("en-US");
- if($("ret-metric-shift"))$("ret-metric-shift").textContent=shiftSession?"کراوە (چالاک)":"داخراوە";
- const mode=String($("returns-filter-mode")?.value||"all");
- const q=String($("returns-search-input")?.value||"").trim().replace(/^#/,"").toLowerCase();
- const rows=allReceipts.filter(s=>{
-   if(mode==="active"&&s.refunded)return false;
-   if(mode==="refunded"&&!s.refunded)return false;
-   if(!q)return true;
-   const rNo=String(s.receipt_no??"");
-   return rNo.includes(q)||rNo.padStart(6,"0").includes(q)||String(s.id||"").toLowerCase().includes(q);
- });
+ const rows=returnPageRows;
+ syncReturnPager();
  if(!rows.length){
    const empty=document.createElement("div");empty.className="blank";empty.textContent="هیچ پسووڵەیەک نەدۆزرایەوە";root.append(empty);
    return;
@@ -5103,14 +5096,32 @@ function renderReturnsList(){
  }
  root.append(table);
 }
-async function refreshReturns(){
- if(!db||!store)return;
- msg("returns-msg","");
- populateReturnItemProducts();
- await refreshReceipts();
- renderReturnsList();
- const targetId=selectedReturnSaleId||allReceipts[0]?.id||null;
- if(targetId)await showReturnReceiptDetail(targetId);
+function syncReturnPager(){
+ const pager=$("returns-pagination");if(!pager)return;
+ $("returns-page-info").textContent=returnPageRows.length?(returnPageOffset+1)+"–"+(returnPageOffset+returnPageRows.length)+" / "+returnPageTotal:"0 / "+returnPageTotal;
+ $("returns-prev").disabled=busy||returnLoading||returnPageOffset<=0;
+ $("returns-next").disabled=busy||returnLoading||returnPageOffset+RECEIPTS_PAGE_SIZE>=returnPageTotal;
+}
+async function refreshReturns(reset=true,keepSelected=true){
+ if(!db||!store||!user||tab!=="returns")return;
+ const storeId=store.id,actor=user.id,token=++returnListToken,wanted=keepSelected?selectedReturnSaleId:null;
+ ++returnLookupToken;clearReturnSelection();returnPageRows=[];returnPageTotal=0;returnLoading=true;
+ $("returns-list").replaceChildren();syncReturnPager();msg("returns-msg","وەرگرتنی پسووڵەکان…");
+ const current=()=>token===returnListToken&&store?.id===storeId&&user?.id===actor&&tab==="returns";
+ try{
+  if(reset||!returnPageFilters){returnPageOffset=0;returnPageFilters=window.RetailReceiptHistory.criteria({status:$("returns-filter-mode").value});}
+  let result=await window.RetailReceiptHistory.read({db,store:storeId,filters:returnPageFilters,offset:returnPageOffset});if(!current())return;
+  if(returnPageOffset>0&&!result.rows.length&&result.total<=returnPageOffset){
+   returnPageOffset=result.total?Math.floor((result.total-1)/RECEIPTS_PAGE_SIZE)*RECEIPTS_PAGE_SIZE:0;
+   result=await window.RetailReceiptHistory.read({db,store:storeId,filters:returnPageFilters,offset:returnPageOffset});if(!current())return;
+  }
+  returnPageRows=result.rows;returnPageTotal=result.total;returnLoading=false;renderReturnsList();msg("returns-msg","");
+  const targetId=wanted||returnPageRows[0]?.id;if(targetId)await showReturnReceiptDetail(targetId);
+ }catch(error){
+  if(!current())return;
+  returnPageRows=[];returnPageTotal=0;returnPageFilters=null;clearReturnSelection();$("returns-list").replaceChildren();
+  msg("returns-msg",safe(error),"error");
+ }finally{if(token===returnListToken){returnLoading=false;syncReturnPager();}}
 }
 async function renderCashCatalogSearch(queryOverride){
  const box=$("cash-search-results");
@@ -5314,24 +5325,27 @@ async function init(){
  });
  $("pay-retry")?.addEventListener("click",()=>{if(!busy)void commitCashMovement("payments-msg");});
  $("returns-refresh")?.addEventListener("click",()=>{if(!busy)void refreshReturns();});
- $("returns-filter-mode")?.addEventListener("change",renderReturnsList);
+ $("returns-filter-mode")?.addEventListener("change",()=>{if(!busy)void refreshReturns(true,false);});
  $("returns-clear-search")?.addEventListener("click",()=>{
   if($("returns-search-input"))$("returns-search-input").value="";
-  renderReturnsList();
+  if(!busy)void refreshReturns(true,false);
  });
+ $("returns-prev")?.addEventListener("click",()=>{if(!busy&&!returnLoading&&returnPageOffset>=RECEIPTS_PAGE_SIZE){returnPageOffset-=RECEIPTS_PAGE_SIZE;void refreshReturns(false,false);}});
+ $("returns-next")?.addEventListener("click",()=>{if(!busy&&!returnLoading&&returnPageOffset+RECEIPTS_PAGE_SIZE<returnPageTotal){returnPageOffset+=RECEIPTS_PAGE_SIZE;void refreshReturns(false,false);}});
  $("returns-lookup-form")?.addEventListener("submit",async e=>{
   e.preventDefault();if(!db||!store||busy)return;
   const raw=String($("returns-search-input")?.value||"").trim();if(!raw)return;
-  selectedReturnSaleId=null;selectedReturnLineId=null;returnReceiptLines=[];returnDetailToken++;
-  populateReturnItemProducts();if($("returns-selected-box"))$("returns-selected-box").hidden=true;
+  const token=++returnLookupToken,storeId=store.id,actor=user?.id;
+  ++returnListToken;returnLoading=false;clearReturnSelection();syncReturnPager();
   lock(true);msg("returns-msg","");
   try{
    const {data,error}=await db.rpc("retail_find_return_receipt_v22",{p_store:store.id,p_query:raw});
+   if(token!==returnLookupToken||store?.id!==storeId||user?.id!==actor||tab!=="returns")return;
    if(error)throw error;
    if(data?.ambiguous){msg("returns-msg","ئەم بارکۆدە لە چەند پسووڵەیەکدا هەیە؛ ژمارەی پسووڵە دیاری بکە","error");return;}
    if(!data?.found){msg("returns-msg","پسووڵە نەدۆزرایەوە","error");return;}
    await showReturnReceiptDetail(data.sale_id);
-  }catch(err){msg("returns-msg",safe(err),"error");}finally{lock(false);}
+  }catch(err){if(token===returnLookupToken&&store?.id===storeId&&user?.id===actor&&tab==="returns")msg("returns-msg",safe(err),"error");}finally{lock(false);}
  });
  $("returns-list")?.addEventListener("click",e=>{
   const ret=e.target.closest("[data-return-sale]");
@@ -5348,7 +5362,7 @@ async function init(){
   lock(true);msg("returns-msg","");
   try{
    const result=await financialRpc("return-item","retail_return_item_v22",{p_store:store.id,p_sale:selectedReturnSaleId,p_line:selectedReturnLineId,p_quantity:Number($("return-item-qty")?.value||0),p_session:shiftSession.id,p_note:$("return-item-note")?.value.trim()||""});
-   await loadInventory();await refreshShift();await loadCustomersAndLedger();await refreshReceipts();await showReturnReceiptDetail(selectedReturnSaleId);
+   await loadInventory();await refreshShift();await loadCustomersAndLedger();await refreshReturns(false);
    msg("returns-msg","گەڕاندنەوە تۆمارکرا — پارە: "+money(result.cash_refunded_minor)+" | کەمکردنەوەی قەرز: "+money(result.debt_reduced_minor),"success");
   }catch(err){msg("returns-msg",safe(err),"error");}finally{lock(false);}
  });
@@ -5375,6 +5389,7 @@ $("login-form").addEventListener("submit",async e=>{
  finally{btn.disabled=false;}
 });
 $("logout").onclick=async()=>{
+ ++returnListToken;++returnLookupToken;returnPageRows=[];returnPageTotal=0;returnPageOffset=0;returnPageFilters=null;returnLoading=false;clearReturnSelection();$("returns-list").replaceChildren();$("returns-search-input").value="";$("return-item-note").value="";syncReturnPager();
  ++receiptListEpoch;++receiptDetailEpoch;receiptPageRows=[];receiptPageTotal=0;receiptFilters=null;receiptsOffset=0;receiptLoading=false;$("receipts-list").replaceChildren();$("receipt-detail").replaceChildren();$("receipt-detail").hidden=true;updateReceiptsMetrics([]);syncReceiptPager();
  user=null;store=null;role=null;products=[];barcodes=[];prefixCache.clear();cart=[];parkedCarts=[];requestId=null;pendingCheckout=null;shiftSession=null;pendingCashMovement=null;stockAttempt=null;returnAttempt=null;allReceipts=[];allMovements=[];selectedReturnSaleId=null;lastCompletedSale=null;viewPanel("login");
  msg("login-msg");
