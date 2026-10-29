@@ -34,8 +34,8 @@ test("Local API authorizes the caller and checkout SQL is server scoped",()=>{
  assert.match(server,/auth\.authorize\(match\[1\]\)/);
  assert.match(server,/caller_must_not_supply_identity/);
  assert.match(server,/\[principal\.store_id, principal\.user_id, input\.request_id, JSON\.stringify\(input\.lines\)\]/);
- assert.match(client,/"/api\/local\/v3\/checkout"/);
- assert.match(client,/"/api\/local\/v4\/barcode\?code="/);
+ assert.ok(client.includes('"/api/local/v3/checkout"'));
+ assert.ok(client.includes('"/api/local/v4/barcode?code="'));
  assert.match(client,/Number\.isSafeInteger\(line\.qty\)/);
 });
 
