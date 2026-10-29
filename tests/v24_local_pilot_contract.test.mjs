@@ -34,7 +34,7 @@ test("Local API authorizes the caller and checkout SQL is server scoped",()=>{
  assert.match(server,/auth\.authorize\(match\[1\]\)/);
  assert.match(server,/caller_must_not_supply_identity/);
  assert.match(server,/\[principal\.store_id, principal\.user_id, input\.request_id, JSON\.stringify\(input\.lines\)\]/);
- assert.ok(client.includes('"/api/local/v3/checkout"'));
+ assert.ok(client.includes('"/api/local/v25/checkout"'));
  assert.ok(client.includes('"/api/local/v4/barcode?code="'));
  assert.match(client,/Number\.isSafeInteger\(line\.qty\)/);
 });
@@ -44,6 +44,8 @@ test("An ambiguous checkout freezes basket, preserves UUID and offers replay onl
  assert.match(ui,/pending\?"دووبارە ناردنی هەمان داواکاری"/);
  assert.match(ui,/setPending\(request\)/);
  assert.match(ui,/if\(pending\)request=pending/);
+ assert.match(ui,/crypto\.randomUUID\(\),total\)/);
+ assert.match(client,/expected_total_minor: number/);
  assert.match(ui,/sessionStorage\.removeItem\(pendingKey\(store\)\)/);
  assert.match(ui,/!!pending/);
  assert.match(ui,/کارتۆن، کیلۆگرام، داشکاندن، قەرز/);
