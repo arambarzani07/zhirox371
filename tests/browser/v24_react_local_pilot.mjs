@@ -31,10 +31,11 @@ await page.route("**/api/local/**",async route=>{
        price_minor:"2500",stock_base_units:"10"
      }})});
  }
- if(path==="/api/local/v3/checkout"){
+ if(path==="/api/local/v25/checkout"){
    assert.equal(request.method(),"POST");attempts++;
    const body=request.postDataJSON();requests.push(body);
    assert.deepEqual(body.lines,[{product_id:prod,qty:1}]);
+   assert.equal(body.expected_total_minor,2500);
    assert.ok(!("store_id" in body)&&!("cashier_id" in body));
    assert.match(body.request_id,/^[a-f0-9-]{36}$/i);
    if(attempts===1)return route.fulfill({status:503,contentType:"application/json",
