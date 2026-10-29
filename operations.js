@@ -8686,7 +8686,7 @@ $("pos-coupon-code")?.addEventListener("keydown",e=>{
 
 $("shift-refresh").addEventListener("click",()=>{if(!busy)void refreshShift()});
 $("shift-open-form").addEventListener("submit",async e=>{
- e.preventDefault();if(!db||!store||busy||shiftSession||!paymentVerified)return;
+ e.preventDefault();if(!db||!store||busy||shiftSession)return;
  const opening=Number(new FormData(e.target).get("opening"));
  if(!Number.isSafeInteger(opening)||opening<0||opening>9999999999999){msg("shift-msg","بڕی سەرەتایی نادروستە","error");return}
  lock(true);msg("shift-msg");
