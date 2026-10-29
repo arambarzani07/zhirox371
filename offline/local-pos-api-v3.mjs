@@ -35,7 +35,7 @@ export function createLocalPosHandlerV3({ pool, secret, clock }){
     if (req.method === "GET" && req.url === "/health")
       return send(res, 200, { status: "alive", scope: "offline-auth-v3-test" });
     if (req.method !== "POST" ||
-      !["/api/local/v3/login", "/api/local/v3/checkout", "/api/local/v25/checkout"].includes(req.url))
+      !["/api/local/v3/login", "/api/local/v3/checkout", "/api/local/v25/checkout", "/api/local/v26/checkout"].includes(req.url))
       return send(res, 404, { error: "not_found" });
     const parsed = await parseBody(req);
     if (parsed.error) return send(res, parsed.status, { error: parsed.error });
@@ -52,18 +52,24 @@ export function createLocalPosHandlerV3({ pool, secret, clock }){
       if (!principal) return send(res, 401, { error: "invalid_session" });
       if ("cashier_id" in input || "store_id" in input)
         return send(res, 400, { error: "caller_must_not_supply_identity" });
+      const packsV26 = req.url === "/api/local/v26/checkout";
       if (!UUID.test(input.request_id || "") ||
           !Array.isArray(input.lines) || input.lines.length === 0 || input.lines.length > 100 ||
-          !input.lines.every(line => line && UUID.test(line.product_id || "") &&
-            Number.isSafeInteger(line.qty) && line.qty > 0))
+          !input.lines.every(line => line && Number.isSafeInteger(line.qty) &&
+            line.qty > 0 && line.qty <= 100 && (packsV26 ?
+              typeof line.barcode==="string" && /^[A-Za-z0-9._-]{4,80}$/.test(line.barcode):
+              UUID.test(line.product_id || ""))))
         return send(res, 400, { error: "invalid_checkout" });
-      const lockedPrice = req.url === "/api/local/v25/checkout";
+      const lockedPrice = req.url === "/api/local/v25/checkout" || packsV26;
       if (lockedPrice && (!Number.isSafeInteger(input.expected_total_minor) ||
             input.expected_total_minor < 0 || input.expected_total_minor > 9999999999999))
         return send(res,400,{error:"invalid_expected_total"});
       const client = await pool.connect();
       try {
-        const result = lockedPrice
+        const result = packsV26 ? await client.query(
+            "SELECT * FROM zhirox_local.checkout_packs_scale_v26($1::uuid,$2::uuid,$3::uuid,$4::jsonb,$5::bigint)",
+            [principal.store_id, principal.user_id, input.request_id, JSON.stringify(input.lines), input.expected_total_minor]
+          ) : lockedPrice
           ? await client.query(
             "SELECT * FROM zhirox_local.checkout_cash_v25($1::uuid,$2::uuid,$3::uuid,$4::jsonb,$5::bigint)",
             [principal.store_id, principal.user_id, input.request_id, JSON.stringify(input.lines), input.expected_total_minor]

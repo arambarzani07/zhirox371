@@ -44,13 +44,18 @@ export const LocalPostgresPilotV24:React.FC=()=>{
    const barcode=scan.trim();setBusy(true);setError("");
    try{
      const p=await scanLocal(token,barcode);
-     const existing=cart.find(x=>x.item.id===p.id);
-     if(existing&&existing.item.price_minor!==p.price_minor)
-       throw new Error("نرخی کاڵا گۆڕاوە؛ پێویستە سەبەتە نوێ بکرێتەوە");
-     const currentQty=existing?.qty||0;
-     if(currentQty+1>100||currentQty+1>p.stock_base_units)
-       throw new Error("بڕی کۆگا بەش ناکات");
-     setCart(prev=>existing?prev.map(x=>x.item.id===p.id?{item:p,qty:x.qty+1}:x):[...prev,{item:p,qty:1}]);
+     const existing=cart.find(x=>x.item.barcode===p.barcode);
+     if(existing&&p.sale_mode==="scale")
+       throw new Error("ئەم لیبڵەی کێشدارە پێشتر سکان کراوە؛ دووبارەی مەکە");
+     if(existing&&(existing.item.price_minor!==p.price_minor||
+       existing.item.quantity_base_units!==p.quantity_base_units||
+       existing.item.sale_mode!==p.sale_mode))
+       throw new Error("نرخ یان یەکەی کاڵا گۆڕاوە؛ پێویستە سەبەتە نوێ بکرێتەوە");
+     const used=cart.reduce((n,x)=>n+(x.item.id===p.id?x.qty*x.item.quantity_base_units:0),0);
+     if(used+p.quantity_base_units>p.stock_base_units||cart.length>=100&&!existing||
+       (existing&&existing.qty>=100))throw new Error("بڕی کۆگا بەش ناکات");
+     setCart(prev=>existing?prev.map(x=>x.item.barcode===p.barcode?
+       {...x,qty:x.qty+1}:x):[...prev,{item:p,qty:1}]);
      setScan("");
    }catch(err){setError(err instanceof Error?err.message:"سکان نەکرا");}
    finally {setBusy(false);}
@@ -62,9 +67,15 @@ export const LocalPostgresPilotV24:React.FC=()=>{
    try {
      if(pending)request=pending;
      else{
-       if(cart.some(x=>!Number.isSafeInteger(x.qty)||x.qty<1||x.qty>x.item.stock_base_units))
-         throw new Error("بڕی کۆگا نادروستە");
-       request=makePilotPending(cart.map(x=>({product_id:x.item.id,qty:x.qty})),crypto.randomUUID(),total);
+       if(cart.some(x=>!Number.isSafeInteger(x.qty)||x.qty<1||x.qty>100||
+         x.item.sale_mode==="scale"&&x.qty!==1))
+         throw new Error("بڕی کاڵا نادروستە");
+       for(const x of cart){
+         const taken=cart.reduce((n,l)=>n+(l.item.id===x.item.id?
+           l.qty*l.item.quantity_base_units:0),0);
+         if(taken>x.item.stock_base_units)throw new Error("بڕی کۆگا بەش ناکات");
+       }
+       request=makePilotPending(cart.map(x=>({barcode:x.item.barcode,qty:x.qty})),crypto.randomUUID(),total);
        // Persist before sending: uncertain network results MUST retry the same UUID.
        sessionStorage.setItem(pendingKey(store),JSON.stringify(request));
        setPending(request);
@@ -87,18 +98,26 @@ export const LocalPostgresPilotV24:React.FC=()=>{
      }
    }finally{setBusy(false);}
  };
- const changeQty=(id:string,delta:number)=>{
+ const changeQty=(barcode:string,delta:number)=>{
    if(busy||pending)return;
-   setCart(prev=>prev.flatMap(x=>x.item.id!==id?[x]:x.qty+delta>0?[{...x,qty:Math.min(100,Math.min(x.item.stock_base_units,x.qty+delta))}]:[]));
+   setCart(prev=>prev.flatMap(x=>{
+     if(x.item.barcode!==barcode)return [x];
+     const target=x.qty+delta;
+     if(target<=0)return [];
+     if(x.item.sale_mode==="scale"||target>100)return [x];
+     const others=prev.reduce((n,l)=>n+(l.item.id===x.item.id&&l.item.barcode!==barcode?
+       l.qty*l.item.quantity_base_units:0),0);
+     return target*x.item.quantity_base_units+others>x.item.stock_base_units?[x]:[{...x,qty:target}];
+   }));
  };
  return <section style={box} dir="rtl" aria-label="تاقیکردنەوەی PostgreSQL ـی ناوخۆیی">
    <button type="button" onClick={()=>setOpen(x=>!x)} style={{fontWeight:850,padding:9}}>
-     {open?"داخستنی":"کردنەوەی"} V24 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
+     {open?"داخستنی":"کردنەوەی"} V26 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
    </button>
    {open&&<div style={{marginTop:12}}>
      <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
-       تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ نەختینە و دانە تەنها. نرخی کۆتایی لە سێرڤەر پشتڕاست دەکرێتەوە.
-       کارتۆن، کیلۆگرام، داشکاندن، قەرز و فرۆشتنی Production پشتگیری ناکرێن.
+       تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ دانە، کارتۆن و کیلۆگرام بە نەختینە. نرخی کۆتایی لە سێرڤەر پشتڕاست دەکرێتەوە.
+       داشکاندن، قەرز و فرۆشتنی Production پشتگیری ناکرێن.
        ئەم بەشە بە سەبەتەی Demo تێکەڵ نابێت.
      </div>
      {!available?<form onSubmit={submitLogin} style={{marginTop:12}}>
@@ -112,17 +131,21 @@ export const LocalPostgresPilotV24:React.FC=()=>{
        <div style={{marginTop:10}}>پەیوەندی ناوخۆیی چالاکە — تەنها هەمان PC</div>
        <form onSubmit={submitScan} style={{display:"flex",gap:8,marginTop:10}}>
          <input style={{...inputStyle,flex:1}} value={scan} onChange={e=>setScan(e.target.value)}
-           aria-label="بارکۆدی کاڵای دانە" placeholder="بارکۆدی دانە بسکانە" disabled={busy||!!pending}/>
+           aria-label="بارکۆدی دانە، کارتۆن یان تەرازوو" placeholder="بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە" disabled={busy||!!pending}/>
          <button type="submit" disabled={busy||!!pending}>سکان</button>
        </form>
        <table style={{borderCollapse:"collapse",width:"100%",marginTop:10}}>
          <thead><tr>{["ژمارە","ناوی کاڵا","یەکە","نرخ","بڕ","کۆ"].map(x=><th key={x} style={{border:"1px solid #555",padding:6}}>{x}</th>)}</tr></thead>
-         <tbody>{cart.map((x,i)=><tr key={x.item.id}>
-           {[i+1,x.item.name,"دانە",money(x.item.price_minor)].map((v,k)=><td key={k} style={{border:"1px solid #555",padding:7}}>{v}</td>)}
+         <tbody>{cart.map((x,i)=><tr key={x.item.barcode}>
+           {[i+1,x.item.name,x.item.sale_mode==="scale"?"کیلۆگرام":
+              x.item.sale_mode==="carton"?"کارتۆن":"دانە",
+              x.item.sale_mode==="scale"?money(x.item.unit_price_minor):money(x.item.price_minor)
+           ].map((v,k)=><td key={k} style={{border:"1px solid #555",padding:7}}>{v}</td>)}
            <td style={{border:"1px solid #555",padding:7}}>
-             <button disabled={busy||!!pending} type="button" onClick={()=>changeQty(x.item.id,-1)}>−</button>
-             <strong style={{margin:7}}>{x.qty}</strong>
-             <button disabled={busy||!!pending} type="button" onClick={()=>changeQty(x.item.id,1)}>+</button>
+             <button disabled={busy||!!pending} type="button" onClick={()=>changeQty(x.item.barcode,-1)}>−</button>
+             <strong style={{margin:7}}>{x.item.sale_mode==="scale"?
+                (x.item.quantity_base_units/1000).toFixed(3):x.qty}</strong>
+             <button disabled={busy||!!pending||x.item.sale_mode==="scale"} type="button" onClick={()=>changeQty(x.item.barcode,1)}>+</button>
            </td><td style={{border:"1px solid #555",padding:7}}>{money(x.qty*x.item.price_minor)}</td>
          </tr>)}</tbody>
        </table>
