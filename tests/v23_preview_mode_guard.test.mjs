@@ -40,7 +40,7 @@ test("React cashier is visibly marked as browser-only demo, including keyboard c
  assert.match(cashier,/role="status" aria-label="دۆخی تاقیکردنەوەی کاشێر"/);
  assert.match(cashier,/فرۆشتنی ڕاستەقینە نییە/);
  assert.match(app,/const STORAGE_KEY = 'kanichnar_retail_pos_v18'/);
- assert.match(app,/const receiptNum = `DEMO-RCP-`/);
+ assert.ok(app.includes('const receiptNum = `DEMO-RCP-'), 'receipt IDs must be unmistakably demo-only');
  assert.match(app,/فرۆشتنی تاقیکردنەوە/);
 });
 test("Every printable React thermal receipt is marked not a fiscal sale",()=>{
