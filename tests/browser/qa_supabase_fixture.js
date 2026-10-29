@@ -414,13 +414,13 @@
           state.indexVersion=(state.indexVersion||0)+1;
           const id="ffffffff-ffff-4fff-8fff-"+String(++state.nextReceipt).padStart(12,"0");
           const sale={id,store_id:store.id,
-            receipt_no:state.nextReceipt,total_minor:total,cash_received_minor:args.p_cash_received,
+            receipt_no:state.nextReceipt,total_minor:total,refunded:false,returned_minor_total:0,cash_received_minor:args.p_cash_received,
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,cashier_id:account.id,status:"posted",
             created_at:new Date().toISOString()};
           state.sales.push(sale);
           for(const x of items){
             const p=idx.productById.get(x.product_id);
-            state.saleItems.push({store_id:store.id,sale_id:id,product_id:x.product_id,quantity:x.quantity,
+            state.saleItems.push({id:crypto.randomUUID(),store_id:store.id,sale_id:id,product_id:x.product_id,quantity:x.quantity,
               unit_price_minor:p?.price_minor||0,package_type:"unit",units_per_package:1,base_units:x.quantity,
               product_name_snapshot:p?.name||""});
           }
@@ -491,11 +491,11 @@
           }
           state.indexVersion=(state.indexVersion||0)+1;
           state.sales.push({id,store_id:store.id,receipt_no:state.nextReceipt,
-            total_minor:total,discount_minor:discount,cash_received_minor:args.p_cash_received,
+            total_minor:total,discount_minor:discount,refunded:false,returned_minor_total:0,cash_received_minor:args.p_cash_received,
             change_due_minor:args.p_cash_received-total,cash_session_id:shift.id,
             cashier_id:account.id,status:"posted",refunded:false,request_id:args.p_request,
             request_payload:payload,created_at:new Date().toISOString()});
-          for(const entry of saleLines)state.saleItems.push({...entry,store_id:store.id,sale_id:id});
+          for(const entry of saleLines)state.saleItems.push({id:crypto.randomUUID(),...entry,store_id:store.id,sale_id:id});
           data=id;
         }
       }

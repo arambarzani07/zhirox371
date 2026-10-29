@@ -7,3 +7,5 @@ The existing V22 exact receipt-number, UUID and recorded-barcode lookup remains 
 List, lookup and detail responses are guarded against later requests, tab changes, store/account changes and logout. Failed list reads clear records and selection. Logout removes receipt lines, notes, search and detail content. No new local data fallback, financial protocol, permission or migration is introduced. Other legacy report caches remain bounded.
 
 Validation: 187 existing Node tests and build checks; a new browser regression uses 123 receipts, an old discounted line refund, ambiguous/unique barcode lookup, status filtering, failed list reads and deliberately delayed detail replies across filter changes/logout. Existing database, concurrency and Auth/RLS CI checks remain in force. No hosted database or live transaction is changed.
+
+Sample checkout lines now receive stable UUIDs and explicit refund defaults in the isolated preview fixture, so their return selectors match the real server line-identity contract. The browser regression also checks a newly created sample receipt and its selected line.
