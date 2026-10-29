@@ -125,6 +125,9 @@ export const CashierPos: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '16px 24px 32px' }}>
+      <div role="status" aria-label="دۆخی تاقیکردنەوەی کاشێر" style={{padding:'9px 14px',marginBottom:'12px',border:'1px solid #a85d16',borderRadius:'8px',background:'#fff7ed',color:'#7c2d12',fontSize:'13px',fontWeight:850,textAlign:'center'}}>
+        تاقیکردنەوە — داتای ئەم کاشێرە لە وێبگەڕ پاشەکەوت دەکرێت؛ فرۆشتنی ڕاستەقینە نییە
+      </div>
       {/* Top POS Toolbar */}
       <div
         style={{

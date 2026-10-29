@@ -2,14 +2,18 @@
 window.RETAIL_CONFIG=Object.freeze({
   supabaseUrl:"https://qcfmlyyzfykzszvtllrw.supabase.co",
   publishableKey:"sb_publishable_lEEIz_8byZDKfVZ-ym3jIA_bbE8pX_Y",
-  offlineFirst:true,
+  // A client-side flag is not a verified offline PostgreSQL deployment.
+  // LocalStorage/seeded users are expressly a disposable demo, never production auth.
+  offlineFirst:window.RETAIL_DEMO_MODE===true,
   preferredDisk:"D:\\SupermarketPOS_Data",
   pcBackupDir:"D:\\SupermarketPOS_Data\\backups",
   hourlySyncIntervalMs:3600000
 });
 
 (function initRetailOfflineEngine(){
-  if(typeof window==="undefined")return;
+  // Fail closed: an unauthenticated browser demo must NEVER replace real Supabase
+  // or start sync/backup timers on a normal store or Google AI Studio origin.
+  if(typeof window==="undefined"||window.RETAIL_DEMO_MODE!==true)return;
 
   if("serviceWorker" in navigator && !window.__retailQA){
     window.addEventListener("load",()=>{

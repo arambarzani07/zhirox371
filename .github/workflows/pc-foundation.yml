@@ -1,14 +1,10 @@
-name: Retail OS PC Foundation Checks
+# ARCHIVED LEGACY REGRESSION: this checks the immutable, pre-React V20 baseline.
+# React/Vite main no longer contains operations.js, operations.html or qa.html.
+# These historical tests are preserved for manual verification, not claimed as
+# current React coverage. Current runtime is tested by v23-react-preview-safety.yml.
+name: Legacy V20 PC regression (archived, manual)
 on:
-  push:
-    branches:
-      - feature/retail-os-pc-foundation
-      - feature/v18-catalog-scaling
-      - "feature/**"
-      - "audit/**"
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -19,6 +15,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Immutable historical UI and SQL contract; never compare this to React.
+          ref: 44ef8f2a246787b1682c748509977c1591b7b1ab
       - name: Fetch immutable design baseline
         run: git fetch origin +refs/heads/design-lock/pc-home-v1:refs/remotes/origin/design-lock/pc-home-v1
       - name: Configure Node
@@ -53,6 +51,8 @@ jobs:
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
+        with:
+          ref: 44ef8f2a246787b1682c748509977c1591b7b1ab
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -70,6 +70,8 @@ jobs:
     steps:
       - name: Checkout PC design source
         uses: actions/checkout@v4
+        with:
+          ref: 44ef8f2a246787b1682c748509977c1591b7b1ab
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -126,6 +128,8 @@ jobs:
     steps:
       - name: Checkout repository (never a hosted DB)
         uses: actions/checkout@v4
+        with:
+          ref: 44ef8f2a246787b1682c748509977c1591b7b1ab
       - name: Node 22 for authenticated E2E assertions
         uses: actions/setup-node@v4
         with:

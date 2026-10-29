@@ -169,7 +169,10 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
                 سوپەرمارکێتی کانی چنار
               </h2>
               <div style={{ fontSize: '10px', fontWeight: 800, margin: '2px 0' }}>
-                پسووڵەی فرۆشتن
+                پسووڵەی تاقیکردنەوە
+              </div>
+              <div data-demo-watermark="true" style={{fontSize:'10px',fontWeight:900,textAlign:'center',border:'2px solid #111',padding:'3px',margin:'6px 0'}}>
+                تاقیکردنەوە — بەڵگەی فرۆشتنی ڕاستەقینە نییە
               </div>
               <div style={{ fontSize: '9px', margin: '2px 0' }}>
                 ناونیشان: {storeAddress}
