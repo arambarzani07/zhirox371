@@ -252,6 +252,7 @@ select option{color:#0f172a;font-size:14px}
 <script src="./audit-history.js"></script>
 <script src="./payments-history.js"></script>
 <script src="./shift-history.js"></script>
+<script src="./customer-accounts.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./system-ui.css">
 <link rel="stylesheet" href="./ui-contrast-lock.css">
@@ -723,11 +724,12 @@ select option{color:#0f172a;font-size:14px}
 <button type="button" data-cust-sub="payments">پارەدانەکان</button>
 </div>
 </div>
+<div class="formrow"><button id="customers-read-refresh" class="secondary" type="button">نوێکردنەوەی حیسابەکان</button><div id="customers-read-scope" class="msg" role="status"></div></div>
 <div id="cust-sub-directory">
 <div class="shift-metrics" id="cust-directory-metrics" style="margin-top:8px;margin-bottom:14px">
-<div><span>کۆی کڕیارە تۆمارکراوەکان</span><strong id="cust-kpi-total">0</strong></div>
+<div><span>کڕیارە بارکراوەکان</span><strong id="cust-kpi-total">0</strong></div>
 <div><span>کڕیارە قەرزدارەکان</span><strong id="cust-kpi-debtors">0</strong></div>
-<div><span>کۆی گشتیی قەرزی لای کڕیاران</span><strong id="cust-kpi-total-debt">0 IQD</strong></div>
+<div><span>قەرزی کڕیارە بارکراوەکان</span><strong id="cust-kpi-total-debt">0 IQD</strong></div>
 <div><span>تێپەڕین لە سنووری قەرز</span><strong id="cust-kpi-over-limit">0</strong></div>
 </div>
 <h3 id="cust-form-title">زیادکردنی کڕیاری نوێ و کردنەوەی حیساب</h3>
@@ -781,10 +783,10 @@ select option{color:#0f172a;font-size:14px}
 </div>
 <div id="cust-sub-history" hidden>
 <div class="shift-metrics" id="cust-history-metrics" style="margin-top:8px;margin-bottom:14px">
-<div><span>ژمارەی مامەڵەکان</span><strong id="hist-kpi-count">0</strong></div>
-<div><span>کۆی کڕین و قەرزی تۆمارکراو</span><strong id="hist-kpi-debit">0 IQD</strong></div>
-<div><span>کۆی پارەدانی کڕیاران</span><strong id="hist-kpi-credit">0 IQD</strong></div>
-<div><span>باڵانسی ماوەی هەڵبژێردراو</span><strong id="hist-kpi-balance">0 IQD</strong></div>
+<div><span>مامەڵە بارکراوەکان</span><strong id="hist-kpi-count">0</strong></div>
+<div><span>قەرزی زیادکراو لە تۆمارە دیارەکان</span><strong id="hist-kpi-debit">0 IQD</strong></div>
+<div><span>قەرزی کەمکراو لە تۆمارە دیارەکان</span><strong id="hist-kpi-credit">0 IQD</strong></div>
+<div><span>باڵانسی ئێستای کڕیارە بارکراوەکان</span><strong id="hist-kpi-balance">0 IQD</strong></div>
 </div>
 <h3>بەستنەوەی پسووڵەی فرۆشتن بە مێژووی کڕینی کڕیار</h3>
 <form id="history-link-sale-form" class="formrow">
@@ -801,7 +803,7 @@ select option{color:#0f172a;font-size:14px}
 <label class="field" style="max-width:210px">جۆری مامەڵە<select id="hist-type-filter"><option value="all">هەموو مامەڵەکان</option><option value="purchases">تەنها کڕین و قەرزەکان</option><option value="payments">تەنها پارەدانەکان</option></select></label>
 <label class="field" style="max-width:180px">ماوەی کات<select id="hist-date-filter"><option value="all">هەموو کاتێک</option><option value="today">ئەمڕۆ</option><option value="7d">٧ ڕۆژی ڕابردوو</option><option value="30d">٣٠ ڕۆژی ڕابردوو</option></select></label>
 <label class="field">گەڕان<input id="hist-search" maxlength="120" autocomplete="off" placeholder="ژمارەی پسووڵە، ناو یان تێبینی"></label>
-<button type="button" class="secondary" id="hist-print-statement">🖨 کەشف حیساب</button>
+<button type="button" class="secondary" id="hist-print-statement">🖨 پوختەی تۆمارە بارکراوەکان</button>
 <button type="button" class="secondary" id="hist-export-csv">⬇ دابەزاندن (CSV)</button>
 </div>
 <div id="customer-statement-box" class="receipt-detail" hidden style="margin-bottom:14px"></div>
@@ -809,10 +811,10 @@ select option{color:#0f172a;font-size:14px}
 </div>
 <div id="cust-sub-payments" hidden>
 <div class="shift-metrics" id="cust-payments-metrics" style="margin-top:8px;margin-bottom:14px">
-<div><span>کۆی پارەی وەرگیراو لە قەرز</span><strong id="cpay-kpi-total">0 IQD</strong></div>
+<div><span>پارەی وەرگیراو لە تۆمارە بارکراوەکان</span><strong id="cpay-kpi-total">0 IQD</strong></div>
 <div><span>وەرگیراوی ئەمڕۆ</span><strong id="cpay-kpi-today">0 IQD</strong></div>
 <div><span>ژمارەی وەسڵی پارەدان</span><strong id="cpay-kpi-count">0</strong></div>
-<div><span>قەرزی ماوەی کڕیاران</span><strong id="cpay-kpi-remaining">0 IQD</strong></div>
+<div><span>قەرزی کڕیارە بارکراوەکان</span><strong id="cpay-kpi-remaining">0 IQD</strong></div>
 </div>
 <h3>وەرگرتنەوەی قەرز و تۆمارکردنی پارەدانی کڕیار</h3>
 <form id="customer-payment-form" class="formrow">

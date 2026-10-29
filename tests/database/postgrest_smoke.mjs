@@ -80,3 +80,9 @@ const shiftPage=await shiftApi.read({db,store,actor:owner.id,filters:shiftApi.cr
 assert.equal(await shiftApi.current({db:outsider.client,store,actor:owner.id}),null);
 assert.equal((await shiftApi.read({db:outsider.client,store,actor:owner.id,filters:shiftApi.criteria()})).total,0);
 console.log('PASS V32: actual active shift, verified summary, paginated own-cashier history and tenant RLS through local JWT/PostgREST');
+
+runInNewContext(readFileSync('customer-accounts.js','utf8'),{window:receiptWindow,Date});const customerApi=receiptWindow.RetailCustomerAccounts;
+const customerSnapshot=await customerApi.read({db,store});assert.equal(customerSnapshot.customerTotal,1);assert.equal(customerSnapshot.customers[0].balance_minor,0);
+const customerTotals=customerApi.totals(customerSnapshot.ledger);assert.equal(customerTotals.added,800);assert.equal(customerTotals.reduced,800);assert.ok(customerSnapshot.ledger.some(r=>r.entry_type==='sale_return'&&r.delta_minor===-600));
+const hiddenCustomers=await customerApi.read({db:outsider.client,store});assert.equal(hiddenCustomers.customerTotal,0);assert.equal(hiddenCustomers.ledgerTotal,0);
+console.log('PASS V33: actual bounded customer reads/counts, signed credit/return/payment deltas, current balance and tenant RLS through local JWT/PostgREST');

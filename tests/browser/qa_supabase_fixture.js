@@ -11,12 +11,18 @@
     products:[seed],
     barcodes:[{store_id:store.id,product_id:seed.id,code:"4006381333931",unit_type:"unit",units_per_scan:1}],
     stock:[{store_id:store.id,product_id:seed.id,quantity:2}],
-    sessions:[],movements:[],sales:[],saleItems:[],stockEvents:[],memberships:[],audit:[],
+    customers:[],customerLedger:[],sessions:[],movements:[],sales:[],saleItems:[],stockEvents:[],memberships:[],audit:[],
     called:[],stockReceipts:[],nextProduct:0,nextReceipt:0,forceRpcError:null,advancedRpcEnabled:true,advancedCatalogs:[],indexVersion:0
   };
   // Only the self-contained preview shares disposable sample state across its iframe routes.
   const state=window.__retailPreview&&window.parent!==window?
     (window.parent.__retailPreviewState||(window.parent.__retailPreviewState=initialState)):initialState;
+  if(window.__retailPreview&&!state.customerExampleSeeded){
+    state.customerExampleSeeded=true;
+    const id='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    state.customers.push({id,store_id:store.id,name:'کڕیاری نموونە',phone:'',address:'',credit_limit_minor:500000,balance_minor:300,active:true});
+    for(const [i,entry_type,amount_minor,delta_minor,balance_after_minor] of [[0,'debt_add',1000,1000,1000],[1,'sale_return',1000,-600,400],[2,'payment_received',100,-100,300],[3,'paid_purchase',5000,0,300]])state.customerLedger.push({id:'customer-example-'+i,store_id:store.id,customer_id:id,entry_type,amount_minor,delta_minor,balance_after_minor,payment_method:'ledger_only',note:'تۆماری نموونە',created_at:new Date(Date.now()-(4-i)*60000).toISOString()});
+  }
   const error=(code,message)=>({code,message});
   function isValidEan13(code){
     const clean=String(code||"").trim();
@@ -64,6 +70,8 @@
     };
   }
   function tableRows(name){
+    if(name==="retail_customers")return state.customers;
+    if(name==="retail_customer_ledger")return state.customerLedger;
     if(name==="retail_stores")return state.store?[state.store,...(state.extraStores||[])]:[];
     if(name==="retail_products")return state.products;
     if(name==="retail_barcodes")return state.barcodes;
@@ -95,6 +103,7 @@
           state.store={id:store.id,...inserted};inserted=null;
           return {data:state.store,error:null};
         }
+        if(['retail_customers','retail_customer_ledger'].includes(table)&&state.customerReadError){const err=state.customerReadError;state.customerReadError=null;return {data:null,error:err,count:null};}
         if(table==='retail_cash_movements'&&withCount&&state.paymentReadError){const err=state.paymentReadError;state.paymentReadError=null;return {data:null,error:err,count:null};}
         if(table==='retail_cash_sessions'&&withCount&&state.shiftHistoryError){const err=state.shiftHistoryError;state.shiftHistoryError=null;return {data:null,error:err,count:null};}
         if(table==='retail_cash_sessions'&&state.shiftReadError){const err=state.shiftReadError;state.shiftReadError=null;return {data:null,error:err};}
@@ -109,7 +118,7 @@
       },
       maybeSingle(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
       single(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
-      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_cash_sessions'&&withCount&&state.pauseShiftHistory){state.pauseShiftHistory=false;return new Promise(resolve=>{state.completeShiftHistory=()=>{state.completeShiftHistory=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_cash_movements'&&withCount&&state.pausePaymentRead){state.pausePaymentRead=false;return new Promise(resolve=>{state.completePaymentRead=()=>{state.completePaymentRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
+      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_customer_ledger'&&withCount&&state.pauseCustomerRead){state.pauseCustomerRead=false;return new Promise(resolve=>{state.completeCustomerRead=()=>{state.completeCustomerRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_cash_sessions'&&withCount&&state.pauseShiftHistory){state.pauseShiftHistory=false;return new Promise(resolve=>{state.completeShiftHistory=()=>{state.completeShiftHistory=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_cash_movements'&&withCount&&state.pausePaymentRead){state.pausePaymentRead=false;return new Promise(resolve=>{state.completePaymentRead=()=>{state.completePaymentRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
     };
     return query;
   }

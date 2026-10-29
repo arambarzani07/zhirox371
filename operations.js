@@ -31,7 +31,7 @@ let shiftSub=["shifts","attendance","workhours","evaluation"].includes(initialSh
 let labelsSub=["price","barcode","batch","template"].includes(initialLabelsSub)?initialLabelsSub:"price";
 let auditSub=["alerts","approvals","changes","qa"].includes(initialAuditSub)?initialAuditSub:"changes";
 let stockExpiries=[],stockMovementsLedger=[],lowStockItemsCache=[];
-let customersList=[],customerLedgerList=[];
+let customersList=[],customerLedgerList=[],customersReady=false,customersReadToken=0,customersScope=null,customerIdentityEpoch=0;
 let suppliersList=[],purchaseOrdersList=[],supplierLedgerList=[];
 let financeEntriesList=[],shiftSessionsHistory=[],financeState=null;
 let allSaleItems=[],productCostsMap=new Map();
@@ -59,7 +59,7 @@ const safe=e=>(e?.code==="42501"?"دەسەڵاتی ئەم کردارەت نیی�
  /Failed to fetch|NetworkError/i.test(e?.message||"")?"پەیوەندیی سێرڤەر/ئینتەرنێت بپشکنە":
  (e?.message||"کردارەکە سەرکەوتوو نەبوو"));
 function msg(id,value="",kind=""){const x=$(id);if(!x)return;x.textContent=value;x.className="msg"+(kind?" "+kind:"");}
-function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();syncReceiptPager();syncReturnPager();syncAuditPager();syncPaymentsPager();syncShiftPager();}
+function lock(v){busy=!!v;document.querySelectorAll("#operations-panel button").forEach(x=>{x.disabled=busy;});syncPending();syncStockPager();syncReceiptPager();syncReturnPager();syncAuditPager();syncPaymentsPager();syncShiftPager();syncCustomerReads();}
 function pendingKey(){return store&&user?"retail_pending_checkout_"+store.id+"_"+user.id:null}
 function parkedKey(){return store&&user?"retail_parked_carts_"+store.id+"_"+user.id:null}
 function returnKey(){return store&&user?"retail_pending_return_"+store.id+"_"+user.id:null}
@@ -741,7 +741,8 @@ function updateStockBaseTotal(){
 }
 function exportOperationsCsv(filename,headers,rows){
  const esc=v=>{
-   const s=String(v??"");
+   let s=String(v??"");
+   if(typeof v!=="number"&&(/^[\s]*[=+\-@]/.test(s)||/^[\t\r\n]/.test(s)))s="'"+s;
    return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
  };
  const lines=[headers.map(esc).join(","),...rows.map(r=>r.map(esc).join(","))];
@@ -1508,33 +1509,36 @@ function saveLocalCustomerLedger(list){
  const k=localCustomerLedgerKey();if(!k)return;
  try{localStorage.setItem(k,JSON.stringify(list));}catch(_e){}
 }
+function renderCustomerReadScope(){
+ if(customersReady&&customersScope)msg("customers-read-scope","کڕیارە بارکراوەکان: "+customersList.length+" / "+customersScope.customerTotal+" — دوایین مامەڵە بارکراوەکان: "+customerLedgerList.length+" / "+customersScope.ledgerTotal);
+}
+function syncCustomerReads(){
+ for(const id of ["debt-submit","hist-link-submit","cpay-submit","cust-export-csv","hist-print-statement","hist-export-csv","cpay-export-csv"]){if($(id))$(id).disabled=busy||!customersReady;}
+ for(const id of ["checkout-customer","debt-customer","hist-link-customer","cpay-customer","hist-customer-filter","cpay-customer-filter"])if($(id))$(id).disabled=!customersReady;
+}
+function customerReadUnavailable(root){
+ if(customersReady)return false;
+ $(root)?.replaceChildren();
+ const blank=document.createElement("div");blank.className="blank";blank.textContent="زانیاریی حیسابەکان پشتڕاست نەکراوەتەوە؛ نوێکردنەوە بکە";$(root)?.append(blank);
+ for(const id of ["cust-kpi-total","cust-kpi-debtors","cust-kpi-total-debt","cust-kpi-over-limit","debt-kpi-total","debt-kpi-count","debt-kpi-overdue","debt-kpi-max","hist-kpi-count","hist-kpi-debit","hist-kpi-credit","hist-kpi-balance","cpay-kpi-total","cpay-kpi-today","cpay-kpi-count","cpay-kpi-remaining"])if($(id))$(id).textContent="—";
+ syncCustomerReads();return true;
+}
+function clearCustomerViews(){
+ for(const id of ["customers-list","debts-list","customer-history-list","customer-payments-list"])customerReadUnavailable(id);
+ for(const id of ["customer-statement-box","cpay-voucher-box"]){if($(id)){$(id).replaceChildren();$(id).hidden=true;}}
+}
 async function loadCustomersAndLedger(){
- if(!store)return;
- const locCust=loadLocalCustomers();
- const locLed=loadLocalCustomerLedger();
- let remCust=[],remLed=[];
- if(db){
-   try{
-     const [cRes,lRes]=await Promise.all([
-       db.from("retail_customers").select("id,name,phone,address,credit_limit_minor,balance_minor,due_date,note,active,created_at,updated_at")
-         .eq("store_id",store.id).eq("active",true).order("name",{ascending:true}).limit(500),
-       db.from("retail_customer_ledger").select("id,customer_id,entry_type,amount_minor,delta_minor,balance_after_minor,sale_id,receipt_no,due_date,payment_method,note,actor_id,request_id,created_at")
-         .eq("store_id",store.id).order("created_at",{ascending:false}).limit(500)
-     ]);
-     if(!cRes.error&&Array.isArray(cRes.data))remCust=cRes.data;
-     if(!lRes.error&&Array.isArray(lRes.data))remLed=lRes.data;
-   }catch(_e){}
- }
- const custMap=new Map();
- for(const c of remCust)if(c&&c.id&&c.active!==false)custMap.set(c.id,{...(custMap.get(c.id)||{}),...c});
- customersList=[...custMap.values()].sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"ckb"));
- saveLocalCustomers(customersList);
-
- const ledMap=new Map();
- for(const l of remLed)if(l&&l.id)ledMap.set(l.id,{...(ledMap.get(l.id)||{}),...l});
- customerLedgerList=[...ledMap.values()].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
- saveLocalCustomerLedger(customerLedgerList);
- populateCustomerSelectors();
+ if(!store||!user||!db)return false;
+ const token=++customersReadToken,storeId=store.id,actor=user.id;
+ const selected=new Map(["checkout-customer","debt-customer","hist-link-customer","cpay-customer","hist-customer-filter","cpay-customer-filter"].map(id=>[id,$(id)?.value]));
+ const current=()=>token===customersReadToken&&store?.id===storeId&&user?.id===actor;
+ customersReady=false;customersScope=null;customersList=[];customerLedgerList=[];populateCustomerSelectors();clearCustomerViews();msg("customers-read-scope","وەرگرتنی حیسابەکان…");
+ try{
+  const result=await window.RetailCustomerAccounts.read({db,store:storeId});if(!current())return false;
+  customersList=result.customers;customerLedgerList=result.ledger;customersScope=result;customersReady=true;
+  renderCustomerReadScope();
+  saveLocalCustomers(customersList);saveLocalCustomerLedger(customerLedgerList);populateCustomerSelectors();for(const [id,value] of selected){const el=$(id);if(el&&[...el.options].some(o=>o.value===value))el.value=value;}syncCustomerReads();return true;
+ }catch(error){if(current()){customersReady=false;customersScope=null;customersList=[];customerLedgerList=[];populateCustomerSelectors();clearCustomerViews();msg("customers-read-scope",safe(error),"error");}return false;}
 }
 function populateCustomerSelectors(){
  const activeCusts=customersList.filter(c=>c&&c.active!==false);
@@ -1586,6 +1590,7 @@ function populateCustomerSelectors(){
 }
 async function recordCustomerLedgerEntry({customerId,entryType,amount,note="",receiptNo="",dueDate=null,saleId=null,paymentMethod="cash_drawer",targetMsgId=""}){
  if(!store)return null;
+ if(!customersReady){if(targetMsgId)msg(targetMsgId,"سەرەتا حیسابەکان نوێ بکەرەوە","error");return null;}
  const cust=customersList.find(c=>c.id===customerId);
  if(!cust){if(targetMsgId)msg(targetMsgId,"کڕیارەکە نەدۆزرایەوە","error");return null;}
  const amt=Math.round(Number(amount||0));
@@ -1593,7 +1598,8 @@ async function recordCustomerLedgerEntry({customerId,entryType,amount,note="",re
    if(targetMsgId)msg(targetMsgId,"بڕی پارە نادروستە","error");
    return null;
  }
- let reqId=null;
+ const writeEpoch=customerIdentityEpoch,writeStore=store.id,writeActor=user?.id;
+ let reqId=null,confirmedDelta=null;
  const oldBal=Number(cust.balance_minor||0);
  const delta=entryType==="payment_received"?-amt:entryType==="paid_purchase"?0:amt;
  let newBal=Math.max(0,oldBal+delta);
@@ -1606,7 +1612,8 @@ async function recordCustomerLedgerEntry({customerId,entryType,amount,note="",re
      p_amount:amt,p_note:note||null,p_receipt_no:receiptNo||null,p_due_date:dueDate||null,
      p_sale_id:saleId||null,p_payment_method:paymentMethod||"cash_drawer"
    });
-   entryId=result.entry_id;newBal=Number(result.balance_after_minor);reqId=result.request_id;
+   if(customerIdentityEpoch!==writeEpoch||store?.id!==writeStore||user?.id!==writeActor)return null;
+   entryId=result.entry_id;newBal=window.RetailCustomerAccounts.integer(result.balance_after_minor);confirmedDelta=window.RetailCustomerAccounts.integer(result.delta_minor);reqId=result.request_id;
  }catch(err){msg(targetMsgId||"system-msg",safe(err),"error");return null;}
  cust.balance_minor=newBal;
  if(dueDate)cust.due_date=dueDate;
@@ -1619,7 +1626,7 @@ async function recordCustomerLedgerEntry({customerId,entryType,amount,note="",re
    customer_name:cust.name,
    entry_type:entryType,
    amount_minor:amt,
-   delta_minor:delta,
+   delta_minor:confirmedDelta,
    balance_after_minor:newBal,
    sale_id:saleId||null,
    receipt_no:receiptNo||null,
@@ -1630,13 +1637,15 @@ async function recordCustomerLedgerEntry({customerId,entryType,amount,note="",re
    request_id:reqId,
    created_at:new Date().toISOString()
  };
- customerLedgerList.unshift(ledgerItem);
+ const index=customerLedgerList.findIndex(x=>x.id===entryId);
+ if(index>=0)customerLedgerList[index]=ledgerItem;else{customerLedgerList.unshift(ledgerItem);customerLedgerList=customerLedgerList.slice(0,500);if(customersScope)customersScope.ledgerTotal++;}
+ renderCustomerReadScope();
  saveLocalCustomerLedger(customerLedgerList);
  populateCustomerSelectors();
  return ledgerItem;
 }
 async function refreshCustomersSection(sub=custSub){
- await loadCustomersAndLedger();
+ if(!await loadCustomersAndLedger())return;
  if(sub==="directory")renderCustomersDirectory();
  if(sub==="debts")renderCustomerDebtsView();
  if(sub==="history"){
@@ -1649,6 +1658,7 @@ async function refreshCustomersSection(sub=custSub){
  if(sub==="payments")renderCustomerPaymentsView();
 }
 function renderCustomersDirectory(){
+ if(customerReadUnavailable("customers-list"))return;
  const root=$("customers-list");
  if(!root)return;
  root.replaceChildren();
@@ -1717,6 +1727,7 @@ function renderCustomersDirectory(){
  root.append(table);
 }
 function renderCustomerDebtsView(){
+ if(customerReadUnavailable("debts-list"))return;
  const root=$("debts-list");
  if(!root)return;
  root.replaceChildren();
@@ -1848,16 +1859,12 @@ function filterCustomerHistoryRows(){
  });
 }
 function renderCustomerHistoryView(){
+ if(customerReadUnavailable("customer-history-list"))return;
  const root=$("customer-history-list");
  if(!root)return;
  root.replaceChildren();
  const filtered=filterCustomerHistoryRows();
- let debitSum=0,creditSum=0;
- for(const item of filtered){
-   const amt=Number(item.amount_minor||0);
-   if(item.entry_type==="payment_received")creditSum+=amt;
-   else debitSum+=amt;
- }
+ const sums=window.RetailCustomerAccounts.totals(filtered),debitSum=sums.added,creditSum=sums.reduced;
  const custFilter=String($("hist-customer-filter")?.value||"all");
  const selectedCust=custFilter!=="all"?customersList.find(c=>c.id===custFilter):null;
  const remBal=selectedCust?Number(selectedCust.balance_minor||0):customersList.reduce((s,c)=>s+Number(c.balance_minor||0),0);
@@ -1873,14 +1880,14 @@ function renderCustomerHistoryView(){
    return;
  }
  const table=document.createElement("table");
- table.innerHTML="<thead><tr><th>کات و بەروار</th><th>کڕیار</th><th>جۆری مامەڵە</th><th>ژمارەی پسووڵە</th><th>بڕی مامەڵە</th><th>قەرزی ماوە دوای مامەڵە</th><th>تێبینی</th></tr></thead><tbody></tbody>";
+ table.innerHTML="<thead><tr><th>کات و بەروار</th><th>کڕیار</th><th>جۆری مامەڵە</th><th>ژمارەی پسووڵە</th><th>بڕی مامەڵە</th><th>گۆڕانی قەرز</th><th>قەرزی ماوە دوای مامەڵە</th><th>تێبینی</th></tr></thead><tbody></tbody>";
  for(const item of filtered){
    const tr=document.createElement("tr");
    const c=customersList.find(x=>x.id===item.customer_id);
    const meta=customerEntryTypeMeta(item.entry_type);
    const amt=Number(item.amount_minor||0);
-   const isPay=item.entry_type==="payment_received";
-   const isPaidSale=item.entry_type==="paid_purchase";
+   const isPay=Number(item.delta_minor)<0;
+   const isPaidSale=Number(item.delta_minor)===0;
    const tdTime=document.createElement("td");tdTime.dir="ltr";tdTime.textContent=item.created_at?new Date(item.created_at).toLocaleString("en-GB"):"—";
    const tdCust=document.createElement("td");tdCust.style.fontWeight="800";tdCust.textContent=c?.name||item.customer_name||"—";
    const tdKind=document.createElement("td");
@@ -1890,16 +1897,18 @@ function renderCustomerHistoryView(){
    tdRec.textContent=item.receipt_no?("#"+String(item.receipt_no).replace(/^#/,"")):"—";
    const tdAmt=document.createElement("td");tdAmt.dir="ltr";tdAmt.style.fontWeight="900";
    tdAmt.style.color=isPay?"#15803d":isPaidSale?"#1e40af":"#dc2626";
-   tdAmt.textContent=(isPay?"−":isPaidSale?"":"+")+money(amt);
+   tdAmt.textContent=money(amt);
+   const tdDelta=document.createElement("td");tdDelta.dir="ltr";tdDelta.textContent=(Number(item.delta_minor)>0?"+":"")+money(item.delta_minor);
    const tdBalAfter=document.createElement("td");tdBalAfter.dir="ltr";tdBalAfter.style.fontWeight="800";
-   tdBalAfter.textContent=money(item.balance_after_minor??c?.balance_minor??0);
+   tdBalAfter.textContent=money(item.balance_after_minor);
    const tdNote=document.createElement("td");tdNote.textContent=item.note||"—";
-   tr.append(tdTime,tdCust,tdKind,tdRec,tdAmt,tdBalAfter,tdNote);
+   tr.append(tdTime,tdCust,tdKind,tdRec,tdAmt,tdDelta,tdBalAfter,tdNote);
    table.tBodies[0].append(tr);
  }
  root.append(table);
 }
 function renderCustomerStatementBox(customerIdOverride){
+ if(!customersReady)return;
  const box=$("customer-statement-box");
  if(!box)return;
  const custId=customerIdOverride||($("hist-customer-filter")?.value!=="all"?$("hist-customer-filter")?.value:customersList[0]?.id);
@@ -1912,21 +1921,15 @@ function renderCustomerStatementBox(customerIdOverride){
  box.replaceChildren();
  box.hidden=false;
  const custRows=customerLedgerList.filter(x=>x.customer_id===cust.id);
- let totalDebtAdded=0,totalPaid=0,totalCashPurchases=0;
- for(const r of custRows){
-   const a=Number(r.amount_minor||0);
-   if(r.entry_type==="payment_received")totalPaid+=a;
-   else if(r.entry_type==="paid_purchase")totalCashPurchases+=a;
-   else totalDebtAdded+=a;
- }
+ const sums=window.RetailCustomerAccounts.totals(custRows),totalDebtAdded=sums.added,totalPaid=sums.paid,totalCashPurchases=sums.cashPurchases;
  const headRow=document.createElement("div");
  headRow.style.display="flex";headRow.style.justifyContent="space-between";headRow.style.alignItems="center";headRow.style.flexWrap="wrap";headRow.style.gap="10px";
  const title=document.createElement("h3");
  title.style.margin="0";
- title.textContent="کەشف حیسابی کڕیار: "+cust.name+(cust.phone?" ("+cust.phone+")":"");
+ title.textContent="پوختەی تۆمارە بارکراوەکانی کڕیار: "+cust.name+(cust.phone?" ("+cust.phone+")":"");
  const actions=document.createElement("div");actions.style.display="flex";actions.style.gap="8px";
  const printBtn=document.createElement("button");
- printBtn.type="button";printBtn.className="primary";printBtn.style.height="34px";printBtn.textContent="🖨 چاپکردنی کەشف حیساب";
+ printBtn.type="button";printBtn.className="primary";printBtn.style.height="34px";printBtn.textContent="🖨 چاپکردنی پوختە";
  printBtn.addEventListener("click",()=>window.print());
  const closeBtn=document.createElement("button");
  closeBtn.type="button";closeBtn.className="secondary";closeBtn.style.height="34px";closeBtn.textContent="داخستن";
@@ -1939,7 +1942,8 @@ function renderCustomerStatementBox(customerIdOverride){
  for(const [lbl,val] of [
    ["ناونیشان",cust.address||"—"],
    ["سنووری قەرز",money(cust.credit_limit_minor||0)],
-   ["کۆی قەرزی وەرگیراو",money(totalDebtAdded)],
+   ["قەرزی زیادکراو لە تۆمارە بارکراوەکان",money(totalDebtAdded)],
+   ["قەرزی کەمکراو لە تۆمارە بارکراوەکان",money(sums.reduced)],
    ["کۆی پارەی دراو",money(totalPaid)],
    ["کڕینی نەقدی",money(totalCashPurchases)],
    ["قەرزی ماوەی ئێستا",money(cust.balance_minor||0)]
@@ -1950,6 +1954,7 @@ function renderCustomerStatementBox(customerIdOverride){
  box.append(metrics);
 }
 function renderCustomerPaymentsView(){
+ if(customerReadUnavailable("customer-payments-list"))return;
  const root=$("customer-payments-list");
  if(!root)return;
  root.replaceChildren();
@@ -2002,7 +2007,7 @@ function renderCustomerPaymentsView(){
    const tdTime=document.createElement("td");tdTime.dir="ltr";tdTime.textContent=item.created_at?new Date(item.created_at).toLocaleString("en-GB"):"—";
    const tdCust=document.createElement("td");tdCust.style.fontWeight="850";tdCust.textContent=c?.name||item.customer_name||"—";
    const tdAmt=document.createElement("td");tdAmt.dir="ltr";tdAmt.style.fontWeight="900";tdAmt.style.color="#15803d";tdAmt.textContent=money(item.amount_minor||0);
-   const tdRem=document.createElement("td");tdRem.dir="ltr";tdRem.style.fontWeight="800";tdRem.textContent=money(item.balance_after_minor??c?.balance_minor??0);
+   const tdRem=document.createElement("td");tdRem.dir="ltr";tdRem.style.fontWeight="800";tdRem.textContent=money(item.balance_after_minor);
    const tdMethod=document.createElement("td");
    const badge=document.createElement("span");
    badge.className="stock-badge "+(item.payment_method==="ledger_only"?"info":"ok");
@@ -2020,6 +2025,7 @@ function renderCustomerPaymentsView(){
  root.append(table);
 }
 function renderCustomerPaymentVoucher(entryId){
+ if(!customersReady)return;
  const box=$("cpay-voucher-box");
  if(!box)return;
  const item=customerLedgerList.find(x=>x.id===entryId);
@@ -2046,7 +2052,7 @@ function renderCustomerPaymentVoucher(entryId){
    ["ژمارەی وەسڵ",String(item.id).slice(0,8).toUpperCase()],
    ["کات و بەروار",item.created_at?new Date(item.created_at).toLocaleString("en-GB"):"—"],
    ["بڕی پارەی وەرگیراو",money(item.amount_minor||0)],
-   ["قەرزی ماوە دوای پارەدان",money(item.balance_after_minor??c?.balance_minor??0)],
+   ["قەرزی ماوە دوای پارەدان",money(item.balance_after_minor)],
    ["تێبینی",item.note||"—"]
  ]){
    const sp=document.createElement("span"),st=document.createElement("strong");
@@ -5434,6 +5440,7 @@ $("login-form").addEventListener("submit",async e=>{
  finally{btn.disabled=false;}
 });
 $("logout").onclick=async()=>{
+ ++customerIdentityEpoch;++customersReadToken;resetCustomerForm();customersReady=false;customersScope=null;customersList=[];customerLedgerList=[];populateCustomerSelectors();clearCustomerViews();msg("customers-read-scope","");
  ++shiftEpoch;++shiftHistoryToken;shiftVerified=false;shiftRows=[];shiftTotal=0;shiftOffset=0;shiftFilters=null;shiftHistoryLoading=false;shiftSessionsHistory=[];shiftSession=null;redrawShift(null);$("shift-history").replaceChildren();$("shift-report").replaceChildren();$("shift-report").hidden=true;msg("shift-history-msg","");syncShiftPager();
  clearTimeout(paymentTimer);++paymentToken;paymentRows=[];paymentTotal=0;paymentOffset=0;paymentFilters=null;paymentSession=null;paymentVerified=false;paymentLoading=false;$("payments-list").replaceChildren();renderPaymentsList();
  clearTimeout(auditQueryTimer);++auditListToken;auditPageRows=[];auditPageTotal=0;auditPageOffset=0;auditPageFilters=null;auditLoading=false;$("audit-list").replaceChildren();$("audit-search-input").value="";msg("audit-msg","");
@@ -6512,12 +6519,14 @@ $("customer-form")?.addEventListener("submit",async e=>{
 });
 $("cust-search")?.addEventListener("input",renderCustomersDirectory);
 $("cust-status-filter")?.addEventListener("change",renderCustomersDirectory);
+$("customers-read-refresh").addEventListener("click",()=>{if(!busy)void refreshCustomersSection(custSub);});
 $("cust-refresh")?.addEventListener("click",()=>{if(!busy)void refreshCustomersSection("directory");});
 $("cust-export-csv")?.addEventListener("click",()=>{
+ if(!customersReady)return;
  const rows=customersList.filter(c=>c.active!==false).map(c=>[
    c.name||"",c.phone||"",c.address||"",Number(c.balance_minor||0),Number(c.credit_limit_minor||0),c.due_date||"",c.note||""
  ]);
- exportOperationsCsv("customers_directory_"+new Date().toISOString().slice(0,10)+".csv",
+ exportOperationsCsv("customers_loaded_"+customersList.length+"_of_"+customersScope.customerTotal+"_"+new Date().toISOString().slice(0,10)+".csv",
    ["ناوی کڕیار","ژمارەی مۆبایل","ناونیشان","قەرزی ئێستا (IQD)","سنووری قەرز (IQD)","مۆڵەتی دانەوە","تێبینی"],rows);
 });
 $("customers-list")?.addEventListener("click",e=>{
@@ -6684,6 +6693,7 @@ $("hist-print-statement")?.addEventListener("click",()=>{
  renderCustomerStatementBox();
 });
 $("hist-export-csv")?.addEventListener("click",()=>{
+ if(!customersReady)return;
  const rows=filterCustomerHistoryRows().map(item=>{
    const c=customersList.find(x=>x.id===item.customer_id);
    return [
@@ -6691,13 +6701,14 @@ $("hist-export-csv")?.addEventListener("click",()=>{
      c?.name||item.customer_name||"",
      customerEntryTypeMeta(item.entry_type).label,
      item.receipt_no||"",
-     item.amount_minor||0,
-     item.balance_after_minor??0,
+     item.amount_minor,
+     item.delta_minor,
+     item.balance_after_minor,
      item.note||""
    ];
  });
- exportOperationsCsv("customer_purchase_history_"+new Date().toISOString().slice(0,10)+".csv",
-   ["کات و بەروار","کڕیار","جۆری مامەڵە","ژمارەی پسووڵە","بڕی مامەڵە (IQD)","قەرزی ماوە دوای مامەڵە (IQD)","تێبینی"],rows);
+ exportOperationsCsv("customer_history_loaded_"+rows.length+"_of_"+customersScope.ledgerTotal+"_"+new Date().toISOString().slice(0,10)+".csv",
+   ["کات و بەروار","کڕیار","جۆری مامەڵە","ژمارەی پسووڵە","بڕی مامەڵە (IQD)","گۆڕانی قەرز (IQD)","قەرزی ماوە دوای مامەڵە (IQD)","تێبینی"],rows);
 });
 $("cpay-quick-row")?.addEventListener("click",e=>{
  const btn=e.target.closest("[data-cpay-quick]");
@@ -6757,6 +6768,7 @@ $("cpay-customer-filter")?.addEventListener("change",renderCustomerPaymentsView)
 $("cpay-date-filter")?.addEventListener("change",renderCustomerPaymentsView);
 $("cpay-refresh")?.addEventListener("click",()=>{if(!busy)void refreshCustomersSection("payments");});
 $("cpay-export-csv")?.addEventListener("click",()=>{
+ if(!customersReady)return;
  const rows=customerLedgerList.filter(x=>x.entry_type==="payment_received").map(item=>{
    const c=customersList.find(x=>x.id===item.customer_id);
    return [
@@ -6768,7 +6780,7 @@ $("cpay-export-csv")?.addEventListener("click",()=>{
      item.note||""
    ];
  });
- exportOperationsCsv("customer_payments_"+new Date().toISOString().slice(0,10)+".csv",
+ exportOperationsCsv("customer_payments_loaded_"+rows.length+"_of_"+customersScope.ledgerTotal+"_"+new Date().toISOString().slice(0,10)+".csv",
    ["کات و بەروار","کڕیار","بڕی پارەی وەرگیراو (IQD)","قەرزی ماوە (IQD)","شێواز","تێبینی"],rows);
 });
 $("customer-payments-list")?.addEventListener("click",e=>{
