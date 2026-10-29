@@ -250,6 +250,7 @@ select option{color:#0f172a;font-size:14px}
 <script src="./system-shell.js" defer></script>
 <script src="./receipt-history.js"></script>
 <script src="./audit-history.js"></script>
+<script src="./payments-history.js"></script>
 <script src="./operations.js" defer></script>
 <link rel="stylesheet" href="./system-ui.css">
 <link rel="stylesheet" href="./ui-contrast-lock.css">
@@ -1879,7 +1880,8 @@ select option{color:#0f172a;font-size:14px}
 <div id="pay-open-shift-box"><form id="pay-shift-open-form" class="formrow"><label class="field">پارەی سەرەتایی (IQD)<input name="opening" type="number" min="0" max="9999999999999" step="1" value="0" required></label><button class="primary" type="submit">کردنەوەی شێفت</button></form></div>
 <form id="payments-form" class="formrow"><label class="field">جۆری جووڵە<select name="kind"><option value="cash_out">پارەدان (دەرچوو)</option><option value="cash_in">وەرگرتن (هاتوو)</option></select></label><label class="field">بابەت<input name="category" maxlength="60"></label><label class="field">بڕی پارە (IQD)<input id="pay-amount" name="amount" type="number" min="1" max="9999999999999" step="1" required></label><label class="field">تێبینی<input name="note" maxlength="160" required></label><button id="pay-submit" class="primary" type="submit">تۆمارکردنی جووڵە</button><button id="pay-retry" class="secondary" type="button" hidden>پشکنینەوەی هەمان داواکاری</button></form>
 <div class="msg" id="payments-msg" role="status"></div>
-<h3>دوایین ٢٠٠ جووڵەی شێفت</h3><div class="formrow"><label class="field">گەڕان<input id="payments-search" type="search" autocomplete="off"></label><label class="field">پاڵاوتنی جووڵە<select id="payments-kind-filter"><option value="all">هەمووی</option><option value="cash_in">هاتوو</option><option value="cash_out">دەرچوو</option></select></label></div><div id="payments-list"></div>
+<h3>جووڵەکانی شێفتی ئێستا</h3><div class="formrow"><label class="field">گەڕان<input id="payments-search" type="search" maxlength="160" autocomplete="off"></label><label class="field">گەڕان بە<select id="payments-search-field"><option value="note">بابەت و تێبینی</option><option value="amount_minor">بڕی تەواوی پارە (IQD)</option></select></label><label class="field">پاڵاوتنی جووڵە<select id="payments-kind-filter"><option value="all">هەمووی</option><option value="cash_in">هاتوو</option><option value="cash_out">دەرچوو</option></select></label></div><div id="payments-list"></div>
+<div class="pager"><button id="payments-prev" class="secondary" type="button">پێشوو</button><span id="payments-page-info" class="pager-info" role="status" aria-live="polite">0 / 0</span><button id="payments-next" class="secondary" type="button">دواتر</button></div>
 </section>
 <section id="returns-panel" class="surface" hidden>
 <div class="receipt-head"><h2>گەڕاندنەوەی کاڵا</h2><button id="returns-refresh" type="button" class="secondary">نوێکردنەوە</button></div>

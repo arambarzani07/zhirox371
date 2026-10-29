@@ -64,3 +64,11 @@ const auditPage=await auditApi.read({db,store,filters:auditApi.criteria({query:'
 const actorAudit=await auditApi.read({db,store,filters:auditApi.criteria({field:'actor_id',query:owner.id})});assert.ok(actorAudit.total>0);
 const hiddenAudit=await auditApi.read({db:outsider.client,store,filters:auditApi.criteria()});assert.equal(hiddenAudit.total,0);assert.equal(hiddenAudit.rows.length,0);
 console.log('PASS V30: actual audit helper through JWT/PostgREST, literal underscore search, actor filter and tenant RLS');
+
+runInNewContext(readFileSync('payments-history.js','utf8'),{window:receiptWindow,Date});const paymentApi=receiptWindow.RetailPaymentsHistory;
+ok(await db.rpc('retail_cash_movement',{p_store:store,p_session:session.id,p_request:randomUUID(),p_kind:'cash_in',p_amount:173,p_note:'v31_literal%_fee'}),'cash history seed');
+const paymentFilters=paymentApi.criteria({query:'v31_literal%_fee',kind:'cash_in'});
+const paymentPage=await paymentApi.read({db,store,session:session.id,filters:paymentFilters});assert.equal(paymentPage.total,1);assert.equal(Number(paymentPage.rows[0].amount_minor),173);
+const amountPage=await paymentApi.read({db,store,session:session.id,filters:paymentApi.criteria({field:'amount_minor',query:'173'})});assert.equal(amountPage.total,1);
+const hiddenPayments=await paymentApi.read({db:outsider.client,store,session:session.id,filters:paymentFilters});assert.equal(hiddenPayments.total,0);
+console.log('PASS V31: actual cash helper through JWT/PostgREST, literal pattern, exact amount, shift scope and tenant RLS');

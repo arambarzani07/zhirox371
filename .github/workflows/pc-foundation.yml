@@ -124,6 +124,8 @@ jobs:
         run: node tests/browser/v15_product_editor.mjs
       - name: Verify V16 unit/carton/both PC flow with base-stock checkout in Chromium
         run: node tests/browser/v16_units_cartons.mjs
+      - name: Verify current-shift cash paging, search, read failure and stale logout
+        run: node tests/browser/v31_payments_history.mjs
       - name: Verify V17 PC stock receiving of unit and carton aliases
         run: node tests/browser/v17_stock_receiving.mjs
       - name: Verify V17.1 single-transaction mixed unit and carton receiving

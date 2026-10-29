@@ -95,9 +95,11 @@
           state.store={id:store.id,...inserted};inserted=null;
           return {data:state.store,error:null};
         }
+        if(table==='retail_cash_movements'&&withCount&&state.paymentReadError){const err=state.paymentReadError;state.paymentReadError=null;return {data:null,error:err,count:null};}
+        if(table==='retail_cash_sessions'&&state.shiftReadError){const err=state.shiftReadError;state.shiftReadError=null;return {data:null,error:err};}
         if(table==='retail_audit_events'&&withCount&&state.auditReadError){const err=state.auditReadError;state.auditReadError=null;return {data:null,error:err,count:null};}
         if(table==='retail_sales'&&withCount&&state.receiptReadError){const err=state.receiptReadError;state.receiptReadError=null;return {data:null,error:err,count:null};}
-        let rows=[...tableRows(table)].filter(v=>cond.every(([key,val])=>key==='receipt_no'?String(v[key])===String(val):v[key]===val)&&lower.every(([key,val])=>v[key]>=val)&&upper.every(([key,val])=>v[key]<=val)&&patterns.every(([key,pattern])=>{
+        let rows=[...tableRows(table)].filter(v=>cond.every(([key,val])=>['receipt_no','amount_minor'].includes(key)?String(v[key])===String(val):v[key]===val)&&lower.every(([key,val])=>v[key]>=val)&&upper.every(([key,val])=>v[key]<=val)&&patterns.every(([key,pattern])=>{
           let re='';for(let i=0;i<pattern.length;i++){let c=pattern[i];if(c==='\\'&&i+1<pattern.length){c=pattern[++i];re+=c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}else if(c==='%')re+='.*';else if(c==='_')re+='.';else re+=c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
           return new RegExp('^'+re+'$','isu').test(String(v[key]??''));
         }));
@@ -106,7 +108,7 @@
       },
       maybeSingle(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
       single(){const r=this.getResult();return Promise.resolve({...r,data:r.data?.[0]??null});},
-      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
+      then(onSuccess,onFailure){const result=this.getResult();if(table==='retail_cash_movements'&&withCount&&state.pausePaymentRead){state.pausePaymentRead=false;return new Promise(resolve=>{state.completePaymentRead=()=>{state.completePaymentRead=null;resolve(result);};}).then(onSuccess,onFailure);}if(table==='retail_audit_events'&&withCount&&state.pauseAuditRead){state.pauseAuditRead=false;return new Promise(resolve=>{state.completeAuditRead=()=>{state.completeAuditRead=null;resolve(result);};}).then(onSuccess,onFailure);}return Promise.resolve(result).then(onSuccess,onFailure);}
     };
     return query;
   }
