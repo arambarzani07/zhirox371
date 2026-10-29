@@ -21,7 +21,7 @@ export function signEvent(rawBody,secret,timestamp){
 }
 export function verifyEventSignature(rawBody,secret,timestamp,signature,now=Date.now()){
  if(typeof rawBody!=="string"||Buffer.byteLength(rawBody)>65536||
-    typeof signature!=="string"||!/sha256=[0-9a-f]{64}/.test(signature)||
+    typeof signature!=="string"||!/^sha256=[0-9a-f]{64}$/.test(signature)||
     typeof timestamp!=="string"||!/^[0-9]{13}$/.test(timestamp)||
     !Number.isSafeInteger(Number(timestamp))||
     Math.abs(now-Number(timestamp))>300000)return false;
