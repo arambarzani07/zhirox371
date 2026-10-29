@@ -57,7 +57,7 @@ export function createLocalPacksScaleHandlerV26({pool,secret,clock}){
    if(!Number.isSafeInteger(price)||price<0||!Number.isSafeInteger(stock)||stock<0||
      !Number.isSafeInteger(perScan)||perScan<1||
      !["unit","carton"].includes(mode)||
-     (mode==="unit"&&perScan!==1)||(mode==="carton"&&perScan<2))
+     (mode==="unit"&&perScan!==1)||(mode==="carton"&&(perScan<2||p.sale_price_minor==null)))
      return respond(res,409,{error:"invalid_pack_definition"});
    return respond(res,200,{ok:true,product:{
      id:p.id,name:p.name,barcode:code,base_unit:"unit",sale_mode:mode,
