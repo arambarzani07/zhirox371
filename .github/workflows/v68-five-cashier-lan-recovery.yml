@@ -1,8 +1,8 @@
-name: V68 five simultaneous HTTPS cashiers + LAN gateway recovery (NO-GO)
+name: V69 five separate Docker cashiers private LAN regression (NO-GO)
 on:
   push:
     branches:
-      - feature/v68-five-cashier-lan-recovery-20261031
+      - feature/v69-isolated-docker-lan-five-pcs-20261031
     paths:
       - 'offline/tests/v59_real_postgres_https_cashier.mjs'
       - 'offline/tests/027_v60_restricted_api_ci_role.sql'
@@ -85,6 +85,7 @@ jobs:
       ZHIROX_V66_ISOLATED_RECOVERY_TEST: 'true'
       ZHIROX_V67_ISOLATED_SYNC_TEST: 'true'
       ZHIROX_V68_FIVE_CASHIER_LAB: 'true'
+      ZHIROX_V69_ISOLATED_BRIDGE: 'true'
       ZHIROX_V68_EVIDENCE_DIR: 'market-lab-evidence'
       ZHIROX_V67_RECEIVER_DB: 'zhirox_v67_receiver_ci_test'
       ZHIROX_V67_EVIDENCE_DIR: 'market-lab-evidence'
@@ -197,11 +198,18 @@ jobs:
         run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v67_twin_wan_reconnect_sync.mjs
       - name: V68 REAL 5-cashier stock race and local gateway interruption with unfinished checkout recovery
         run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v68_five_cashiers_lan_recovery.mjs
+      - name: Seed fifth cashier LAN test data
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/032_v69_five_docker_pc_fixture_ci.sql
+      - name: Five Docker-connected cashiers and network isolation acceptance
+        shell: bash
+        env:
+          ZHIROX_V69_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash offline/tests/v69_docker_internal_lan_acceptance.sh
       - name: Upload authentic lab receipts and transaction audit (not hardware proof)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zhirox-v68-market-five-cashier-recovery-evidence
+          name: zhirox-v69-five-docker-lan-evidence
           path: market-lab-evidence/
           if-no-files-found: warn
           retention-days: 14
