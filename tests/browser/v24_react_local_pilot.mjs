@@ -76,15 +76,15 @@ await page.route("**/api/local/**",async route=>{
    assert.equal(body.request_id,serverPending?.request_id);
    requests.push({...serverPending});
    if(attempts<4){
-     assert.deepEqual(body.lines,[{barcode:"6260053183974",qty:1}]);
-     assert.equal(body.expected_total_minor,2500);
+     assert.deepEqual(serverPending.lines,[{barcode:"6260053183974",qty:1}]);
+     assert.equal(serverPending.expected_total_minor,2500);
    }else{
-     assert.deepEqual(body.lines,[
+     assert.deepEqual(serverPending.lines,[
        {barcode:"6260053183998",qty:1},
        {barcode:"2700001004806",qty:1},
        {barcode:"2700001002451",qty:1}
      ]);
-     assert.equal(body.expected_total_minor,13475);
+     assert.equal(serverPending.expected_total_minor,13475);
    }
    assert.ok(!("store_id" in body)&&!("cashier_id" in body));
    assert.match(body.request_id,/^[a-f0-9-]{36}$/i);
