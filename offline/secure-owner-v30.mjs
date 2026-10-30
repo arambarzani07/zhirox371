@@ -24,7 +24,10 @@ export async function readV30SecretFile(path,{allowWindows=false}={}){
  if(!isAbsolute(path||""))throw Error("absolute_secret_path_required");
  // O_NOFOLLOW plus fstat closes the symlink replacement race in an
  // lstat-then-open sequence. Linux and macOS enforce this in the kernel.
- const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+ const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW).catch(err=>{
+  if(err?.code==="ELOOP")throw Error("unsafe_secret_file");
+  throw err;
+ });
  try{
   const st=await handle.stat();
   if(!st.isFile())throw Error("unsafe_secret_file");
@@ -85,7 +88,8 @@ export function createV30HttpsGate({pool,loadStores,now=()=>Date.now(),
   catch{return fail(res,400,"invalid_url");}
   if(url.pathname==="/healthz"&&req.method==="GET"&&!url.search){
    // No database/store/credential disclosure.
-   return fail(res,200,"healthy");
+   res.writeHead(200,{"Content-Type":"application/json; charset=utf-8",...stricterHeaders});
+   return res.end(JSON.stringify({ok:true}));
   }
   const origin=req.headers.origin;
   if(origin){
