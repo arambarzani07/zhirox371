@@ -23,14 +23,14 @@ BEGIN
  IF p_store IS NULL OR p_job IS NULL THEN
    RAISE EXCEPTION 'invalid print dispatch identity' USING ERRCODE='22023';
  END IF;
- SELECT * INTO q FROM zhirox_local.print_requests_v35
- WHERE store_id=p_store AND job_id=p_job FOR UPDATE;
+ SELECT * INTO q FROM zhirox_local.print_requests_v35 AS pr
+ WHERE pr.store_id=p_store AND pr.job_id=p_job FOR UPDATE;
  IF NOT FOUND OR q.state<>'queued' THEN
    RAISE EXCEPTION 'print dispatch not available; manual review required'
      USING ERRCODE='P5401';
  END IF;
- SELECT * INTO snap FROM zhirox_local.receipt_snapshots_v34
- WHERE store_id=p_store AND sale_id=q.sale_id AND cashier_id=q.cashier_id;
+ SELECT * INTO snap FROM zhirox_local.receipt_snapshots_v34 AS rs
+ WHERE rs.store_id=p_store AND rs.sale_id=q.sale_id AND rs.cashier_id=q.cashier_id;
  IF NOT FOUND OR snap.lines IS NULL OR snap.total_minor IS NULL THEN
    RAISE EXCEPTION 'no verified immutable receipt' USING ERRCODE='P5402';
  END IF;
@@ -40,8 +40,8 @@ BEGIN
  END IF;
  INSERT INTO zhirox_local.print_dispatch_attempts_v54(store_id,job_id,sale_id)
  VALUES(p_store,p_job,q.sale_id);
- UPDATE zhirox_local.print_requests_v35 SET state='claimed'
- WHERE store_id=p_store AND job_id=p_job;
+ UPDATE zhirox_local.print_requests_v35 AS pr SET state='claimed'
+ WHERE pr.store_id=p_store AND pr.job_id=p_job;
  RETURN QUERY SELECT q.job_id,q.sale_id,q.width_mm,snap.receipt_no,
    snap.total_minor,snap.store_name_snapshot,snap.issued_at,snap.lines;
 END $$;

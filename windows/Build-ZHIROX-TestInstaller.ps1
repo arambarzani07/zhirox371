@@ -27,6 +27,14 @@ Copy-Item windows/Start-ZHIROX-AutoSync-TRIAL.ps1 (Join-Path $root 'windows/Star
 Copy-Item windows/Inspect-ZHIROX-RC-V53.ps1 (Join-Path $root 'windows/Inspect-ZHIROX-RC-V53.ps1')
 Copy-Item windows/Start-ZHIROX-Print-V54.ps1 (Join-Path $root 'windows/Start-ZHIROX-Print-V54.ps1')
 Copy-Item windows/Spool-ZHIROX-Receipt-V54.ps1 (Join-Path $root 'windows/Spool-ZHIROX-Receipt-V54.ps1')
+# Compile an actual native Windows GUI EXE, not a PowerShell/Notepad shortcut.
+$csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+if(!(Test-Path $csc)){ throw 'Windows .NET Framework compiler not found' }
+$source = (Resolve-Path -LiteralPath 'windows\ZHIROXLauncherV55.cs').Path
+& $csc /nologo /target:winexe /platform:x64 /optimize+ /out:"$root\ZHIROX371.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll "$source"
+if($LASTEXITCODE -ne 0){throw 'ZHIROX371 native Windows application compile failed'}
+if(!(Test-Path (Join-Path $root 'ZHIROX371.exe'))){throw 'Missing real Windows app launcher EXE'}
+
 Copy-Item windows/README-OFFLINE-TRIAL.txt (Join-Path $root 'README-OFFLINE-TRIAL.txt')
 New-Item -ItemType Directory -Path (Join-Path $root 'docs') -Force | Out-Null
 Copy-Item docs/V36_PREINSTALLATION_SOFTWARE.md (Join-Path $root 'docs/V36_PREINSTALLATION_SOFTWARE.md')
@@ -34,6 +42,7 @@ Copy-Item docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md (Join-Path $root 'doc
 Copy-Item docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md (Join-Path $root 'docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md')
 Copy-Item docs/V53_WINDOWS_RELEASE_CANDIDATE_FIELD_HANDOVER.md (Join-Path $root 'docs/V53_WINDOWS_RELEASE_CANDIDATE_FIELD_HANDOVER.md')
 Copy-Item docs/V54_WINDOWS_PHYSICAL_RECEIPT_TEST.md (Join-Path $root 'docs/V54_WINDOWS_PHYSICAL_RECEIPT_TEST.md')
+Copy-Item docs/V55_ONE_CLICK_WINDOWS_APP.md (Join-Path $root 'docs/V55_ONE_CLICK_WINDOWS_APP.md')
 $bad=Get-ChildItem -File -Recurse $root | Where-Object {
   $_.Name -match '^\.env' -or $_.Extension -in @('.csv','.bak','.sqlite','.pem','.p12','.pfx','.key')
 }
@@ -55,8 +64,8 @@ if(!(Test-Path $compiler)){
 New-Item -ItemType Directory -Path artifacts -Force | Out-Null
 & $compiler windows/ZHIROX-Offline-TRIAL.iss
 if($LASTEXITCODE -ne 0){throw 'Windows EXE compiler failed'}
-$exe='artifacts/ZHIROX371-Windows-RC-V54-NOT-FOR-SALES-Setup.exe'
+$exe='artifacts/ZHIROX371-V55-Offline-App-Setup.exe'
 if(!(Test-Path $exe)){throw 'EXE missing after compile'}
 (Get-FileHash $exe -Algorithm SHA256).Hash |
-  Out-File 'ZHIROX371-Windows-RC-V54-NOT-FOR-SALES-Setup.sha256.txt' -Encoding ascii
+  Out-File 'ZHIROX371-V55-Offline-App-Setup.sha256.txt' -Encoding ascii
 Write-Output 'Generated UNSIGNED offline TEST installer; NOT approved for real supermarket sales'

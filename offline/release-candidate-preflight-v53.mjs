@@ -9,6 +9,7 @@ const HASH=/^[a-f0-9]{64}$/;
 const SAFE_ASSET=/^\/assets\/[A-Za-z0-9._-]+\.(?:js|css)$/;
 const required=Object.freeze([
  "node.exe","offline/lan-gateway-v33.mjs","offline/autosync-v49.mjs",
+ "ZHIROX371.exe","offline/standalone-preview-v55.mjs",
  "windows/Start-ZHIROX-Trial.ps1","windows/Start-ZHIROX-AutoSync-TRIAL.ps1",
  "offline/windows-print-dispatch-v54.mjs","windows/Start-ZHIROX-Print-V54.ps1",
  "windows/Spool-ZHIROX-Receipt-V54.ps1",
