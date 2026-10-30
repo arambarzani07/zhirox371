@@ -1,7 +1,7 @@
 'use strict';
 /* ZHIROX371 original PC source: existing-account self-service recovery.
  * Public browser key only. No admin auth, new users, store mutation or
- * password telemetry. Never put service_role / sb_secret_ here.
+ * password telemetry. Never include privileged credentials here.
  */
 (() => {
   function init() {
