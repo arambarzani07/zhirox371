@@ -5,6 +5,13 @@ import react from '@vitejs/plugin-react';
 // listen on 127.0.0.1. Never expose pilot credentials or API to public/LAN.
 export default defineConfig(({mode})=>{
   const env=loadEnv(mode,process.cwd(),'VITE_');
+  // A production Vite build is still a React DEMO, never a certified live POS.
+  // Refuse any explicit official-release claim until the backend, roles, shifts,
+  // printing, hardware and power-failure acceptance are implemented and tested.
+  if(mode==='production'&&(env.VITE_ZHIROX_RELEASE_MODE==='official'||
+     process.env.ZHIROX_RELEASE_MODE==='official')){
+    throw Error('ZHIROX NO-GO: this React build is DEMO; an official cashier release is blocked pending physical and financial acceptance');
+  }
   const pilot=env.VITE_ENABLE_LOCAL_PILOT==='true';
   const localCashier=pilot&&env.VITE_V32_LOCAL_CASHIER==='true'&&mode!=='production';
   return {

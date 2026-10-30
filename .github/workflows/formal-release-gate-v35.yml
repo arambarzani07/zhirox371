@@ -1,0 +1,41 @@
+name: V35 formal release NO-GO checks
+on:
+  pull_request:
+    paths:
+      - 'scripts/release-readiness-v35*'
+      - 'vite.config.ts'
+      - 'offline/local-print-queue-v35.mjs'
+      - 'offline/migrations/012_print_queue_v35.sql'
+      - '.github/workflows/formal-release-gate-v35.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/release-readiness-v35*'
+      - 'vite.config.ts'
+      - '.github/workflows/formal-release-gate-v35.yml'
+permissions:
+  contents: read
+jobs:
+  prevent-uncertified-demo-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Assert remaining production blockers are visible
+        run: |
+          node --test scripts/release-readiness-v35.test.mjs
+          node scripts/release-readiness-v35.mjs --json
+      - name: Build preview only
+        run: |
+          npm install --no-package-lock
+          npm run build
+      - name: Explicit official build must FAIL CLOSED
+        shell: bash
+        run: |
+          if VITE_ZHIROX_RELEASE_MODE=official npm run build; then
+            echo "::error::A browser DEMO was incorrectly allowed as an official POS"
+            exit 1
+          fi
+          echo "PASS: unsupported official build blocked; preview build still works"
