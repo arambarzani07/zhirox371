@@ -74,7 +74,7 @@ test("invalid amount, forged identities, missing fields, no double-side cash cla
     assert.equal((await call(base,"POST",{...payload,...change})).status,400);
   }
   assert.equal((await call(base,"POST",{...payload,quantity_base_units:4})).status,409);
-  assert.equal((await call(base,"GET")).status,405);
+  assert.equal((await call(base,"GET",null)).status,405);
   const list=await fetch(base+"/api/local/v40/refundable-lines?sale_id="+sale,
     {headers:{Authorization:"Bearer "+bearer}});
   assert.equal(list.status,200);
