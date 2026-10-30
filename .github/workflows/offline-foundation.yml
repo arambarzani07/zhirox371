@@ -156,3 +156,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/018_split_tender_draft_v41.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/018_split_tender_draft_v41.sql
+      - name: V42 synthetic external evidence must not misstate cash or refunds
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/019_external_settlement_accounting_v42.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/019_external_settlement_accounting_v42.sql
