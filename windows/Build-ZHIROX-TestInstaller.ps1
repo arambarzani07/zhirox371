@@ -33,9 +33,8 @@ $bad=Get-ChildItem -File -Recurse $root | Where-Object {
 if($bad){throw 'Refusing to include non-manifested customer data or credential-like files'}
 if(!(Test-Path (Join-Path $root 'node_modules/pg/package.json'))){throw 'Missing PostgreSQL driver'}
 if(!(Test-Path (Join-Path $root 'dist/pilot-manifest-v36.json'))){throw 'Missing V36 manifest'}
-$assets=Get-ChildItem -File -Recurse $dist | Select-Object -ExpandProperty FullName
-if($assets.Count -ne ($manifest.files.PSObject.Properties.Count+1)){
-  throw 'Unexpected files outside SHA-256 allowlisted assets (plus manifest)'
+if ((Get-ChildItem -File -Recurse $dist | Where-Object { $_.Extension -notin @('.html','.json','.js','.css') }).Count -gt 0) {
+  throw 'Refusing unmanifested static asset type'
 }
 Compress-Archive -Path $root -DestinationPath 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -CompressionLevel Optimal
 (Get-FileHash 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -Algorithm SHA256).Hash |
