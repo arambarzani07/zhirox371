@@ -8,7 +8,7 @@ import {mkdtemp,readFile,rm} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {execFileSync} from "node:child_process";
-import {Pool} from "pg";
+// The integration loads pg ONLY when explicitly enabled; generic Node CI needs no driver.
 import {syncOutboxOnce} from "../outbox-sync-worker-v27.mjs";
 import {createV50LabHttpsHandler} from "../staging-https-v50.mjs";
 import {parseV28Stores,hashOwnerToken} from "../cloud-receiver-v28.mjs";
@@ -82,7 +82,9 @@ test("V52 must NEVER run against production SQL, live Supabase or a single share
    ZHIROX_V52_LOCAL_DISPOSABLE_DB_URL:url,ZHIROX_V52_CLOUD_DISPOSABLE_DB_URL:url}));
 });
 
-test("V52 real PostgreSQL and genuine trusted TLS: WAN down, remote-committed ACK lost, replay, event-ID parity",async t=>{
+test("V52 real PostgreSQL and genuine trusted TLS: WAN down, remote-committed ACK lost, replay, event-ID parity",
+  {skip:process.env.ZHIROX_V52_REAL_DB_CI_ENABLED!=="true"},async t=>{
+ const {Pool}=await import("pg");
  const {local:localUrl,cloud:cloudUrl}=getDatabaseConfigs(process.env);
  const local=new Pool({connectionString:localUrl,max:3,connectionTimeoutMillis:2000});
  const cloud=new Pool({connectionString:cloudUrl,max:3,connectionTimeoutMillis:2000});
