@@ -65,7 +65,13 @@ try{
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #12/).waitFor();
  await page.getByRole("button",{name:"پێشبینینی پسووڵە"}).click();
- await page.getByTitle("پێشبینینی پارێزراوی پسووڵە").waitFor();
+ await page.waitForTimeout(450);
+ console.log("V36 preview diagnostic",JSON.stringify({
+  frames:await page.locator("iframe").count(),
+  status:(await page.getByRole("status").allTextContents()).slice(-5),
+  errors
+ }));
+ await page.getByTitle("پێشبینینی پارێزراوی پسووڵە").waitFor({timeout:5000});
  await page.getByRole("button",{name:"تۆمارکردنی داواکاری چاپی تاقیکردنەوە"}).click();
  await page.getByText(/هیچ پرینتەرێک چاپی نەکردووە/).waitFor();
  assert.equal(committed,1);
