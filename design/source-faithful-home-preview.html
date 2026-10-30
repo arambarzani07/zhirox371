@@ -1,0 +1,786 @@
+<!doctype html>
+<!-- SOURCE-FAITHFUL OFFLINE BUNDLE: compiled from actual main files. Original files untouched. index.html c364336a84b2c92cf121d7682671b309eccd4b05 | ui-global.css 14474a71940bfa79a25173623bcfbaf5387d3660 | ui-fixed-pc.css e55fc2ddbec2aa0e0e19d97c568592a6e6501a0c | card-icons.css 1c774c9d6f21221fb0972d88d3d4f303707f77a1 | card-icons.js b1b8f5b03c6585c7fd38fd91a22519fae4c7d5c5 -->
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>سیستەمی کاشێر</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fa;color:#213149;font-family:system-ui,"Segoe UI",Tahoma,sans-serif}button,input{font:inherit}button{cursor:pointer}
+.viewport{overflow-x:auto;min-height:100vh}.desktop{min-width:1020px;min-height:100vh}
+header{background:#fff;height:75px;padding:0 42px;border-bottom:1px solid #e7ecf2;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:13px;font-size:19px;font-weight:800}.brand i{width:43px;height:43px;border-radius:12px;background:#243d60;color:#fff;display:grid;place-items:center;font-style:normal;font-size:25px}
+.home{width:38px;height:38px;border-radius:10px;border:1px solid #e5eaf0;background:#f7f9fc;color:#556a84}
+main{padding:39px 44px 60px;max-width:1500px;margin:auto}h1{font-size:23px;margin:0 0 27px;font-weight:800}h2{font-size:21px;margin:0}
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:15px}
+.module{min-height:153px;border:1px solid #e2e8ef;background:#fff;border-radius:16px;padding:19px;text-align:right;display:flex;flex-direction:column;justify-content:space-between;align-items:start;color:#26374e;box-shadow:0 5px 17px #1b385008}
+.module:hover,.module[aria-expanded=true]{border-color:var(--color);box-shadow:0 7px 19px #20415b12}
+.icon{width:49px;height:49px;border-radius:13px;background:var(--light);color:var(--color);display:grid;place-items:center}
+.end{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px}.name{font-size:15px;font-weight:800}.chev{color:#8798ad;font-size:20px}.module[aria-expanded=true] .chev{transform:rotate(180deg);color:var(--color)}
+.drawer{background:white;border:1px solid #e3e8ef;border-radius:15px;padding:19px;margin:0 0 16px;animation:slide .16s ease-out}@keyframes slide{from{opacity:.3;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.drawerhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:17px}.drawerhead strong{font-size:15px}.close{border:0;background:#f2f5f8;color:#64758d;border-radius:8px;width:32px;height:32px}
+.subgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.sub{min-height:77px;border:1px solid #e5eaf1;border-radius:11px;background:#f9fafc;color:#273a54;padding:14px;text-align:right;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:750}.sub:hover{background:#eff5fc;border-color:#a6bddb}
+.page{background:white;border:1px solid #e5eaf0;border-radius:15px;padding:25px;min-height:430px}.pagehead{display:flex;align-items:center;gap:12px;margin-bottom:22px}.back{border:1px solid #e1e8f0;border-radius:9px;background:#f7f9fc;color:#506784;width:35px;height:35px}
+.inputs{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{font-size:12px;color:#62758e;display:flex;flex-direction:column;gap:7px;flex:1;min-width:160px}.field input{border:1px solid #dce5ee;border-radius:9px;padding:12px;min-height:43px;color:#213149}
+.primary{background:#244673;color:white;border:0;border-radius:9px;padding:12px 20px;font-weight:700;min-height:43px}.plain{background:#f3f6fa;color:#536985;border:1px solid #e4ebf1;border-radius:9px;padding:10px 15px}
+.empty{padding:34px;border:1px dashed #e1e7ee;border-radius:12px;margin-top:20px;text-align:center;color:#8a9bae;font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:22px;font-size:13px}th,td{padding:13px;border-bottom:1px solid #edf0f5;text-align:right}th{background:#fbfcfd;color:#718299}
+.pos{display:grid;grid-template-columns:1.8fr .8fr;gap:16px}.panel{border:1px solid #e8edf2;border-radius:12px;padding:16px}.total{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #edf0f4;margin-top:25px;padding-top:20px}.total strong{font-size:21px;color:#254779;direction:ltr}
+.qty{border:1px solid #e2e9f1;border-radius:7px;background:#f2f5f8;padding:5px 10px}.feedback{min-height:26px;padding-top:12px;font-size:12px;color:#b25b4e}
+</style>
+<style data-original-filename="ui-global.css">
+/* Shared accessible typography and persistent supermarket header.
+   Applies to all desktop screens; receipts/diagnostic test strips print untouched. */
+:root {
+  --market-banner-height: 70px;
+  --market-ink: #1b2e47;
+  --market-secondary-ink: #41546b;
+}
+@media screen {
+  html { scroll-padding-top: calc(var(--market-banner-height) + 14px); }
+  body {
+    padding-top: var(--market-banner-height) !important;
+    color: var(--market-ink);
+    font-family: "Noto Sans Arabic","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    font-weight: 700;
+  }
+  .market-banner {
+    position: fixed;
+    z-index: 10000;
+    top: 0;
+    inset-inline: 0;
+    width: 100%;
+    min-height: var(--market-banner-height);
+    padding: 12px 24px;
+    margin: 0;
+    background: #203e66;
+    color: #fff !important;
+    border-bottom: 3px solid #759bd0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Noto Sans Arabic","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+    font-size: 28px;
+    font-weight: 900 !important;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-align: center;
+    text-shadow: 0 1px 1px #15294466;
+    white-space: nowrap;
+    direction: rtl;
+  }
+  /* Stronger but still legible text, without flattening module accent colors. */
+  body :is(button,input,select,textarea,label,th,td,p,small,a) { font-weight: 700; }
+  body :is(h1,h2,h3,h4,h5,h6,strong,b,.brand,.name,.drawerhead strong) {
+    font-weight: 850 !important;
+  }
+  body :is(.field,.hint,.muted,.smallinfo,.who,.note,.notice,.empty,.blank,.caption,.status,th,.detail p,.detail .tip,.metric span,.metric dt,.shift-metrics span,.rowline span) {
+    color: var(--market-secondary-ink) !important;
+    font-weight: 700;
+  }
+  body :is(input,select,textarea) {
+    color: var(--market-ink) !important;
+    font-weight: 700 !important;
+  }
+  body :is(input,textarea)::placeholder { color: #566981 !important; opacity: 1; }
+  body :is(.module,.sub,.tab:not(.active),.secondary,.plain,.test,.testcase,.back,.home) {
+    color: var(--market-ink);
+  }
+  body :is(.feedback,.msg,.status)[role="alert"],
+  body :is(.feedback,.msg).error { color: #913d36 !important; }
+  body :is(.feedback,.msg).success { color: #13694e !important; }
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {
+    outline: 3px solid #5386c4;
+    outline-offset: 2px;
+  }
+}
+/* Force readable ink on LIGHT cards and their own nested labels.
+   Some host themes assign pale colors directly to <strong>/<span>; inheritance
+   from .module is not enough. Scope carefully to white surfaces only. */
+@media screen {
+  body :is(.module,.sub,.subgrid button,.drawer,.drawerhead,.page,.surface,.panel,.pane,.test,.testcase,.metric) {
+    color-scheme: light;
+  }
+  body :is(.module,.sub,.subgrid button,.drawerhead,.test,.testcase) {
+    color: #172b45 !important;
+  }
+  body .module :is(.name,.end .name,.module-label strong,.modbottom span),
+  body .module :is(.name,.end .name,.module-label strong,.modbottom span) *,
+  body .drawerhead strong,
+  body .sub :is(span,strong,b),
+  body .subgrid button :is(span,strong,b),
+  body .subcards button :is(span,strong,b),
+  body .testcase :is(span,strong,b),
+  body .test :is(.name,span,strong,b) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 850 !important;
+    text-shadow: none !important;
+  }
+  body .module .name {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+  }
+  body :is(.sub,.subgrid button,.subcards button) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+  }
+  /* Do not repaint colored module icons or white-on-navy primary actions. */
+  body .module :is(.icon,.symbol,.modicon) {
+    -webkit-text-fill-color: currentColor;
+  }
+  body :is(.primary,.tab.active,.filter.active) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  .market-banner {
+    font-size: clamp(17px, 3.3vw, 28px);
+    white-space: normal;
+    overflow-wrap: normal;
+    max-width: 100vw;
+  }
+}
+
+@media print {
+  .market-banner { display: none !important; }
+  body { padding-top: 0 !important; }
+}
+
+/* Contrast gate V10: ensure EVERY visible heading and field label on white PC
+ * surfaces is readable; the previous card-only fix did not cover page headings.
+ * Keep active navy buttons/banner white and preserve thermal receipt printing. */
+@media screen {
+  body > .viewport > .desktop > main,
+  body > .viewport > .desktop > main :is(.surface,.panel,.page,.detail,.metric,.blank,.empty,.formrow,.toolbar) {
+    color-scheme: light;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  body > .viewport > .desktop > main :is(h1,h2,h3,h4,h5,h6),
+  body > .viewport > .desktop > main :is(h1,h2,h3,h4,h5,h6) :is(span,strong,b),
+  body > .viewport > .desktop > main :is(.section-title,.page-title,.card-title,.heading,.form-title,.toolbar h2,.receipt-head h2) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+    font-weight: 900 !important;
+  }
+
+  body > .viewport > .desktop > main :is(.field,.form-col,label,.blank,.empty,.smallinfo,.hint,.note,.notice,.caption,.muted,.who,.metric span,.shift-metrics span,.totals span,.due span),
+  body > .viewport > .desktop > main :is(.field,.form-col,label,.blank,.empty,.smallinfo,.hint,.note,.notice,.caption,.muted,.who,.metric span,.shift-metrics span,.totals span,.due span) :is(span,strong,b) {
+    color: #30465f !important;
+    -webkit-text-fill-color: #30465f !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+  }
+
+  body > .viewport > .desktop > main :is(input,textarea,select) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 800 !important;
+  }
+  body > .viewport > .desktop > main :is(input,textarea)::placeholder {
+    color: #41566f !important;
+    -webkit-text-fill-color: #41566f !important;
+    opacity: 1 !important;
+  }
+  body > .viewport > .desktop > main :is(.nav button:not(.active),.tab:not(.active),.secondary,.receipt-action) {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 850 !important;
+  }
+
+  /* Primary and active tabs intentionally use white text on navy. */
+  body > .viewport > .desktop > main :is(.primary,.nav button.active,.tab.active,.filter.active),
+  body > .viewport > .desktop > main :is(.primary,.nav button.active,.tab.active,.filter.active) :is(span,strong,b) {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    font-weight: 850 !important;
+  }
+  /* Messages still convey actionable errors/success distinctly. */
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).error,
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status)[role="alert"] {
+    color: #913d36 !important;
+    -webkit-text-fill-color: #913d36 !important;
+  }
+  body > .viewport > .desktop > main :is(.msg,.message,.feedback,.status).success {
+    color: #13694e !important;
+    -webkit-text-fill-color: #13694e !important;
+  }
+  /* Do not use text transparency to indicate disabled controls. */
+  body > .viewport > .desktop > main button:disabled {
+    opacity: 1 !important;
+    color: #41566f !important;
+    -webkit-text-fill-color: #41566f !important;
+    background-color: #e4ebf3 !important;
+    border-color: #b9c9dc !important;
+    cursor: not-allowed;
+  }
+}
+
+</style>
+<style data-original-filename="ui-fixed-pc.css">
+/* Fixed PC screens — owner-requested, design-lock-safe layout behavior.
+   The desktop layout remains >=1020px with the same 12 cards / 3x4 grid.
+   Only internal content scrolls. Receipt thermal paper printing is unaffected. */
+@media screen {
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+  body {
+    margin: 0 !important;
+    padding-top: var(--market-banner-height) !important;
+  }
+
+  /* The permanent supermarket banner is already position: fixed. */
+  .market-banner {
+    position: fixed !important;
+    top: 0 !important;
+    inset-inline: 0 !important;
+    z-index: 10000 !important;
+    height: var(--market-banner-height);
+    min-height: var(--market-banner-height);
+    max-height: var(--market-banner-height);
+  }
+
+  /* An outer desktop viewport can pan horizontally on narrow devices,
+     but MUST NOT move vertically along with the page. */
+  body > .viewport {
+    width: 100%;
+    height: calc(100vh - var(--market-banner-height));
+    height: calc(100dvh - var(--market-banner-height));
+    min-height: 0 !important;
+    max-height: calc(100dvh - var(--market-banner-height));
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior: contain;
+  }
+  body > .viewport > .desktop {
+    min-width: 1020px;
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+
+  body > .viewport > .desktop > header {
+    flex: 0 0 75px;
+    height: 75px;
+    min-height: 75px;
+    width: 100%;
+    z-index: 5;
+  }
+  body > .viewport > .desktop > main {
+    flex: 1 1 0%;
+    min-height: 0 !important;
+    width: 100%;
+    margin: 0 auto !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    overflow-anchor: none;
+    scrollbar-gutter: stable;
+    scroll-behavior: auto !important;
+  }
+
+  /* Subcards appear directly beneath their selected row but float above
+     later rows. Opening/closing them never pushes the other 12 cards.
+     The original Home's CSS/labels/order remain unchanged. */
+  #app { position: relative; }
+  #app > .drawer {
+    position: absolute !important;
+    inset-inline: 0;
+    width: 100%;
+    margin: 0 !important;
+    z-index: 12;
+    max-height: min(265px, 52dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-shadow: 0 12px 35px #20395430;
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  #app > .row,
+  #app > .row > .module {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  #app .module[aria-expanded="true"] .chev {
+    transform: none !important;
+  }
+
+  /* PC product workspace / cashier / QA and device pages share this
+     locked shell without moving the header when long tables grow. */
+  body > .viewport > .desktop > main :is(.surface, .page, .card, .panel) {
+    scroll-margin-top: 12px;
+  }
+
+  /* The separate receipt view has its own fixed viewport and independently
+     scrollable print preview; never modify the printable ticket. */
+  body > .shell {
+    height: calc(100vh - var(--market-banner-height));
+    height: calc(100dvh - var(--market-banner-height));
+    min-height: 0 !important;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    overscroll-behavior: auto !important;
+  }
+  .market-banner { display: none !important; }
+  body { padding-top: 0 !important; }
+  body > .shell {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+</style>
+<style data-original-filename="card-icons.css">
+/* Approved icon-only change: main/child pictograms, no changes to the desktop grid,
+   card order, existing module accent colors or Sorani labels. */
+@media screen {
+  .module .icon svg {
+    display: block;
+    width: 29px;
+    height: 29px;
+    stroke: var(--color);
+    fill: none;
+    flex-shrink: 0;
+  }
+  .subgrid .sub {
+    min-height: 112px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 9px;
+    text-align: right;
+    font-weight: 850;
+  }
+  .subgrid .sub-icon {
+    display: grid;
+    place-items: center;
+    width: 39px;
+    height: 39px;
+    background: var(--light);
+    border-radius: 10px;
+    flex: none;
+    color: var(--color) !important;
+    -webkit-text-fill-color: var(--color) !important;
+  }
+  .subgrid .sub-icon svg {
+    display: block;
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: var(--color);
+  }
+  .subgrid .sub-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+  .subgrid .sub-footer .sub-name {
+    display: block;
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    font-weight: 850 !important;
+    line-height: 1.6;
+    font-size: 13px;
+  }
+  .subgrid .sub-footer .sub-arrow {
+    color: #415a78 !important;
+    -webkit-text-fill-color: #415a78 !important;
+    flex: none;
+  }
+  .subgrid .sub:hover .sub-icon,
+  .subgrid .sub:focus-visible .sub-icon {
+    outline: 1px solid var(--color);
+    outline-offset: 1px;
+  }
+}
+
+
+/* Readability gate: no transient faded cards or drawer labels, including on mobile
+   browsers viewing the original fixed-width PC layout. */
+@media screen {
+  body .module,
+  body .subgrid .sub,
+  body .drawer,
+  body .drawerhead {
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  body .drawer { animation: none !important; }
+  body .module .name,
+  body .drawerhead strong,
+  body .subgrid .sub-footer .sub-name {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 900 !important;
+    visibility: visible !important;
+    text-shadow: none !important;
+  }
+  /* Preserve individual module SVG colors instead of tinting icons dark. */
+  body .module .icon svg,
+  body .subgrid .sub-icon svg {
+    stroke: var(--color) !important;
+    opacity: 1 !important;
+  }
+}
+
+/* V11 · Premium icon system — owner-authorized visual refinement.
+ * No reflow, animations, card replacement, font fading, or responsive grid.
+ * Individual color tokens (--color, --light) remain sourced from the 12 modules. */
+@media screen {
+  body .module .icon,
+  body .subgrid .sub-icon {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    flex: none;
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color) 18%, white) 0%,
+      var(--light) 58%,
+      color-mix(in srgb, var(--light) 82%, white) 100%
+    ) !important;
+    border: 1px solid color-mix(in srgb, var(--color) 22%, white) !important;
+    box-shadow:
+      inset 0 1px 0 #ffffffec,
+      inset 0 -2px 4px color-mix(in srgb, var(--color) 7%, transparent),
+      0 5px 11px color-mix(in srgb, var(--color) 12%, transparent);
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  body .module .icon { border-radius: 14px !important; }
+  body .subgrid .sub-icon { border-radius: 11px !important; }
+  body .module .icon::before,
+  body .subgrid .sub-icon::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 77%;
+    height: 65%;
+    top: -31%;
+    left: -18%;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #fffdf8c9, #ffffff00);
+    pointer-events: none;
+  }
+  body .module .icon::after,
+  body .subgrid .sub-icon::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color) 60%, white);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  body .module .icon svg,
+  body .subgrid .sub-icon svg {
+    display: block;
+    position: relative;
+    z-index: 1;
+    width: 30px;
+    height: 30px;
+    color: var(--color) !important;
+    stroke: var(--color) !important;
+    stroke-width: 2.1px;
+    fill: none;
+    opacity: 1 !important;
+    filter: drop-shadow(0 1px 0 #ffffffb3);
+    transition: none !important;
+  }
+  body .subgrid .sub-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  body .module .icon .pictogram-halo,
+  body .subgrid .sub-icon .pictogram-halo {
+    stroke: none !important;
+    fill: var(--color) !important;
+    opacity: 0.13 !important;
+  }
+  body .module .icon .pictogram-lines,
+  body .subgrid .sub-icon .pictogram-lines {
+    stroke: var(--color) !important;
+    stroke-width: 2.1px;
+  }
+  /* CSS decorations must never recolor the text in labels, buttons or headers. */
+  body .module .name,
+  body .subgrid .sub-footer .sub-name {
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+    opacity: 1 !important;
+    font-weight: 900 !important;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="market-banner">سوپەرمارکێتی کانی چنار</div><div class="viewport"><div class="desktop">
+<header><div class="brand"><i>◈</i><span>سیستەمی کاشێر</span></div><button class="home" id="home" title="سەرەتا" aria-label="سەرەتا">⌂</button></header>
+<main id="app"></main></div></div>
+<script data-original-filename="card-icons.js">
+/* Hand-curated, dependency-free line SVGs for the 12 Home cards and 48 subcards.
+ * One distinct pictogram per destination. No images, remote fonts or CDNs.
+ * All fragments are static trusted source literals, never user input. */
+(()=>{
+"use strict";
+const main=[
+ "cash-register","product-box","warehouse","people","delivery-truck","wallet",
+ "chart-bars","settings-gear","offer-badge","printer","shift-calendar","security-shield"
+];
+const sub=[
+ ["barcode-scan","receipt","payment-notes","return-arrow"],
+ ["add-box","product-list","price-tags","barcode-bars"],
+ ["stock-stack","low-stock","expiry","stock-transfer"],
+ ["single-customer","debt-book","purchase-history","customer-repayment"],
+ ["purchase-order","supplier-building","receive-goods","supplier-accounts"],
+ ["cash-drawer","income-rise","expense-fall","cash-movements"],
+ ["sales-trend","profit-chart","stock-chart","ai-insights"],
+ ["manage-users","access-key","connected-devices","system-controls"],
+ ["new-offer","discount-percent","coupon-ticket","promotion-speaker"],
+ ["price-label","label-barcode","batch-print","print-template"],
+ ["shift-clock","attendance","work-timer","staff-review"],
+ ["alert-bell","approval-file","change-history","transaction-check"]
+];
+const icons={
+ "cash-register":'<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M7 9h10M7 13h3m4 0h3M7 17h10M8 5V3h8v2"/>',
+ "product-box":'<path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10"/><path d="m7.5 4.5 9 5"/>',
+ "warehouse":'<path d="M3 10V6l9-4 9 4v4M3 10v11h18V10M7 21v-9h10v9M7 16h10"/><path d="M3 10h18"/>',
+ "people":'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 5a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 5v1"/>',
+ "delivery-truck":'<path d="M2 6h12v11H2zM14 10h4l4 4v3h-8M2 17h2m10 0h2"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>',
+ "wallet":'<rect x="2" y="5" width="20" height="15" rx="2"/><path d="M18 5V3H5a3 3 0 0 0-3 3M22 11h-7a3 3 0 0 0 0 6h7"/><circle cx="16" cy="14" r=".5" fill="currentColor"/>',
+ "chart-bars":'<path d="M3 3v18h18M7 17v-5h3v5M13 17V8h3v9M19 17V5h2v12"/>',
+ "settings-gear":'<path d="M10 2h4l.7 2.4 2.2.9 2.2-1.2 2.8 2.8-1.2 2.2.9 2.2L24 12l-2.4.7-.9 2.2 1.2 2.2-2.8 2.8-2.2-1.2-2.2.9L14 22h-4l-.7-2.4-2.2-.9-2.2 1.2-2.8-2.8 1.2-2.2-.9-2.2L0 12l2.4-.7.9-2.2-1.2-2.2 2.8-2.8 2.2 1.2 2.2-.9z" transform="translate(2 0) scale(.83 1)"/><circle cx="12" cy="12" r="3"/>',
+ "offer-badge":'<path d="m12 2 3 2 4-.2.2 4L22 12l-2.8 4.2-.2 4-4-.2-3 2-3-2-4 .2-.2-4L2 12l2.8-4.2.2-4 4 .2z"/><path d="m8 16 8-8"/><circle cx="8" cy="8" r="1"/><circle cx="16" cy="16" r="1"/>',
+ "printer":'<path d="M6 9V3h12v6M6 18H3V9h18v9h-3M6 15h12v7H6z"/><path d="M17 12h1M9 18h6"/>',
+ "shift-calendar":'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/><circle cx="12" cy="16" r="4"/><path d="M12 13v3l2 1"/>',
+ "security-shield":'<path d="M12 2 3 6v6c0 5 3.5 8 9 10 5.5-2 9-5 9-10V6z"/><path d="m8 12 3 3 5-6"/>',
+
+ "barcode-scan":'<path d="M8 3H4v4M16 3h4v4M4 17v4h4M20 17v4h-4M7 8v8M10 7v10M13 8v8M16 7v10M2 12h20"/>',
+ "receipt":'<path d="M5 2h14v20l-3-2-4 2-4-2-3 2zM9 7h6M9 11h6M9 15h4"/>',
+ "payment-notes":'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M5 3h14M5 21h14M4 10h2m12 4h2"/>',
+ "return-arrow":'<path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-2"/>',
+ "add-box":'<path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v10l9 5 9-5V8M12 13v10M17 3v6M14 6h6"/>',
+ "product-list":'<path d="M9 5h12M9 12h12M9 19h12"/><path d="m3 5 1 1 2-2M3 12l1 1 2-2M3 19l1 1 2-2"/>',
+ "price-tags":'<path d="M3 3h9l9 9-9 9-9-9z"/><circle cx="8" cy="8" r="1.5"/><path d="M12 8h6M12 12h4"/>',
+ "barcode-bars":'<path d="M3 4v16M6 6v12M9 4v16M12 6v12M16 4v16M19 6v12M22 4v16"/>',
+ "stock-stack":'<path d="M3 4h8v7H3zM13 4h8v7h-8zM3 13h8v7H3zM13 13h8v7h-8z"/><path d="M7 4v7M17 13v7"/>',
+ "low-stock":'<path d="m12 2 10 19H2zM12 9v5M12 18h.01"/><path d="M4 21h16"/>',
+ "expiry":'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 9h18M8 13l8 6M16 13l-8 6"/>',
+ "stock-transfer":'<path d="M3 7h15l-4-4M18 7l-4 4M21 17H6l4-4M6 17l4 4"/>',
+ "single-customer":'<circle cx="12" cy="8" r="4"/><path d="M4 22v-2a8 8 0 0 1 16 0v2"/>',
+ "debt-book":'<path d="M4 3h14v18H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2M18 3h2v18h-2M8 8h6M8 12h6M8 16h3"/>',
+ "purchase-history":'<path d="M3 12a9 9 0 1 0 3-7M3 3v5h5M12 7v5l4 2"/>',
+ "customer-repayment":'<path d="m3 16 4-4 3 3 5-6 4 4M16 5h5v5"/><circle cx="7" cy="6" r="2"/>',
+ "purchase-order":'<rect x="5" y="3" width="14" height="19" rx="2"/><path d="M9 3V2h6v1M9 9h6M9 13h6M9 17h3"/><path d="m15 18 2 2 4-4"/>',
+ "supplier-building":'<path d="M3 21V7l9-5 9 5v14M3 21h18M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-4h4v4"/>',
+ "receive-goods":'<path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/><path d="M8 2v5M6 5l2 2 2-2"/>',
+ "supplier-accounts":'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4M16 16l2 2 3-4"/>',
+ "cash-drawer":'<rect x="2" y="8" width="20" height="12" rx="2"/><path d="M5 8V4h14v4M2 13h20M10 16h4"/>',
+ "income-rise":'<path d="M3 20h18M5 16l6-6 4 3 6-7M16 6h5v5"/><circle cx="6" cy="5" r="2"/>',
+ "expense-fall":'<path d="M3 4h18M5 8l6 6 4-3 6 7M16 18h5v-5"/><circle cx="6" cy="18" r="2"/>',
+ "cash-movements":'<path d="M3 7h17m0 0-4-4m4 4-4 4M21 17H4m0 0 4-4m-4 4 4 4"/>',
+ "sales-trend":'<path d="M3 3v18h18M6 16l4-5 4 2 6-8M16 5h4v4"/>',
+ "profit-chart":'<path d="M3 21h18M6 18v-5h3v5M11 18V9h3v9M16 18V5h3v13"/><path d="m16 3 2-2 2 2"/>',
+ "stock-chart":'<circle cx="12" cy="12" r="9"/><path d="M12 3v9h9M12 12l-7 6"/>',
+ "ai-insights":'<path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3m8 8 3 3M19 5l-3 3M8 16l-3 3"/><circle cx="12" cy="12" r="4"/>',
+ "manage-users":'<circle cx="9" cy="8" r="3"/><path d="M2 20a7 7 0 0 1 11-5M18 15v6m-3-3h6"/><circle cx="18" cy="8" r="2"/>',
+ "access-key":'<circle cx="8" cy="15" r="5"/><path d="M12 12 21 3l-1 4-3 1-1 3-3 1M8 15h.01"/>',
+ "connected-devices":'<rect x="2" y="3" width="15" height="12" rx="2"/><path d="M9 15v4M5 19h8"/><rect x="18" y="9" width="4" height="11" rx="1"/>',
+ "system-controls":'<path d="M4 5h16M4 12h16M4 19h16"/><circle cx="8" cy="5" r="2" fill="#fff"/><circle cx="16" cy="12" r="2" fill="#fff"/><circle cx="10" cy="19" r="2" fill="#fff"/>',
+ "new-offer":'<path d="M4 4h10l7 7-10 10-7-7z"/><circle cx="9" cy="9" r="1.5"/><path d="M16 3v6M13 6h6"/>',
+ "discount-percent":'<circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M5 19 19 5"/>',
+ "coupon-ticket":'<path d="M3 4h18v5a3 3 0 0 0 0 6v5H3v-5a3 3 0 0 0 0-6zM12 4v3m0 3v4m0 3v3"/>',
+ "promotion-speaker":'<path d="M3 10v5h5l9 5V5l-9 5zM7 15l2 6h3M20 8a6 6 0 0 1 0 9"/>',
+ "price-label":'<path d="m3 12 9-9h9v9l-9 9z"/><circle cx="17" cy="7" r="1.5"/><path d="M7 15h6"/>',
+ "label-barcode":'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8v8M9 7v10M12 8v8M16 7v10M19 8v8"/>',
+ "batch-print":'<path d="M5 3h12v5M3 10h18v8h-4M7 18H5v-4M7 15h10v7H7zM19 5h2v6"/>',
+ "print-template":'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M7 6h10M7 10h10M7 14h4M7 18h10M14 14h3"/>',
+ "shift-clock":'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2M12 3V1M21 12h2"/>',
+ "attendance":'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 9h18m-13 7 3 3 5-6"/>',
+ "work-timer":'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3M18 5l2-2"/>',
+ "staff-review":'<path d="M4 21V3h16v18M8 7h8M8 11h8"/><path d="m8 16 2 2 5-5"/>',
+ "alert-bell":'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 10h18c0-3-3-3-3-10M10 21h4"/>',
+ "approval-file":'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 11h5m-5 6 3 3 6-7"/>',
+ "change-history":'<path d="M3 12a9 9 0 1 0 3-7M3 3v5h5M12 6v6l4 2"/><path d="M16 20h4"/>',
+ "transaction-check":'<path d="M12 2 3 6v6c0 5 3.5 8 9 10 5.5-2 9-5 9-10V6z"/><circle cx="12" cy="11" r="4"/><path d="m10 11 2 2 3-4"/>'
+};
+const expected=[...main,...sub.flat()];
+if(main.length!==12||sub.length!==12||sub.some(row=>row.length!==4)||new Set(expected).size!==60||
+ expected.some(id=>!icons[id])||Object.keys(icons).length!==60)throw Error("Home icon catalog incomplete or duplicated");
+function svg(id){
+ const body=icons[id];if(!body)throw Error("Unknown card icon: "+id);
+ return '<svg xmlns="http://www.w3.org/2000/svg" class="retail-pictogram" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+  +'<circle class="pictogram-halo" cx="19.4" cy="4.6" r="3.2" fill="currentColor" stroke="none" opacity=".13"/>'
+  +'<g class="pictogram-lines">'+body+'</g>'
+  +'<path class="pictogram-glint" d="M3.4 5.4 5.4 3.4" stroke="currentColor" stroke-width="1.3" opacity=".55"/>'
+  +'</svg>';
+}
+window.RetailCardIcons=Object.freeze({main:Object.freeze(main),sub:Object.freeze(sub.map(row=>Object.freeze(row))),svg});
+})();
+</script>
+<script>
+(()=>{
+"use strict";
+const app=document.getElementById("app");
+const specs=[
+["کاشێر و فرۆشتن","#4c6dcc","#edf2ff","▣",["فرۆشتنی نوێ","پسووڵەکان","پارەدان","گەڕاندنەوە"]],
+["کاڵاکان","#15987c","#e7f7f0","⬡",["کاڵای نوێ","لیستی کاڵاکان","نرخەکان","بارکۆدەکان"]],
+["کۆگا","#d18b34","#fff2e2","▤",["دۆخی کۆگا","کاڵای کەم","بەسەرچوون","هاتووچۆ"]],
+["کڕیاران و حسابەکان","#9565cb","#f2ebfd","◎",["کڕیاران","قەرزەکان","مێژووی کڕین","پارەدانەکان"]],
+["کڕین و دابینکەران","#168db7","#e6f5fd","▧",["داواکاری","دابینکەران","وەرگرتنی کاڵا","حسابەکان"]],
+["دارایی","#bd7953","#fff1e7","◇",["سندووق","داهات","خەرجی","جووڵەی پارە"]],
+["ڕاپۆرت و شیکاری","#5577bc","#edf2fb","▥",["فرۆشتن","قازانج","ڕاپۆرتی کۆگا","شیکاریی زیرەک"]],
+["ڕێکخستنەکان","#74849a","#eff2f6","⚙",["بەکارهێنەران","دەسەڵاتەکان","ئامێرەکان","سیستەم"]],
+["ئافەر و داشکاندن","#cf6d96","#fcecf2","♧",["ئافەری نوێ","داشکاندن","کوپۆن","کەمپەین"]],
+["لیبڵ و چاپکردن","#0f9c9d","#e5f7f7","▦",["لیبڵی نرخ","بارکۆد","چاپی کۆمەڵەیی","قاڵبی چاپ"]],
+["شێفت و کارمەندان","#a67d45","#fbf1e3","▤",["شێفتەکان","ئامادەبوون","کاتی کار","هەڵسەنگاندن"]],
+["چاودێری و مۆڵەتەکان","#745dc5","#eeeafd","♢",["ئاگادارییەکان","داوای مۆڵەت","گۆڕانکارییەکان","پشکنینی مامەڵە"]]
+];
+const cardIcons=window.RetailCardIcons;
+const state={open:-1,page:null,products:[],cart:[],msg:""};
+const money=n=>n.toLocaleString("en-US")+" IQD";
+/* Contrast-critical labels: bind opaque dark ink to the text node itself.
+   Inline important declarations outrank theme styles, including iOS Safari overrides. */
+function makeReadableLabel(node){
+ for(const [key,value] of [
+   ["color","#172b45"],
+   ["-webkit-text-fill-color","#172b45"],
+   ["opacity","1"],
+   ["font-weight","900"],
+   ["text-shadow","none"],
+   ["visibility","visible"]
+ ])node.style.setProperty(key,value,"important");
+ node.dataset.contrastLabel="true";
+ return node;
+}
+
+function focusModule(index){
+ if(index<0)return;
+ const button=app.querySelector('[data-module="'+index+'"]');
+ if(button)button.focus({preventScroll:true});
+}
+function closeSubmenu(restoreFocus=true){
+ const previouslyOpen=state.open;
+ if(previouslyOpen<0)return;
+ state.open=-1;
+ draw();
+ if(restoreFocus)focusModule(previouslyOpen);
+}
+function back(){state.page=null;state.msg="";draw()}
+function draw(){
+ if(state.page){drawPage();return}
+ app.replaceChildren();
+ const h=document.createElement("h1");h.textContent="بەشە سەرەکییەکان";app.append(h);
+ for(let r=0;r<3;r++){
+  const row=document.createElement("div");row.className="row";
+  for(let c=0;c<4;c++){
+   const i=r*4+c,s=specs[i];
+   const b=document.createElement("button");b.type="button";b.className="module";b.dataset.module=i;b.setAttribute("aria-expanded",String(i===state.open));if(i===state.open)b.setAttribute("aria-controls","market-card-submenu");
+   b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);
+   b.innerHTML='<span class="icon"></span><span class="end"><span class="name"></span><span class="chev">⌄</span></span>';
+   b.querySelector(".icon").innerHTML=cardIcons.svg(cardIcons.main[i]);const mainLabel=makeReadableLabel(b.querySelector(".name"));mainLabel.textContent=s[0];row.append(b);
+  }
+  app.append(row);
+  if(Math.floor(state.open/4)===r&&state.open>=0){
+   const s=specs[state.open],drawer=document.createElement("div");drawer.className="drawer";drawer.id="market-card-submenu";drawer.setAttribute("role","region");drawer.setAttribute("aria-label",s[0]);
+   drawer.innerHTML='<div class="drawerhead"><strong></strong><button class="close" data-close aria-label="داخستن">✕</button></div><div class="subgrid"></div>';
+   makeReadableLabel(drawer.querySelector(".drawerhead strong")).textContent=s[0];
+   s[4].forEach((label,j)=>{const b=document.createElement("button");b.className="sub";b.dataset.sub=j;b.style.setProperty("--color",s[1]);b.style.setProperty("--light",s[2]);b.innerHTML='<span class="sub-icon"></span><span class="sub-footer"><span class="sub-name"></span><span class="sub-arrow">↖</span></span>';b.querySelector(".sub-icon").innerHTML=cardIcons.svg(cardIcons.sub[state.open][j]);makeReadableLabel(b.querySelector(".sub-name")).textContent=label;drawer.querySelector(".subgrid").append(b)});
+   app.append(drawer);
+  }
+ }
+}
+function layout(title){
+ app.innerHTML='<section class="page"><div class="pagehead"><button class="back" data-back aria-label="گەڕانەوە">→</button><h2></h2></div><div id="body"></div></section>';
+ app.querySelector("h2").textContent=title;return app.querySelector("#body");
+}
+function drawPage(){
+ const title=state.page.label,b=layout(title);
+ if(state.page.module===1){
+  if(title==="کاڵای نوێ"){
+   b.innerHTML='<form id="add" class="inputs"><label class="field">ناوی کاڵا<input name="name" required maxlength="160"></label><label class="field">بارکۆد<input name="code" required maxlength="60"></label><label class="field">نرخ (IQD)<input name="price" type="number" min="0" step="1" required></label><button class="primary">زیادکردن</button></form><div class="feedback" id="feedback"></div>';
+   b.querySelector("#feedback").textContent=state.msg;
+  }else if(title==="لیستی کاڵاکان"&&state.products.length){
+   const t=document.createElement("table");t.innerHTML='<thead><tr><th>کاڵا</th><th>بارکۆد</th><th>نرخ</th></tr></thead><tbody></tbody>';
+   state.products.forEach(p=>{const tr=document.createElement("tr");for(const v of [p.name,p.code,money(p.price)]){const td=document.createElement("td");td.textContent=v;tr.append(td)}t.tBodies[0].append(tr)});b.append(t);
+  }else b.innerHTML='<div class="empty">هیچ کاڵایەک نییە</div>';
+  return;
+ }
+ if(state.page.module===0&&title==="فرۆشتنی نوێ"){
+  b.innerHTML='<div class="pos"><div class="panel"><form class="inputs" id="scan"><label class="field">بارکۆد<input name="code" required autocomplete="off"></label><button class="primary">زیادکردن</button></form><div class="feedback" id="feedback"></div><div id="lines"></div></div><div class="panel"><strong>پسووڵە</strong><div class="total"><span>کۆی گشتی</span><strong id="total"></strong></div><p><button class="plain" data-clear>پاککردنەوە</button></p></div></div>';
+  b.querySelector("#feedback").textContent=state.msg;b.querySelector("#total").textContent=money(state.cart.reduce((n,x)=>n+x.price*x.qty,0));
+  const area=b.querySelector("#lines");
+  if(!state.cart.length)area.innerHTML='<div class="empty">سەبەتە بەتاڵە</div>';
+  else{const table=document.createElement("table");table.innerHTML='<thead><tr><th>کاڵا</th><th>نرخ</th><th>بڕ</th><th>کۆ</th></tr></thead><tbody></tbody>';
+    state.cart.forEach((x,i)=>{const tr=document.createElement("tr");for(const val of [x.name,money(x.price),"",money(x.qty*x.price)]){const td=document.createElement("td");td.textContent=val;tr.append(td)}tr.children[2].innerHTML='<button class="qty" data-qty="'+i+'" data-delta="-1">−</button> '+x.qty+' <button class="qty" data-qty="'+i+'" data-delta="1">+</button>';table.tBodies[0].append(tr)});
+    area.append(table)}return;
+ }
+ b.innerHTML='<div class="empty">هێشتا ئامادە نییە</div>';
+}
+app.addEventListener("click",e=>{
+ const mod=e.target.closest("[data-module]");if(mod){const i=Number(mod.dataset.module);state.open=state.open===i?-1:i;draw();focusModule(i);return}
+ if(e.target.closest("[data-close]")){closeSubmenu();return}
+ const sub=e.target.closest("[data-sub]");if(sub){const tab=Number(sub.dataset.sub);if(state.open===1&&(tab===0||tab===1)){window.location.assign("./workspace.html?view="+(tab===0?"new":"list"));return;}if(state.open===11&&tab===3){window.location.assign("./qa.html");return;}if((state.open===7&&tab===2)||(state.open===9&&tab===3)){window.location.assign("./diagnostics.html");return;}if((state.open===0&&(tab===0||tab===1))||(state.open===2&&tab===0)||(state.open===5&&tab===0)||(state.open===10&&tab===0)||(state.open===7&&tab===0)||(state.open===11&&tab===2)){const mode=state.open===0?(tab===1?"receipts":"cash"):state.open===2?"stock":(state.open===5||state.open===10)?"shift":state.open===7?"staff":"audit";window.location.assign("./operations.html?view="+mode);return;}state.page={module:state.open,label:specs[state.open][4][tab]};state.msg="";draw();return}
+ if(!state.page&&state.open>=0&&e.target.closest(".drawer")&&!e.target.closest("[data-sub]")){closeSubmenu();return}
+ if(!state.page&&state.open>=0&&!e.target.closest(".drawer")&&!e.target.closest("[data-module]")){closeSubmenu();return}
+ if(e.target.closest("[data-back]")){back();return}
+ if(e.target.closest("[data-clear]")){state.cart=[];draw();return}
+ const q=e.target.closest("[data-qty]");if(q){const i=Number(q.dataset.qty);state.cart[i].qty+=Number(q.dataset.delta);if(!state.cart[i].qty)state.cart.splice(i,1);draw()}
+});
+app.addEventListener("submit",e=>{
+ if(e.target.id==="add"){e.preventDefault();const f=new FormData(e.target),name=String(f.get("name")||"").trim(),code=String(f.get("code")||"").trim(),price=Number(f.get("price"));
+ if(!name||!code||!Number.isSafeInteger(price)||price<0){state.msg="زانیاری نادروستە";draw();return}
+ if(state.products.some(x=>x.code===code)){state.msg="بارکۆد دووبارەیە";draw();return}
+ state.products.push({name,code,price});state.msg="زیادکرا";draw();}
+ if(e.target.id==="scan"){e.preventDefault();const code=String(new FormData(e.target).get("code")||"").trim(),p=state.products.find(x=>x.code===code);
+ if(!p){state.msg="بارکۆدەکە نەدۆزرایەوە";draw();return}
+ const x=state.cart.find(x=>x.code===code);if(x)x.qty++;else state.cart.push({...p,qty:1});state.msg="";draw();}
+});
+document.getElementById("home").addEventListener("click",()=>{state.open=-1;back()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(state.page)back();else if(state.open>=0){e.preventDefault();closeSubmenu();}}});
+document.addEventListener("pointerdown",e=>{if(state.open<0||state.page||app.contains(e.target)||e.target.closest("#home"))return;closeSubmenu(false);});
+draw();
+})();
+</script></body></html>
