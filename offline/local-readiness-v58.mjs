@@ -62,17 +62,16 @@ export async function auditLocalPgV58({pool,storeId}){
     .every(v=>v===false);
   checks.push({check:"runtime_role_not_privileged",ok:leastPrivilege});
   const tables=await client.query(
-   "SELECT unnest($1::text[]) AS name, to_regclass('zhirox_local.'||unnest($1::text[])) IS NOT NULL AS present",
+   "SELECT t.name, to_regclass('zhirox_local.'||t.name) IS NOT NULL AS present FROM unnest($1::text[]) AS t(name)",
    [V58_TABLES]
   );
-  // Each table name appears twice with unnest: PostgreSQL set-returning functions
-  // in the same SELECT list are paired, not multiplied. Also verify every name.
+  // Unnest from the FROM clause to avoid invalid set-returning function nesting.
   const found=new Set(tables.rows.filter(x=>x.present===true).map(x=>x.name));
   for(const name of V58_TABLES){
     checks.push({check:"table_"+name,ok:found.has(name)});
   }
   const funcs=await client.query(
-    "SELECT spec, to_regprocedure(spec) IS NOT NULL AS present FROM unnest($1::text[]) AS spec",
+    "SELECT f.spec, to_regprocedure(f.spec) IS NOT NULL AS present FROM unnest($1::text[]) AS f(spec)",
     [V58_FUNCTIONS]
   );
   const present=new Set(funcs.rows.filter(x=>x.present===true).map(x=>x.spec));
