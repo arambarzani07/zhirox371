@@ -1,0 +1,60 @@
+name: V40 manager-approved partial cash refunds
+on:
+  pull_request:
+    paths:
+      - 'offline/local-partial-refunds-v40.mjs'
+      - 'offline/local-durable-server-v31.mjs'
+      - 'offline/migrations/017_partial_cash_refunds_v40.sql'
+      - 'offline/tests/local-partial-refunds-v40.test.mjs'
+      - 'src/components/LocalV40PartialRefundPanel.tsx'
+      - 'src/components/LocalPostgresPilotV24.tsx'
+      - 'tests/browser/v40_partial_cash_refunds.mjs'
+      - '.github/workflows/v40-partial-refunds.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/local-partial-refunds-v40.mjs'
+      - 'offline/migrations/017_partial_cash_refunds_v40.sql'
+      - 'src/components/LocalV40PartialRefundPanel.tsx'
+      - '.github/workflows/v40-partial-refunds.yml'
+permissions:
+  contents: read
+jobs:
+  partial-cash-refund-dual-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Signed local shift API authorization and validation
+        run: node --test offline/tests/local-partial-refunds-v40.test.mjs
+      - name: Install React test dependencies
+        run: npm install --no-package-lock
+      - name: Build V38 isolated pilot without Demo provider
+        run: |
+          VITE_V36_ISOLATED_LAN_PILOT=true VITE_V37_LOCAL_SHIFTS=true VITE_V38_CASH_LEDGER=true VITE_V39_REFUNDS=true VITE_V40_PARTIAL_REFUNDS=true npm run build
+          node scripts/package-lan-pilot-v36.mjs dist
+      - name: Install headless Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Preview isolated pilot on loopback only
+        shell: bash
+        run: |
+          (npm run preview -- --host 127.0.0.1 --port 3045 >/tmp/v40-react.log 2>&1 &)
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3045/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/v40-react.log
+          exit 1
+      - name: Confirm manager-approved partial returns and cash close in isolated Sorani cashier
+        run: node tests/browser/v40_partial_cash_refunds.mjs
+      - name: Explicit official bundle must still be blocked
+        shell: bash
+        run: |
+          if VITE_ZHIROX_RELEASE_MODE=official npm run build; then
+            echo "::error::Uncertified cashier must not build official"
+            exit 1
+          fi

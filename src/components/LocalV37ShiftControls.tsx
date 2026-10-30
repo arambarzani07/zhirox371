@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from "react";
 import {LocalV38CashMovements} from "./LocalV38CashMovements";
 import {LocalV39RefundPanel} from "./LocalV39RefundPanel";
+import {LocalV40PartialRefundPanel} from "./LocalV40PartialRefundPanel";
 type Shift={shift_id:string;state:"open"|"closed";opening_minor:string|number;
  cash_sales_minor?:string|number;expected_minor?:string|number;
  counted_minor?:string|number;variance_minor?:string|number};
@@ -12,6 +13,7 @@ export const LocalV37ShiftControls:React.FC<{
  const [shift,setShift]=useState<Shift|null>(null);
  const v38=import.meta.env.PROD&&import.meta.env.VITE_V38_CASH_LEDGER==="true";
  const v39=v38&&import.meta.env.VITE_V39_REFUNDS==="true";
+ const v40=v39&&import.meta.env.VITE_V40_PARTIAL_REFUNDS==="true";
  const [closedReport,setClosedReport]=useState<(Shift&{cash_in_minor?:string|number;cash_out_minor?:string|number;expense_minor?:string|number})|null>(null);
  const [opening,setOpening]=useState("0");
  const [counted,setCounted]=useState("");
@@ -113,6 +115,7 @@ export const LocalV37ShiftControls:React.FC<{
    </div>}
   {v38&&shift&&<LocalV38CashMovements token={token} shiftId={shift.shift_id}/>}
   {v39&&shift&&<LocalV39RefundPanel token={token} store={store} shiftId={shift.shift_id}/>}
+  {v40&&shift&&<LocalV40PartialRefundPanel token={token} store={store} shiftId={shift.shift_id}/>}
   <button type="button" disabled={busy} onClick={()=>void fetchShift()}
    style={{margin:8}}>پشکنینی دۆخی شێفت</button>
   {error&&<div role="alert" style={{color:"#991b1b",fontWeight:800}}>{error}</div>}

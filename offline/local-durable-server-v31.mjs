@@ -64,6 +64,12 @@ export function createLocalDurableHandlerV31({pool,secret,clock}){
    if("store_id" in payload||"cashier_id" in payload||
       "user_id" in payload||"role" in payload)
     return send(res,400,{error:"caller_must_not_supply_identity"});
+   // V40 safety: mixed/card/credit tender is not yet settled or audited.
+   // Never silently accept a client tender that V31 would book as CASH.
+   const exactFields=url.pathname==="/api/local/v31/prepare"?
+     "expected_total_minor,lines,request_id":"request_id";
+   if(Object.keys(payload).sort().join(",")!==exactFields)
+    return send(res,409,{error:"unsupported_payment_or_checkout_fields"});
    if(!UUID.test(payload.request_id||""))
     return send(res,400,{error:"invalid_checkout"});
   }
