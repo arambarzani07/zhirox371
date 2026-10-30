@@ -84,6 +84,8 @@ BEGIN
  IF FOUND THEN
   IF previous.cashier_id<>p_cashier OR previous.state<>'held'
   THEN RAISE EXCEPTION 'reservation already resolved' USING ERRCODE='P4303'; END IF;
+  IF clock_timestamp()>=previous.expires_at THEN
+   RAISE EXCEPTION 'expired reservation requires reconciliation' USING ERRCODE='P4305'; END IF;
   RETURN QUERY SELECT previous.request_id,previous.expires_at,previous.state,true;
   RETURN;
  END IF;
