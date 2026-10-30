@@ -350,6 +350,14 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   assert.equal(print.data.hardware_printed,false);
   assert.equal((await get("/api/local/v35/print-jobs?job_id="+printId,loserToken)).status,404);
 
+  const final=await pool.query(
+   "SELECT (SELECT count(*)::integer FROM zhirox_local.sales WHERE store_id=$1) AS sales, (SELECT count(*)::integer FROM zhirox_local.event_outbox WHERE store_id=$1 AND delivered_at IS NULL) AS pending, (SELECT count(*)::integer FROM zhirox_local.receipt_snapshots_v34 WHERE store_id=$1) AS receipts, (SELECT count(*)::integer FROM zhirox_local.print_requests_v35 WHERE store_id=$1) AS print_jobs, (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=$1 AND id=$2) AS remaining",
+   [store,item]);
+  assert.equal(final.rows[0].sales,1);
+  assert.equal(final.rows[0].pending,1,"WAN offline: sale remains durably queued for later upload");
+  assert.equal(final.rows[0].receipts,1);
+  assert.equal(final.rows[0].print_jobs,1);
+  assert.equal(final.rows[0].remaining,"0");
   if(v65){
     labReport.checks.push("independent cashier sessions + final last-stock transaction");
     // Simulate a cashier service process restart without touching PostgreSQL.
@@ -444,14 +452,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     await writeFile(join(evidence,"lab-report.json"),JSON.stringify(labReport,null,2),"utf8");
   }
 
-  const final=await pool.query(
-   "SELECT (SELECT count(*)::integer FROM zhirox_local.sales WHERE store_id=$1) AS sales, (SELECT count(*)::integer FROM zhirox_local.event_outbox WHERE store_id=$1 AND delivered_at IS NULL) AS pending, (SELECT count(*)::integer FROM zhirox_local.receipt_snapshots_v34 WHERE store_id=$1) AS receipts, (SELECT count(*)::integer FROM zhirox_local.print_requests_v35 WHERE store_id=$1) AS print_jobs, (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=$1 AND id=$2) AS remaining",
-   [store,item]);
-  assert.equal(final.rows[0].sales,1);
-  assert.equal(final.rows[0].pending,1,"WAN offline: sale remains durably queued for later upload");
-  assert.equal(final.rows[0].receipts,1);
-  assert.equal(final.rows[0].print_jobs,1);
-  assert.equal(final.rows[0].remaining,"0");
+
   assert.equal((await post("/api/local/v37/shift/close",
     {shift_id:shiftA,counted_minor:aWins?(v65?15280:3500):1000},tokenA)).status,200);
   assert.equal((await post("/api/local/v37/shift/close",
