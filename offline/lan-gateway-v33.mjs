@@ -58,13 +58,14 @@ export function createV33ClientLimiter({now=()=>Date.now(),windowMs=60000,limit=
  };
 }
 export function createV33LanHandler({pool,secret,peers,allowedOrigin=null,now=()=>Date.now(),
- limiter=createV33ClientLimiter({now})}){
+ limiter=createV33ClientLimiter({now}),localHandler=null}){
  if(!pool||typeof pool.query!=="function"||typeof pool.connect!=="function"||
     !(peers instanceof Set)||!peers.size||[...peers].some(p=>!privateIPv4(p))||
     typeof secret!=="string"||Buffer.byteLength(secret)<32||
     (allowedOrigin!==null&&!/^https:\/\/[A-Za-z0-9.:-]+$/.test(allowedOrigin)))
   throw Error("invalid_v33_gateway");
- const local=createLocalCashierHandlerV32({pool,secret});
+ if(localHandler!==null&&typeof localHandler!=="function")throw Error("invalid_local_handler");
+ const local=localHandler||createLocalCashierHandlerV32({pool,secret});
  return async(req,res)=>{
   if(!req.socket?.encrypted)return reject(res,426,"https_required");
   const peer=normalizePeer(req.socket.remoteAddress);
@@ -109,7 +110,10 @@ export async function startV33LanTrial(){
  const {Pool}=await import("pg");
  const pool=new Pool({connectionString:dbUrl,max:8,connectionTimeoutMillis:2000});
  const origin=process.env.ZHIROX_V33_ALLOWED_ORIGIN||null;
- const handler=createV33LanHandler({pool,secret,peers,allowedOrigin:origin});
+ // Explicit opt-in: V34 never exposes receipts on a default V33 test gateway.
+ const localHandler=process.env.ZHIROX_V34_RECEIPT_PREVIEW_ENABLED==="true"?
+  (await import("./local-receipts-v34.mjs")).createLocalReceiptHandlerV34({pool,secret}):null;
+ const handler=createV33LanHandler({pool,secret,peers,allowedOrigin:origin,localHandler});
  const server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},handler);
  server.listen(3433,host);
  server.on("close",()=>pool.end());

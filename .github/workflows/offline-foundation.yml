@@ -59,6 +59,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/migrations/006_packs_scale_checkout.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/007_outbox_leases.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/009_durable_checkout_intents.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/011_immutable_receipts_v34.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/007_receiver_fixture.sql
           psql -v ON_ERROR_STOP=1 -f offline/cloud-migrations/008_v28_received_sales.sql
       - name: Test checkout rollback, idempotency and stock
@@ -68,6 +69,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/tests/006_packs_scale_checkout.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/007_outbox_leases.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/009_durable_checkout.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/011_immutable_receipts_v34.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/008_cloud_inbox.sql
       - name: Concurrent local PostgreSQL cashiers must not oversell last unit
         shell: bash
