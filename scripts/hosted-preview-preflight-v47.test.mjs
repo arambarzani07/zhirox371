@@ -6,7 +6,7 @@ function sample(path){
  if(path==="/")return '<h1>سوپەرمارکێتی کانی چنار</h1><script src="card-icons.js"></script><link href="ui-fixed-pc.css"><script>const specs=[</script>';
  if(path==="/operations.html"||path==="/workspace.html")
   return '<form id="login-form"></form><script src="auth-recovery.js"></script>';
- if(path==="/reset-password.html")return '<form id="new-password-form"></form>';
+ if(path==="/reset-password.html")return '<form id="password-form"></form>';
  if(path==="/ui-fixed-pc.css")return '.desktop {min-width: 1020px;}';
  if(path==="/card-icons.js")return 'const cash_register="cash-register"; window.RetailCardIcons={}';
  if(path==="/config.js")return 'window.RETAIL_CONFIG={supabaseUrl:"https://qcfmlyyzfykzszvtllrw.supabase.co",publishableKey:"sb_publishable_test"}';
