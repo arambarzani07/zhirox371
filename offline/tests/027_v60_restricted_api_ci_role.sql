@@ -45,8 +45,7 @@ GRANT INSERT ON
  zhirox_local.event_outbox,
  zhirox_local.checkout_intents_v31,
  zhirox_local.cash_shifts_v37,
- zhirox_local.receipt_snapshots_v34,
- zhirox_local.print_requests_v35
+ zhirox_local.receipt_snapshots_v34
 TO zhirox_v60_api_ci;
 
 GRANT UPDATE ON
@@ -87,6 +86,28 @@ ALTER FUNCTION zhirox_local.release_cancelled_reservation_v43()
  OWNER TO zhirox_v60_reservation_executor;
 ALTER FUNCTION zhirox_local.release_cancelled_reservation_v43()
  SECURITY DEFINER;
+-- After ownership transfer, even the NOLOGIN role cannot create new objects.
+REVOKE CREATE ON SCHEMA zhirox_local
+ FROM zhirox_v60_reservation_executor;
+
+-- Print queue: FOR UPDATE requires UPDATE permission. Do not give it to the
+-- API account: a compromised service must never mark paper as 'printed'.
+CREATE ROLE zhirox_v60_print_executor NOLOGIN
+ NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
+GRANT USAGE, CREATE ON SCHEMA zhirox_local
+ TO zhirox_v60_print_executor;
+GRANT SELECT, UPDATE ON zhirox_local.stores
+ TO zhirox_v60_print_executor;
+GRANT SELECT ON zhirox_local.receipt_snapshots_v34
+ TO zhirox_v60_print_executor;
+GRANT SELECT, INSERT, UPDATE ON zhirox_local.print_requests_v35
+ TO zhirox_v60_print_executor;
+ALTER FUNCTION zhirox_local.queue_print_v35(uuid,uuid,uuid,uuid,smallint)
+ OWNER TO zhirox_v60_print_executor;
+ALTER FUNCTION zhirox_local.queue_print_v35(uuid,uuid,uuid,uuid,smallint)
+ SECURITY DEFINER;
+REVOKE CREATE ON SCHEMA zhirox_local
+ FROM zhirox_v60_print_executor;
 
 GRANT EXECUTE ON FUNCTION
  zhirox_local.consume_reservation_v43(uuid,uuid,uuid)
