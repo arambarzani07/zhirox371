@@ -21,7 +21,7 @@ export function inspectRoute(path,status,body,location="") {
  const route=routes.find(r=>r.path===path);
  if(!route) return {path,ok:false,reason:"unknown_route"};
  if(!route.need.every(s=>body.includes(s))) return {path,ok:false,reason:"source_mismatch"};
- if(path==="/config.js" && (/sb_secret_/i.test(body)||/service_role\\s*[:=]\\s*['"]/i.test(body)))
+ if(path==="/config.js" && (/sb_secret_/i.test(body)||/service_role\s*[:=]\s*['"]/i.test(body)))
    return {path,ok:false,reason:"forbidden_secret_material"};
  if(/http:\/\/localhost:3000(?:\/|['"]|$)/.test(location))
    return {path,ok:false,reason:"localhost_redirect"};
