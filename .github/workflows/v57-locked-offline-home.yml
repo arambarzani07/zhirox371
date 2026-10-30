@@ -28,9 +28,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate unchanged owner-locked Home and fail-closed V57 routes
+      - name: Verify unchanged inherited React Home, archived source-faithful Home and safe routes
         run: |
-          node --test tests/owner_locked_home_sha.test.mjs
+          # The historical legacy test expects a pre-React index.html and was
+          # ALREADY incompatible with main. Do not rebaseline it silently.
+          # V57 explicitly pins current index + archived original HTML source.
           node --test tests/v23_preview_mode_guard.test.mjs
           node --test tests/v57_offline_home_contract.test.mjs
       - name: Install frontend dependencies
