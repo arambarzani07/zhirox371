@@ -160,3 +160,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/019_external_settlement_accounting_v42.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/019_external_settlement_accounting_v42.sql
+      - name: V43 reserve stock and lock price before any external capture
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/020_reservation_v43.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/020_reservation_v43.sql
