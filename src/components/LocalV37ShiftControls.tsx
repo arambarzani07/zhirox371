@@ -3,7 +3,7 @@ type Shift={shift_id:string;state:"open"|"closed";opening_minor:string|number;
  cash_sales_minor?:string|number;expected_minor?:string|number;
  counted_minor?:string|number;variance_minor?:string|number};
 const money=(n:string|number)=>Number(n).toLocaleString("en-US")+" IQD";
-const cash=n=>/^(0|[1-9][0-9]{0,12})$/.test(n)&&Number(n)<=9999999999999;
+const cash=(n:string)=>/^(0|[1-9][0-9]{0,12})$/.test(n)&&Number(n)<=9999999999999;
 export const LocalV37ShiftControls:React.FC<{
  token:string;onShiftOpen:(value:boolean)=>void;
 }>=({token,onShiftOpen})=>{
