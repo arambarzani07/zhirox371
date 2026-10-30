@@ -68,7 +68,7 @@ END $$;
 -- Bind the durable V31 intent to the CURRENT open shift at prepare time.
 -- An intent from a closed/missing shift cannot be attached to a later shift.
 CREATE OR REPLACE FUNCTION zhirox_local.assign_intent_shift_v37()
-RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v37$
 DECLARE active_shift uuid;
 BEGIN
  IF NEW.shift_id_v37 IS NOT NULL THEN
@@ -77,25 +77,19 @@ BEGIN
  WHERE q.store_id=NEW.store_id AND q.cashier_id=NEW.cashier_id AND q.state='open'
  FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'open shift required before prepare' USING ERRCODE='P3701'; END IF;
- IF NOT EXISTS(SELECT 1 FROM zhirox_local.checkout_intents_v31 i
-    WHERE i.store_id=NEW.store_id AND i.cashier_id=NEW.cashier_id
-      AND i.request_id=NEW.request_id AND i.state='prepared'
-      AND i.shift_id_v37=active_shift)
- THEN RAISE EXCEPTION 'sale must follow a prepared intent from same shift'
-      USING ERRCODE='P3701'; END IF;
  NEW.shift_id_v37:=active_shift;
  RETURN NEW;
-END $;
+END $v37$;
 DROP TRIGGER IF EXISTS v37_enforce_intent_shift ON zhirox_local.checkout_intents_v31;
 CREATE TRIGGER v37_enforce_intent_shift BEFORE INSERT ON zhirox_local.checkout_intents_v31
  FOR EACH ROW EXECUTE FUNCTION zhirox_local.assign_intent_shift_v37();
 CREATE OR REPLACE FUNCTION zhirox_local.prevent_intent_shift_change_v37()
-RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v37$
 BEGIN
  IF NEW.shift_id_v37 IS DISTINCT FROM OLD.shift_id_v37 THEN
    RAISE EXCEPTION 'intent shift immutable' USING ERRCODE='P3701'; END IF;
  RETURN NEW;
-END $;
+END $v37$;
 DROP TRIGGER IF EXISTS v37_immutable_intent_shift ON zhirox_local.checkout_intents_v31;
 CREATE TRIGGER v37_immutable_intent_shift BEFORE UPDATE OF shift_id_v37
  ON zhirox_local.checkout_intents_v31
@@ -113,6 +107,12 @@ BEGIN
  WHERE q.store_id=NEW.store_id AND q.cashier_id=NEW.cashier_id AND q.state='open'
  FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'open cashier shift required' USING ERRCODE='P3701'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM zhirox_local.checkout_intents_v31 i
+    WHERE i.store_id=NEW.store_id AND i.cashier_id=NEW.cashier_id
+      AND i.request_id=NEW.request_id AND i.state='prepared'
+      AND i.shift_id_v37=active_shift)
+ THEN RAISE EXCEPTION 'sale must follow a prepared intent from same shift'
+      USING ERRCODE='P3701'; END IF;
  NEW.shift_id_v37:=active_shift;
  RETURN NEW;
 END $$;
