@@ -146,6 +146,15 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
       for(const [key,value] of Object.entries(r))
        assert.equal(value,false,"V63 unguarded SQL must not be callable by "+key);
     }
+    if(process.env.ZHIROX_V64_CI_AUTH_GATE==="true"){
+      const roleRow=(await runtimePool.query(
+       "SELECT has_table_privilege(current_user,'zhirox_local.stores','UPDATE') AS stores_update, has_column_privilege(current_user,'zhirox_local.local_users','role','UPDATE') AS change_role, has_column_privilege(current_user,'zhirox_local.local_users','password_hash','UPDATE') AS change_password, has_column_privilege(current_user,'zhirox_local.local_users','session_version','UPDATE') AS change_session_version, has_column_privilege(current_user,'zhirox_local.local_users','enabled','UPDATE') AS enable_user, has_column_privilege(current_user,'zhirox_local.local_users','failed_attempts','UPDATE') AS update_fail_counter, has_column_privilege(current_user,'zhirox_local.local_users','locked_until','UPDATE') AS update_lockout"
+      )).rows[0];
+      for(const key of ["stores_update","change_role","change_password","change_session_version","enable_user"])
+       assert.equal(roleRow[key],false,"V64 API may not mutate "+key);
+      for(const key of ["update_fail_counter","update_lockout"])
+       assert.equal(roleRow[key],true,"V64 auth needs only "+key);
+    }
     // A compromised cashier API account must not own the schema or mutate
     // it structurally, even though existing SECURITY INVOKER routines still
     // need scoped table-level DML; production hardening requires another gate.
@@ -174,7 +183,8 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   const localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
   const gateway=createV33LanHandler({
    pool:runtimePool,secret:sessionSecret,peers:new Set(["127.0.0.1"]),
-   localHandler,limiter:createV33ClientLimiter({limit:150})
+   localHandler,limiter:createV33ClientLimiter({limit:150}),
+   v64Protected:process.env.ZHIROX_V64_CI_AUTH_GATE==="true"
   });
   server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},gateway);
   await new Promise((resolve,reject)=>{
@@ -338,6 +348,24 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
       error=>error?.code==="P6301",
       "expired proof must fail closed"
     );
+  }
+  if(process.env.ZHIROX_V64_CI_AUTH_GATE==="true"){
+    // After 3 earlier login calls, only 5 more are allowed within the minute.
+    // An unknown username cannot consume CPU beyond the per-peer ceiling.
+    for(let i=0;i<5;i++){
+     const bad=await post("/api/local/v3/login",
+      {store_id:store,username:"v59-cashier-a",password:"v64-invalid-credentials"});
+     assert.equal(bad.status,401);
+    }
+    const throttled=await post("/api/local/v3/login",
+     {store_id:store,username:"v59-cashier-b",password});
+    assert.equal(throttled.status,429);
+    assert.equal(throttled.data.error,"login_rate_limited");
+    const read=await get("/v33/health");
+    assert.equal(read.status,200,"login-only throttle must not break cash register health check");
+    const unsupported=await get("/api/local/v39/refunds",tokenB);
+    assert.equal(unsupported.status,410,"unreviewed finance routes must be off by default");
+    assert.equal(unsupported.data.error,"api_route_not_cleared_v64");
   }
   console.log((process.env.ZHIROX_V62_CI_INTENT_SHIFT_GUARD==="true"?"V62 guarded intents/shifts + ":process.env.ZHIROX_V61_CI_CASH_EXECUTOR==="true"?"V61 NOLOGIN cash executor + ":v60?"V60 restricted API role + ":"V59 ")+"PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
  }finally{
