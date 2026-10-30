@@ -1,8 +1,8 @@
 import React from "react";
 import {LocalPostgresPilotV24} from "./LocalPostgresPilotV24";
 
-// This component intentionally does not import useApp, completeCheckout,
-// Demo products or Demo receipts. It must fail CLOSED without the local API.
+// This screen deliberately has no browser Demo financial actions.
+// When the local API is unavailable, it must fail CLOSED.
 export const LocalCashierV32:React.FC=()=>(
  <section dir="rtl" aria-label="کاشێری PostgreSQL ـی ناوخۆیی V32"
   style={{maxWidth:1500,margin:"0 auto",padding:"16px 24px 32px"}}>
