@@ -8,7 +8,7 @@ export const routes = Object.freeze([
  {path:"/",need:["سوپەرمارکێتی کانی چنار","card-icons.js","ui-fixed-pc.css","const specs=["]},
  {path:"/operations.html",need:['id="login-form"',"auth-recovery.js"]},
  {path:"/workspace.html",need:['id="login-form"',"auth-recovery.js"]},
- {path:"/reset-password.html",need:['id="new-password-form"']},
+ {path:"/reset-password.html",need:['id="password-form"']},
  {path:"/ui-fixed-pc.css",need:["min-width: 1020px"]},
  {path:"/card-icons.js",need:["RetailCardIcons","cash-register"]},
  {path:"/config.js",need:["qcfmlyyzfykzszvtllrw","publishableKey"]}
