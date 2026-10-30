@@ -12,7 +12,6 @@ DECLARE
  req3 uuid:='40000000-0000-0000-0000-000000000033';
  q jsonb:=jsonb_build_array(jsonb_build_object('barcode','6260053183974','qty',2));
  old_sale uuid;fresh_sale uuid;ticket bigint;price bigint;was_replayed boolean;
- state text;
 BEGIN
  INSERT INTO zhirox_local.stores(id,name)VALUES(s,'V31 isolated checkout');
  INSERT INTO zhirox_local.products(store_id,id,name,price_minor,stock_base_units)
