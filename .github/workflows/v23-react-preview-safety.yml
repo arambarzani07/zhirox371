@@ -8,6 +8,9 @@ on:
       - 'tests/browser/v23_react_preview.mjs'
       - 'tests/browser/v24_react_local_pilot.mjs'
       - 'tests/browser/v29_owner_mobile.mjs'
+      - 'tests/browser/v30_owner_https.mjs'
+      - 'offline/secure-owner-v30.mjs'
+      - 'offline/tests/secure-owner-v30.test.mjs'
       - 'offline/owner-v29*'
       - 'offline/cloud-receiver-v29.mjs'
       - 'tests/v24_local_pilot_contract.test.mjs'
@@ -59,3 +62,5 @@ jobs:
         run: node tests/browser/v24_react_local_pilot.mjs
       - name: Verify 390px Sorani RTL iPhone owner preview and bearer-only access
         run: node tests/browser/v29_owner_mobile.mjs
+      - name: Verify V30 TLS-protected iPhone owner preview and immediate token revocation
+        run: node tests/browser/v30_owner_https.mjs
