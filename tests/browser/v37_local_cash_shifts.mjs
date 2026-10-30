@@ -62,7 +62,7 @@ try{
  const scan=page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە");
  await scan.fill(barcode);
  await page.getByRole("button",{name:"سکان",exact:true}).click();
- assert.equal(await submit.isDisabled(),false);
+ await page.getByText("کاڵای V37").waitFor();
  await submit.click();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #37/).waitFor();
  await page.getByLabel("پارەی ژمێردراو").fill("12500");
