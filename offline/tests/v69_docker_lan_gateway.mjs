@@ -18,8 +18,8 @@ if(process.env.ZHIROX_V69_ISOLATED_BRIDGE!=="true"||
 const peers=parseV33Peers(process.env.ZHIROX_V69_ALLOWED_PEERS);
 if(peers.size!==5)throw Error("five explicit LAN peers required");
 const [cert,key]=await Promise.all([
- readFile("/app/market-lab-evidence/v69-cert.pem"),
- readFile("/app/market-lab-evidence/v69-key.pem")]);
+ readFile("/v69-private/cert.pem"),
+ readFile("/v69-private/key.pem")]);
 const pool=new Pool({host:process.env.PGHOST,user:process.env.PGUSER,
  password:process.env.PGPASSWORD,database:process.env.PGDATABASE,
  port:5432,max:12,connectionTimeoutMillis:4000});
