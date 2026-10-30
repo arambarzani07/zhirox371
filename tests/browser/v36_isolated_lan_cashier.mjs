@@ -11,6 +11,7 @@ const page=await browser.newPage({viewport:{width:1366,height:900}});
 page.on("pageerror",e=>errors.push(e.message));
 await page.route("**/api/local/**",async route=>{
  const req=route.request(),url=new URL(req.url()),path=url.pathname;
+ console.log("V36 ROUTE",path,req.method(),Boolean(req.headers().authorization));
  const respond=(status,data)=>route.fulfill({status,contentType:"application/json",
   body:JSON.stringify(data)});
  if(path==="/api/local/v3/login")return respond(200,{
@@ -69,7 +70,8 @@ try{
  console.log("V36 preview diagnostic",JSON.stringify({
   frames:await page.locator("iframe").count(),
   status:(await page.getByRole("status").allTextContents()).slice(-5),
-  errors
+  errors,
+  receiptSection:await page.locator('section[aria-label="پێشبینینی پسووڵەی ناوخۆیی V36"]').allTextContents()
  }));
  await page.getByTitle("پێشبینینی پارێزراوی پسووڵە").waitFor({timeout:5000});
  await page.getByRole("button",{name:"تۆمارکردنی داواکاری چاپی تاقیکردنەوە"}).click();
