@@ -28,6 +28,7 @@ Copy-Item windows/README-OFFLINE-TRIAL.txt (Join-Path $root 'README-OFFLINE-TRIA
 New-Item -ItemType Directory -Path (Join-Path $root 'docs') -Force | Out-Null
 Copy-Item docs/V36_PREINSTALLATION_SOFTWARE.md (Join-Path $root 'docs/V36_PREINSTALLATION_SOFTWARE.md')
 Copy-Item docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md (Join-Path $root 'docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md')
+Copy-Item docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md (Join-Path $root 'docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md')
 $bad=Get-ChildItem -File -Recurse $root | Where-Object {
   $_.Name -match '^\.env' -or $_.Extension -in @('.csv','.bak','.sqlite','.pem','.p12','.pfx','.key')
 }
