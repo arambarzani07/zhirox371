@@ -1,0 +1,36 @@
+name: Sorani source login recovery (no protected Home edits)
+on:
+  pull_request:
+    paths:
+      - "auth-recovery.js"
+      - "reset-password.html"
+      - "workspace.html"
+      - "operations.html"
+      - "tests/source-auth/**"
+      - ".github/workflows/source-auth-recovery.yml"
+  push:
+    branches:
+      - feature/retail-os-pc-foundation
+    paths:
+      - "auth-recovery.js"
+      - "reset-password.html"
+      - "workspace.html"
+      - "operations.html"
+      - "tests/source-auth/**"
+jobs:
+  auth-recovery-static:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Check original scripts
+        run: |
+          node --check auth-recovery.js
+          node --test tests/source-auth/recovery.test.mjs
+      - name: Verify GitHub locked Home is unchanged by PR
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff --exit-code "${{ github.event.pull_request.base.sha }}" HEAD -- index.html
