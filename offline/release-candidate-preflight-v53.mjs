@@ -30,8 +30,13 @@ async function secureRead(root,rel){
  }
  const stat=await lstat(path);
  if(!stat.isFile()||stat.size>150*1024*1024)throw Error("unsafe_rc_file");
- const physical=await realpath(path);
- if(physical!==path)throw Error("rc_path_escape");
+ const [physicalRoot,physicalFile]=await Promise.all([realpath(base),realpath(path)]);
+ const physicalTail=relative(physicalRoot,physicalFile);
+ if(physicalTail.startsWith(".."+sep)||physicalTail===".."||
+    physicalTail===""||physicalTail.startsWith(sep))
+   throw Error("rc_path_escape");
+ // Canonical Windows drive and pathname casing can differ even for genuine
+ // regular files. Verify containment, not character-for-character casing.
  return readFile(path);
 }
 async function safeCheck(root,name,validator=null){
