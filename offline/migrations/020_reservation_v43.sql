@@ -118,7 +118,7 @@ BEGIN
    RAISE EXCEPTION 'scale barcode reservations not implemented'
    USING ERRCODE='P4304'; END IF;
   SELECT x.* INTO b FROM zhirox_local.barcodes x
-   WHERE x.store_id=p_store AND x.code=v_scan_code AND x.active;
+   WHERE x.store_id=p_store AND x.code=v_scan_code AND x.active FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'barcode unavailable' USING ERRCODE='P4302'; END IF;
   SELECT x.* INTO p FROM zhirox_local.products x
    WHERE x.store_id=p_store AND x.id=b.product_id
