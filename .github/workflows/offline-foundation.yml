@@ -172,3 +172,37 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/022_financial_integrity_audit_v45.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/022_financial_integrity_v45.sql
+      - name: V46 complete cash-only rehearsal with two local cashiers
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/tests/023_v46_airgap_cash_only_acceptance.sql
+      - name: V46 replay cash sale after restoring ALL current local PostgreSQL migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          psql -v ON_ERROR_STOP=1 -f offline/tests/024_v46_disposable_restore_seed.sql
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          pg_dump -Fc --schema=zhirox_local --file="$tmp/v46-all-current-local-schema.dump"
+          test -s "$tmp/v46-all-current-local-schema.dump"
+          pg_restore --list "$tmp/v46-all-current-local-schema.dump" > "$tmp/inventory.txt"
+          grep -q 'TABLE DATA.*receipt_snapshots_v34' "$tmp/inventory.txt"
+          grep -q 'TABLE DATA.*cash_shifts_v37' "$tmp/inventory.txt"
+          grep -q 'TABLE DATA.*print_requests_v35' "$tmp/inventory.txt"
+          grep -q 'TABLE DATA.*checkout_intents_v31' "$tmp/inventory.txt"
+          createdb zhirox_v46_restored_test
+          pg_restore --exit-on-error --no-owner --no-acl             --dbname=zhirox_v46_restored_test "$tmp/v46-all-current-local-schema.dump"
+          PGDATABASE=zhirox_v46_restored_test psql -v ON_ERROR_STOP=1             -f offline/tests/025_v46_disposable_restore_verify.sql
+          source_hash=$(psql -At -c "SELECT md5(string_agg(
+            ((SELECT count(*) FROM zhirox_local.sales WHERE store_id='10000000-0000-0000-0000-000000000056')::text
+            || ':' || (SELECT stock_base_units FROM zhirox_local.products WHERE store_id='10000000-0000-0000-0000-000000000056')
+            || ':' || (SELECT count(*) FROM zhirox_local.receipt_snapshots_v34 WHERE store_id='10000000-0000-0000-0000-000000000056')
+            || ':' || (SELECT count(*) FROM zhirox_local.print_requests_v35 WHERE store_id='10000000-0000-0000-0000-000000000056')),'')) FROM (SELECT 1) t")
+          restored_hash=$(PGDATABASE=zhirox_v46_restored_test psql -At -c "SELECT md5(string_agg(
+            ((SELECT count(*) FROM zhirox_local.sales WHERE store_id='10000000-0000-0000-0000-000000000056')::text
+            || ':' || (SELECT stock_base_units FROM zhirox_local.products WHERE store_id='10000000-0000-0000-0000-000000000056')
+            || ':' || (SELECT count(*) FROM zhirox_local.receipt_snapshots_v34 WHERE store_id='10000000-0000-0000-0000-000000000056')
+            || ':' || (SELECT count(*) FROM zhirox_local.print_requests_v35 WHERE store_id='10000000-0000-0000-0000-000000000056')),'')) FROM (SELECT 1) t")
+          test -n "$source_hash" && test "$source_hash" = "$restored_hash"
+          echo "V46 CI PASS: current-schema backup/restore restored the same durable local cash-only sale and print queue"
+
