@@ -133,14 +133,14 @@ BEGIN
   INSERT INTO zhirox_local.inventory_reservation_items_v43
     (store_id,request_id,product_id,qty_base)
   VALUES(p_store,p_request,p.id,base_qty)
-  ON CONFLICT(store_id,request_id,product_id) DO UPDATE SET qty_base=
+  ON CONFLICT ON CONSTRAINT inventory_reservation_items_v43_pkey DO UPDATE SET qty_base=
    zhirox_local.inventory_reservation_items_v43.qty_base+EXCLUDED.qty_base;
  END LOOP;
  IF amount<>intent.expected_total_minor THEN
   RAISE EXCEPTION 'prepared quote differs from current prices'
   USING ERRCODE='P4302'; END IF;
- FOR one IN SELECT product_id FROM zhirox_local.inventory_reservation_items_v43
- WHERE store_id=p_store AND request_id=p_request LOOP
+ FOR one IN SELECT r.product_id FROM zhirox_local.inventory_reservation_items_v43 r
+ WHERE r.store_id=p_store AND r.request_id=p_request LOOP
   SELECT COALESCE(SUM(qty_base),0) INTO held
   FROM zhirox_local.inventory_reservation_items_v43
   WHERE store_id=p_store AND product_id=one.product_id;
