@@ -1,4 +1,4 @@
-name: V48 Windows Offline TRIAL EXE (NOT FOR SALES)
+name: V53 Windows RC integrity-verified EXE (NOT FOR SALES)
 on:
   pull_request:
     paths:
@@ -33,6 +33,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'V36 build failed' }
           node scripts/package-lan-pilot-v36.mjs dist
           if ($LASTEXITCODE -ne 0) { throw 'Manifest failed' }
+          node --test offline/tests/release-candidate-v53.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'V53 integrity unit tests failed' }
           node --test scripts/release-readiness-v46.test.mjs
           if ($LASTEXITCODE -ne 0) { throw 'V46 gate failed' }
       - name: Build unsigned Windows EXE with NO real data
@@ -42,12 +44,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Runtime dependencies failed' }
           & ./windows/Build-ZHIROX-TestInstaller.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Offline trial installer build failed' }
+          Push-Location ZHIROX371-Windows-OFFLINE-TRIAL
+          try {
+            & ./node.exe offline/release-candidate-preflight-v53.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'V53 packaged integrity check failed' }
+          } finally { Pop-Location }
       - uses: actions/upload-artifact@v4
         with:
-          name: ZHIROX371-Windows-OFFLINE-TRIAL-EXE
+          name: ZHIROX371-Windows-RC-V53-NOT-FOR-SALES
           path: |
-            artifacts/ZHIROX371-Offline-Windows-TRIAL-Setup.exe
-            ZHIROX371-Offline-Windows-TRIAL-Setup.sha256.txt
+            artifacts/ZHIROX371-Windows-RC-V53-NOT-FOR-SALES-Setup.exe
+            ZHIROX371-Windows-RC-V53-NOT-FOR-SALES-Setup.sha256.txt
             ZHIROX371-Windows-OFFLINE-TRIAL.zip
             ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt
           if-no-files-found: error
