@@ -29,6 +29,7 @@ async function json(req){
 }
 const errorResult=error=>{
  switch(error?.code){
+  case "P6301":return [401,"invalid_db_actor_proof"];
   case "P3101":return [404,"intent_not_found"];
   case "P3102":return [409,"unfinished_checkout"];
   case "P3103":return [409,"intent_cancelled"];
@@ -57,6 +58,9 @@ export function createLocalDurableHandlerV31({pool,secret,clock}){
   const match=/^Bearer (\S+)$/.exec(req.headers.authorization||"");
   const principal=match?await auth.authorize(match[1]).catch(()=>null):null;
   if(!principal)return send(res,401,{error:"invalid_session"});
+  const guarded=process.env.ZHIROX_V63_DB_ACTOR_PROOF==="true";
+  if(guarded&&!(typeof principal.db_proof==="string"&&/^[a-f0-9]{64}$/.test(principal.db_proof)))
+   return send(res,401,{error:"invalid_db_actor_proof"});
   let payload={};
   if(!isRecover){
    const parsed=await json(req);
@@ -96,22 +100,28 @@ export function createLocalDurableHandlerV31({pool,secret,clock}){
    }
    if(url.pathname==="/api/local/v31/prepare"){
     const {rows}=await client.query(
-     "SELECT * FROM zhirox_local.prepare_checkout_v31($1::uuid,$2::uuid,$3::uuid,$4::jsonb,$5::bigint)",
-     [principal.store_id,principal.user_id,payload.request_id,
+     guarded?
+       "SELECT * FROM zhirox_local.prepare_checkout_v63($1::text,$2::uuid,$3::uuid,$4::uuid,$5::jsonb,$6::bigint)":
+       "SELECT * FROM zhirox_local.prepare_checkout_v31($1::uuid,$2::uuid,$3::uuid,$4::jsonb,$5::bigint)",
+     [...(guarded?[principal.db_proof]:[]),principal.store_id,principal.user_id,payload.request_id,
        JSON.stringify(payload.lines),payload.expected_total_minor]
     );
     return send(res,200,{ok:true,intent:rows[0]});
    }
    if(url.pathname==="/api/local/v31/commit"){
     const {rows}=await client.query(
-     "SELECT * FROM zhirox_local.commit_checkout_v31($1::uuid,$2::uuid,$3::uuid)",
-     [principal.store_id,principal.user_id,payload.request_id]
+     guarded?
+       "SELECT * FROM zhirox_local.commit_checkout_v63($1::text,$2::uuid,$3::uuid,$4::uuid)":
+       "SELECT * FROM zhirox_local.commit_checkout_v31($1::uuid,$2::uuid,$3::uuid)",
+     [...(guarded?[principal.db_proof]:[]),principal.store_id,principal.user_id,payload.request_id]
     );
     return send(res,200,{ok:true,receipt:rows[0]});
    }
    const {rows}=await client.query(
-    "SELECT zhirox_local.cancel_checkout_v31($1::uuid,$2::uuid,$3::uuid) AS state",
-    [principal.store_id,principal.user_id,payload.request_id]
+    guarded?
+      "SELECT zhirox_local.cancel_checkout_v63($1::text,$2::uuid,$3::uuid,$4::uuid) AS state":
+      "SELECT zhirox_local.cancel_checkout_v31($1::uuid,$2::uuid,$3::uuid) AS state",
+    [...(guarded?[principal.db_proof]:[]),principal.store_id,principal.user_id,payload.request_id]
    );
    return send(res,200,{ok:true,state:rows[0]?.state});
   }catch(error){
