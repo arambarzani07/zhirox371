@@ -1,4 +1,4 @@
-name: V48 portable Windows offline TEST bundle (NO-GO)
+name: V48 Windows Offline TRIAL EXE (NOT FOR SALES)
 on:
   pull_request:
     paths:
@@ -13,9 +13,9 @@ on:
 permissions:
   contents: read
 jobs:
-  bundle-offline-test:
+  test-and-package:
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,112 +23,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Build source-isolated trial (never official release)
+      - name: Verify V46 NO-GO and isolated source bundle
         shell: pwsh
         run: |
           npm install --no-package-lock
           if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
           $env:VITE_V36_ISOLATED_LAN_PILOT = 'true'
           npm run build
-          if ($LASTEXITCODE -ne 0) { throw 'V36 lab build failed' }
+          if ($LASTEXITCODE -ne 0) { throw 'V36 build failed' }
           node scripts/package-lan-pilot-v36.mjs dist
-          if ($LASTEXITCODE -ne 0) { throw 'V36 checksum manifest refused this build' }
+          if ($LASTEXITCODE -ne 0) { throw 'Manifest failed' }
           node --test scripts/release-readiness-v46.test.mjs
-          if ($LASTEXITCODE -ne 0) { throw 'V46 test failed' }
-          Remove-Item Env:\VITE_V36_ISOLATED_LAN_PILOT -ErrorAction SilentlyContinue
-      - name: Prepare self-contained app runtime and Windows lab bundle
+          if ($LASTEXITCODE -ne 0) { throw 'V46 gate failed' }
+      - name: Build unsigned Windows EXE with NO real data
         shell: pwsh
         run: |
           npm install --omit=dev --no-save --no-package-lock --ignore-scripts pg@8.16.3
-          if ($LASTEXITCODE -ne 0) { throw 'runtime dependency install failed' }
-          $root = Join-Path $pwd 'ZHIROX371-Windows-OFFLINE-TRIAL'
-          New-Item -ItemType Directory -Path $root | Out-Null
-          Copy-Item (Get-Command node).Source (Join-Path $root 'node.exe')
-          # Fail closed: only bundle files in the V36 SHA256 manifest.
-          # Vite's dist/ may also contain public media or market CSV; those are NOT allowed.
-          $dist = Join-Path $root 'dist'
-          New-Item -ItemType Directory -Path (Join-Path $dist 'assets') -Force | Out-Null
-          Copy-Item dist/index.html (Join-Path $dist 'index.html')
-          Copy-Item dist/pilot-manifest-v36.json (Join-Path $dist 'pilot-manifest-v36.json')
-          $manifest = Get-Content dist/pilot-manifest-v36.json -Raw | ConvertFrom-Json
-          foreach ($entry in $manifest.files.PSObject.Properties) {
-            $name = [string]$entry.Name
-            if ($name -eq '/index.html') { continue }
-            if ($name -notmatch '^/assets/[A-Za-z0-9._-]+\\.(js|css)
-          Copy-Item offline (Join-Path $root 'offline') -Recurse
-          Copy-Item node_modules (Join-Path $root 'node_modules') -Recurse
-          Copy-Item package.json (Join-Path $root 'package.json')
-          New-Item -ItemType Directory -Path (Join-Path $root 'windows') | Out-Null
-          Copy-Item windows/Start-ZHIROX-Trial.ps1 (Join-Path $root 'windows/Start-ZHIROX-Trial.ps1')
-          Copy-Item windows/README-OFFLINE-TRIAL.txt (Join-Path $root 'README-OFFLINE-TRIAL.txt')
-          New-Item -ItemType Directory -Path (Join-Path $root 'docs') | Out-Null
-          Copy-Item docs/V36_PREINSTALLATION_SOFTWARE.md (Join-Path $root 'docs/V36_PREINSTALLATION_SOFTWARE.md')
-          Copy-Item docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md (Join-Path $root 'docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md')
-          $forbidden = Get-ChildItem -Path $root -File -Recurse |
-            Where-Object { $_.Name -match '^(?:\.env|.*\.(?:pem|p12|pfx|key))$' }
-          if ($forbidden) { throw 'Unexpected secret-like files in artifact' }
-          if (-not (Test-Path (Join-Path $root 'dist/pilot-manifest-v36.json'))) { throw 'Missing manifest' }
-          if (-not (Test-Path (Join-Path $root 'node_modules/pg/package.json'))) { throw 'Missing local PostgreSQL driver' }
-          Compress-Archive -Path $root -DestinationPath 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -CompressionLevel Optimal
-          Get-FileHash 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -Algorithm SHA256 |
-            Select-Object -ExpandProperty Hash | Out-File 'ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt' -Encoding ascii
-      - name: Compile Inno Setup EXE for TEST ONLY (not signed or production certified)
-        shell: pwsh
-        run: |
-          $compiler = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6/ISCC.exe'
-          if (-not (Test-Path $compiler)) {
-            $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
-            if (-not $cmd) { throw 'Inno Setup compiler not available' }
-            $compiler = $cmd.Source
-          }
-          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-          & $compiler windows/ZHIROX-Offline-TRIAL.iss
-          if ($LASTEXITCODE -ne 0) { throw 'Windows EXE compiler failed' }
-          $exe = 'artifacts/ZHIROX371-Offline-Windows-TRIAL-Setup.exe'
-          if (-not (Test-Path $exe)) { throw 'Missing Windows EXE output' }
-          $hash = (Get-FileHash $exe -Algorithm SHA256).Hash
-          $hash | Out-File 'ZHIROX371-Offline-Windows-TRIAL-Setup.sha256.txt' -Encoding ascii
-          Write-Output 'Windows offline TRIAL EXE created; not signed, not approved for real sales'
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime dependencies failed' }
+          & ./windows/Build-ZHIROX-TestInstaller.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Offline trial installer build failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: ZHIROX371-Windows-OFFLINE-TRIAL
+          name: ZHIROX371-Windows-OFFLINE-TRIAL-EXE
           path: |
-            ZHIROX371-Windows-OFFLINE-TRIAL.zip
-            ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt
             artifacts/ZHIROX371-Offline-Windows-TRIAL-Setup.exe
             ZHIROX371-Offline-Windows-TRIAL-Setup.sha256.txt
-          if-no-files-found: error
-          retention-days: 14
-) {
-              throw "Manifest includes non-code asset; refusing: $name"
-            }
-            $relative = $name.TrimStart('/').Replace('/','\\')
-            Copy-Item (Join-Path 'dist' $relative) (Join-Path $dist $relative)
-          }
-          if ((Get-ChildItem -Recurse -File $dist | Where-Object { $_.Extension -in @('.csv','.jpeg','.jpg','.png','.webp','.bak','.sqlite') }).Count -gt 0) {
-            throw 'Unexpected data or image in isolated lab bundle'
-          }
-          Copy-Item offline (Join-Path $root 'offline') -Recurse
-          Copy-Item node_modules (Join-Path $root 'node_modules') -Recurse
-          Copy-Item package.json (Join-Path $root 'package.json')
-          New-Item -ItemType Directory -Path (Join-Path $root 'windows') | Out-Null
-          Copy-Item windows/Start-ZHIROX-Trial.ps1 (Join-Path $root 'windows/Start-ZHIROX-Trial.ps1')
-          Copy-Item windows/README-OFFLINE-TRIAL.txt (Join-Path $root 'README-OFFLINE-TRIAL.txt')
-          New-Item -ItemType Directory -Path (Join-Path $root 'docs') | Out-Null
-          Copy-Item docs/V36_PREINSTALLATION_SOFTWARE.md (Join-Path $root 'docs/V36_PREINSTALLATION_SOFTWARE.md')
-          Copy-Item docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md (Join-Path $root 'docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md')
-          $forbidden = Get-ChildItem -Path $root -File -Recurse |
-            Where-Object { $_.Name -match '^(?:\.env|.*\.(?:pem|p12|pfx|key))$' }
-          if ($forbidden) { throw 'Unexpected secret-like files in artifact' }
-          if (-not (Test-Path (Join-Path $root 'dist/pilot-manifest-v36.json'))) { throw 'Missing manifest' }
-          if (-not (Test-Path (Join-Path $root 'node_modules/pg/package.json'))) { throw 'Missing local PostgreSQL driver' }
-          Compress-Archive -Path $root -DestinationPath 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -CompressionLevel Optimal
-          Get-FileHash 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -Algorithm SHA256 |
-            Select-Object -ExpandProperty Hash | Out-File 'ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt' -Encoding ascii
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ZHIROX371-Windows-OFFLINE-TRIAL
-          path: |
             ZHIROX371-Windows-OFFLINE-TRIAL.zip
             ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt
           if-no-files-found: error
