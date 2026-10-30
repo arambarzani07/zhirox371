@@ -69,3 +69,43 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/tests/007_outbox_leases.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/009_durable_checkout.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/008_cloud_inbox.sql
+      - name: Concurrent local PostgreSQL cashiers must not oversell last unit
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f offline/tests/010_v33_concurrency_seed.sql
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          psql -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.commit_checkout_v31('10000000-0000-0000-0000-000000000033','30000000-0000-0000-0000-000000000033','40000000-0000-0000-0000-000000000033')" > "$tmp/a.log" 2>&1 &
+          a=$!
+          psql -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.commit_checkout_v31('10000000-0000-0000-0000-000000000033','30000000-0000-0000-0000-000000000034','40000000-0000-0000-0000-000000000034')" > "$tmp/b.log" 2>&1 &
+          b=$!
+          set +e
+          wait "$a"; sa=$?
+          wait "$b"; sb=$?
+          set -e
+          if ! { { [ "$sa" -eq 0 ] && [ "$sb" -ne 0 ]; } || { [ "$sb" -eq 0 ] && [ "$sa" -ne 0 ]; }; }; then
+            echo "V33 concurrency failure: exactly one last-unit checkout must succeed"
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -f offline/tests/010_v33_concurrency_verify.sql
+      - name: Full local PostgreSQL custom-format backup and restore to separate disposable database
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          pg_dump -Fc --schema=zhirox_local --file="$tmp/local-custom.dump"
+          test -s "$tmp/local-custom.dump"
+          pg_restore --list "$tmp/local-custom.dump" > "$tmp/contents.txt"
+          grep -q 'TABLE DATA.*sales' "$tmp/contents.txt"
+          createdb zhirox_v33_restored_test
+          pg_restore --exit-on-error --no-owner --no-acl --dbname=zhirox_v33_restored_test "$tmp/local-custom.dump"
+          source_state=$(psql -At -c "SELECT (SELECT count(*) FROM zhirox_local.sales WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT stock_base_units FROM zhirox_local.products WHERE store_id='10000000-0000-0000-0000-000000000033' AND id='20000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.event_outbox WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.checkout_intents_v31 WHERE store_id='10000000-0000-0000-0000-000000000033')")
+          restored_state=$(PGDATABASE=zhirox_v33_restored_test psql -At -c "SELECT (SELECT count(*) FROM zhirox_local.sales WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT stock_base_units FROM zhirox_local.products WHERE store_id='10000000-0000-0000-0000-000000000033' AND id='20000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.event_outbox WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.checkout_intents_v31 WHERE store_id='10000000-0000-0000-0000-000000000033')")
+          test "$source_state" = "$restored_state"
+          test "$restored_state" = "(1,0,1,2)"
+          PGDATABASE=zhirox_v33_restored_test psql -v ON_ERROR_STOP=1 -f offline/tests/010_v33_concurrency_verify.sql
+          echo "V33 PASS: full custom-format backup restored into isolated PostgreSQL with matching receipts, stock, events and pending intents"
+
