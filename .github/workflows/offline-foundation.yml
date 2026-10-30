@@ -121,3 +121,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/014_cash_movements_v38.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/014_cash_movements_v38.sql
+      - name: V39 manager-approved cash refunds, restock and refund-aware closing
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/015_manager_cash_refunds_v39.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/015_manager_cash_refunds_v39.sql
