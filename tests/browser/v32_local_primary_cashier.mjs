@@ -11,7 +11,7 @@ const requests=[],errors=[];
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1366,height:900}});
 page.on("pageerror",e=>errors.push(e.message));
-page.route("**/api/local/**",async route=>{
+await page.route("**/api/local/**",async route=>{
  const req=route.request(),url=new URL(req.url()),path=url.pathname;
  const json=(status,body)=>route.fulfill({status,contentType:"application/json",body:JSON.stringify(body)});
  if(path==="/api/local/v3/login"){
