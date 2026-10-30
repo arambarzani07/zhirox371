@@ -1,0 +1,30 @@
+name: V47 stable hosted preview read-only smoke
+on:
+  pull_request:
+    paths:
+      - 'scripts/hosted-preview-preflight-v47*'
+      - 'docs/V47_HOSTED_PREVIEW_PREFLIGHT_AND_FIELD_HANDOVER.md'
+      - '.github/workflows/hosted-preview-v47.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/hosted-preview-preflight-v47*'
+      - '.github/workflows/hosted-preview-v47.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  website-source-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test URL and fail-closed safety requirements with mock HTTP
+        run: node --test scripts/hosted-preview-preflight-v47.test.mjs
+      - name: Public production alias GET-only test (never authenticates or writes)
+        run: node scripts/hosted-preview-preflight-v47.mjs
