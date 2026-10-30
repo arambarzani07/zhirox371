@@ -46,3 +46,21 @@ test("V57 preserves 3x4 card alignment, fixed desktop and a safe selected-row dr
  assert.match(css,/#172b45/);
  assert.match(css,/@media print/);
 });
+
+
+test("V57 uses precisely all 12 approved Sorani card titles and 48 subcard labels in original order",()=>{
+ const doc=read("DESIGN_LOCK.md");
+ const source=read("src/components/CardIcon.tsx");
+ const specs=source.slice(source.indexOf("export const MODULE_SPECS"),source.indexOf("interface CardIconProps"));
+ const expected=[...doc.matchAll(/^\|\s*(\d{2})\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|$/gm)]
+   .map(m=>({title:m[2].trim(),subs:m[3].split("؛").map(v=>v.trim())}));
+ const titles=[...specs.matchAll(/^\s*title:\s*"([^"]+)"/gm)].map(m=>m[1]);
+ const labels=[...specs.matchAll(/\{\s*label:\s*"([^"]+)"/gm)].map(m=>m[1]);
+ assert.equal(expected.length,12);
+ assert.equal(titles.length,12);
+ assert.equal(labels.length,48);
+ for(let i=0;i<12;i++){
+   assert.equal(titles[i],expected[i].title,"module "+(i+1));
+   assert.deepEqual(labels.slice(i*4,(i+1)*4),expected[i].subs,"submodules of "+titles[i]);
+ }
+});
