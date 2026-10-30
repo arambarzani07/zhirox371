@@ -57,8 +57,8 @@ BEGIN
  -- Store lock aligns concurrent prepare/cancel/commit with V26's stock locks.
  PERFORM 1 FROM zhirox_local.stores WHERE id=p_store FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'unknown store' USING ERRCODE='22023'; END IF;
- SELECT * INTO old FROM zhirox_local.checkout_intents_v31
- WHERE store_id=p_store AND request_id=p_request;
+ SELECT * INTO old FROM zhirox_local.checkout_intents_v31 q
+ WHERE q.store_id=p_store AND q.request_id=p_request;
  IF FOUND THEN
    IF old.cashier_id<>p_cashier OR old.lines IS DISTINCT FROM normalized
       OR old.expected_total_minor<>p_total
