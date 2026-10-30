@@ -59,7 +59,7 @@ CREATE OR REPLACE FUNCTION zhirox_local.plan_tender_v41(
 ) RETURNS TABLE(request_id uuid,cash_minor bigint,external_minor bigint,
  external_method text,state text,created_at timestamptz,replayed boolean)
 LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v41$
-DECLARE existing zhirox_local.tender_plans_v41%ROWTYPE;
+DECLARE existing zhirox_local.tender_plans_v41%ROWTYPE; was_existing boolean:=false;
 BEGIN
  IF p_store IS NULL OR p_cashier IS NULL OR p_request IS NULL
   OR p_cash IS NULL OR p_external IS NULL
@@ -75,6 +75,7 @@ BEGIN
  SELECT q.* INTO existing FROM zhirox_local.tender_plans_v41 q
  WHERE q.store_id=p_store AND q.request_id=p_request;
  IF FOUND THEN
+  was_existing:=true;
   IF existing.cashier_id<>p_cashier OR existing.cash_minor<>p_cash
     OR existing.external_minor<>p_external OR existing.external_method<>p_method
   THEN RAISE EXCEPTION 'immutable tender plan mismatch' USING ERRCODE='P4103'; END IF;
@@ -84,7 +85,7 @@ BEGIN
   VALUES(p_store,p_request,p_cashier,p_cash,p_external,p_method);
  END IF;
  RETURN QUERY SELECT q.request_id,q.cash_minor,q.external_minor,
-  q.external_method,q.state,q.created_at,FOUND
+  q.external_method,q.state,q.created_at,was_existing
  FROM zhirox_local.tender_plans_v41 q
  WHERE q.store_id=p_store AND q.request_id=p_request AND q.cashier_id=p_cashier;
 END $v41$;
