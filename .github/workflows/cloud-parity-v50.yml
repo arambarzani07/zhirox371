@@ -1,0 +1,44 @@
+name: V50 HTTPS Cloud Lab and Event Parity NO-GO
+on:
+  pull_request:
+    paths:
+      - 'offline/cloud-readiness-v50.mjs'
+      - 'offline/staging-https-v50.mjs'
+      - 'offline/tests/*v50*.test.mjs'
+      - 'docs/V50_HTTPS_CLOUD_PARITY_LAB.md'
+      - '.github/workflows/cloud-parity-v50.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/cloud-readiness-v50.mjs'
+      - 'offline/staging-https-v50.mjs'
+      - 'offline/tests/*v50*.test.mjs'
+      - '.github/workflows/cloud-parity-v50.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-cloud-security-and-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V50 signed event delivery, pending/backlog and reconciliation tests
+        run: node --test offline/tests/cloud-readiness-v50.test.mjs
+      - name: V50 TLS1.2 loopback receiver, certificate trust and duplicate tests
+        run: node --test offline/tests/staging-https-v50.test.mjs
+      - name: V27 and V28 signed-transport security regressions
+        run: node --test offline/tests/outbox-sync-v27.test.mjs offline/tests/cloud-receiver-v28.test.mjs
+      - name: V29 owner auth and event-ID verification regressions
+        run: node --test offline/tests/owner-reconcile-v29.test.mjs
+      - name: V49 disconnected local outbox retry regressions
+        run: node --test offline/tests/autosync-v49.test.mjs
+      - name: Ensure release remains NO-GO
+        run: |
+          node --test scripts/release-readiness-v46.test.mjs
+          node scripts/release-readiness-v46.mjs --json
