@@ -1,10 +1,10 @@
-import {pilotEnabled} from "./localPilotV24";
+import {pilotEnabled,isolatedLanPilotV36} from "./localPilotV24";
 export interface LocalReceiptV32 {
  sale_id:string;receipt_no:number;total_minor:number;created_at:string;
 }
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function read<T>(path:string,token:string):Promise<T>{
- if(!pilotEnabled||!token)throw Error("pilot_disabled");
+ if((!pilotEnabled&&!isolatedLanPilotV36)||!token)throw Error("pilot_disabled");
  const res=await fetch(path,{method:"GET",cache:"no-store",credentials:"omit",
   redirect:"error",headers:{Authorization:"Bearer "+token}});
  if(!res.ok)throw Error("local_receipts_http_"+res.status);

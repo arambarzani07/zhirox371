@@ -18,9 +18,14 @@ export interface PilotPending { request_id: string; lines: PilotLine[]; expected
 export interface PilotResult { sale_id: string; receipt_no: number; total_minor: number; replayed: boolean }
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const pilotEnabled=import.meta.env.DEV&&import.meta.env.VITE_ENABLE_LOCAL_PILOT==="true";
+/* V36 is a separate test-only production-mode bundle, never an official POS.
+ * The V33 LAN gateway serves it from a private enrolled HTTPS peer with
+ * a completely isolated PostgreSQL database. */
+export const isolatedLanPilotV36=import.meta.env.PROD&&
+  import.meta.env.VITE_V36_ISOLATED_LAN_PILOT==="true";
 
 async function request<T>(path:string,init:RequestInit={},token?:string):Promise<T> {
-  if(!pilotEnabled)throw new Error("pilot_disabled");
+  if(!pilotEnabled&&!isolatedLanPilotV36)throw new Error("pilot_disabled");
   if(!path.startsWith("/api/local/v")||path.includes("//"))throw new Error("invalid_path");
   const response=await fetch(path,{
     ...init,

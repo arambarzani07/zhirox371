@@ -3,6 +3,8 @@ import {prepareDurableLocal,commitDurableLocal,cancelDurableLocal,recoverDurable
 import type {LocalPilotItem,PilotPending,PilotResult} from '../localPilotV24';
 import {getLocalReceiptsV32,getLocalIntentStatusV32} from '../localCashierHistoryV32';
 import type {LocalReceiptV32} from '../localCashierHistoryV32';
+import {isolatedLanPilotV36} from '../localPilotV24';
+import {LocalV36ReceiptTools} from './LocalV36ReceiptTools';
 
 type Line={item:LocalPilotItem;qty:number};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -213,6 +215,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          پسووڵەی PostgreSQL ـی تاقیکردنەوە: #{last.receipt_no} — {money(last.total_minor)}
          {last.replayed?" (دووبارە ناردن، فرۆشتنی نوێ نییە)":""}
        </div>}
+       {isolatedLanPilotV36&&standalone&&last&&available&&<LocalV36ReceiptTools key={last.sale_id} token={token} saleId={last.sale_id}/>}
        {standalone&&<section aria-label="مێژووی پسووڵەی ناوخۆیی" style={{marginTop:18}}>
          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
            <strong>پسووڵەکانی PostgreSQL ـی ناوخۆیی</strong>
