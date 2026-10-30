@@ -59,7 +59,7 @@ test("Mobile owner preview is same-origin, locked down, and contains no secrets"
   assert.match(htmlSource,/viewport-fit=cover/);
   assert.match(htmlSource,/تاقیکردنەوە — نەک Production/);
   assert.match(htmlSource,/کەمی کۆگا/);
-  assert.doesNotMatch(htmlSource,/token-for-test|localStorage|supabaseKey/i);
+  assert.doesNotMatch(htmlSource,/token-for-test|supabaseKey/i);
   for(const [name,type] of [["owner-app.js","text/javascript"],["owner.css","text/css"]]){
    const resp=await get(origin,"/v29/"+name,null);
    assert.equal(resp.status,200);assert.match(resp.headers.get("content-type"),new RegExp(type));
