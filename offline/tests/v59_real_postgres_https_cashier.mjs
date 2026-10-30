@@ -200,6 +200,13 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   assert.equal(loginB.status,200);
   const tokenA=loginA.data.token,tokenB=loginB.data.token;
   assert.ok(tokenA&&tokenB&&tokenA!==tokenB);
+  if(process.env.ZHIROX_V63_CI_ACTOR_PROOF==="true"){
+    for(const route of ["/api/local/v3/checkout","/api/local/v25/checkout","/api/local/v26/checkout"]){
+      const blocked=await post(route,{},tokenA);
+      assert.equal(blocked.status,410,"legacy direct checkout must be unavailable: "+route);
+      assert.equal(blocked.data.error,"legacy_checkout_disabled_use_v31");
+    }
+  }
   let proofA=null,proofB=null;
   if(process.env.ZHIROX_V63_CI_ACTOR_PROOF==="true"){
     const actorA=JSON.parse(Buffer.from(tokenA.split(".")[0],"base64url").toString("utf8"));
