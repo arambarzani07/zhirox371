@@ -111,8 +111,12 @@ export async function startV33LanTrial(){
  const pool=new Pool({connectionString:dbUrl,max:8,connectionTimeoutMillis:2000});
  const origin=process.env.ZHIROX_V33_ALLOWED_ORIGIN||null;
  // Explicit opt-in: V34 never exposes receipts on a default V33 test gateway.
- const localHandler=process.env.ZHIROX_V34_RECEIPT_PREVIEW_ENABLED==="true"?
-  (await import("./local-receipts-v34.mjs")).createLocalReceiptHandlerV34({pool,secret}):null;
+ const v34=process.env.ZHIROX_V34_RECEIPT_PREVIEW_ENABLED==="true";
+ const v35=process.env.ZHIROX_V35_PRINT_QUEUE_ENABLED==="true";
+ if(v35&&!v34)throw Error("v35_requires_v34_receipts");
+ const localHandler=v35?
+  (await import("./local-print-queue-v35.mjs")).createLocalPrintQueueHandlerV35({pool,secret}):
+  v34?(await import("./local-receipts-v34.mjs")).createLocalReceiptHandlerV34({pool,secret}):null;
  const handler=createV33LanHandler({pool,secret,peers,allowedOrigin:origin,localHandler});
  const server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},handler);
  server.listen(3433,host);
