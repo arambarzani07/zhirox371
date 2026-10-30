@@ -24,11 +24,13 @@ Copy-Item package.json (Join-Path $root 'package.json')
 New-Item -ItemType Directory -Path (Join-Path $root 'windows') -Force | Out-Null
 Copy-Item windows/Start-ZHIROX-Trial.ps1 (Join-Path $root 'windows/Start-ZHIROX-Trial.ps1')
 Copy-Item windows/Start-ZHIROX-AutoSync-TRIAL.ps1 (Join-Path $root 'windows/Start-ZHIROX-AutoSync-TRIAL.ps1')
+Copy-Item windows/Inspect-ZHIROX-RC-V53.ps1 (Join-Path $root 'windows/Inspect-ZHIROX-RC-V53.ps1')
 Copy-Item windows/README-OFFLINE-TRIAL.txt (Join-Path $root 'README-OFFLINE-TRIAL.txt')
 New-Item -ItemType Directory -Path (Join-Path $root 'docs') -Force | Out-Null
 Copy-Item docs/V36_PREINSTALLATION_SOFTWARE.md (Join-Path $root 'docs/V36_PREINSTALLATION_SOFTWARE.md')
 Copy-Item docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md (Join-Path $root 'docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md')
 Copy-Item docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md (Join-Path $root 'docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md')
+Copy-Item docs/V53_WINDOWS_RELEASE_CANDIDATE_FIELD_HANDOVER.md (Join-Path $root 'docs/V53_WINDOWS_RELEASE_CANDIDATE_FIELD_HANDOVER.md')
 $bad=Get-ChildItem -File -Recurse $root | Where-Object {
   $_.Name -match '^\.env' -or $_.Extension -in @('.csv','.bak','.sqlite','.pem','.p12','.pfx','.key')
 }
@@ -50,8 +52,8 @@ if(!(Test-Path $compiler)){
 New-Item -ItemType Directory -Path artifacts -Force | Out-Null
 & $compiler windows/ZHIROX-Offline-TRIAL.iss
 if($LASTEXITCODE -ne 0){throw 'Windows EXE compiler failed'}
-$exe='artifacts/ZHIROX371-Offline-Windows-TRIAL-Setup.exe'
+$exe='artifacts/ZHIROX371-Windows-RC-V53-NOT-FOR-SALES-Setup.exe'
 if(!(Test-Path $exe)){throw 'EXE missing after compile'}
 (Get-FileHash $exe -Algorithm SHA256).Hash |
-  Out-File 'ZHIROX371-Offline-Windows-TRIAL-Setup.sha256.txt' -Encoding ascii
+  Out-File 'ZHIROX371-Windows-RC-V53-NOT-FOR-SALES-Setup.sha256.txt' -Encoding ascii
 Write-Output 'Generated UNSIGNED offline TEST installer; NOT approved for real supermarket sales'
