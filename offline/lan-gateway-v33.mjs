@@ -128,8 +128,11 @@ export async function startV33LanTrial(){
  if(v38&&!v37)throw Error("v38_requires_isolated_shifts");
  const v39=process.env.ZHIROX_V39_DUAL_APPROVAL_REFUNDS_ENABLED==="true";
  if(v39&&!v38)throw Error("v39_requires_v38_cash_reconciliation");
- const localHandler=v39?
-  (await import("./local-refunds-v39.mjs")).createLocalRefundHandlerV39({pool,secret}):
+ const v40=process.env.ZHIROX_V40_PARTIAL_CASH_REFUNDS_ENABLED==="true";
+ if(v40&&!v39)throw Error("v40_requires_v39_manager_refunds");
+ const localHandler=v40?
+  (await import("./local-partial-refunds-v40.mjs")).createLocalPartialRefundHandlerV40({pool,secret}):
+  v39?(await import("./local-refunds-v39.mjs")).createLocalRefundHandlerV39({pool,secret}):
   v38?(await import("./local-cash-ledger-v38.mjs")).createLocalCashLedgerHandlerV38({pool,secret}):
   v37?(await import("./local-shifts-v37.mjs")).createLocalShiftHandlerV37({pool,secret}):
   v35?(await import("./local-print-queue-v35.mjs")).createLocalPrintQueueHandlerV35({pool,secret}):
