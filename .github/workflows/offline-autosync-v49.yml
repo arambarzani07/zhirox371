@@ -1,0 +1,40 @@
+name: V49 isolated offline-online auto-sync NO-GO checks
+on:
+  pull_request:
+    paths:
+      - 'offline/autosync-v49.mjs'
+      - 'offline/tests/autosync-v49.test.mjs'
+      - 'windows/**'
+      - 'docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md'
+      - '.github/workflows/offline-autosync-v49.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/autosync-v49.mjs'
+      - 'offline/tests/autosync-v49.test.mjs'
+      - 'windows/**'
+      - '.github/workflows/offline-autosync-v49.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-sync-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V49 interruption, reconnect and no-production test
+        run: node --test offline/tests/autosync-v49.test.mjs
+      - name: V27 signature and outbox worker regression tests
+        run: node --test offline/tests/outbox-sync-v27.test.mjs
+      - name: V28 receiver idempotency and owner auth regression tests
+        run: node --test offline/tests/cloud-receiver-v28.test.mjs
+      - name: Reject any accidental official release
+        run: |
+          node scripts/release-readiness-v46.mjs --json
+          node --test scripts/release-readiness-v46.test.mjs
