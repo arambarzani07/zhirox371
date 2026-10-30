@@ -1,6 +1,8 @@
 import React,{useEffect,useState} from 'react';
 import {prepareDurableLocal,commitDurableLocal,cancelDurableLocal,recoverDurableLocal,loginLocal,makePilotPending,scanLocal,validPilotPending} from '../localPilotV24';
 import type {LocalPilotItem,PilotPending,PilotResult} from '../localPilotV24';
+import {getLocalReceiptsV32,getLocalIntentStatusV32} from '../localCashierHistoryV32';
+import type {LocalReceiptV32} from '../localCashierHistoryV32';
 
 type Line={item:LocalPilotItem;qty:number};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -8,8 +10,8 @@ const money=(n:number)=>n.toLocaleString("en-US")+" IQD";
 const pendingKey=(id:string)=>"zhirox-v24-local-pending:"+id;
 const box:React.CSSProperties={border:"1px solid #b1bed0",borderRadius:12,padding:16,background:"white",marginBottom:16};
 const inputStyle:React.CSSProperties={height:38,margin:4,padding:"5px 9px",border:"1px solid #aabed7",borderRadius:6};
-export const LocalPostgresPilotV24:React.FC=()=>{
- const [open,setOpen]=useState(false);
+export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=false})=>{
+ const [open,setOpen]=useState(standalone);
  const [store,setStore]=useState("");
  const [username,setUsername]=useState("");
  const [password,setPassword]=useState("");
@@ -18,6 +20,8 @@ export const LocalPostgresPilotV24:React.FC=()=>{
  const [cart,setCart]=useState<Line[]>([]);
  const [pending,setPending]=useState<PilotPending|null>(null);
  const [last,setLast]=useState<PilotResult|null>(null);
+ const [history,setHistory]=useState<LocalReceiptV32[]>([]);
+ const [historyError,setHistoryError]=useState("");
  const [error,setError]=useState("");
  const [busy,setBusy]=useState(false);
  const [expiresAt,setExpiresAt]=useState(0);
@@ -36,14 +40,35 @@ export const LocalPostgresPilotV24:React.FC=()=>{
      // The PostgreSQL journal is authoritative across tabs and PC/browser restarts.
      // A stale browser hint may still be retried with the SAME UUID and quote.
      const serverIntent=await recoverDurableLocal(session.token);
-     const revived=serverIntent?{
+     let revived:PilotPending|null=serverIntent?{
        request_id:serverIntent.request_id,lines:serverIntent.lines,
        expected_total_minor:serverIntent.expected_total_minor
      }:parsed as PilotPending|null;
+     let previousReceipt:PilotResult|null=null;
+     if(standalone&&parsed&&!serverIntent){
+       const status=await getLocalIntentStatusV32(session.token,(parsed as PilotPending).request_id);
+       if(status?.state==="committed"){
+         previousReceipt={sale_id:status.sale_id!,receipt_no:status.receipt_no!,
+           total_minor:status.total_minor!,replayed:true};
+         revived=null;
+       }else if(status?.state==="cancelled")revived=null;
+       else if(status?.state==="prepared"){
+         revived={request_id:status.request_id,lines:status.lines,
+           expected_total_minor:status.expected_total_minor};
+       }
+     }
+     if(standalone&&serverIntent&&parsed&&
+       serverIntent.request_id!==(parsed as PilotPending).request_id)
+       throw new Error("conflicting local intent; manual review required");
      if(revived)sessionStorage.setItem(pendingKey(store),JSON.stringify(revived));
+     else if(standalone)sessionStorage.removeItem(pendingKey(store));
      setPending(revived);
      setToken(session.token);setExpiresAt(Date.now()+session.expires_in_seconds*1000);
-     setCart([]);setLast(null);
+     setCart([]);setLast(previousReceipt);
+     if(standalone){
+       try{setHistory(await getLocalReceiptsV32(session.token));setHistoryError("");}
+       catch{setHistoryError("مێژووی پسووڵەکان نەتوانرا بخوێندرێتەوە");setHistory([]);}
+     }
    }catch{setToken("");setError("چوونەژوورەوە سەرکەوتوو نەبوو یان داواکارییەکی ناتەواو هەیە");}
    finally {setPassword("");setBusy(false);}
  };
@@ -97,6 +122,10 @@ export const LocalPostgresPilotV24:React.FC=()=>{
      const receipt=await commitDurableLocal(token,request.request_id);
      sessionStorage.removeItem(pendingKey(store));
      setPending(null);setCart([]);setLast(receipt);
+     if(standalone){
+       try{setHistory(await getLocalReceiptsV32(token));setHistoryError("");}
+       catch{setHistory([]);setHistoryError("مێژووی پسووڵەکان نەتوانرا بخوێندرێتەوە");}
+     }
    }catch(err){
      if(err instanceof Error && err.message==="price_changed"){
        // Price failure rolls back V26 sale. Keep the cart locked until the
@@ -133,9 +162,9 @@ export const LocalPostgresPilotV24:React.FC=()=>{
    }));
  };
  return <section style={box} dir="rtl" aria-label="تاقیکردنەوەی PostgreSQL ـی ناوخۆیی">
-   <button type="button" onClick={()=>setOpen(x=>!x)} style={{fontWeight:850,padding:9}}>
+   {!standalone&&<button type="button" onClick={()=>setOpen(x=>!x)} style={{fontWeight:850,padding:9}}>
      {open?"داخستنی":"کردنەوەی"} V31 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
-   </button>
+   </button>}
    {open&&<div style={{marginTop:12}}>
      <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
        تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ دانە، کارتۆن و کیلۆگرام بە نەختینە. نرخی کۆتایی لە سێرڤەر پشتڕاست دەکرێتەوە.
@@ -184,7 +213,27 @@ export const LocalPostgresPilotV24:React.FC=()=>{
          پسووڵەی PostgreSQL ـی تاقیکردنەوە: #{last.receipt_no} — {money(last.total_minor)}
          {last.replayed?" (دووبارە ناردن، فرۆشتنی نوێ نییە)":""}
        </div>}
-       <button type="button" style={{marginTop:10}} onClick={()=>{setToken("");setExpiresAt(0);setCart([]);setLast(null);}}>
+       {standalone&&<section aria-label="مێژووی پسووڵەی ناوخۆیی" style={{marginTop:18}}>
+         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+           <strong>پسووڵەکانی PostgreSQL ـی ناوخۆیی</strong>
+           <button disabled={busy} type="button" onClick={async()=>{
+             try{setHistory(await getLocalReceiptsV32(token));setHistoryError("");}
+             catch{setHistory([]);setHistoryError("مێژووی پسووڵەکان نەتوانرا بخوێندرێتەوە");}
+           }}>نوێکردنەوەی پسووڵەکان</button>
+         </div>
+         <div role="status">{historyError}</div>
+         <table style={{width:"100%",borderCollapse:"collapse",marginTop:8}}>
+           <thead><tr>{["ژمارەی پسووڵە","کۆی پارە","بەروار"].map(x=>
+             <th key={x} style={{border:"1px solid #aabed7",padding:8}}>{x}</th>)}</tr></thead>
+           <tbody>{history.map(r=><tr key={r.sale_id}>
+             <td style={{border:"1px solid #aabed7",padding:8}}>{r.receipt_no}</td>
+             <td style={{border:"1px solid #aabed7",padding:8}}>{money(r.total_minor)}</td>
+             <td style={{border:"1px solid #aabed7",padding:8}}>{new Date(r.created_at).toLocaleString("en-GB")}</td>
+           </tr>)}</tbody>
+         </table>
+         {!history.length&&!historyError&&<div>هیچ پسووڵەیەکی PostgreSQL ـی تاقیکردنەوە نەدۆزرایەوە</div>}
+       </section>}
+       <button type="button" style={{marginTop:10}} onClick={()=>{setToken("");setExpiresAt(0);setCart([]);setLast(null);setHistory([]);setHistoryError("");}}>
          دەرچوون لە تاقیکردنەوە
        </button>
      </>}

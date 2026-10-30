@@ -9,6 +9,8 @@ on:
       - 'tests/browser/v24_react_local_pilot.mjs'
       - 'tests/browser/v29_owner_mobile.mjs'
       - 'tests/browser/v30_owner_https.mjs'
+      - 'tests/browser/v32_local_primary_cashier.mjs'
+      - 'offline/local-cashier-server-v32.mjs'
       - 'offline/secure-owner-v30.mjs'
       - 'offline/tests/secure-owner-v30.test.mjs'
       - 'offline/owner-v29*'
@@ -64,3 +66,14 @@ jobs:
         run: node tests/browser/v29_owner_mobile.mjs
       - name: Verify V30 TLS-protected iPhone owner preview and immediate token revocation
         run: node tests/browser/v30_owner_https.mjs
+      - name: Start isolated V32 local-only cashier mode on second loopback port
+        run: |
+          (VITE_ENABLE_LOCAL_PILOT=true VITE_V32_LOCAL_CASHIER=true npm run dev -- --host 127.0.0.1 --port 3001 > /tmp/v32-vite.log 2>&1 &)
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3001/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/v32-vite.log
+          exit 1
+      - name: Verify primary cashier uses PostgreSQL only, receipts and restart safety
+        run: node tests/browser/v32_local_primary_cashier.mjs

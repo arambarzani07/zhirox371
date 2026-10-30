@@ -3,6 +3,8 @@ import { useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
 import { CashierPos } from './components/CashierPos';
+import { LocalCashierV32 } from './components/LocalCashierV32';
+import { localCashierV32 } from './localCashierModeV32';
 import { ProductCatalogView } from './components/ProductCatalogView';
 import { InventoryStockView } from './components/InventoryStockView';
 import { CustomersLedgerView } from './components/CustomersLedgerView';
@@ -45,7 +47,7 @@ export const App: React.FC = () => {
           <Header />
           <main id="app">
             {currentView === 'home' && <HomeScreen />}
-            {currentView === 'pos' && <CashierPos />}
+            {currentView === 'pos' && (localCashierV32 ? <LocalCashierV32 /> : <CashierPos />)}
             {currentView === 'products' && <ProductCatalogView />}
             {currentView === 'stock' && <InventoryStockView />}
             {currentView === 'customers' && <CustomersLedgerView />}
@@ -60,7 +62,7 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {activeReceiptForModal && (
+      {activeReceiptForModal && !(localCashierV32 && currentView === 'pos') && (
         <ThermalReceiptModal
           receipt={activeReceiptForModal}
           onClose={() => setActiveReceiptForModal(null)}
