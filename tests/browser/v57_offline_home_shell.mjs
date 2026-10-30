@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {chromium} from "playwright";
+import {mkdir} from "node:fs/promises";
 const browser=await chromium.launch({headless:true});
 const errors=[],external=[];
 const page=await browser.newPage({viewport:{width:1366,height:900}});
@@ -17,6 +18,8 @@ try{
  assert.equal(await page.locator(".market-banner").count(),1);
  assert.equal((await page.locator(".market-banner").innerText()).trim(),"سوپەرمارکێتی کانی چنار");
  assert.equal(await page.locator(".v57-row").count(),3);
+ await mkdir("artifacts/v57",{recursive:true});
+ await page.screenshot({path:"artifacts/v57/01-home-12cards.png",fullPage:false});
  assert.equal(await page.locator(".v57-module").count(),12);
  assert.equal(await page.locator(".v57-sub").count(),0);
  assert.equal(await page.getByRole("heading",{name:"بەشە سەرەکییەکان"}).count(),1);
@@ -43,7 +46,10 @@ try{
        nextY:next?next.getBoundingClientRect().top:null};
    });
    assert.ok(rects.drawer>=rects.row-1,"drawer stays beneath chosen row");
-   if(i===0)assert.equal(await region.locator(".v57-sub:not(:disabled)").count(),2);
+   if(i===0){
+     assert.equal(await region.locator(".v57-sub:not(:disabled)").count(),2);
+     await page.screenshot({path:"artifacts/v57/02-home-cashier-subcards.png",fullPage:false});
+   }
    else assert.equal(await region.locator(".v57-sub:not(:disabled)").count(),0,
      "unimplemented modules must fail closed rather than mount Demo");
    count+=4;
@@ -56,6 +62,7 @@ try{
  await page.locator(".v57-drawer .v57-sub").first().click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
  assert.equal(await page.locator("[data-v57-screen=cashier]").count(),1);
+ await page.screenshot({path:"artifacts/v57/03-local-cashier-login.png",fullPage:false});
  assert.equal(await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).count(),1);
  assert.equal(await page.locator("[data-v57-screen=home]").count(),0);
  await page.keyboard.press("Escape");
