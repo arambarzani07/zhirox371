@@ -120,6 +120,7 @@ GRANT EXECUTE ON FUNCTION
  zhirox_local.checkout_packs_scale_v26(uuid,uuid,uuid,jsonb,bigint),
  zhirox_local.open_cash_shift_v37(uuid,uuid,uuid,bigint),
  zhirox_local.close_cash_shift_v37(uuid,uuid,uuid,bigint),
+ zhirox_local.cash_summary_v38(uuid,uuid,uuid),
  zhirox_local.queue_print_v35(uuid,uuid,uuid,uuid,smallint)
 TO zhirox_v60_api_ci;
 
