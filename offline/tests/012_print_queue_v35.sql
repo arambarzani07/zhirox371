@@ -21,22 +21,22 @@ BEGIN
  PERFORM * FROM zhirox_local.prepare_checkout_v31(s,c,r,
    '[{"barcode":"1234500035","qty":2}]'::jsonb,1800);
  SELECT x.sale_id INTO STRICT sale FROM zhirox_local.commit_checkout_v31(s,c,r) x;
- SELECT * INTO STRICT queued FROM zhirox_local.queue_print_v35(s,c,sale,job,80);
+ SELECT * INTO STRICT queued FROM zhirox_local.queue_print_v35(s,c,sale,job,80::smallint);
  IF queued.state<>'queued' OR queued.width_mm<>80 OR queued.job_id<>job THEN
   RAISE EXCEPTION 'unexpected queue status'; END IF;
- SELECT * INTO STRICT queued FROM zhirox_local.queue_print_v35(s,c,sale,job,80);
+ SELECT * INTO STRICT queued FROM zhirox_local.queue_print_v35(s,c,sale,job,80::smallint);
  IF queued.job_id<>job OR (SELECT count(*) FROM zhirox_local.print_requests_v35 WHERE store_id=s)<>1
  THEN RAISE EXCEPTION 'retry generated a duplicate print job'; END IF;
  conflict_flag:=false;
- BEGIN PERFORM * FROM zhirox_local.queue_print_v35(s,other,sale,another,80);
+ BEGIN PERFORM * FROM zhirox_local.queue_print_v35(s,other,sale,another,80::smallint);
  EXCEPTION WHEN SQLSTATE 'P3501' THEN conflict_flag:=true; END;
  IF NOT conflict_flag THEN RAISE EXCEPTION 'other cashier queued receipt'; END IF;
  conflict_flag:=false;
- BEGIN PERFORM * FROM zhirox_local.queue_print_v35(s,c,sale,another,80);
+ BEGIN PERFORM * FROM zhirox_local.queue_print_v35(s,c,sale,another,80::smallint);
  EXCEPTION WHEN SQLSTATE 'P3502' THEN conflict_flag:=true; END;
  IF NOT conflict_flag THEN RAISE EXCEPTION 'unauthorized reprint job'; END IF;
  conflict_flag:=false;
- BEGIN PERFORM * FROM zhirox_local.queue_print_v35(s,c,sale,job,58);
+ BEGIN PERFORM * FROM zhirox_local.queue_print_v35(s,c,sale,job,58::smallint);
  EXCEPTION WHEN SQLSTATE 'P3502' THEN conflict_flag:=true; END;
  IF NOT conflict_flag THEN RAISE EXCEPTION 'same UUID mutated paper size'; END IF;
  IF EXISTS(SELECT 1 FROM zhirox_local.print_requests_v35 WHERE store_id=s AND state='printed')
