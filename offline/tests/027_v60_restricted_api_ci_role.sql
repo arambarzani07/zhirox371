@@ -31,6 +31,8 @@ GRANT SELECT ON
  zhirox_local.checkout_intents_v31,
  zhirox_local.cash_shifts_v37,
  zhirox_local.cash_movements_v38,
+ zhirox_local.cash_refunds_v39,
+ zhirox_local.partial_cash_refunds_v40,
  zhirox_local.receipt_snapshots_v34,
  zhirox_local.print_requests_v35
 TO zhirox_v60_api_ci;
