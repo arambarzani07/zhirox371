@@ -152,7 +152,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
      [store,water,tomatoes]);
     await pool.query(
      "INSERT INTO zhirox_local.barcodes(store_id,code,product_id,quantity_base_units,sale_mode,sale_price_minor) VALUES ($1,$2,$3,1,'unit',NULL),($1,$4,$3,12,'carton',5500)",
-     [store,waterUnit,waterCarton]);
+     [store,waterUnit,water,waterCarton]);
     assert.deepEqual(decodeScale27(scaleTag),{code:scaleTag,plu:"00001",grams:480,kg:"0.480"});
     labReport.checks.push("real product catalog: unit/carton/scale prefix-27");
   }
