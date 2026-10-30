@@ -61,7 +61,7 @@ $doc.DefaultPageSettings.PaperSize=$paper[0]
 $doc.DocumentName='ZHIROX371 V54 TEST RECEIPT'
 $doc.PrintController=New-Object System.Drawing.Printing.StandardPrintController
 $doc.OriginAtMargins=$true
-$font=New-Object System.Drawing.Font('Tahoma',8,[System.Drawing.FontStyle]::Regular)
+$font=New-Object System.Drawing.Font -ArgumentList @('Tahoma',8,[System.Drawing.FontStyle]::Regular)
 $brush=[System.Drawing.Brushes]::Black
 $format=New-Object System.Drawing.StringFormat
 $format.FormatFlags=[System.Drawing.StringFormatFlags]::DirectionRightToLeft
@@ -75,7 +75,7 @@ $doc.add_PrintPage({
     if($y+$height -gt [single]$e.MarginBounds.Height){
       throw 'Receipt exceeds supported paper page; operator must review'
     }
-    $rect=New-Object System.Drawing.RectangleF([single]0,$y,
+    $rect=[System.Drawing.RectangleF]::new([single]0,$y,
       [single]$e.MarginBounds.Width,$height)
     $e.Graphics.DrawString($line,$font,$brush,$rect,$format)
     $y+=$height
