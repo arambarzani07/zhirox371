@@ -6,6 +6,7 @@ import type {LocalReceiptV32} from '../localCashierHistoryV32';
 import {isolatedLanPilotV36} from '../localPilotV24';
 import {LocalV36ReceiptTools} from './LocalV36ReceiptTools';
 import {LocalV37ShiftControls} from "./LocalV37ShiftControls";
+import {LocalV41TenderDraft} from "./LocalV41TenderDraft";
 
 type Line={item:LocalPilotItem;qty:number};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,6 +31,8 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
  const [expiresAt,setExpiresAt]=useState(0);
  const v37Shifts=isolatedLanPilotV36&&import.meta.env.VITE_V37_LOCAL_SHIFTS==="true";
  const [v37ShiftOpen,setV37ShiftOpen]=useState(false);
+ const v41Tender=isolatedLanPilotV36&&import.meta.env.VITE_V41_TENDER_PREFLIGHT==="true";
+ const [v41CashAllowed,setV41CashAllowed]=useState(false);
  // No access token or password is written to LocalStorage or SessionStorage.
  useEffect(()=>{if(!open)return;setError("");},[open]);
  const available=Boolean(token&&expiresAt>Date.now());
@@ -99,8 +102,47 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
    finally {setBusy(false);}
  };
  const total=cart.reduce((sum,l)=>sum+l.qty*l.item.price_minor,0);
+ // The mixed-tender staging path ONLY prepares a durable V31 request.
+ // It never charges a bank, commits a sale, prints a receipt or reduces stock.
+ const prepareV41Draft=async()=>{
+   if(!v41Tender||!available||busy||pending||!v37ShiftOpen||!cart.length)return;
+   let request:PilotPending;
+   try{
+     if(cart.some(x=>!Number.isSafeInteger(x.qty)||x.qty<1||x.qty>100||
+        x.item.sale_mode==="scale"&&x.qty!==1))
+       throw Error("بڕی کاڵا نادروستە");
+     for(const x of cart){
+       const used=cart.reduce((n,l)=>n+(l.item.id===x.item.id?
+          l.qty*l.item.quantity_base_units:0),0);
+       if(used>x.item.stock_base_units)throw Error("بڕی کۆگا بەش ناکات");
+     }
+     request=makePilotPending(cart.map(x=>({barcode:x.item.barcode,qty:x.qty})),
+       crypto.randomUUID(),total);
+     sessionStorage.setItem(pendingKey(store),JSON.stringify(request));
+     setPending(request);setV41CashAllowed(false);
+   }catch(e){setError(e instanceof Error?e.message:"پلان دروست نەکرا");return;}
+   setBusy(true);setError("");
+   try{
+     await prepareDurableLocal(token,request);
+     setError("داواکاری V31 تەنها ئامادە کرا؛ لە خوارەوە پلانی پارەدان تۆمار بکە.");
+   }catch{
+     setError("ئامادەکردنی داواکاری نادیارە؛ هەمان UUID بەکاربهێنە و دۆخ بپشکنە.");
+   }finally{setBusy(false);}
+ };
+ const cancelV41Draft=async()=>{
+   if(!v41Tender||busy||!pending)return;
+   setBusy(true);setError("");setV41CashAllowed(false);
+   try{
+     const status=await cancelDurableLocal(token,pending.request_id);
+     if(status!=="cancelled")throw Error("cannot_cancel");
+     sessionStorage.removeItem(pendingKey(store));
+     setPending(null);setCart([]);setV41CashAllowed(false);
+     setError("داواکاری هەڵوەشێندرایەوە؛ هیچ فرۆشتنێک تۆمار نەکرا.");
+   }catch{setError("هەڵوەشاندنەوە پشتڕاست نەکراوە؛ هەمان داواکاری دووبارە بپشکنە.");}
+   finally{setBusy(false);}
+ };
  const submitCheckout=async(e:React.FormEvent)=>{
-   e.preventDefault();if(!available||busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length))return;
+   e.preventDefault();if(!available||busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length)||(v41Tender&&pending&&!v41CashAllowed))return;
    let request: PilotPending;
    try {
      if(pending)request=pending;
@@ -207,8 +249,18 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          </tr>)}</tbody>
        </table>
        <strong style={{display:"block",margin:"10px 0"}}>کۆی نموونەیی: {money(total)}</strong>
+       {v41Tender&&!pending&&<button type="button"
+         disabled={busy||!available||!v37ShiftOpen||!cart.length}
+         onClick={()=>void prepareV41Draft()} style={{margin:"8px 0",fontWeight:800}}>
+         ئامادەکردنی پلانی نەختینە + بانک (بەبێ فرۆشتن)
+       </button>}
+       {v41Tender&&pending&&<LocalV41TenderDraft key={pending.request_id} token={token}
+         requestId={pending.request_id} total={pending.expected_total_minor}
+         onCashCheckoutAllowed={setV41CashAllowed}/>}
+       {v41Tender&&pending&&<button type="button" disabled={busy}
+         onClick={()=>void cancelV41Draft()}>هەڵوەشاندنەوەی پلانی چاوەڕوان</button>}
        <form onSubmit={submitCheckout}>
-         <button type="submit" disabled={busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length)} style={{fontWeight:850}}>
+         <button type="submit" disabled={busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length)||(v41Tender&&!!pending&&!v41CashAllowed)} style={{fontWeight:850}}>
            {pending?"دووبارە ناردنی هەمان داواکاری":"تاقیکردنەوەی فرۆشتنی Atomic"}
          </button>
        </form>
