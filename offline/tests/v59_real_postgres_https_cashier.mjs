@@ -124,6 +124,14 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     assert.equal(role.username,"zhirox_v60_api_ci");
     for(const name of ["rolsuper","rolcreaterole","rolcreatedb","rolbypassrls"])
       assert.equal(role[name],false,"API may not have "+name);
+    if(process.env.ZHIROX_V62_CI_INTENT_SHIFT_GUARD==="true"){
+      const result=await runtimePool.query(
+        "SELECT has_table_privilege(current_user,'zhirox_local.checkout_intents_v31','INSERT') AS intent_insert, has_table_privilege(current_user,'zhirox_local.checkout_intents_v31','UPDATE') AS intent_update, has_table_privilege(current_user,'zhirox_local.cash_shifts_v37','INSERT') AS shift_insert, has_table_privilege(current_user,'zhirox_local.cash_shifts_v37','UPDATE') AS shift_update, has_function_privilege(current_user,'zhirox_local.checkout_packs_scale_v26(uuid,uuid,uuid,jsonb,bigint)','EXECUTE') AS direct_checkout"
+      );
+      for(const [key,value] of Object.entries(result.rows[0])){
+        assert.equal(value,false,"V62 caller must not have "+key);
+      }
+    }
     // A compromised cashier API account must not own the schema or mutate
     // it structurally, even though existing SECURITY INVOKER routines still
     // need scoped table-level DML; production hardening requires another gate.
@@ -261,7 +269,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     {shift_id:shiftB,counted_minor:aWins?500:3000},tokenB)).status,200);
   assert.equal((await get("/api/local/v37/shift",tokenA)).data.shift,null);
   assert.equal((await get("/api/local/v37/shift",tokenB)).data.shift,null);
-  console.log((process.env.ZHIROX_V61_CI_CASH_EXECUTOR==="true"?"V61 NOLOGIN cash executor + ":v60?"V60 restricted API role + ":"V59 ")+"PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
+  console.log((process.env.ZHIROX_V62_CI_INTENT_SHIFT_GUARD==="true"?"V62 guarded intents/shifts + ":process.env.ZHIROX_V61_CI_CASH_EXECUTOR==="true"?"V61 NOLOGIN cash executor + ":v60?"V60 restricted API role + ":"V59 ")+"PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
  }finally{
   if(server)await new Promise(resolve=>server.close(resolve));
   if(v60)await runtimePool.end();
