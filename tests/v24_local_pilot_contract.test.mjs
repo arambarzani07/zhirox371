@@ -15,7 +15,7 @@ const server=read("offline/local-pos-api-v3.mjs");
 test("Pilot cannot be enabled in production build or externally accessed by Vite",()=>{
  assert.match(client,/import\.meta\.env\.DEV&&import\.meta\.env\.VITE_ENABLE_LOCAL_PILOT==="true"/);
  assert.match(config,/pilot\?'127\.0\.0\.1':'0\.0\.0\.0'/);
- assert.match(config,/target:'http:\/\/127\.0\.0\.1:3307'/);
+ assert.match(config,/target:localCashier\?'http:\/\/127\.0\.0\.1:3308':'http:\/\/127\.0\.0\.1:3307'/);
  assert.match(config,/\.\.\.\(pilot\?\{proxy/);
  assert.match(cashier,/\{pilotEnabled && <LocalPostgresPilotV24/);
  assert.match(home,/MODULE_SPECS/);
