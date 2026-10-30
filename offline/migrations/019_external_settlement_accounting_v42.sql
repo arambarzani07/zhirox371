@@ -142,14 +142,14 @@ BEGIN
   USING ERRCODE='P4205'; END IF;
  RETURN NEW;
 END $v42$;
-DROP TRIGGER IF EXISTS v42_block_mixed_full_cash_refund
+DROP TRIGGER IF EXISTS v00_v42_block_mixed_full_cash_refund
  ON zhirox_local.cash_refunds_v39;
-CREATE TRIGGER v42_block_mixed_full_cash_refund BEFORE INSERT
+CREATE TRIGGER v00_v42_block_mixed_full_cash_refund BEFORE INSERT
  ON zhirox_local.cash_refunds_v39 FOR EACH ROW
  EXECUTE FUNCTION zhirox_local.block_mixed_cash_refund_v42();
-DROP TRIGGER IF EXISTS v42_block_mixed_partial_cash_refund
+DROP TRIGGER IF EXISTS v00_v42_block_mixed_partial_cash_refund
  ON zhirox_local.partial_cash_refunds_v40;
-CREATE TRIGGER v42_block_mixed_partial_cash_refund BEFORE INSERT
+CREATE TRIGGER v00_v42_block_mixed_partial_cash_refund BEFORE INSERT
  ON zhirox_local.partial_cash_refunds_v40 FOR EACH ROW
  EXECUTE FUNCTION zhirox_local.block_mixed_cash_refund_v42();
 
