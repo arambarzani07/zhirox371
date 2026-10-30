@@ -13,7 +13,7 @@ export default defineConfig(({mode})=>{
       port:3000,
       strictPort:true,
       ...(pilot?{proxy:{'/api/local':{
-        target:'http://127.0.0.1:3306',
+        target:'http://127.0.0.1:3307',
         changeOrigin:false,
         secure:false
       }}}:{})
