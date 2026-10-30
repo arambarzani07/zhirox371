@@ -342,6 +342,100 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   assert.equal(print.data.hardware_printed,false);
   assert.equal((await get("/api/local/v35/print-jobs?job_id="+printId,loserToken)).status,404);
 
+  if(v65){
+    labReport.checks.push("independent cashier sessions + final last-stock transaction");
+    // Simulate a cashier service process restart without touching PostgreSQL.
+    // This is NOT a mains power cut, physical LAN outage or Windows OS reboot.
+    await new Promise(resolve=>server.close(resolve));
+    localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
+    gateway=createV33LanHandler({
+      pool:runtimePool,secret:sessionSecret,peers:new Set(["127.0.0.1"]),
+      localHandler,limiter:createV33ClientLimiter({limit:150}),v64Protected:true
+    });
+    server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},gateway);
+    await new Promise((resolve,reject)=>{
+      server.once("error",reject);
+      server.listen(0,"127.0.0.1",()=>{server.off("error",reject);resolve();});
+    });
+    port=server.address().port;
+    const afterRestart=await get("/api/local/v34/receipt?sale_id="+saleId,winnerToken);
+    assert.equal(afterRestart.status,200,"receipt must survive HTTPS service restart");
+    assert.equal(afterRestart.data.receipt.total_minor,"2500");
+    assert.equal((await post("/api/local/v31/commit",{request_id:winnerRequest},winnerToken)).data.receipt.replayed,true);
+    labReport.checks.push("HTTPS gateway restart with same local PostgreSQL: receipt + idempotent sale survive");
+
+    // Simulate scanner key strokes, including scanners with Enter or CRLF.
+    const scans=[waterUnit+"\r",waterCarton+"\n",scaleTag+"\r\n"];
+    const decoded=scans.map(x=>x.replace(/[\r\n]+$/g,""));
+    assert.deepEqual(decoded,[waterUnit,waterCarton,scaleTag]);
+    for(const code of decoded){
+      const found=await get("/api/local/v26/scan?code="+code,winnerToken);
+      assert.equal(found.status,200,"authentic V26 scan must resolve "+code);
+    }
+    assert.equal((await get("/api/local/v26/scan?code=2700001004805",winnerToken)).status,400,
+      "corrupted physical scale label must be rejected");
+    labReport.checks.push("simulated HID keyboard CR/LF input, actual HTTPS barcode scan, invalid EAN rejection");
+
+    // Live registered mixed unit+carton+weight transaction. Exactly 11,780 IQD.
+    const basket=[
+      {barcode:decoded[0],qty:2},{barcode:decoded[1],qty:1},
+      {barcode:decoded[2],qty:1}
+    ];
+    const prepared=await post("/api/local/v31/prepare",
+      {request_id:mixedRequest,lines:basket,expected_total_minor:11780},winnerToken);
+    assert.equal(prepared.status,200);
+    const mixed=await post("/api/local/v31/commit",{request_id:mixedRequest},winnerToken);
+    assert.equal(mixed.status,200);
+    assert.equal(mixed.data.receipt.total_minor,"11780");
+    const mixedSaleId=mixed.data.receipt.sale_id;
+    const repeat=await post("/api/local/v31/commit",{request_id:mixedRequest},winnerToken);
+    assert.equal(repeat.data.receipt.replayed,true);
+    assert.equal(repeat.data.receipt.sale_id,mixedSaleId);
+    const mixedDetail=await get("/api/local/v34/receipt?sale_id="+mixedSaleId,winnerToken);
+    assert.equal(mixedDetail.status,200);
+    assert.equal(mixedDetail.data.receipt.lines.length,3);
+    assert.equal(mixedDetail.data.receipt.lines.reduce((n,l)=>n+BigInt(l.line_total_minor),0n),11780n);
+    const queue58=await post("/api/local/v35/print-jobs",
+      {sale_id:mixedSaleId,job_id:mixedPrint,width_mm:58},winnerToken);
+    assert.equal(queue58.status,202);
+    assert.equal(queue58.data.hardware_printed,false);
+    assert.equal((await post("/api/local/v35/print-jobs",
+      {sale_id:mixedSaleId,job_id:mixedPrint,width_mm:58},winnerToken)).data.job.job_id,mixedPrint);
+    const counts=(await pool.query(
+     "SELECT (SELECT count(*)::integer FROM zhirox_local.sales WHERE store_id=$1) AS sales, (SELECT count(*)::integer FROM zhirox_local.receipt_snapshots_v34 WHERE store_id=$1) AS receipts, (SELECT count(*)::integer FROM zhirox_local.event_outbox WHERE store_id=$1 AND delivered_at IS NULL) AS pending, (SELECT count(*)::integer FROM zhirox_local.print_requests_v35 WHERE store_id=$1) AS print_jobs, (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=$1 AND id=$2) AS water_remaining, (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=$1 AND id=$3) AS tomato_grams",
+     [store,water,tomatoes])).rows[0];
+    assert.equal(counts.sales,2);
+    assert.equal(counts.receipts,2);
+    assert.equal(counts.pending,2,"WAN is not available to the cashier app; cloud outbox remains pending");
+    assert.equal(counts.print_jobs,2);
+    assert.equal(counts.water_remaining,"16");
+    assert.equal(counts.tomato_grams,"1520");
+    labReport.checks.push("actual transactional mix 2 units + 1 carton + 0.480kg tomato, total 11,780 IQD");
+    labReport.checks.push("two durable pending outbox events, two immutable receipts, no duplicate prints");
+
+    const evidence=resolve(process.env.ZHIROX_V65_EVIDENCE_DIR||"market-lab-evidence");
+    await mkdir(evidence,{recursive:true});
+    const shot80=validateV54Job({...detail.data.receipt,
+      store_name_snapshot:detail.data.receipt.store_name_snapshot,
+      sale_id:saleId,job_id:printId,width_mm:80});
+    const shot58=validateV54Job({...mixedDetail.data.receipt,
+      store_name_snapshot:mixedDetail.data.receipt.store_name_snapshot,
+      sale_id:mixedSaleId,job_id:mixedPrint,width_mm:58});
+    assert.equal(shot80.total_iqd,"2500");
+    assert.equal(shot58.total_iqd,"11780");
+    await writeFile(join(evidence,"receipt-80mm.html"),renderReceiptV34(detail.data.receipt,80),"utf8");
+    await writeFile(join(evidence,"receipt-58mm.html"),renderReceiptV34(mixedDetail.data.receipt,58),"utf8");
+    await writeFile(join(evidence,"scanner-simulated.txt"),
+      scans.map((s,i)=>String(i+1)+" | "+JSON.stringify(s)+" | "+decoded[i]).join("\n")+"\n","utf8");
+    labReport.final_state={...counts,sale_1_iqd:"2500",sale_2_iqd:"11780",
+      stock_units_after_mix:counts.water_remaining,
+      tomato_grams_after_mix:counts.tomato_grams};
+    labReport.thermal={widths_mm:[80,58],
+      physical_printer_connected:false,printer_queue_hardware_printed:false,
+      receipt_80:shot80,receipt_58:shot58};
+    await writeFile(join(evidence,"lab-report.json"),JSON.stringify(labReport,null,2),"utf8");
+  }
+
   const final=await pool.query(
    "SELECT (SELECT count(*)::integer FROM zhirox_local.sales WHERE store_id=$1) AS sales, (SELECT count(*)::integer FROM zhirox_local.event_outbox WHERE store_id=$1 AND delivered_at IS NULL) AS pending, (SELECT count(*)::integer FROM zhirox_local.receipt_snapshots_v34 WHERE store_id=$1) AS receipts, (SELECT count(*)::integer FROM zhirox_local.print_requests_v35 WHERE store_id=$1) AS print_jobs, (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=$1 AND id=$2) AS remaining",
    [store,item]);
@@ -351,9 +445,9 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   assert.equal(final.rows[0].print_jobs,1);
   assert.equal(final.rows[0].remaining,"0");
   assert.equal((await post("/api/local/v37/shift/close",
-    {shift_id:shiftA,counted_minor:aWins?3500:1000},tokenA)).status,200);
+    {shift_id:shiftA,counted_minor:aWins?(v65?15280:3500):1000},tokenA)).status,200);
   assert.equal((await post("/api/local/v37/shift/close",
-    {shift_id:shiftB,counted_minor:aWins?500:3000},tokenB)).status,200);
+    {shift_id:shiftB,counted_minor:aWins?500:(v65?14780:3000)},tokenB)).status,200);
   assert.equal((await get("/api/local/v37/shift",tokenA)).data.shift,null);
   assert.equal((await get("/api/local/v37/shift",tokenB)).data.shift,null);
   if(proofA){
@@ -382,7 +476,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   if(process.env.ZHIROX_V64_CI_AUTH_GATE==="true"){
     // After 3 earlier login calls, only 5 more are allowed within the minute.
     // An unknown username cannot consume CPU beyond the per-peer ceiling.
-    for(let i=0;i<5;i++){
+    for(let i=0;i<(v65?8:5);i++){
      const bad=await post("/api/local/v3/login",
       {store_id:store,username:"v59-cashier-a",password:"v64-invalid-credentials"});
      assert.equal(bad.status,401);
