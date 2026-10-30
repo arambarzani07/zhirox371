@@ -148,3 +148,7 @@ jobs:
             exit 1
           fi
           psql -v ON_ERROR_STOP=1 -f offline/tests/016_v39_refund_race_verify.sql
+      - name: V40 cumulative partial cash returns and safe rounding
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/017_partial_cash_refunds_v40.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/017_partial_cash_refunds_v40.sql
