@@ -132,7 +132,9 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
       "TRUNCATE zhirox_local.sales",
       "DELETE FROM zhirox_local.sales",
       "ALTER TABLE zhirox_local.products ADD COLUMN v60_unapproved int",
-      "UPDATE zhirox_local.receipt_snapshots_v34 SET total_minor=1"
+      "UPDATE zhirox_local.receipt_snapshots_v34 SET total_minor=1",
+      "UPDATE zhirox_local.print_requests_v35 SET state='printed'",
+      "DELETE FROM zhirox_local.inventory_reservation_items_v43"
     ]){
       await assert.rejects(
         runtimePool.query(query),
