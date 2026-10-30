@@ -28,6 +28,10 @@ export const LocalV44ManagerReview:React.FC<{store:string}>=({store})=>{
  const [password,setPassword]=useState("");
  const [managerToken,setManagerToken]=useState("");
  const [cases,setCases]=useState<Exception[]>([]);
+ const v45=import.meta.env.PROD&&import.meta.env.VITE_V45_FINANCIAL_AUDIT==="true";
+ const [audit,setAudit]=useState<Array<{check_code:string;case_count:string|number;
+  proposed_external_minor:string|number;severity:string}>>([]);
+ const [auditError,setAuditError]=useState("");
  const [selected,setSelected]=useState("");
  const [category,setCategory]=useState<string>("investigating");
  const [note,setNote]=useState("");
@@ -63,6 +67,34 @@ export const LocalV44ManagerReview:React.FC<{store:string}>=({store})=>{
    setMessage("تەنها پشکنینی مێژوو؛ هیچ بڕێکی بانکی لێرە پەسەند ناکرێت.");
   }catch{setCases([]);setMessage("لیستی مامەڵەکان پشتڕاست نەکراوە؛ مامەڵەیەک بە پارەدراو مەزانە.");}
   finally{setBusy(false);}
+ };
+ const loadAudit=async()=>{
+  if(busy||!managerToken||!v45)return;
+  setBusy(true);setAudit([]);setAuditError("");
+  try{
+   const r=await fetch("/api/local/v45/financial-integrity",{
+    cache:"no-store",credentials:"omit",redirect:"error",
+    headers:{Authorization:"Bearer "+managerToken}});
+   if(!r.ok)throw Error("audit_unavailable");
+   const data=await r.json();
+   if(data.ok!==true||!Array.isArray(data.checks)||data.checks.length!==7||
+     data.read_only!==true||data.provider_payment_verified!==false||
+     data.official_mixed_tender_enabled!==false||
+     data.proposed_amounts_are_not_bank_balances!==true)
+    throw Error("audit_unverified");
+   setAudit(data.checks);
+   setAuditError("ئەم بڕانە تەنها پلانی پارەدانن؛ بەڵگەی وەرگرتنی پارەی ڕاستەقینە نین.");
+  }catch{setAudit([]);setAuditError("پشکنینی دارایی پشتڕاست نەکرا؛ بە داتای کۆن بڕیار مەدە.");}
+  finally{setBusy(false);}
+ };
+ const auditLabels:Record<string,string>={
+  evidence_pending_sale:"بەڵگەی داتابەیس بەبێ فرۆشتنی تەواو",
+  evidence_cancelled_intent:"بەڵگە لەگەڵ مامەڵەی هەڵوەشاوە",
+  expired_held_stock:"حجزی بەسەرچووی کۆگا",
+  missing_reservation:"بانکی چاوەڕوان بەبێ حجز",
+  sale_without_evidence:"فرۆشتن بەبێ بەڵگەی داتابەیس",
+  sale_without_consumed_hold:"فرۆشتن بەبێ بەکارهێنانی حجز",
+  sale_amount_mismatch:"ناهاوتایی بڕی فرۆشتن و پارەدان"
  };
  const save=async()=>{
   if(busy||!managerToken||!selected||note.trim()!==note||
@@ -100,9 +132,24 @@ export const LocalV44ManagerReview:React.FC<{store:string}>=({store})=>{
    onClick={()=>void login()}>چوونەژوورەوەی بەڕێوەبەر</button>
  </div>:<div>
   <button type="button" disabled={busy} onClick={()=>void load()}>نوێکردنەوەی لیستی مامەڵە</button>
+  {v45&&<button type="button" disabled={busy} onClick={()=>void loadAudit()}>
+   پشکنینی یەکگرتوویی دارایی V45
+  </button>}
   <button type="button" disabled={busy} onClick={()=>{
    setManagerToken("");setCases([]);setSelected("");setNote("");setFrozen(false);
+   setAudit([]);setAuditError("");
   }}>دەرچوونی بەڕێوەبەر</button>
+  {v45&&<section aria-label="پشکنینی دارایی V45" dir="rtl" style={{marginTop:8}}>
+   {audit.length>0&&<table style={{width:"100%",borderCollapse:"collapse"}}>
+    <thead><tr><th>جۆری ناڕێکی</th><th>ژمارە</th><th>کۆی پلانی بانکی IQD</th><th>گرنگی</th></tr></thead>
+    <tbody>{audit.map(x=><tr key={x.check_code}>
+     <td>{auditLabels[x.check_code]||x.check_code}</td>
+     <td>{number(x.case_count)}</td>
+     <td>{number(x.proposed_external_minor)}</td><td>{x.severity}</td>
+    </tr>)}</tbody>
+   </table>}
+   {auditError&&<div role="status">{auditError}</div>}
+  </section>}
   <div style={{overflowX:"auto"}}>
    <table style={{width:"100%",marginTop:8,borderCollapse:"collapse"}}>
     <thead><tr><th>داواکاری</th><th>دۆخ</th><th>بانک</th><th>نەختینە</th><th>تێبینی</th></tr></thead>
