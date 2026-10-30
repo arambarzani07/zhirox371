@@ -65,8 +65,8 @@ BEGIN
    THEN RAISE EXCEPTION 'checkout UUID reused with changed actor or quote'
      USING ERRCODE='23505'; END IF;
  ELSE
-   IF EXISTS(SELECT 1 FROM zhirox_local.checkout_intents_v31
-      WHERE store_id=p_store AND cashier_id=p_cashier AND state='prepared')
+   IF EXISTS(SELECT 1 FROM zhirox_local.checkout_intents_v31 c
+      WHERE c.store_id=p_store AND c.cashier_id=p_cashier AND c.state='prepared')
    THEN RAISE EXCEPTION 'unfinished checkout requires recovery'
      USING ERRCODE='P3102'; END IF;
    INSERT INTO zhirox_local.checkout_intents_v31
