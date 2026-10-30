@@ -90,7 +90,8 @@ BEGIN
  PERFORM * FROM zhirox_local.plan_tender_v41(s,c1,r3,250,1000,'card');
  PERFORM * FROM zhirox_local.hold_checkout_reservation_v43(s,c1,r3);
  UPDATE zhirox_local.inventory_reservation_sessions_v43
-  SET expires_at=clock_timestamp()-interval '1 second'
+  SET created_at=clock_timestamp()-interval '16 minutes',
+      expires_at=clock_timestamp()-interval '1 second'
  WHERE store_id=s AND request_id=r3;
  denied:=false;
  BEGIN PERFORM * FROM zhirox_local.commit_checkout_v31(s,c1,r3);
