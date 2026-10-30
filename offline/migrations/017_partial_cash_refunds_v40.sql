@@ -95,7 +95,7 @@ $v40$;
 -- refund_now=floor(original_total*(prior_qty+new_qty)/original_qty)-prior_refunded_IQD.
 CREATE OR REPLACE FUNCTION zhirox_local.guard_partial_refund_v40()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v40$
-DECLARE q record; l record; previous_qty numeric;previous_money numeric;
+DECLARE q record; line_data record; previous_qty numeric;previous_money numeric;
  v_cumulative numeric; v_delta numeric;v_available bigint;
 BEGIN
  IF TG_OP<>'INSERT' THEN
@@ -119,20 +119,20 @@ BEGIN
  IF EXISTS(SELECT 1 FROM zhirox_local.cash_refunds_v39 r WHERE
    r.store_id=NEW.store_id AND r.sale_id=NEW.sale_id AND r.line_no=NEW.line_no)
  THEN RAISE EXCEPTION 'line already fully refunded' USING ERRCODE='P4002'; END IF;
- SELECT l.product_id,l.quantity_base_units,l.line_total_minor INTO l
- FROM zhirox_local.sale_lines l WHERE l.store_id=NEW.store_id
- AND l.sale_id=NEW.sale_id AND l.line_no=NEW.line_no;
- IF NOT FOUND OR l.quantity_base_units<=0 OR l.line_total_minor<0
-  OR NEW.product_id<>l.product_id
+ SELECT sline_data.product_id,sline_data.quantity_base_units,sline_data.line_total_minor INTO line_data
+ FROM zhirox_local.sale_lines sl WHERE sl.store_id=NEW.store_id
+ AND sl.sale_id=NEW.sale_id AND sl.line_no=NEW.line_no;
+ IF NOT FOUND OR line_data.quantity_base_units<=0 OR line_data.line_total_minor<0
+  OR NEW.product_id<>line_data.product_id
  THEN RAISE EXCEPTION 'original line absent' USING ERRCODE='P4002'; END IF;
  SELECT COALESCE(SUM(r.quantity_base_units),0),
    COALESCE(SUM(r.refund_minor),0) INTO previous_qty,previous_money
  FROM zhirox_local.partial_cash_refunds_v40 r
  WHERE r.store_id=NEW.store_id AND r.sale_id=NEW.sale_id AND r.line_no=NEW.line_no;
- IF NEW.quantity_base_units>l.quantity_base_units-previous_qty THEN
+ IF NEW.quantity_base_units>line_data.quantity_base_units-previous_qty THEN
   RAISE EXCEPTION 'refund quantity exceeds original sale line' USING ERRCODE='P4002'; END IF;
- v_cumulative:=floor(l.line_total_minor::numeric
-   *(previous_qty+NEW.quantity_base_units)/l.quantity_base_units);
+ v_cumulative:=floor(line_data.line_total_minor::numeric
+   *(previous_qty+NEW.quantity_base_units)/line_data.quantity_base_units);
  v_delta:=v_cumulative-previous_money;
  IF v_delta<0 OR v_delta>9999999999999 OR NEW.refund_minor<>v_delta THEN
   RAISE EXCEPTION 'server calculated refund mismatch' USING ERRCODE='P4003'; END IF;
