@@ -1,0 +1,72 @@
+name: V48 portable Windows offline TEST bundle (NO-GO)
+on:
+  pull_request:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows-offline-trial-v48.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows-offline-trial-v48.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bundle-offline-test:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build source-isolated trial (never official release)
+        shell: pwsh
+        run: |
+          npm install --no-package-lock
+          if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
+          $env:VITE_V36_ISOLATED_LAN_PILOT = 'true'
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'V36 lab build failed' }
+          node scripts/package-lan-pilot-v36.mjs dist
+          if ($LASTEXITCODE -ne 0) { throw 'V36 checksum manifest refused this build' }
+          node --test scripts/release-readiness-v46.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'V46 test failed' }
+          Remove-Item Env:\VITE_V36_ISOLATED_LAN_PILOT -ErrorAction SilentlyContinue
+      - name: Prepare self-contained app runtime and Windows lab bundle
+        shell: pwsh
+        run: |
+          npm install --omit=dev --no-save --no-package-lock --ignore-scripts pg@8.16.3
+          if ($LASTEXITCODE -ne 0) { throw 'runtime dependency install failed' }
+          $root = Join-Path $pwd 'ZHIROX371-Windows-OFFLINE-TRIAL'
+          New-Item -ItemType Directory -Path $root | Out-Null
+          Copy-Item (Get-Command node).Source (Join-Path $root 'node.exe')
+          Copy-Item dist (Join-Path $root 'dist') -Recurse
+          Copy-Item offline (Join-Path $root 'offline') -Recurse
+          Copy-Item node_modules (Join-Path $root 'node_modules') -Recurse
+          Copy-Item package.json (Join-Path $root 'package.json')
+          New-Item -ItemType Directory -Path (Join-Path $root 'windows') | Out-Null
+          Copy-Item windows/Start-ZHIROX-Trial.ps1 (Join-Path $root 'windows/Start-ZHIROX-Trial.ps1')
+          Copy-Item windows/README-OFFLINE-TRIAL.txt (Join-Path $root 'README-OFFLINE-TRIAL.txt')
+          New-Item -ItemType Directory -Path (Join-Path $root 'docs') | Out-Null
+          Copy-Item docs/V36_PREINSTALLATION_SOFTWARE.md (Join-Path $root 'docs/V36_PREINSTALLATION_SOFTWARE.md')
+          Copy-Item docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md (Join-Path $root 'docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md')
+          $forbidden = Get-ChildItem -Path $root -File -Recurse |
+            Where-Object { $_.Name -match '^(?:\.env|.*\.(?:pem|p12|pfx|key))$' }
+          if ($forbidden) { throw 'Unexpected secret-like files in artifact' }
+          if (-not (Test-Path (Join-Path $root 'dist/pilot-manifest-v36.json'))) { throw 'Missing manifest' }
+          if (-not (Test-Path (Join-Path $root 'node_modules/pg/package.json'))) { throw 'Missing local PostgreSQL driver' }
+          Compress-Archive -Path $root -DestinationPath 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -CompressionLevel Optimal
+          Get-FileHash 'ZHIROX371-Windows-OFFLINE-TRIAL.zip' -Algorithm SHA256 |
+            Select-Object -ExpandProperty Hash | Out-File 'ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt' -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZHIROX371-Windows-OFFLINE-TRIAL
+          path: |
+            ZHIROX371-Windows-OFFLINE-TRIAL.zip
+            ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt
+          if-no-files-found: error
+          retention-days: 14
