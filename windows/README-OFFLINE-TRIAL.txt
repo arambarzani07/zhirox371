@@ -30,3 +30,14 @@ OFFLINE means that after the local DB, trust, dependencies and app are provision
 this isolated trial does not require WAN. It does NOT mean the current ZIP is
 an officially certified working POS.
 See docs/V36_PREINSTALLATION_SOFTWARE.md and docs/V46_OFFLINE_CASH_ONLY_GO_LIVE_ACCEPTANCE.md.
+
+
+V49: Automatic Offline-to-Online LAB Sync (optional, NOT FOR REAL DATA)
+- Only the new V49 test EXE includes windows\Start-ZHIROX-AutoSync-TRIAL.ps1.
+- Runs a separate process. Checkout does not depend on the receiver.
+- Requires manually provisioned disposable PostgreSQL and loopback-only receiver.
+- Use only local TEST credentials. No internet/public receiver allowed in V49.
+- Set ZHIROX_V49_LAB_AUTOSYNC_ENABLED=true and ZHIROX_V27_TEST_MODE=true
+  with V27 test store UUID, secret, receiver URL and local DB URL.
+- All configuration must remain private and never be committed or pasted.
+- See docs/V49_OFFLINE_ONLINE_AUTOSYNC_LAB.md.
