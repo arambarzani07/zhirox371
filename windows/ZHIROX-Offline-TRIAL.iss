@@ -26,6 +26,7 @@ Source: "..\ZHIROX371-Windows-OFFLINE-TRIAL\*"; DestDir: "{app}"; Flags: ignorev
 [Icons]
 Name: "{autoprograms}\ZHIROX371 Trial - Read Instructions"; Filename: "{app}\README-OFFLINE-TRIAL.txt"
 Name: "{autoprograms}\ZHIROX371 Trial - Start Test Service"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -File ""{app}\windows\Start-ZHIROX-Trial.ps1"""; WorkingDir: "{app}"
+Name: "{autoprograms}\ZHIROX371 Trial - Start V49 Sync Test"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -File ""{app}\windows\Start-ZHIROX-AutoSync-TRIAL.ps1"""; WorkingDir: "{app}"
 Name: "{autodesktop}\ZHIROX371 Trial Instructions"; Filename: "{app}\README-OFFLINE-TRIAL.txt"; Tasks: desktopicon
 [Tasks]
 Name: "desktopicon"; Description: "Create trial instructions shortcut"; GroupDescription: "Optional shortcuts:"
