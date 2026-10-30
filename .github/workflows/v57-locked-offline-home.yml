@@ -65,5 +65,13 @@ jobs:
           exit 1
       - name: Verify 12 Home cards, all 48 subcard routes and local cashier
         run: node tests/browser/v57_offline_home_shell.mjs
+      - name: Upload actual Chromium PC screenshots for owner visual sign-off
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZHIROX371-V57-LOCKED-HOME-CHROMIUM-EVIDENCE
+          path: artifacts/v57/*.png
+          if-no-files-found: warn
+          retention-days: 14
       - name: Release classification
         run: echo "V57 is isolated desktop UI acceptance only. No official offline Windows deployment or cloud connectivity. NO_GO."
