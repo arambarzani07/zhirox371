@@ -7,6 +7,9 @@ on:
       - 'tests/v23_preview_mode_guard.test.mjs'
       - 'tests/browser/v23_react_preview.mjs'
       - 'tests/browser/v24_react_local_pilot.mjs'
+      - 'tests/browser/v29_owner_mobile.mjs'
+      - 'offline/owner-v29*'
+      - 'offline/cloud-receiver-v29.mjs'
       - 'tests/v24_local_pilot_contract.test.mjs'
       - 'vite.config.ts'
       - 'docs/V24_LOCAL_POSTGRES_REACT_PILOT.md'
@@ -54,3 +57,5 @@ jobs:
         run: node tests/browser/v23_react_preview.mjs
       - name: Verify isolated V24 authenticated local checkout with same-request retry
         run: node tests/browser/v24_react_local_pilot.mjs
+      - name: Verify 390px Sorani RTL iPhone owner preview and bearer-only access
+        run: node tests/browser/v29_owner_mobile.mjs
