@@ -45,6 +45,9 @@ export function createLocalShiftHandlerV37({pool,secret,clock}){
   const match=/^Bearer (\S+)$/.exec(req.headers.authorization||"");
   const actor=match?await auth.authorize(match[1]).catch(()=>null):null;
   if(!actor)return send(res,401,{error:"invalid_session"});
+  const guarded=process.env.ZHIROX_V63_DB_ACTOR_PROOF==="true";
+  if(guarded&&!(typeof actor.db_proof==="string"&&/^[a-f0-9]{64}$/.test(actor.db_proof)))
+    return send(res,401,{error:"invalid_db_actor_proof"});
   if(status){
    try{
     const r=await pool.query(
@@ -62,13 +65,18 @@ export function createLocalShiftHandlerV37({pool,secret,clock}){
    return send(res,400,{error:"invalid_shift_request"});
   try{
    const r=opening?
-    await pool.query("SELECT * FROM zhirox_local.open_cash_shift_v37($1::uuid,$2::uuid,$3::uuid,$4::bigint)",
-     [actor.store_id,actor.user_id,v.shift_id,v.opening_minor]):
-    await pool.query("SELECT * FROM zhirox_local.close_cash_shift_v37($1::uuid,$2::uuid,$3::uuid,$4::bigint)",
-     [actor.store_id,actor.user_id,v.shift_id,v.counted_minor]);
+    await pool.query(guarded?
+      "SELECT * FROM zhirox_local.open_cash_shift_v63($1::text,$2::uuid,$3::uuid,$4::uuid,$5::bigint)":
+      "SELECT * FROM zhirox_local.open_cash_shift_v37($1::uuid,$2::uuid,$3::uuid,$4::bigint)",
+     [...(guarded?[actor.db_proof]:[]),actor.store_id,actor.user_id,v.shift_id,v.opening_minor]):
+    await pool.query(guarded?
+      "SELECT * FROM zhirox_local.close_cash_shift_v63($1::text,$2::uuid,$3::uuid,$4::uuid,$5::bigint)":
+      "SELECT * FROM zhirox_local.close_cash_shift_v37($1::uuid,$2::uuid,$3::uuid,$4::bigint)",
+     [...(guarded?[actor.db_proof]:[]),actor.store_id,actor.user_id,v.shift_id,v.counted_minor]);
    if(!r.rows?.length)return send(res,503,{error:"shift_not_confirmed"});
    return send(res,200,{ok:true,shift:r.rows[0]});
   }catch(e){
+   if(e?.code==="P6301")return send(res,401,{error:"invalid_db_actor_proof"});
    if(e?.code==="P3701")return send(res,404,{error:"shift_or_cashier_not_available"});
    if(e?.code==="P3702"||e?.code==="P3703"||e?.code==="P3704"||
       e?.code==="23505"||e?.code==="23514")
