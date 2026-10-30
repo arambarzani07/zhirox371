@@ -1,0 +1,59 @@
+name: V36 isolated LAN cashier preinstallation software
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'offline/lan-gateway-v33.mjs'
+      - 'offline/lan-pilot-static-v36.mjs'
+      - 'offline/tests/lan-pilot-v36.test.mjs'
+      - 'scripts/package-lan-pilot-v36.mjs'
+      - 'tests/browser/v36_isolated_lan_cashier.mjs'
+      - '.github/workflows/v36-preinstallation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'offline/lan-pilot-static-v36.mjs'
+      - 'scripts/package-lan-pilot-v36.mjs'
+      - '.github/workflows/v36-preinstallation.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-pilot-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Strict V36 static whitelist and test-only TLS checks
+        run: node --test offline/tests/lan-pilot-v36.test.mjs
+      - name: Install frontend packages
+        run: npm install --no-package-lock
+      - name: Build V36 test-only bundle without exposing DEMO financial state
+        run: |
+          VITE_V36_ISOLATED_LAN_PILOT=true npm run build
+          node scripts/package-lan-pilot-v36.mjs dist
+      - name: Verify official release is still refused
+        shell: bash
+        run: |
+          if VITE_ZHIROX_RELEASE_MODE=official npm run build; then
+            echo "::error::Unverified cashier build cannot be official"
+            exit 1
+          fi
+      - name: Install pinned headless Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Run production-mode isolated pilot preview on loopback
+        shell: bash
+        run: |
+          (npm run preview -- --host 127.0.0.1 --port 3040 > /tmp/zhirox-v36-preview.log 2>&1 &)
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3040/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/zhirox-v36-preview.log
+          exit 1
+      - name: Confirm local real-API UI does not mount DEMO checkout, and queue is not printed
+        run: node tests/browser/v36_isolated_lan_cashier.mjs
