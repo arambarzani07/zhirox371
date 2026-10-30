@@ -5,6 +5,7 @@ import {getLocalReceiptsV32,getLocalIntentStatusV32} from '../localCashierHistor
 import type {LocalReceiptV32} from '../localCashierHistoryV32';
 import {isolatedLanPilotV36} from '../localPilotV24';
 import {LocalV36ReceiptTools} from './LocalV36ReceiptTools';
+import {LocalV37ShiftControls} from "./LocalV37ShiftControls";
 
 type Line={item:LocalPilotItem;qty:number};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,6 +28,8 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
  const [error,setError]=useState("");
  const [busy,setBusy]=useState(false);
  const [expiresAt,setExpiresAt]=useState(0);
+ const v37Shifts=isolatedLanPilotV36&&import.meta.env.VITE_V37_LOCAL_SHIFTS==="true";
+ const [v37ShiftOpen,setV37ShiftOpen]=useState(false);
  // No access token or password is written to LocalStorage or SessionStorage.
  useEffect(()=>{if(!open)return;setError("");},[open]);
  const available=Boolean(token&&expiresAt>Date.now());
@@ -97,7 +100,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
  };
  const total=cart.reduce((sum,l)=>sum+l.qty*l.item.price_minor,0);
  const submitCheckout=async(e:React.FormEvent)=>{
-   e.preventDefault();if(!available||busy||(!pending&&!cart.length))return;
+   e.preventDefault();if(!available||busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length))return;
    let request: PilotPending;
    try {
      if(pending)request=pending;
@@ -182,6 +185,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        <button disabled={busy||!uuid.test(store)} type="submit">چوونەژوورەوەی تاقیکردنەوە</button>
      </form>:<>
        <div style={{marginTop:10}}>پەیوەندی ناوخۆیی چالاکە — تەنها هەمان PC</div>
+       {v37Shifts&&<LocalV37ShiftControls token={token} onShiftOpen={setV37ShiftOpen}/>}
        <form onSubmit={submitScan} style={{display:"flex",gap:8,marginTop:10}}>
          <input style={{...inputStyle,flex:1}} value={scan} onChange={e=>setScan(e.target.value)}
            aria-label="بارکۆدی دانە، کارتۆن یان تەرازوو" placeholder="بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە" disabled={busy||!!pending}/>
@@ -204,7 +208,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        </table>
        <strong style={{display:"block",margin:"10px 0"}}>کۆی نموونەیی: {money(total)}</strong>
        <form onSubmit={submitCheckout}>
-         <button type="submit" disabled={busy||(!pending&&!cart.length)} style={{fontWeight:850}}>
+         <button type="submit" disabled={busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length)} style={{fontWeight:850}}>
            {pending?"دووبارە ناردنی هەمان داواکاری":"تاقیکردنەوەی فرۆشتنی Atomic"}
          </button>
        </form>
@@ -236,7 +240,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          </table>
          {!history.length&&!historyError&&<div>هیچ پسووڵەیەکی PostgreSQL ـی تاقیکردنەوە نەدۆزرایەوە</div>}
        </section>}
-       <button type="button" style={{marginTop:10}} onClick={()=>{setToken("");setExpiresAt(0);setCart([]);setLast(null);setHistory([]);setHistoryError("");}}>
+       <button type="button" style={{marginTop:10}} onClick={()=>{setV37ShiftOpen(false);setToken("");setExpiresAt(0);setCart([]);setLast(null);setHistory([]);setHistoryError("");}}>
          دەرچوون لە تاقیکردنەوە
        </button>
      </>}
