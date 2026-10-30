@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'scripts/release-readiness-v35*'
+      - 'scripts/release-readiness-v46*'
       - 'vite.config.ts'
       - 'offline/local-print-queue-v35.mjs'
       - 'offline/migrations/012_print_queue_v35.sql'
@@ -11,6 +12,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/release-readiness-v35*'
+      - 'scripts/release-readiness-v46*'
       - 'vite.config.ts'
       - '.github/workflows/formal-release-gate-v35.yml'
 permissions:
@@ -27,6 +29,8 @@ jobs:
         run: |
           node --test scripts/release-readiness-v35.test.mjs
           node scripts/release-readiness-v35.mjs --json
+          node --test scripts/release-readiness-v46.test.mjs
+          node scripts/release-readiness-v46.mjs --json
       - name: Build preview only
         run: |
           npm install --no-package-lock
