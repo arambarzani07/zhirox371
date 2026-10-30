@@ -128,6 +128,12 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     // it structurally, even though existing SECURITY INVOKER routines still
     // need scoped table-level DML; production hardening requires another gate.
     for(const query of [
+      ...(process.env.ZHIROX_V61_CI_CASH_EXECUTOR==="true"?[
+        "INSERT INTO zhirox_local.sales(store_id,id,request_id,receipt_no,cashier_id,total_minor,request_payload) VALUES('10000000-0000-0000-0000-000000000059','90000000-0000-0000-0000-000000000059','91000000-0000-0000-0000-000000000059',999,'20000000-0000-0000-0000-000000000059',1,'[]'::jsonb)",
+        "INSERT INTO zhirox_local.stock_ledger(store_id,id,product_id,sale_id,delta_base_units) VALUES('10000000-0000-0000-0000-000000000059','90000000-0000-0000-0000-000000000060','30000000-0000-0000-0000-000000000059','90000000-0000-0000-0000-000000000059',-2)",
+        "UPDATE zhirox_local.products SET stock_base_units=999 WHERE store_id='10000000-0000-0000-0000-000000000059'",
+        "INSERT INTO zhirox_local.event_outbox(store_id,event_id,aggregate_id,event_type,payload) VALUES('10000000-0000-0000-0000-000000000059','90000000-0000-0000-0000-000000000061','90000000-0000-0000-0000-000000000059','sale.completed','{}'::jsonb)"
+      ]:[]),
       "CREATE TABLE zhirox_local.v60_forbidden_table(id int)",
       "TRUNCATE zhirox_local.sales",
       "DELETE FROM zhirox_local.sales",
@@ -255,7 +261,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     {shift_id:shiftB,counted_minor:aWins?500:3000},tokenB)).status,200);
   assert.equal((await get("/api/local/v37/shift",tokenA)).data.shift,null);
   assert.equal((await get("/api/local/v37/shift",tokenB)).data.shift,null);
-  console.log((v60?"V60 restricted API role + ":"V59 ")+"PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
+  console.log((process.env.ZHIROX_V61_CI_CASH_EXECUTOR==="true"?"V61 NOLOGIN cash executor + ":v60?"V60 restricted API role + ":"V59 ")+"PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
  }finally{
   if(server)await new Promise(resolve=>server.close(resolve));
   if(v60)await runtimePool.end();
