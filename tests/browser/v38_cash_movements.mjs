@@ -15,7 +15,7 @@ await page.route("**/api/local/**",async route=>{
  const ok=(status,obj)=>route.fulfill({status,contentType:"application/json",body:JSON.stringify(obj)});
  if(p==="/api/local/v3/login")return ok(200,{ok:true,token:"v38-ci-token",
   role:"cashier",expires_in_seconds:900});
- assert.equal(req.headers().authorization,"Bearer v37-ci-token");
+ assert.equal(req.headers().authorization,"Bearer v38-ci-token");
  if(p==="/api/local/v31/recover")return ok(200,{ok:true,intent:null});
  if(p==="/api/local/v32/receipts")return ok(200,{ok:true,receipts:[]});
  if(p==="/api/local/v37/shift"&&req.method()==="GET")
