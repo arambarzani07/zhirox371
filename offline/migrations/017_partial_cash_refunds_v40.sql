@@ -119,7 +119,7 @@ BEGIN
  IF EXISTS(SELECT 1 FROM zhirox_local.cash_refunds_v39 r WHERE
    r.store_id=NEW.store_id AND r.sale_id=NEW.sale_id AND r.line_no=NEW.line_no)
  THEN RAISE EXCEPTION 'line already fully refunded' USING ERRCODE='P4002'; END IF;
- SELECT sline_data.product_id,sline_data.quantity_base_units,sline_data.line_total_minor INTO line_data
+ SELECT sl.product_id,sl.quantity_base_units,sl.line_total_minor INTO line_data
  FROM zhirox_local.sale_lines sl WHERE sl.store_id=NEW.store_id
  AND sl.sale_id=NEW.sale_id AND sl.line_no=NEW.line_no;
  IF NOT FOUND OR line_data.quantity_base_units<=0 OR line_data.line_total_minor<0
