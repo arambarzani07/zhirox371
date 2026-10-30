@@ -105,7 +105,7 @@ jobs:
           source_state=$(psql -At -c "SELECT (SELECT count(*) FROM zhirox_local.sales WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT stock_base_units FROM zhirox_local.products WHERE store_id='10000000-0000-0000-0000-000000000033' AND id='20000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.event_outbox WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.checkout_intents_v31 WHERE store_id='10000000-0000-0000-0000-000000000033')")
           restored_state=$(PGDATABASE=zhirox_v33_restored_test psql -At -c "SELECT (SELECT count(*) FROM zhirox_local.sales WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT stock_base_units FROM zhirox_local.products WHERE store_id='10000000-0000-0000-0000-000000000033' AND id='20000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.event_outbox WHERE store_id='10000000-0000-0000-0000-000000000033'),(SELECT count(*) FROM zhirox_local.checkout_intents_v31 WHERE store_id='10000000-0000-0000-0000-000000000033')")
           test "$source_state" = "$restored_state"
-          test "$restored_state" = "(1,0,1,2)"
+          test "$restored_state" = "1|0|1|2"
           PGDATABASE=zhirox_v33_restored_test psql -v ON_ERROR_STOP=1 -f offline/tests/010_v33_concurrency_verify.sql
           echo "V33 PASS: full custom-format backup restored into isolated PostgreSQL with matching receipts, stock, events and pending intents"
 
