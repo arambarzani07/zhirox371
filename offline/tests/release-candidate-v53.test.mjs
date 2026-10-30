@@ -10,6 +10,8 @@ const hash=b=>createHash("sha256").update(b).digest("hex");
 const files=[
  "node.exe","offline/lan-gateway-v33.mjs","offline/autosync-v49.mjs",
  "windows/Start-ZHIROX-Trial.ps1","windows/Start-ZHIROX-AutoSync-TRIAL.ps1",
+ "offline/windows-print-dispatch-v54.mjs","windows/Start-ZHIROX-Print-V54.ps1",
+ "windows/Spool-ZHIROX-Receipt-V54.ps1",
  "node_modules/pg/package.json"
 ];
 async function setup(fn){
