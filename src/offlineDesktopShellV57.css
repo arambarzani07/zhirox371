@@ -1,0 +1,97 @@
+/* V57 isolated desktop shell: matches approved 3x4 Home / 4 subcard drawer.
+   Intentionally separate from byte-locked ui-global.css, ui-fixed-pc.css,
+   card-icons.css, original index.html and React HomeScreen source. */
+@media screen {
+ .v57-app {position:relative;width:100%;min-width:1020px;direction:rtl;color:#172b45;}
+ .v57-desktop {
+   display:flex;flex-direction:column;min-width:1020px;
+   height:calc(100dvh - var(--market-banner-height,70px));
+   max-height:calc(100dvh - var(--market-banner-height,70px));
+   overflow:hidden;
+ }
+ .v57-header {
+   height:75px;min-height:75px;flex:0 0 75px;
+   border-bottom:1px solid #e2e8ef;background:#fff;
+   display:flex;align-items:center;justify-content:space-between;
+   padding:0 25px;color:#172b45;
+ }
+ .v57-header strong {font-size:19px;font-weight:900;}
+ .v57-header button {
+   border:1px solid #d8e1ed;border-radius:9px;
+   background:#f1f5f9;color:#172b45;
+   padding:9px 18px;font-weight:900;
+ }
+ .v57-content {
+   flex:1 1 0%;min-height:0;overflow-y:auto;overflow-x:hidden;
+   scrollbar-gutter:stable;overscroll-behavior-y:contain;
+   width:100%;background:#f5f7fa;
+ }
+ .v57-home {max-width:1500px;margin:0 auto;padding:24px 20px 40px;}
+ .v57-home h1 {font-size:23px;font-weight:900;margin:0 0 25px;color:#172b45;}
+ .v57-module-rows {display:grid;gap:16px;}
+ .v57-row-block {position:relative;}
+ .v57-row {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;}
+ .v57-module {
+   min-height:153px;padding:19px;border-radius:16px;
+   border:1px solid #e2e8ef;background:#fff;
+   box-shadow:0 5px 17px rgba(27,56,80,.04);
+   display:flex;flex-direction:column;align-items:flex-start;
+   justify-content:space-between;text-align:right;color:#26374e;
+   transition: none !important;
+ }
+ .v57-module:hover,.v57-module[aria-expanded="true"]{
+   border:2px solid var(--color);
+   box-shadow:0 7px 19px rgba(32,65,91,.12);
+ }
+ .v57-icon {
+   width:49px;height:49px;border-radius:13px;
+   background:var(--light);color:var(--color);
+   display:grid;place-items:center;
+ }
+ .v57-module-foot {
+   width:100%;display:flex;align-items:center;
+   justify-content:space-between;gap:8px;
+ }
+ .v57-module-name {font-size:15px;font-weight:900;color:#172b45;}
+ .v57-chevron {color:#8798ad;font-size:18px;font-weight:900;}
+ .v57-drawer {
+   position:absolute;top:calc(100% + 4px);inset-inline:0;z-index:12;
+   padding:19px;background:white;border:1.5px solid #dce4ef;
+   border-radius:15px;box-shadow:0 12px 35px #20395430;
+   max-height:min(265px,52dvh);overflow:auto;
+   animation:none!important;transition:none!important;
+ }
+ .v57-drawer-head {
+   display:flex;align-items:center;justify-content:space-between;
+   margin-bottom:16px;
+ }
+ .v57-drawer-head strong {font-size:16px;font-weight:900;color:#172b45;}
+ .v57-close {
+   background:#f1f5f9;border:none;border-radius:8px;
+   width:32px;height:32px;color:#64748b;font-weight:900;
+ }
+ .v57-subgrid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+ .v57-sub {
+   min-height:112px;padding:14px;border:1.5px solid #e2e8f0;
+   border-radius:12px;background:#f8fafc;text-align:right;
+   display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;
+   box-shadow:0 1px 3px rgba(0,0,0,.03);
+   color:#172b45;opacity:1;
+ }
+ .v57-sub:disabled {cursor:not-allowed;background:#f8fafc;color:#5d7088;}
+ .v57-sub:not(:disabled):hover {border-color:#91a9cf;background:#eff5fc;}
+ .v57-subicon {
+   display:grid;place-items:center;width:39px;height:39px;border-radius:10px;
+ }
+ .v57-subfoot {
+   display:flex;justify-content:space-between;align-items:center;
+   gap:8px;width:100%;font-size:13.5px;font-weight:900;line-height:1.5;
+ }
+ .v57-app :is(button,a,input,select,textarea):focus-visible {
+   outline:3px solid #3769c8;outline-offset:2px;
+ }
+}
+@media print {
+ .v57-header,.v57-home,.v57-app>.market-banner{display:none!important;}
+ .v57-app,.v57-desktop,.v57-content{height:auto!important;max-height:none!important;overflow:visible!important;}
+}
