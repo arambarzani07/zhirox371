@@ -62,6 +62,23 @@ ALTER FUNCTION zhirox_local.checkout_packs_scale_v26(uuid,uuid,uuid,jsonb,bigint
 REVOKE CREATE ON SCHEMA zhirox_local
  FROM zhirox_v61_checkout_executor;
 
+-- Receipt archive is written by a trigger on the committed checkout intent.
+-- Trigger functions run as the API invoker by default, so explicitly move
+-- only the immutable receipt capture to a separate constrained NOLOGIN owner.
+CREATE ROLE zhirox_v61_receipt_executor NOLOGIN
+ NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
+GRANT USAGE,CREATE ON SCHEMA zhirox_local TO zhirox_v61_receipt_executor;
+GRANT SELECT ON
+ zhirox_local.sales,zhirox_local.sale_lines,zhirox_local.stores
+ TO zhirox_v61_receipt_executor;
+GRANT INSERT ON zhirox_local.receipt_snapshots_v34
+ TO zhirox_v61_receipt_executor;
+ALTER FUNCTION zhirox_local.capture_committed_receipt_v34()
+ OWNER TO zhirox_v61_receipt_executor;
+ALTER FUNCTION zhirox_local.capture_committed_receipt_v34()
+ SECURITY DEFINER;
+REVOKE CREATE ON SCHEMA zhirox_local FROM zhirox_v61_receipt_executor;
+
 -- IMPORTANT: Only the network-facing runtime loses these rights.
 -- The V61 NOLOGIN executor retains the exact necessary transactional writes.
 REVOKE INSERT ON
