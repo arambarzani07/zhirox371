@@ -15,7 +15,7 @@ const server=read("offline/local-pos-api-v3.mjs");
 test("Pilot cannot be enabled in production build or externally accessed by Vite",()=>{
  assert.match(client,/import\.meta\.env\.DEV&&import\.meta\.env\.VITE_ENABLE_LOCAL_PILOT==="true"/);
  assert.match(config,/pilot\?'127\.0\.0\.1':'0\.0\.0\.0'/);
- assert.match(config,/target:'http:\/\/127\.0\.0\.1:3306'/);
+ assert.match(config,/target:'http:\/\/127\.0\.0\.1:3307'/);
  assert.match(config,/\.\.\.\(pilot\?\{proxy/);
  assert.match(cashier,/\{pilotEnabled && <LocalPostgresPilotV24/);
  assert.match(home,/MODULE_SPECS/);
@@ -35,6 +35,8 @@ test("Local API authorizes the caller and checkout SQL is server scoped",()=>{
  assert.match(server,/caller_must_not_supply_identity/);
  assert.match(server,/\[principal\.store_id, principal\.user_id, input\.request_id, JSON\.stringify\(input\.lines\)\]/);
  assert.ok(client.includes('"/api/local/v26/checkout"'));
+ assert.ok(client.includes('"/api/local/v31/prepare"'));
+ assert.ok(client.includes('"/api/local/v31/commit"'));
  assert.ok(client.includes('"/api/local/v26/scan?code="'));
  assert.match(client,/Number\.isSafeInteger\(line\.qty\)/);
  assert.match(server,/checkout_packs_scale_v26/);
@@ -45,6 +47,9 @@ test("An ambiguous checkout freezes basket, preserves UUID and offers replay onl
  assert.match(ui,/pending\?"دووبارە ناردنی هەمان داواکاری"/);
  assert.match(ui,/setPending\(request\)/);
  assert.match(ui,/if\(pending\)request=pending/);
+ assert.match(ui,/recoverDurableLocal\(session\.token\)/);
+ assert.match(ui,/prepareDurableLocal\(token,request\)/);
+ assert.match(ui,/commitDurableLocal\(token,request\.request_id\)/);
  assert.match(ui,/x\.item\.sale_mode==="scale"/);
  assert.match(ui,/crypto\.randomUUID\(\),total\)/);
  assert.match(client,/expected_total_minor: number/);
