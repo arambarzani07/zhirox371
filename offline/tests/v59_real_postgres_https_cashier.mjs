@@ -76,6 +76,19 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   user:"localtest",password:process.env.PGPASSWORD,
   max:8,connectionTimeoutMillis:3000
  });
+ // In V60, local web service has a separate NON-owner, explicitly scoped login.
+ // The seeding/verifying pool stays administrative but is never passed to API.
+ const v60=process.env.ZHIROX_V60_CI_RESTRICTED_ROLE==="true";
+ if(v60&&(
+   process.env.ZHIROX_V60_CI_DB_USER!=="zhirox_v60_api_ci"||
+   process.env.ZHIROX_V60_CI_DB_PASSWORD!=="V60-SYNTHETIC-CI-ONLY-DO-NOT-REUSE"
+ ))throw Error("v60_refuses_unscoped_api_role");
+ const runtimePool=v60?new Pool({
+  host:"127.0.0.1",port:5432,database:"zhirox_v59_ci_test",
+  user:process.env.ZHIROX_V60_CI_DB_USER,
+  password:process.env.ZHIROX_V60_CI_DB_PASSWORD,
+  max:8,connectionTimeoutMillis:3000
+ }):pool;
  const dir=await mkdtemp(join(tmpdir(),"zhirox-v59-only-ci-"));
  let server=null;
  try{
@@ -104,9 +117,35 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
    "-keyout",keyPath,"-out",certPath
   ],{stdio:"ignore",timeout:15000});
   const [cert,key]=await Promise.all([readFile(certPath),readFile(keyPath)]);
-  const localHandler=createLocalShiftHandlerV37({pool,secret:sessionSecret});
+  if(v60){
+    const role=(await runtimePool.query(
+      "SELECT current_user AS username, rolsuper,rolcreaterole,rolcreatedb,rolbypassrls FROM pg_roles WHERE rolname=current_user"
+    )).rows[0];
+    assert.equal(role.username,"zhirox_v60_api_ci");
+    for(const name of ["rolsuper","rolcreaterole","rolcreatedb","rolbypassrls"])
+      assert.equal(role[name],false,"API may not have "+name);
+    // A compromised cashier API account must not own the schema or mutate
+    // it structurally, even though existing SECURITY INVOKER routines still
+    // need scoped table-level DML; production hardening requires another gate.
+    for(const query of [
+      "CREATE TABLE zhirox_local.v60_forbidden_table(id int)",
+      "TRUNCATE zhirox_local.sales",
+      "DELETE FROM zhirox_local.sales",
+      "ALTER TABLE zhirox_local.products ADD COLUMN v60_unapproved int",
+      "UPDATE zhirox_local.receipt_snapshots_v34 SET total_minor=1",
+      "UPDATE zhirox_local.print_requests_v35 SET state='printed'",
+      "DELETE FROM zhirox_local.inventory_reservation_items_v43"
+    ]){
+      await assert.rejects(
+        runtimePool.query(query),
+        e=>e?.code==="42501"||e?.code==="55000",
+        "V60 runtime SQL must reject "+query
+      );
+    }
+  }
+  const localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
   const gateway=createV33LanHandler({
-   pool,secret:sessionSecret,peers:new Set(["127.0.0.1"]),
+   pool:runtimePool,secret:sessionSecret,peers:new Set(["127.0.0.1"]),
    localHandler,limiter:createV33ClientLimiter({limit:150})
   });
   server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},gateway);
@@ -216,9 +255,10 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     {shift_id:shiftB,counted_minor:aWins?500:3000},tokenB)).status,200);
   assert.equal((await get("/api/local/v37/shift",tokenA)).data.shift,null);
   assert.equal((await get("/api/local/v37/shift",tokenB)).data.shift,null);
-  console.log("V59 PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
+  console.log((v60?"V60 restricted API role + ":"V59 ")+"PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
  }finally{
   if(server)await new Promise(resolve=>server.close(resolve));
+  if(v60)await runtimePool.end();
   await pool.end();
   await rm(dir,{recursive:true,force:true});
  }
