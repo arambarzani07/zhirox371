@@ -10,6 +10,7 @@ const noCache={"Cache-Control":"no-store, private","Referrer-Policy":"no-referre
 const uiCsp="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 const uiPath=new URL("./owner-v29.html",import.meta.url);
 const scriptPath=new URL("./owner-v29.js",import.meta.url);
+const cssPath=new URL("./owner-v29.css",import.meta.url);
 function bearerAuthorized(header,ownerHash){
  const match=/^Bearer ([^\s]{32,512})$/.exec(header||"");
  if(!match||!ownerHash)return false;
@@ -30,13 +31,13 @@ export function createCloudReceiverV29({pool,stores,now=()=>Date.now()}){
   try{url=new URL(req.url||"/","http://localhost");}
   catch{return respond(400,{error:"invalid_url"});}
   if(req.method==="GET"&&!url.search&&
-     (url.pathname==="/v29/owner"||url.pathname==="/v29/owner-app.js")){
+     (url.pathname==="/v29/owner"||url.pathname==="/v29/owner-app.js"||url.pathname==="/v29/owner.css")){
    // Preview assets contain NO account data, credentials or default owner IDs.
    try{
-    const js=url.pathname.endsWith(".js");
-    const content=await readFile(js?scriptPath:uiPath);
+    const js=url.pathname.endsWith(".js"),css=url.pathname.endsWith(".css");
+    const content=await readFile(js?scriptPath:css?cssPath:uiPath);
     res.writeHead(200,{...noCache,"Content-Security-Policy":uiCsp,
-      "Content-Type":js?"text/javascript; charset=utf-8":"text/html; charset=utf-8"});
+      "Content-Type":js?"text/javascript; charset=utf-8":css?"text/css; charset=utf-8":"text/html; charset=utf-8"});
     res.end(content);
    }catch{respond(503,{error:"owner_preview_unavailable"});}
    return;
