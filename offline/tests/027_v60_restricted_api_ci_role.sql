@@ -59,6 +59,39 @@ GRANT UPDATE ON
  zhirox_local.event_outbox
 TO zhirox_v60_api_ci;
 
+-- Later reservation triggers read held quantities and pending tender evidence
+-- during a legitimate sale even when no external tender is present.
+GRANT SELECT ON
+ zhirox_local.inventory_reservation_sessions_v43,
+ zhirox_local.inventory_reservation_items_v43,
+ zhirox_local.tender_plans_v41,
+ zhirox_local.external_settlements_v42
+TO zhirox_v60_api_ci;
+
+-- Reservation consumption/cancellation needs DELETE, but the HTTP API login
+-- must NEVER receive DELETE. Move only these two audited, static-SQL functions
+-- to a dedicated NOLOGIN executor with narrowly scoped cleanup privileges.
+CREATE ROLE zhirox_v60_reservation_executor NOLOGIN
+ NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
+GRANT USAGE, CREATE ON SCHEMA zhirox_local
+ TO zhirox_v60_reservation_executor;
+GRANT SELECT, UPDATE ON zhirox_local.inventory_reservation_sessions_v43
+ TO zhirox_v60_reservation_executor;
+GRANT DELETE ON zhirox_local.inventory_reservation_items_v43
+ TO zhirox_v60_reservation_executor;
+ALTER FUNCTION zhirox_local.consume_reservation_v43(uuid,uuid,uuid)
+ OWNER TO zhirox_v60_reservation_executor;
+ALTER FUNCTION zhirox_local.consume_reservation_v43(uuid,uuid,uuid)
+ SECURITY DEFINER;
+ALTER FUNCTION zhirox_local.release_cancelled_reservation_v43()
+ OWNER TO zhirox_v60_reservation_executor;
+ALTER FUNCTION zhirox_local.release_cancelled_reservation_v43()
+ SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION
+ zhirox_local.consume_reservation_v43(uuid,uuid,uuid)
+ TO zhirox_v60_api_ci;
+
 GRANT EXECUTE ON FUNCTION
  zhirox_local.prepare_checkout_v31(uuid,uuid,uuid,jsonb,bigint),
  zhirox_local.commit_checkout_v31(uuid,uuid,uuid),
