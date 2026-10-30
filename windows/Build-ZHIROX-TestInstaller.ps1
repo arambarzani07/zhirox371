@@ -30,7 +30,8 @@ Copy-Item windows/Spool-ZHIROX-Receipt-V54.ps1 (Join-Path $root 'windows/Spool-Z
 # Compile an actual native Windows GUI EXE, not a PowerShell/Notepad shortcut.
 $csc='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if(!(Test-Path $csc)){ throw 'Windows .NET Framework compiler not found' }
-& $csc /nologo /target:winexe /platform:x64 /optimize+ /out:"$root\ZHIROX371.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll windows/ZHIROXLauncherV55.cs
+$source = (Resolve-Path -LiteralPath 'windows\ZHIROXLauncherV55.cs').Path
+& $csc /nologo /target:winexe /platform:x64 /optimize+ /out:"$root\ZHIROX371.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll "$source"
 if($LASTEXITCODE -ne 0){throw 'ZHIROX371 native Windows application compile failed'}
 if(!(Test-Path (Join-Path $root 'ZHIROX371.exe'))){throw 'Missing real Windows app launcher EXE'}
 
