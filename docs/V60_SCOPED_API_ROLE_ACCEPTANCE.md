@@ -2,7 +2,8 @@
 
 ## Implemented
 - A new isolated CI-only PostgreSQL API login zhirox_v60_api_ci. This login is not a superuser, cannot create roles or databases, cannot bypass RLS and is not schema owner.
-- An explicit allowlist of SELECT/INSERT/UPDATE table permissions and seven SQL routines for the existing V59 checkout, shift and printing workflow. The role deliberately has no DELETE, TRUNCATE, CREATE, ALTER or DROP privileges.
+- An explicit allowlist of SELECT/INSERT/UPDATE table permissions and narrowly selected SQL routines for the existing V59 checkout, shift and printing workflow. The role deliberately has no DELETE, TRUNCATE, CREATE, ALTER or DROP privileges.
+- The reservation consumption/cancellation functions and thermal print queue function are individually moved to small **NOLOGIN** execution identities with audited SECURITY DEFINER SQL and fixed search paths. The API cannot directly delete reservation items or update thermal job states. The executor roles also have no permanent CREATE on the schema.
 - The V59 *real PostgreSQL / TLS* two-cashier acceptance test now supports a separate DB login for the HTTPS gateway, unlike the previous test that used the database migration owner for both test fixture setup and runtime.
 - Its new restricted-role mode must reject direct DDL, TRUNCATE, DELETE and immutable receipt changes, and still prove real cash login, scan, two shifts, price-lock rollback, concurrent last-stock contention, exactly one durable sale, idempotent replay, receipt and print-queue idempotency, and pending outbox while the Internet is not used.
 - All credentials and database names are synthetic; hardcoded **CI-only** values must never be installed on a store PC or reused. SQL explicitly refuses any populated database or any database name other than zhirox_v59_ci_test.
