@@ -1,5 +1,6 @@
 import {createServer as createHttpsServer} from "node:https";
-import {readFile,lstat} from "node:fs/promises";
+import {readFile,open} from "node:fs/promises";
+import {constants} from "node:fs";
 import {isAbsolute} from "node:path";
 import {fileURLToPath} from "node:url";
 import {createCloudReceiverV29} from "./cloud-receiver-v29.mjs";
@@ -21,13 +22,19 @@ function fail(res,status,error,extra={}){
 }
 export async function readV30SecretFile(path,{allowWindows=false}={}){
  if(!isAbsolute(path||""))throw Error("absolute_secret_path_required");
- const st=await lstat(path);
- if(!st.isFile()||st.isSymbolicLink())throw Error("unsafe_secret_file");
- if(process.platform!=="win32"&&!allowWindows&&(st.mode&0o077)!==0)
-  throw Error("secret_file_permissions_must_be_0600");
- const bytes=await readFile(path);
- if(bytes.length>32768||bytes.length<1)throw Error("invalid_secret_file_size");
- return bytes;
+ // O_NOFOLLOW plus fstat closes the symlink replacement race in an
+ // lstat-then-open sequence. Linux and macOS enforce this in the kernel.
+ const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+ try{
+  const st=await handle.stat();
+  if(!st.isFile())throw Error("unsafe_secret_file");
+  if(process.platform!=="win32"&&!allowWindows&&(st.mode&0o077)!==0)
+   throw Error("secret_file_permissions_must_be_0600");
+  if(st.size>32768||st.size<1)throw Error("invalid_secret_file_size");
+  const bytes=await handle.readFile();
+  if(bytes.length>32768||bytes.length<1)throw Error("invalid_secret_file_size");
+  return bytes;
+ }finally{await handle.close();}
 }
 export async function loadV30Stores(filePath){
  // The file must not live in the repository. Every request re-reads it:
@@ -54,9 +61,11 @@ export function createV30RateLimiter({now=()=>Date.now(),ownerLimit=12,eventLimi
   // Bounded process-memory buckets; behind a proxy do NOT trust X-Forwarded-For.
   if(seen.size>2048){
    for(const [k,v] of seen)if(v.until<=at)seen.delete(k);
-   if(seen.size>2048)seen.clear(); // fail-closed guard below for busy origins
   }
   const name=type+":"+key;
+  // Do not evict active buckets and accidentally grant fresh attempts.
+  if(seen.size>2048&&!seen.has(name))
+   return {ok:false,retryAfter:Math.ceil(windowMs/1000)};
   const limit=type==="event"?eventLimit:type==="owner"?ownerLimit:120;
   let row=seen.get(name);
   if(!row||row.until<=at){row={n:0,until:at+windowMs};seen.set(name,row);}
