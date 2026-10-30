@@ -113,7 +113,7 @@ try{
 
  await page.getByLabel("ناسنامەی فرۆشتنی گەڕاندنەوە").fill(sale);
  await page.getByRole("button",{name:"پشکنینی ڕیزەکانی پسووڵە"}).click();
- await page.getByRole("option",{name:/کاڵای V37/}).waitFor();
+ await page.getByRole("option",{name:/کاڵای V37/}).waitFor({state:"attached"});
  await page.getByLabel("ڕیزی گەڕاندنەوە").selectOption("1");
  await page.getByLabel("هۆکاری گەڕاندنەوە").fill("کالای تەواو گەڕایەوە");
  await page.getByLabel("ناوی بەڕێوەبەری ڕەزامەند").fill("manager-v39");
