@@ -134,8 +134,11 @@ export async function startV33LanTrial(){
  if(v41&&!v40)throw Error("v41_requires_v40_isolated_refund_stack");
  const v42=process.env.ZHIROX_V42_TENDER_REPORT_ENABLED==="true";
  if(v42&&!v41)throw Error("v42_requires_isolated_tender_preflight");
- const localHandler=v42?
-  (await import("./local-tender-report-v42.mjs")).createLocalTenderReportHandlerV42({pool,secret}):
+ const v43=process.env.ZHIROX_V43_INVENTORY_RESERVATIONS_ENABLED==="true";
+ if(v43&&!v42)throw Error("v43_requires_v42_tender_accounting");
+ const localHandler=v43?
+  (await import("./local-reservation-v43.mjs")).createLocalReservationHandlerV43({pool,secret}):
+  v42?(await import("./local-tender-report-v42.mjs")).createLocalTenderReportHandlerV42({pool,secret}):
   v41?(await import("./local-tender-preflight-v41.mjs")).createLocalTenderPreflightHandlerV41({pool,secret}):
   v40?(await import("./local-partial-refunds-v40.mjs")).createLocalPartialRefundHandlerV40({pool,secret}):
   v39?(await import("./local-refunds-v39.mjs")).createLocalRefundHandlerV39({pool,secret}):
