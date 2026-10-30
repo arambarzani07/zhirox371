@@ -168,3 +168,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/021_tender_reconciliation_v44.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/021_tender_reconciliation_v44.sql
+      - name: V45 read-only financial integrity audit for bank and inventory exceptions
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/022_financial_integrity_audit_v45.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/022_financial_integrity_v45.sql
