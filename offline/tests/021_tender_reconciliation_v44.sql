@@ -11,7 +11,7 @@ DECLARE
  shift2 uuid:='40000000-0000-0000-0000-000000000045';
  stale uuid:='50000000-0000-0000-0000-000000000044';
  captured uuid:='50000000-0000-0000-0000-000000000045';
- note_id uuid:='60000000-0000-0000-0000-000000000044';
+ v_note_id uuid:='60000000-0000-0000-0000-000000000044';
  x record; denied boolean; stock_before bigint;
 BEGIN
  INSERT INTO zhirox_local.stores(id,name) VALUES(s,'V44 disposable');
@@ -55,11 +55,11 @@ BEGIN
  SELECT stock_base_units INTO stock_before FROM zhirox_local.products
  WHERE store_id=s AND id=product;
  SELECT * INTO STRICT x FROM zhirox_local.record_review_note_v44(
- s,manager,note_id,captured,'contacted_provider',
+ s,manager,v_note_id,captured,'contacted_provider',
  'Called merchant support; awaiting independent signed confirmation');
  IF x.replayed THEN RAISE EXCEPTION 'new manager note marked replay'; END IF;
  SELECT * INTO STRICT x FROM zhirox_local.record_review_note_v44(
- s,manager,note_id,captured,'contacted_provider',
+ s,manager,v_note_id,captured,'contacted_provider',
  'Called merchant support; awaiting independent signed confirmation');
  IF NOT x.replayed THEN RAISE EXCEPTION 'idempotent manager note replay failed'; END IF;
  SELECT * INTO STRICT x FROM zhirox_local.tender_exceptions_v44(s,100)
@@ -74,13 +74,13 @@ BEGIN
  IF NOT denied THEN RAISE EXCEPTION 'cashier wrote supervisor note'; END IF;
  denied:=false;
  BEGIN PERFORM * FROM zhirox_local.record_review_note_v44(
- s,manager,note_id,captured,'contacted_provider','Changed provider confirmation');
+ s,manager,v_note_id,captured,'contacted_provider','Changed provider confirmation');
  EXCEPTION WHEN SQLSTATE 'P4403' THEN denied:=true; END;
  IF NOT denied THEN RAISE EXCEPTION 'note UUID changed history'; END IF;
  denied:=false;
  BEGIN UPDATE zhirox_local.tender_review_notes_v44
  SET note='Malicious alteration of prior financial audit'
- WHERE store_id=s AND note_id=note_id;
+ WHERE store_id=s AND note_id=v_note_id;
  EXCEPTION WHEN SQLSTATE 'P4403' THEN denied:=true; END;
  IF NOT denied THEN RAISE EXCEPTION 'audit note modified'; END IF;
  denied:=false;
