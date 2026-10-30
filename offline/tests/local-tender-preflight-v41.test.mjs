@@ -52,7 +52,7 @@ test("unverified external allocation always reports no banking and checkout disa
   assert.equal(data.external_settlement_supported,false);
   assert.equal(data.checkout_allowed,false);
   assert.equal(data.plan.state,"external_unverified");
-  assert.deepEqual(calls.find(x=>x.sql.includes("plan_tender_v41")).args,
+  assert.deepEqual(calls.find(x=>x.sql.includes("plan_tender_v41")&&x.args[1]===cashier).args,
    [store,cashier,requestId,1000,1500,"card"]);
   const check=await fetch(base+"/api/local/v41/tender-status?request_id="+requestId,
    {headers:{Authorization:"Bearer "+token}});
