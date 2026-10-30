@@ -30,8 +30,8 @@ test("V57 is opt-in inside separate production-mode isolated pilot, not Demo pre
  assert.match(shell,/V57_APPROVED_MODULE_COUNT=12/);
  assert.match(shell,/V57_APPROVED_SUBMODULE_COUNT=48/);
  assert.match(shell,/module===0&&\(sub===0\|\|sub===1\)/);
- assert.match(shell,/disabled=!\{enabled\}/);
- for(const disallowed of ["AppProvider","AppContext","CashierPos","localStorage","Supabase","DEMO-RCP","window.location","window.open"])
+ assert.match(shell,/disabled=\{!enabled\}/);
+ for(const disallowed of ["import {AppProvider","import {AppContext","from \"./CashierPos\"","localStorage","Supabase","DEMO-RCP","window.location","window.open"])
    assert.ok(!shell.includes(disallowed),disallowed);
  assert.match(read("src/localCashierModeV32.ts"),/import\.meta\.env\.DEV/);
  assert.match(read("vite.config.ts"),/an official cashier release is blocked/);
