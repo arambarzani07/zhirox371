@@ -5,7 +5,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {Pool} from "pg";
 import {createServer as createHttpsServer,request as httpsRequest} from "node:https";
-import {mkdtemp,readFile,rm} from "node:fs/promises";
+import {mkdtemp,readFile,rm,mkdir,writeFile} from "node:fs/promises";
+import {resolve} from "node:path";
+import {renderReceiptV34} from "../local-receipts-v34.mjs";
+import {validateV54Job} from "../windows-print-dispatch-v54.mjs";
+import {decodeScale27} from "../scale27-v26.mjs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {execFileSync} from "node:child_process";
@@ -24,6 +28,13 @@ const stale="50000000-0000-0000-0000-000000000058";
 const reqA="50000000-0000-0000-0000-000000000059";
 const reqB="50000000-0000-0000-0000-000000000060";
 const printId="60000000-0000-0000-0000-000000000059";
+const mixedRequest="50000000-0000-0000-0000-000000000061";
+const mixedPrint="60000000-0000-0000-0000-000000000060";
+const water="30000000-0000-0000-0000-000000000061";
+const tomatoes="30000000-0000-0000-0000-000000000062";
+const waterUnit="6260053183981";
+const waterCarton="6260053183982";
+const scaleTag="2700001004806";
 const password="v59-SYNTHETIC-only-LOCAL-pass";
 const barcode="6260053183974";
 const otherBarcode="6260053183998";
@@ -118,6 +129,33 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   await pool.query(
    "INSERT INTO zhirox_local.barcodes(store_id,code,product_id,quantity_base_units) VALUES($1,$2,$3,1),($1,$4,$5,1)",
    [store,barcode,item,otherBarcode,second]);
+  const v65=process.env.ZHIROX_V65_MARKET_DIGITAL_TWIN==="true";
+  const labReport={lab:"ZHIROX V65 isolated supermarket digital twin",
+    hardware_present:false,postgresql_real:true,https_real:true,
+    two_independent_sessions:true,wan:"process-level egress denied; no cloud configured",
+    printer:"file-backed paper width rendering, not physical paper",
+    service_restart:"HTTPS process restarted; PostgreSQL remains on and data persisted",
+    release:"NO_GO",checks:[]};
+  if(v65){
+    const {Socket}=await import("node:net");
+    assert.throws(()=>new Socket().connect({host:"example.com",port:443}),
+      /V65_WAN_DISCONNECTED/,"outside-WAN TLS connection must be refused BEFORE DNS");
+    assert.throws(()=>new Socket().connect({host:"8.8.8.8",port:53}),
+      /V65_WAN_DISCONNECTED/,"outside-LAN DNS connection must be refused");
+    labReport.checks.push("network egress guard denies external Internet host and external DNS at socket level");
+  }
+  if(v65){
+    // Additional real inventory for a physical-market-like basket:
+    // 2 single water bottles + 1 carton (12 bottles) + 480g tomato.
+    await pool.query(
+     "INSERT INTO zhirox_local.products(store_id,id,name,price_minor,stock_base_units,base_unit,plu) VALUES ($1,$2,'ئاوی خواردنەوە',500,30,'unit',NULL),($1,$3,'تەماتە',11000,2000,'gram','00001')",
+     [store,water,tomatoes]);
+    await pool.query(
+     "INSERT INTO zhirox_local.barcodes(store_id,code,product_id,quantity_base_units,sale_mode,sale_price_minor) VALUES ($1,$2,$3,1,'unit',NULL),($1,$4,$3,12,'carton',5500)",
+     [store,waterUnit,water,waterCarton]);
+    assert.deepEqual(decodeScale27(scaleTag),{code:scaleTag,plu:"00001",grams:480,kg:"0.480"});
+    labReport.checks.push("real product catalog: unit/carton/scale prefix-27");
+  }
   const certPath=join(dir,"cert.pem"),keyPath=join(dir,"key.pem");
   execFileSync("openssl",[
    "req","-x509","-nodes","-newkey","rsa:2048","-sha256","-days","1",
@@ -180,8 +218,8 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
       );
     }
   }
-  const localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
-  const gateway=createV33LanHandler({
+  let localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
+  let gateway=createV33LanHandler({
    pool:runtimePool,secret:sessionSecret,peers:new Set(["127.0.0.1"]),
    localHandler,limiter:createV33ClientLimiter({limit:150}),
    v64Protected:process.env.ZHIROX_V64_CI_AUTH_GATE==="true"
@@ -191,7 +229,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
    server.once("error",reject);
    server.listen(0,"127.0.0.1",()=>{server.off("error",reject);resolve();});
   });
-  const port=server.address().port;
+  let port=server.address().port;
   const get=(path,token)=>requestVerifiedTLS({port,cert,path,token});
   const post=(path,body,token)=>requestVerifiedTLS({port,cert,path,token,body,method:"POST"});
 
@@ -320,10 +358,105 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   assert.equal(final.rows[0].receipts,1);
   assert.equal(final.rows[0].print_jobs,1);
   assert.equal(final.rows[0].remaining,"0");
+  if(v65){
+    labReport.checks.push("independent cashier sessions + final last-stock transaction");
+    // Simulate a cashier service process restart without touching PostgreSQL.
+    // This is NOT a mains power cut, physical LAN outage or Windows OS reboot.
+    await new Promise(resolve=>server.close(resolve));
+    localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
+    gateway=createV33LanHandler({
+      pool:runtimePool,secret:sessionSecret,peers:new Set(["127.0.0.1"]),
+      localHandler,limiter:createV33ClientLimiter({limit:150}),v64Protected:true
+    });
+    server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},gateway);
+    await new Promise((resolve,reject)=>{
+      server.once("error",reject);
+      server.listen(0,"127.0.0.1",()=>{server.off("error",reject);resolve();});
+    });
+    port=server.address().port;
+    const afterRestart=await get("/api/local/v34/receipt?sale_id="+saleId,winnerToken);
+    assert.equal(afterRestart.status,200,"receipt must survive HTTPS service restart");
+    assert.equal(afterRestart.data.receipt.total_minor,"2500");
+    assert.equal((await post("/api/local/v31/commit",{request_id:winnerRequest},winnerToken)).data.receipt.replayed,true);
+    labReport.checks.push("HTTPS gateway restart with same local PostgreSQL: receipt + idempotent sale survive");
+
+    // Simulate scanner key strokes, including scanners with Enter or CRLF.
+    const scans=[waterUnit+"\r",waterCarton+"\n",scaleTag+"\r\n"];
+    const decoded=scans.map(x=>x.replace(/[\r\n]+$/g,""));
+    assert.deepEqual(decoded,[waterUnit,waterCarton,scaleTag]);
+    for(const code of decoded){
+      const found=await get("/api/local/v26/scan?code="+code,winnerToken);
+      assert.equal(found.status,200,"authentic V26 scan must resolve "+code);
+    }
+    assert.equal((await get("/api/local/v26/scan?code=2700001004805",winnerToken)).status,400,
+      "corrupted physical scale label must be rejected");
+    labReport.checks.push("simulated HID keyboard CR/LF input, actual HTTPS barcode scan, invalid EAN rejection");
+
+    // Live registered mixed unit+carton+weight transaction. Exactly 11,780 IQD.
+    const basket=[
+      {barcode:decoded[0],qty:2},{barcode:decoded[1],qty:1},
+      {barcode:decoded[2],qty:1}
+    ];
+    const prepared=await post("/api/local/v31/prepare",
+      {request_id:mixedRequest,lines:basket,expected_total_minor:11780},winnerToken);
+    assert.equal(prepared.status,200);
+    const mixed=await post("/api/local/v31/commit",{request_id:mixedRequest},winnerToken);
+    assert.equal(mixed.status,200);
+    assert.equal(mixed.data.receipt.total_minor,"11780");
+    const mixedSaleId=mixed.data.receipt.sale_id;
+    const repeat=await post("/api/local/v31/commit",{request_id:mixedRequest},winnerToken);
+    assert.equal(repeat.data.receipt.replayed,true);
+    assert.equal(repeat.data.receipt.sale_id,mixedSaleId);
+    const mixedDetail=await get("/api/local/v34/receipt?sale_id="+mixedSaleId,winnerToken);
+    assert.equal(mixedDetail.status,200);
+    assert.equal(mixedDetail.data.receipt.lines.length,3);
+    assert.equal(mixedDetail.data.receipt.lines.reduce((n,l)=>n+BigInt(l.line_total_minor),0n),11780n);
+    const queue58=await post("/api/local/v35/print-jobs",
+      {sale_id:mixedSaleId,job_id:mixedPrint,width_mm:58},winnerToken);
+    assert.equal(queue58.status,202);
+    assert.equal(queue58.data.hardware_printed,false);
+    assert.equal((await post("/api/local/v35/print-jobs",
+      {sale_id:mixedSaleId,job_id:mixedPrint,width_mm:58},winnerToken)).data.job.job_id,mixedPrint);
+    const counts=(await pool.query(
+     "SELECT (SELECT count(*)::integer FROM zhirox_local.sales WHERE store_id=$1) AS sales, (SELECT count(*)::integer FROM zhirox_local.receipt_snapshots_v34 WHERE store_id=$1) AS receipts, (SELECT count(*)::integer FROM zhirox_local.event_outbox WHERE store_id=$1 AND delivered_at IS NULL) AS pending, (SELECT count(*)::integer FROM zhirox_local.print_requests_v35 WHERE store_id=$1) AS print_jobs, (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=$1 AND id=$2) AS water_remaining, (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=$1 AND id=$3) AS tomato_grams",
+     [store,water,tomatoes])).rows[0];
+    assert.equal(counts.sales,2);
+    assert.equal(counts.receipts,2);
+    assert.equal(counts.pending,2,"WAN is not available to the cashier app; cloud outbox remains pending");
+    assert.equal(counts.print_jobs,2);
+    assert.equal(counts.water_remaining,"16");
+    assert.equal(counts.tomato_grams,"1520");
+    labReport.checks.push("actual transactional mix 2 units + 1 carton + 0.480kg tomato, total 11,780 IQD");
+    labReport.checks.push("two durable pending outbox events, two immutable receipts, no duplicate prints");
+
+    const evidence=resolve(process.env.ZHIROX_V65_EVIDENCE_DIR||"market-lab-evidence");
+    await mkdir(evidence,{recursive:true});
+    const shot80=validateV54Job({...detail.data.receipt,
+      store_name_snapshot:detail.data.receipt.store_name_snapshot,
+      sale_id:saleId,job_id:printId,width_mm:80});
+    const shot58=validateV54Job({...mixedDetail.data.receipt,
+      store_name_snapshot:mixedDetail.data.receipt.store_name_snapshot,
+      sale_id:mixedSaleId,job_id:mixedPrint,width_mm:58});
+    assert.equal(shot80.total_iqd,"2500");
+    assert.equal(shot58.total_iqd,"11780");
+    await writeFile(join(evidence,"receipt-80mm.html"),renderReceiptV34(detail.data.receipt,80),"utf8");
+    await writeFile(join(evidence,"receipt-58mm.html"),renderReceiptV34(mixedDetail.data.receipt,58),"utf8");
+    await writeFile(join(evidence,"scanner-simulated.txt"),
+      scans.map((s,i)=>String(i+1)+" | "+JSON.stringify(s)+" | "+decoded[i]).join("\n")+"\n","utf8");
+    labReport.final_state={...counts,sale_1_iqd:"2500",sale_2_iqd:"11780",
+      stock_units_after_mix:counts.water_remaining,
+      tomato_grams_after_mix:counts.tomato_grams};
+    labReport.thermal={widths_mm:[80,58],
+      physical_printer_connected:false,printer_queue_hardware_printed:false,
+      receipt_80:shot80,receipt_58:shot58};
+    await writeFile(join(evidence,"lab-report.json"),JSON.stringify(labReport,null,2),"utf8");
+  }
+
+
   assert.equal((await post("/api/local/v37/shift/close",
-    {shift_id:shiftA,counted_minor:aWins?3500:1000},tokenA)).status,200);
+    {shift_id:shiftA,counted_minor:aWins?(v65?15280:3500):1000},tokenA)).status,200);
   assert.equal((await post("/api/local/v37/shift/close",
-    {shift_id:shiftB,counted_minor:aWins?500:3000},tokenB)).status,200);
+    {shift_id:shiftB,counted_minor:aWins?500:(v65?14780:3000)},tokenB)).status,200);
   assert.equal((await get("/api/local/v37/shift",tokenA)).data.shift,null);
   assert.equal((await get("/api/local/v37/shift",tokenB)).data.shift,null);
   if(proofA){
@@ -352,7 +485,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   if(process.env.ZHIROX_V64_CI_AUTH_GATE==="true"){
     // After 3 earlier login calls, only 5 more are allowed within the minute.
     // An unknown username cannot consume CPU beyond the per-peer ceiling.
-    for(let i=0;i<5;i++){
+    for(let i=0;i<(v65?8:5);i++){
      const bad=await post("/api/local/v3/login",
       {store_id:store,username:"v59-cashier-a",password:"v64-invalid-credentials"});
      assert.equal(bad.status,401);
