@@ -1,0 +1,38 @@
+name: V56 STAGING HTTPS outbox auto-sync (NO-GO)
+on:
+  push:
+    branches:
+      - feature/v56-staging-https-auto-outbox-20261030
+    paths:
+      - 'offline/staging-autosync-v56.mjs'
+      - 'offline/tests/staging-autosync-v56.test.mjs'
+      - 'offline/outbox-sync-worker-v27.mjs'
+      - 'offline/autosync-v49.mjs'
+      - '.github/workflows/v56-staging-autosync.yml'
+  pull_request:
+    paths:
+      - 'offline/staging-autosync-v56.mjs'
+      - 'offline/tests/staging-autosync-v56.test.mjs'
+      - '.github/workflows/v56-staging-autosync.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staging-autosync-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check V56 module syntax
+        run: |
+          node --check offline/staging-autosync-v56.mjs
+          node --check offline/tests/staging-autosync-v56.test.mjs
+      - name: V27 + V49 + V56 isolated sender regression
+        run: node --test offline/tests/outbox-sync-v27.test.mjs offline/tests/autosync-v49.test.mjs offline/tests/staging-autosync-v56.test.mjs
+      - name: Explicit release disclaimer
+        run: echo "V56 is staging-only. No physical LAN, official Windows service, or production HTTPS receiver has been certified. NO_GO."
