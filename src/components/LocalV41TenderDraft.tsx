@@ -8,6 +8,9 @@ export const LocalV41TenderDraft:React.FC<{
  const [method,setMethod]=useState<"card"|"bank_transfer">("card");
  const [plan,setPlan]=useState<Plan|null>(null);
  const [busy,setBusy]=useState(false);
+ const v43=import.meta.env.PROD&&import.meta.env.VITE_V43_RESERVATIONS==="true";
+ const [hold,setHold]=useState<null|{state:string;expires_at:string;expired?:boolean}>(null);
+ const [holdMessage,setHoldMessage]=useState("");
  const [status,setStatus]=useState("دۆخی پارەدان پشتڕاست دەکرێتەوە؛ فرۆشتن ڕاگیراوە.");
  const [verified,setVerified]=useState(false);
  const cashNum=/^(0|[1-9][0-9]*)$/.test(cash)?Number(cash):NaN;
@@ -54,6 +57,45 @@ export const LocalV41TenderDraft:React.FC<{
   void start();
   return()=>{active=false;onCashCheckoutAllowed(false);};
  },[token,requestId,onCashCheckoutAllowed]);
+ const refreshHold=async()=>{
+  if(!v43||busy)return;
+  setBusy(true);
+  try{
+   const r=await fetch("/api/local/v43/reservation-status?request_id="+requestId,{
+    cache:"no-store",credentials:"omit",redirect:"error",
+    headers:{Authorization:"Bearer "+token}});
+   if(!r.ok)throw Error("status_unknown");
+   const x=await r.json();
+   if(x.ok!==true||x.provider_payment_verified!==false||
+      (x.reservation&&x.reservation.request_id!==requestId))
+    throw Error("invalid_reply");
+   setHold(x.reservation);
+   setHoldMessage(x.reservation?
+     x.reservation.expired?"پاراستنی کۆگا بەسەرچووە؛ مامەڵە پێویستی بە چارەسەرکردن هەیە.":
+     "کۆگا پارێزراوە؛ بانک هێشتا پشتڕاست نەکراوە.":
+     "حجزی کۆگا نییە؛ بانک هێشتا پشتڕاست نەکراوە.");
+  }catch{setHoldMessage("دۆخی کۆگا نادیارە؛ مامەڵە مەفرۆشە.");}
+  finally{setBusy(false);}
+ };
+ const reserve=async()=>{
+  if(!v43||busy||plan?.state!=="external_unverified"||hold)return;
+  setBusy(true);onCashCheckoutAllowed(false);
+  try{
+   const r=await fetch("/api/local/v43/reserve",{
+    method:"POST",cache:"no-store",credentials:"omit",redirect:"error",
+    headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},
+    body:JSON.stringify({request_id:requestId})
+   });
+   if(!r.ok)throw Error("hold_unconfirmed");
+   const x=await r.json();
+   if(x.ok!==true||x.provider_payment_verified!==false||
+      x.reservation?.request_id!==requestId)
+     throw Error("invalid_hold_reply");
+   setHold(x.reservation);
+   setHoldMessage("کاڵا و نرخ بۆ 15 خولەک پارێزراون؛ هیچ پارەیەکی بانکی وەرنەگیراوە.");
+  }catch{setHoldMessage("دۆخی حجزی کۆگا نادیارە؛ دووبارە دۆخ بپشکنە.");}
+  finally{setBusy(false);}
+ };
  const save=async()=>{
   if(busy||plan||!verified||!valid||external===null)return;
   setBusy(true);setStatus("پلانی چاوەڕوان تۆمار دەکرێت...");
@@ -101,6 +143,12 @@ export const LocalV41TenderDraft:React.FC<{
     پشکنینی دۆخی پلان
    </button>
   </div>
+  {v43&&plan?.state==="external_unverified"&&<div style={{marginTop:10}}>
+   <button type="button" disabled={busy||Boolean(hold)} onClick={()=>void reserve()}>پاراستنی کۆگا و نرخ بۆ بانکی چاوەڕوان</button>
+   <button type="button" disabled={busy} onClick={()=>void refreshHold()}>پشکنینی حجزی کۆگا</button>
+   {hold&&<div>دۆخی کۆگا: {hold.state} — {hold.expires_at}</div>}
+   <div role="status">{holdMessage}</div>
+  </div>}
   {plan&&<div>دۆخ: {plan.state==="external_unverified"?"بانکی پشتڕاست نەکراوە":"نەختینەی ئامادە"}</div>}
   <div role="status" style={{fontWeight:750,marginTop:8}}>{status}</div>
  </section>;
