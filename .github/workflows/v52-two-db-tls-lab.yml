@@ -1,0 +1,74 @@
+name: V52 two real PostgreSQL TLS disconnect and replay LAB
+on:
+  pull_request:
+    paths:
+      - 'offline/tests/v52-two-real-postgres-tls.test.mjs'
+      - 'docs/V52_TWO_DB_TLS_DISCONNECT_ACCEPTANCE.md'
+      - '.github/workflows/v52-two-db-tls-lab.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/tests/v52-two-real-postgres-tls.test.mjs'
+      - '.github/workflows/v52-two-db-tls-lab.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-disposable-two-db-tls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v52_local_test
+          POSTGRES_USER: v52trial
+          POSTGRES_PASSWORD: v52_ci_disposable_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U v52trial -d zhirox_v52_local_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: v52trial
+      PGPASSWORD: v52_ci_disposable_password
+      ZHIROX_V52_REAL_DB_CI_ENABLED: 'true'
+      ZHIROX_V52_LOCAL_DISPOSABLE_DB_URL: postgresql://v52trial:v52_ci_disposable_password@127.0.0.1:5432/zhirox_v52_local_test
+      ZHIROX_V52_CLOUD_DISPOSABLE_DB_URL: postgresql://v52trial:v52_ci_disposable_password@127.0.0.1:5432/zhirox_v52_cloud_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install PostgreSQL client and ephemeral test-only driver
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          npm install --omit=dev --no-save --no-package-lock --ignore-scripts pg@8.16.3
+      - name: Create TWO distinct disposable databases and apply isolated migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          createdb zhirox_v52_cloud_test
+          PGDATABASE=zhirox_v52_local_test psql -v ON_ERROR_STOP=1 -f offline/migrations/001_core.sql
+          PGDATABASE=zhirox_v52_local_test psql -v ON_ERROR_STOP=1 -f offline/migrations/002_atomic_checkout.sql
+          PGDATABASE=zhirox_v52_local_test psql -v ON_ERROR_STOP=1 -f offline/migrations/007_outbox_leases.sql
+          PGDATABASE=zhirox_v52_cloud_test psql -v ON_ERROR_STOP=1 -f offline/cloud-migrations/008_v28_received_sales.sql
+          test "$(PGDATABASE=zhirox_v52_local_test psql -At -c "SELECT count(*) FROM zhirox_local.sales")" = '0'
+          test "$(PGDATABASE=zhirox_v52_cloud_test psql -At -c "SELECT count(*) FROM zhirox_cloud_v28.received_sales")" = '0'
+      - name: REAL PostgreSQL cash checkout + outage + encrypted replay + per-event parity
+        run: node --test offline/tests/v52-two-real-postgres-tls.test.mjs
+      - name: Existing source safety and source validation regressions
+        run: |
+          node --test offline/tests/staging-https-v50.test.mjs offline/tests/cloud-readiness-v50.test.mjs
+          node --test offline/tests/cloud-cutover-v51.test.mjs offline/tests/autosync-v49.test.mjs
+      - name: Fail closed - never claim production approval
+        run: |
+          node --test scripts/release-readiness-v46.test.mjs
+          node scripts/release-readiness-v46.mjs --json
