@@ -77,7 +77,7 @@ GRANT USAGE, CREATE ON SCHEMA zhirox_local
  TO zhirox_v60_reservation_executor;
 GRANT SELECT, UPDATE ON zhirox_local.inventory_reservation_sessions_v43
  TO zhirox_v60_reservation_executor;
-GRANT DELETE ON zhirox_local.inventory_reservation_items_v43
+GRANT SELECT, DELETE ON zhirox_local.inventory_reservation_items_v43
  TO zhirox_v60_reservation_executor;
 ALTER FUNCTION zhirox_local.consume_reservation_v43(uuid,uuid,uuid)
  OWNER TO zhirox_v60_reservation_executor;
