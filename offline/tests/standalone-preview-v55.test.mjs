@@ -4,6 +4,7 @@ import {mkdtemp,mkdir,writeFile,rm} from "node:fs/promises";
 import {join} from "node:path";
 import {tmpdir} from "node:os";
 import {createHash} from "node:crypto";
+import {request as nodeHttpRequest} from "node:http";
 import {listenV55Preview} from "../standalone-preview-v55.mjs";
 
 const hash=bytes=>createHash("sha256").update(bytes).digest("hex");
@@ -37,7 +38,7 @@ test("V55 startup directly exposes a real original Sorani app entrypoint and saf
      const page=await request(port);
      assert.equal(page.status,200);
      const html=await page.text();
-     assert.match(html,/id="root"/);
+     assert.match(html,/id=["\x27]root["\x27]/);
      assert.match(html,/ZHIROX371 — تەنها پێشبینینی ئۆفلاینە/);
      assert.match(html,/SALES DISABLED/);
      assert.ok(page.headers.get("content-security-policy").includes("connect-src 'none'"));
@@ -65,10 +66,14 @@ test("V55 FAIL-CLOSED: cannot post sales or reach DB/auth routes, even on same h
      }
      assert.equal((await request(port,"/etc/passwd")).status,404);
      assert.equal((await request(port,"/?token=secret")).status,400);
-     const wrongHost=await fetch("http://127.0.0.1:"+port+"/",{
-       headers:{Host:"evil.example.com"},redirect:"manual"
+     const status=await new Promise((resolve,reject)=>{
+       const req=nodeHttpRequest({hostname:"127.0.0.1",port,path:"/",
+         headers:{"Host":"evil.example.com"}},res=>{
+           res.resume();res.on("end",()=>resolve(res.statusCode));
+         });
+       req.on("error",reject);req.end();
      });
-     assert.equal(wrongHost.status,403);
+     assert.equal(status,403);
    }finally{await new Promise(ok=>server.close(ok));}
  });
 });
