@@ -114,7 +114,7 @@ BEGIN
   THEN RAISE EXCEPTION 'invalid reserved barcode or quantity'
    USING ERRCODE='22023'; END IF;
   v_scan_code:=item->>'barcode'; q:=(item->>'qty')::bigint;
-  IF v_scan_code ~ '^27[0-9]{11} THEN
+  IF v_scan_code ~ '^27[0-9]{11}$' THEN
    RAISE EXCEPTION 'scale barcode reservations not implemented'
    USING ERRCODE='P4304'; END IF;
   SELECT x.* INTO b FROM zhirox_local.barcodes x
