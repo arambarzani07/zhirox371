@@ -1,0 +1,31 @@
+name: Main historical source audit
+on:
+  pull_request:
+    paths:
+      - 'design/source-faithful-home-preview.html'
+      - 'docs/MAIN_BRANCH_CONSOLIDATION_20261030.md'
+      - 'tests/main_consolidation_archive.test.mjs'
+      - '.github/workflows/main-consolidation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'design/source-faithful-home-preview.html'
+      - 'docs/MAIN_BRANCH_CONSOLIDATION_20261030.md'
+      - 'tests/main_consolidation_archive.test.mjs'
+      - '.github/workflows/main-consolidation.yml'
+permissions:
+  contents: read
+jobs:
+  archive-does-not-modify-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify archived exact historical preview and active Home integrity
+        run: node --test tests/main_consolidation_archive.test.mjs
+      - name: Install isolated React dependencies
+        run: npm install --no-package-lock
+      - name: Verify current React application still builds
+        run: npm run build
