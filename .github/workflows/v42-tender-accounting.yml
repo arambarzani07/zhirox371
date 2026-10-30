@@ -8,7 +8,7 @@ on:
       - 'offline/tests/local-tender-report-v42.test.mjs'
       - 'src/components/LocalV42TenderReport.tsx'
       - 'src/components/LocalPostgresPilotV24.tsx'
-      - 'tests/browser/v41_tender_preflight.mjs'
+      - 'tests/browser/v42_tender_accounting.mjs'
       - '.github/workflows/v42-tender-accounting.yml'
   push:
     branches: [main]
@@ -50,7 +50,7 @@ jobs:
           cat /tmp/v42-react.log
           exit 1
       - name: Confirm V41 bank draft remains blocked in V42 isolated accounting build
-        run: node tests/browser/v41_tender_preflight.mjs
+        run: node tests/browser/v42_tender_accounting.mjs
       - name: Explicit official bundle must still be blocked
         shell: bash
         run: |
