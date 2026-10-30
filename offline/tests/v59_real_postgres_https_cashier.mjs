@@ -5,7 +5,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {Pool} from "pg";
 import {createServer as createHttpsServer,request as httpsRequest} from "node:https";
-import {mkdtemp,readFile,rm} from "node:fs/promises";
+import {mkdtemp,readFile,rm,mkdir,writeFile} from "node:fs/promises";
+import {resolve} from "node:path";
+import {renderReceiptV34} from "../local-receipts-v34.mjs";
+import {validateV54Job} from "../windows-print-dispatch-v54.mjs";
+import {decodeScale27} from "../scale27-v26.mjs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {execFileSync} from "node:child_process";
@@ -24,6 +28,13 @@ const stale="50000000-0000-0000-0000-000000000058";
 const reqA="50000000-0000-0000-0000-000000000059";
 const reqB="50000000-0000-0000-0000-000000000060";
 const printId="60000000-0000-0000-0000-000000000059";
+const mixedRequest="50000000-0000-0000-0000-000000000061";
+const mixedPrint="60000000-0000-0000-0000-000000000060";
+const water="30000000-0000-0000-0000-000000000061";
+const tomatoes="30000000-0000-0000-0000-000000000062";
+const waterUnit="6260053183981";
+const waterCarton="6260053183982";
+const scaleTag="2700001004806";
 const password="v59-SYNTHETIC-only-LOCAL-pass";
 const barcode="6260053183974";
 const otherBarcode="6260053183998";
@@ -118,6 +129,25 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   await pool.query(
    "INSERT INTO zhirox_local.barcodes(store_id,code,product_id,quantity_base_units) VALUES($1,$2,$3,1),($1,$4,$5,1)",
    [store,barcode,item,otherBarcode,second]);
+  const v65=process.env.ZHIROX_V65_MARKET_DIGITAL_TWIN==="true";
+  const labReport={lab:"ZHIROX V65 isolated supermarket digital twin",
+    hardware_present:false,postgresql_real:true,https_real:true,
+    two_independent_sessions:true,wan:"process-level egress denied; no cloud configured",
+    printer:"file-backed paper width rendering, not physical paper",
+    service_restart:"HTTPS process restarted; PostgreSQL remains on and data persisted",
+    release:"NO_GO",checks:[]};
+  if(v65){
+    // Additional real inventory for a physical-market-like basket:
+    // 2 single water bottles + 1 carton (12 bottles) + 480g tomato.
+    await pool.query(
+     "INSERT INTO zhirox_local.products(store_id,id,name,price_minor,stock_base_units,base_unit,plu) VALUES ($1,$2,'ئاوی خواردنەوە',500,30,'unit',NULL),($1,$3,'تەماتە',11000,2000,'gram','00001')",
+     [store,water,tomatoes]);
+    await pool.query(
+     "INSERT INTO zhirox_local.barcodes(store_id,code,product_id,quantity_base_units,sale_mode,sale_price_minor) VALUES ($1,$2,$3,1,'unit',NULL),($1,$4,$3,12,'carton',5500)",
+     [store,waterUnit,waterCarton]);
+    assert.deepEqual(decodeScale27(scaleTag),{code:scaleTag,plu:"00001",grams:480,kg:"0.480"});
+    labReport.checks.push("real product catalog: unit/carton/scale prefix-27");
+  }
   const certPath=join(dir,"cert.pem"),keyPath=join(dir,"key.pem");
   execFileSync("openssl",[
    "req","-x509","-nodes","-newkey","rsa:2048","-sha256","-days","1",
@@ -180,8 +210,8 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
       );
     }
   }
-  const localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
-  const gateway=createV33LanHandler({
+  let localHandler=createLocalShiftHandlerV37({pool:runtimePool,secret:sessionSecret});
+  let gateway=createV33LanHandler({
    pool:runtimePool,secret:sessionSecret,peers:new Set(["127.0.0.1"]),
    localHandler,limiter:createV33ClientLimiter({limit:150}),
    v64Protected:process.env.ZHIROX_V64_CI_AUTH_GATE==="true"
@@ -191,7 +221,7 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
    server.once("error",reject);
    server.listen(0,"127.0.0.1",()=>{server.off("error",reject);resolve();});
   });
-  const port=server.address().port;
+  let port=server.address().port;
   const get=(path,token)=>requestVerifiedTLS({port,cert,path,token});
   const post=(path,body,token)=>requestVerifiedTLS({port,cert,path,token,body,method:"POST"});
 
