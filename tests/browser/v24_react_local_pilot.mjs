@@ -117,6 +117,17 @@ try {
  const persisted=await page.evaluate(k=>sessionStorage.getItem(k),sessionKey);
  assert.equal(JSON.parse(persisted).request_id,requests[0].request_id);
  assert.match(await page.getByText(/سەبەتە قوفڵ کراوە/).innerText(),/قوفڵ/);
+ // Simulate a browser crash/reload after an uncertain HTTP response. Server
+ // journal still owns the same UUID and cashier can recover it after re-login.
+ await page.reload({waitUntil:"networkidle"});
+ await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
+ await page.getByRole("button",{name:/کردنەوەی V31/}).click();
+ await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
+ await page.getByPlaceholder("ناوی بەکارهێنەر").fill("cashier");
+ await page.getByPlaceholder("وشەی نهێنی ناوخۆیی").fill("test-password-for-isolated-pilot");
+ await page.getByRole("button",{name:"چوونەژوورەوەی تاقیکردنەوە"}).click();
+ await page.getByRole("button",{name:"دووبارە ناردنی هەمان داواکاری"}).waitFor();
+ assert.equal(serverPending?.request_id,requests[0].request_id);
  await page.getByRole("button",{name:"دووبارە ناردنی هەمان داواکاری"}).click();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە/).waitFor();
  assert.equal(attempts,2);
