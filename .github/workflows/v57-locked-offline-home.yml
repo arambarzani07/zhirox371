@@ -1,0 +1,67 @@
+name: V57 locked offline PC Home and cashier shell (NO-GO)
+on:
+  push:
+    branches:
+      - feature/v57-locked-home-offline-shell-20261030
+    paths:
+      - 'src/**'
+      - 'tests/v57_offline_home_contract.test.mjs'
+      - 'tests/browser/v57_offline_home_shell.mjs'
+      - '.github/workflows/v57-locked-offline-home.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/v57_offline_home_contract.test.mjs'
+      - 'tests/browser/v57_offline_home_shell.mjs'
+      - '.github/workflows/v57-locked-offline-home.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-contract-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate unchanged owner-locked Home and fail-closed V57 routes
+        run: |
+          node --test tests/owner_locked_home_sha.test.mjs
+          node --test tests/v23_preview_mode_guard.test.mjs
+          node --test tests/v57_offline_home_contract.test.mjs
+      - name: Install frontend dependencies
+        run: npm install --no-package-lock
+      - name: Build isolated V57 desktop shell using V36 local cashier (NOT the Demo)
+        run: |
+          VITE_V36_ISOLATED_LAN_PILOT=true VITE_V57_ISOLATED_DESKTOP_SHELL=true npm run build
+          node scripts/package-lan-pilot-v36.mjs dist
+          node --test offline/tests/lan-pilot-v36.test.mjs
+      - name: Ensure official commercial build is still blocked
+        shell: bash
+        run: |
+          if VITE_V36_ISOLATED_LAN_PILOT=true VITE_V57_ISOLATED_DESKTOP_SHELL=true VITE_ZHIROX_RELEASE_MODE=official npm run build; then
+            echo "::error::Unverified official POS must remain blocked"
+            exit 1
+          fi
+      - name: Install pinned Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start test-only local static preview
+        shell: bash
+        run: |
+          (npm run preview -- --host 127.0.0.1 --port 3057 > /tmp/zhirox-v57-preview.log 2>&1 &)
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3057/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/zhirox-v57-preview.log
+          exit 1
+      - name: Verify 12 Home cards, all 48 subcard routes and local cashier
+        run: node tests/browser/v57_offline_home_shell.mjs
+      - name: Release classification
+        run: echo "V57 is isolated desktop UI acceptance only. No official offline Windows deployment or cloud connectivity. NO_GO."
