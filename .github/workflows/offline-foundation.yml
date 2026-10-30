@@ -152,3 +152,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/017_partial_cash_refunds_v40.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/017_partial_cash_refunds_v40.sql
+      - name: V41 pending bank tender never settles without provider verification
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/018_split_tender_draft_v41.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/018_split_tender_draft_v41.sql
