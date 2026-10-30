@@ -65,7 +65,7 @@ CREATE OR REPLACE FUNCTION zhirox_local.cash_summary_v38(
  cash_sales_minor bigint,cash_in_minor bigint,cash_out_minor bigint,
  expense_minor bigint,expected_minor bigint,counted_minor bigint,
  variance_minor bigint)
-LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v39$
+LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v39$
 DECLARE v_shift zhirox_local.cash_shifts_v37%ROWTYPE;
  v_sales numeric;v_in numeric;v_out numeric;v_expense numeric;v_refunds numeric;v_total numeric;
 BEGIN
@@ -98,7 +98,7 @@ CREATE OR REPLACE FUNCTION zhirox_local.cash_summary_v39(
  gross_sales_minor bigint,refund_minor bigint,cash_in_minor bigint,
  cash_out_minor bigint,expense_minor bigint,expected_minor bigint,
  counted_minor bigint,variance_minor bigint)
-LANGUAGE sql STABLE SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v39$
+LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $v39$
  SELECT s.shift_id,s.state,s.opening_minor,s.cash_sales_minor,
  COALESCE((SELECT sum(r.refund_minor)::bigint FROM zhirox_local.cash_refunds_v39 r
  WHERE r.store_id=p_store AND r.cashier_id=p_cashier AND r.shift_id=p_shift),0),
