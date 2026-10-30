@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({mode})=>{
   const env=loadEnv(mode,process.cwd(),'VITE_');
   const pilot=env.VITE_ENABLE_LOCAL_PILOT==='true';
+  const localCashier=pilot&&env.VITE_V32_LOCAL_CASHIER==='true'&&mode!=='production';
   return {
     plugins:[react()],
     server:{
@@ -13,7 +14,7 @@ export default defineConfig(({mode})=>{
       port:3000,
       strictPort:true,
       ...(pilot?{proxy:{'/api/local':{
-        target:'http://127.0.0.1:3307',
+        target:localCashier?'http://127.0.0.1:3308':'http://127.0.0.1:3307',
         changeOrigin:false,
         secure:false
       }}}:{})
