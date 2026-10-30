@@ -37,6 +37,11 @@ export function createLocalPosHandlerV3({ pool, secret, clock }){
     if (req.method !== "POST" ||
       !["/api/local/v3/login", "/api/local/v3/checkout", "/api/local/v25/checkout", "/api/local/v26/checkout"].includes(req.url))
       return send(res, 404, { error: "not_found" });
+    // V63 trial forbids every legacy checkout URI; cash writes must use
+    // proof-gated V31 durable prepare/commit/cancel, not direct V1/V25/V26.
+    if(process.env.ZHIROX_V63_DB_ACTOR_PROOF==="true" &&
+       req.url!=="/api/local/v3/login")
+      return send(res,410,{error:"legacy_checkout_disabled_use_v31"});
     const parsed = await parseBody(req);
     if (parsed.error) return send(res, parsed.status, { error: parsed.error });
     const input = parsed.value;
