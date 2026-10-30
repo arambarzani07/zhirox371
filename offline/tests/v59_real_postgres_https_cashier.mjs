@@ -137,6 +137,14 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     service_restart:"HTTPS process restarted; PostgreSQL remains on and data persisted",
     release:"NO_GO",checks:[]};
   if(v65){
+    const {Socket}=await import("node:net");
+    assert.throws(()=>new Socket().connect({host:"example.com",port:443}),
+      /V65_WAN_DISCONNECTED/,"outside-WAN TLS connection must be refused BEFORE DNS");
+    assert.throws(()=>new Socket().connect({host:"8.8.8.8",port:53}),
+      /V65_WAN_DISCONNECTED/,"outside-LAN DNS connection must be refused");
+    labReport.checks.push("network egress guard denies external Internet host and external DNS at socket level");
+  }
+  if(v65){
     // Additional real inventory for a physical-market-like basket:
     // 2 single water bottles + 1 carton (12 bottles) + 480g tomato.
     await pool.query(
