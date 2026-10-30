@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from "react";
+import {LocalV38CashMovements} from "./LocalV38CashMovements";
 type Shift={shift_id:string;state:"open"|"closed";opening_minor:string|number;
  cash_sales_minor?:string|number;expected_minor?:string|number;
  counted_minor?:string|number;variance_minor?:string|number};
@@ -8,6 +9,8 @@ export const LocalV37ShiftControls:React.FC<{
  token:string;onShiftOpen:(value:boolean)=>void;
 }>=({token,onShiftOpen})=>{
  const [shift,setShift]=useState<Shift|null>(null);
+ const v38=import.meta.env.PROD&&import.meta.env.VITE_V38_CASH_LEDGER==="true";
+ const [closedReport,setClosedReport]=useState<(Shift&{cash_in_minor?:string|number;cash_out_minor?:string|number;expense_minor?:string|number})|null>(null);
  const [opening,setOpening]=useState("0");
  const [counted,setCounted]=useState("");
  const [error,setError]=useState("");
@@ -64,7 +67,7 @@ export const LocalV37ShiftControls:React.FC<{
    if(body.ok!==true||!body.shift||body.shift.shift_id!==payload.shift_id||
       body.shift.state!==(isOpening?"open":"closed"))
     throw Error("invalid_shift_reply");
-   setShift(isOpening?body.shift:null);setVerified(true);
+   setShift(isOpening?body.shift:null);setClosedReport(isOpening?null:body.shift);setVerified(true);
    onShiftOpen(isOpening);
    if(!isOpening){setPendingId(crypto.randomUUID());setCounted("");}
   }catch{setShift(null);setVerified(false);
@@ -78,6 +81,15 @@ export const LocalV37ShiftControls:React.FC<{
    {verified?(shift?"شێفت کراوە — فرۆشتنی نەختینە ڕێگەپێدراوە":
     "هیچ شێفتێک نەکراوەتەوە — فرۆشتن ڕاگیراوە"):"دۆخی شێفت هێشتا پشتڕاست نەکراوەتەوە"}
   </div>
+  {closedReport&&!shift&&<div role="status" style={{marginTop:8,border:"1px solid #64748b",padding:8}}>
+    <strong>ڕاپۆرتی کۆتایی شێفتی داخراو</strong>
+    <div>سەرەتای سندووق: {money(closedReport.opening_minor)}</div>
+    <div>کۆی فرۆشتن: {money(closedReport.cash_sales_minor??0)}</div>
+    {v38&&<><div>پارەی هاتوو: {money(closedReport.cash_in_minor??0)}</div><div>پارەی دەرچوو: {money(closedReport.cash_out_minor??0)}</div><div>خەرجی: {money(closedReport.expense_minor??0)}</div></>}
+    <div>کۆی چاوەڕوانکراو: {money(closedReport.expected_minor??0)}</div>
+    <div>پارەی ژمێردراو: {money(closedReport.counted_minor??0)}</div>
+    <div>جیاوازی: {money(closedReport.variance_minor??0)}</div>
+   </div>}
   {shift?<div style={{marginTop:8}}>
     <div>سەرەتای سندووق: {money(shift.opening_minor)}</div>
     <label>پارەی ژمێردراو لە کۆتایی شێفت
@@ -97,6 +109,7 @@ export const LocalV37ShiftControls:React.FC<{
     <button type="button" disabled={busy||!verified||!cash(opening)}
       onClick={()=>void change("open")}>کردنەوەی شێفت</button>
    </div>}
+  {v38&&shift&&<LocalV38CashMovements token={token} shiftId={shift.shift_id}/>}
   <button type="button" disabled={busy} onClick={()=>void fetchShift()}
    style={{margin:8}}>پشکنینی دۆخی شێفت</button>
   {error&&<div role="alert" style={{color:"#991b1b",fontWeight:800}}>{error}</div>}

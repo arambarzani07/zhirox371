@@ -117,3 +117,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/013_cash_shifts_v37.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/013_cash_shifts_v37.sql
+      - name: V38 immutable cash journal, overdraw and reconciled close
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/014_cash_movements_v38.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/014_cash_movements_v38.sql
