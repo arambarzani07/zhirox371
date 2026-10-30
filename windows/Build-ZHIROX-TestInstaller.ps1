@@ -23,6 +23,7 @@ Copy-Item node_modules (Join-Path $root 'node_modules') -Recurse
 Copy-Item package.json (Join-Path $root 'package.json')
 New-Item -ItemType Directory -Path (Join-Path $root 'windows') -Force | Out-Null
 Copy-Item windows/Start-ZHIROX-Trial.ps1 (Join-Path $root 'windows/Start-ZHIROX-Trial.ps1')
+Copy-Item windows/Start-ZHIROX-AutoSync-TRIAL.ps1 (Join-Path $root 'windows/Start-ZHIROX-AutoSync-TRIAL.ps1')
 Copy-Item windows/README-OFFLINE-TRIAL.txt (Join-Path $root 'README-OFFLINE-TRIAL.txt')
 New-Item -ItemType Directory -Path (Join-Path $root 'docs') -Force | Out-Null
 Copy-Item docs/V36_PREINSTALLATION_SOFTWARE.md (Join-Path $root 'docs/V36_PREINSTALLATION_SOFTWARE.md')
