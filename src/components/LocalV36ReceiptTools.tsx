@@ -1,6 +1,6 @@
 import React,{useState,useMemo} from "react";
 
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type Props={token:string;saleId:string};
 export const LocalV36ReceiptTools:React.FC<Props>=({token,saleId})=>{
  const jobId=useMemo(()=>crypto.randomUUID(),[saleId]);
