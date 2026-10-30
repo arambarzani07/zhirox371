@@ -54,8 +54,8 @@ BEGIN
   IF old.cashier_id<>p_cashier OR old.opening_minor<>p_opening THEN
     RAISE EXCEPTION 'shift UUID already used with different details' USING ERRCODE='P3702'; END IF;
  ELSE
-  IF EXISTS(SELECT 1 FROM zhirox_local.cash_shifts_v37
-            WHERE store_id=p_store AND cashier_id=p_cashier AND state='open')
+  IF EXISTS(SELECT 1 FROM zhirox_local.cash_shifts_v37 q
+            WHERE q.store_id=p_store AND q.cashier_id=p_cashier AND q.state='open')
   THEN RAISE EXCEPTION 'active shift must be closed first' USING ERRCODE='P3702'; END IF;
   INSERT INTO zhirox_local.cash_shifts_v37(store_id,shift_id,cashier_id,opening_minor)
   VALUES(p_store,p_shift,p_cashier,p_opening);
@@ -136,15 +136,15 @@ BEGIN
  -- Every V31 checkout and open/close operation locks this SAME store row.
  PERFORM 1 FROM zhirox_local.stores WHERE id=p_store FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'store not found' USING ERRCODE='22023'; END IF;
- SELECT * INTO old FROM zhirox_local.cash_shifts_v37
- WHERE store_id=p_store AND shift_id=p_shift AND cashier_id=p_cashier FOR UPDATE;
+ SELECT * INTO old FROM zhirox_local.cash_shifts_v37 q
+ WHERE q.store_id=p_store AND q.shift_id=p_shift AND q.cashier_id=p_cashier FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'shift not found' USING ERRCODE='P3701'; END IF;
  IF old.state='closed' THEN
   IF old.counted_minor<>p_counted THEN
    RAISE EXCEPTION 'closed shift cannot be changed' USING ERRCODE='P3704'; END IF;
  ELSE
-  IF EXISTS(SELECT 1 FROM zhirox_local.checkout_intents_v31
-    WHERE store_id=p_store AND cashier_id=p_cashier AND state='prepared')
+  IF EXISTS(SELECT 1 FROM zhirox_local.checkout_intents_v31 i
+    WHERE i.store_id=p_store AND i.cashier_id=p_cashier AND i.state='prepared')
   THEN RAISE EXCEPTION 'unresolved checkout must be recovered/cancelled'
        USING ERRCODE='P3703'; END IF;
   SELECT COALESCE(SUM(s.total_minor),0) INTO v_sales
