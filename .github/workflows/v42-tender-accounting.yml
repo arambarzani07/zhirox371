@@ -1,0 +1,60 @@
+name: V42 cash-bank accounting proof (NO official provider)
+on:
+  pull_request:
+    paths:
+      - 'offline/local-tender-report-v42.mjs'
+      - 'offline/local-durable-server-v31.mjs'
+      - 'offline/migrations/019_external_settlement_accounting_v42.sql'
+      - 'offline/tests/local-tender-report-v42.test.mjs'
+      - 'src/components/LocalV42TenderReport.tsx'
+      - 'src/components/LocalPostgresPilotV24.tsx'
+      - 'tests/browser/v41_tender_preflight.mjs'
+      - '.github/workflows/v42-tender-accounting.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/local-tender-report-v42.mjs'
+      - 'offline/migrations/019_external_settlement_accounting_v42.sql'
+      - 'src/components/LocalV42TenderReport.tsx'
+      - '.github/workflows/v42-tender-accounting.yml'
+permissions:
+  contents: read
+jobs:
+  cash-bank-accounting-no-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Signed local shift API authorization and validation
+        run: node --test offline/tests/local-tender-report-v42.test.mjs
+      - name: Install React test dependencies
+        run: npm install --no-package-lock
+      - name: Build V38 isolated pilot without Demo provider
+        run: |
+          VITE_V36_ISOLATED_LAN_PILOT=true VITE_V37_LOCAL_SHIFTS=true VITE_V38_CASH_LEDGER=true VITE_V39_REFUNDS=true VITE_V40_PARTIAL_REFUNDS=true VITE_V41_TENDER_PREFLIGHT=true VITE_V42_TENDER_REPORT=true npm run build
+          node scripts/package-lan-pilot-v36.mjs dist
+      - name: Install headless Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Preview isolated pilot on loopback only
+        shell: bash
+        run: |
+          (npm run preview -- --host 127.0.0.1 --port 3046 >/tmp/v42-react.log 2>&1 &)
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3046/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/v42-react.log
+          exit 1
+      - name: Confirm V41 bank draft remains blocked in V42 isolated accounting build
+        run: node tests/browser/v41_tender_preflight.mjs
+      - name: Explicit official bundle must still be blocked
+        shell: bash
+        run: |
+          if VITE_ZHIROX_RELEASE_MODE=official npm run build; then
+            echo "::error::Uncertified cashier must not build official"
+            exit 1
+          fi
