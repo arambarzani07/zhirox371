@@ -113,3 +113,7 @@ jobs:
           PGDATABASE=zhirox_v33_restored_test psql -v ON_ERROR_STOP=1 -f offline/tests/010_v33_concurrency_verify.sql
           echo "V33 PASS: full custom-format backup restored into isolated PostgreSQL with matching receipts, stock, events and pending intents"
 
+      - name: V37 isolated shift checkout acceptance (after legacy V33 restore drill)
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/013_cash_shifts_v37.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/013_cash_shifts_v37.sql

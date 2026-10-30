@@ -32,6 +32,7 @@ const errorResult=error=>{
   case "P3101":return [404,"intent_not_found"];
   case "P3102":return [409,"unfinished_checkout"];
   case "P3103":return [409,"intent_cancelled"];
+  case "P3701":return [409,"open_shift_required"];
   case "P2501":return [409,"price_changed"];
   case "23505":case "23514":return [409,"checkout_conflict"];
   case "22023":case "22003":return [400,"invalid_checkout"];

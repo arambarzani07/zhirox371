@@ -122,8 +122,11 @@ export async function startV33LanTrial(){
  const v36=process.env.ZHIROX_V36_LAN_PILOT_ENABLED==="true";
  if(v36&&(!v35||!v34))throw Error("v36_requires_print_and_receipt_api");
  if(v36&&origin!=="https://"+host+":3433")throw Error("v36_requires_exact_https_origin");
- const localHandler=v35?
-  (await import("./local-print-queue-v35.mjs")).createLocalPrintQueueHandlerV35({pool,secret}):
+ const v37=process.env.ZHIROX_V37_LOCAL_SHIFTS_ENABLED==="true";
+ if(v37&&!v36)throw Error("v37_requires_isolated_lan_pilot");
+ const localHandler=v37?
+  (await import("./local-shifts-v37.mjs")).createLocalShiftHandlerV37({pool,secret}):
+  v35?(await import("./local-print-queue-v35.mjs")).createLocalPrintQueueHandlerV35({pool,secret}):
   v34?(await import("./local-receipts-v34.mjs")).createLocalReceiptHandlerV34({pool,secret}):null;
  const staticHandler=v36?
   await (await import("./lan-pilot-static-v36.mjs")).createV36StaticHandler(
