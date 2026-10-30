@@ -100,9 +100,10 @@ export async function submitV54TestPrint({pool,storeId,jobId,printerName,spooler
    await spooler.submit(printerName,receipt);
    state="submitted_to_windows";
  }finally{
-   await pool.query(
+   const result=await pool.query(
      "SELECT zhirox_local.finish_print_dispatch_v54($1::uuid,$2::uuid,$3::text) AS ok",
      [storeId,jobId,state]);
+   if(result.rows[0]?.ok!==true)throw Error("v54_dispatch_state_not_committed");
  }
  return {job_id:jobId,submission_status:state,
    hardware_printed:false,requires_physical_confirmation:true,release_status:"NO_GO"};
