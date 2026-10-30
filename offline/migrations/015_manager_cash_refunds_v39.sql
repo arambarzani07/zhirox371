@@ -107,6 +107,29 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS 
  FROM zhirox_local.cash_summary_v38(p_store,p_cashier,p_shift) s
 $v39$;
 
+-- Override V38 BEFORE INSERT guard: an outgoing cash movement must account
+-- for CASH REFUNDS already paid on this shift, before any row can be inserted.
+CREATE OR REPLACE FUNCTION zhirox_local.guard_cash_movement_v38()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER
+SET search_path=pg_catalog,zhirox_local AS $v39$
+DECLARE q zhirox_local.cash_shifts_v37%ROWTYPE; v_available bigint;
+BEGIN
+ IF TG_OP<>'INSERT' THEN
+  RAISE EXCEPTION 'cash ledger is append-only' USING ERRCODE='P3804'; END IF;
+ PERFORM 1 FROM zhirox_local.stores WHERE id=NEW.store_id FOR UPDATE;
+ SELECT x.* INTO q FROM zhirox_local.cash_shifts_v37 x
+  WHERE x.store_id=NEW.store_id AND x.shift_id=NEW.shift_id FOR UPDATE;
+ IF NOT FOUND OR q.state<>'open' OR q.cashier_id<>NEW.cashier_id
+ THEN RAISE EXCEPTION 'active matching shift required' USING ERRCODE='P3801'; END IF;
+ SELECT s.expected_minor INTO STRICT v_available FROM zhirox_local.cash_summary_v38(
+   NEW.store_id,NEW.cashier_id,NEW.shift_id) s;
+ IF NEW.kind IN('cash_out','expense') AND NEW.amount_minor>v_available
+ THEN RAISE EXCEPTION 'insufficient available cash' USING ERRCODE='P3802'; END IF;
+ IF NEW.kind='cash_in' AND v_available::numeric+NEW.amount_minor>9999999999999
+ THEN RAISE EXCEPTION 'cash balance overflow' USING ERRCODE='22003'; END IF;
+ RETURN NEW;
+END $v39$;
+
 -- Refuse a cash-out/expense that would overdraft after prior refunds.
 -- Existing V38 trigger separately checks the original V38 cash guard.
 CREATE OR REPLACE FUNCTION zhirox_local.after_movement_balance_v39()
