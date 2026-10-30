@@ -164,3 +164,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/020_reservation_v43.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/020_reservation_v43.sql
+      - name: V44 manager review never changes payment, stock or unsettled cases
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/021_tender_reconciliation_v44.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/021_tender_reconciliation_v44.sql

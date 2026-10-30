@@ -7,6 +7,7 @@ import {isolatedLanPilotV36} from '../localPilotV24';
 import {LocalV36ReceiptTools} from './LocalV36ReceiptTools';
 import {LocalV37ShiftControls} from "./LocalV37ShiftControls";
 import {LocalV41TenderDraft} from "./LocalV41TenderDraft";
+import {LocalV44ManagerReview} from "./LocalV44ManagerReview";
 
 type Line={item:LocalPilotItem;qty:number};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -228,6 +229,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
      </form>:<>
        <div style={{marginTop:10}}>پەیوەندی ناوخۆیی چالاکە — تەنها هەمان PC</div>
        {v37Shifts&&<LocalV37ShiftControls token={token} store={store} onShiftOpen={setV37ShiftOpen}/>}
+       {isolatedLanPilotV36&&import.meta.env.VITE_V44_RECONCILIATION_LAB==="true"&&<LocalV44ManagerReview store={store}/>}
        <form onSubmit={submitScan} style={{display:"flex",gap:8,marginTop:10}}>
          <input style={{...inputStyle,flex:1}} value={scan} onChange={e=>setScan(e.target.value)}
            aria-label="بارکۆدی دانە، کارتۆن یان تەرازوو" placeholder="بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە" disabled={busy||!!pending}/>
