@@ -11,6 +11,7 @@ DECLARE
  req uuid:='50000000-0000-0000-0000-000000000037';
  pending uuid:='50000000-0000-0000-0000-000000000038';
  req_b uuid:='50000000-0000-0000-0000-000000000039';
+ after_close uuid:='50000000-0000-0000-0000-000000000040';
  q jsonb:='[{"barcode":"6260053183974","qty":2}]'::jsonb;
  result record;
  closed record;
@@ -64,7 +65,7 @@ BEGIN
  EXCEPTION WHEN SQLSTATE 'P3704' THEN denied:=true; END;
  IF NOT denied THEN RAISE EXCEPTION 'closed cash count edited'; END IF;
  denied:=false;
- BEGIN PERFORM * FROM zhirox_local.prepare_checkout_v31(s,c,pending,q,2500);
+ BEGIN PERFORM * FROM zhirox_local.prepare_checkout_v31(s,c,after_close,q,2500);
  EXCEPTION WHEN SQLSTATE 'P3701' THEN denied:=true; END;
  IF NOT denied THEN RAISE EXCEPTION 'checkout after closed shift accepted'; END IF;
  PERFORM * FROM zhirox_local.prepare_checkout_v31(s,d,req_b,q,2500);
