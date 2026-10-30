@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS zhirox_local.cash_shifts_v37(
 );
 CREATE UNIQUE INDEX IF NOT EXISTS v37_single_open_shift
  ON zhirox_local.cash_shifts_v37(store_id,cashier_id) WHERE state='open';
+ALTER TABLE zhirox_local.checkout_intents_v31
+ ADD COLUMN IF NOT EXISTS shift_id_v37 uuid;
+ALTER TABLE zhirox_local.checkout_intents_v31
+ ADD CONSTRAINT intents_shift_v37_fk FOREIGN KEY(store_id,shift_id_v37)
+ REFERENCES zhirox_local.cash_shifts_v37(store_id,shift_id);
 ALTER TABLE zhirox_local.sales ADD COLUMN IF NOT EXISTS shift_id_v37 uuid;
 ALTER TABLE zhirox_local.sales
  ADD CONSTRAINT sales_shift_v37_fk FOREIGN KEY(store_id,shift_id_v37)
@@ -60,6 +65,41 @@ BEGIN
  WHERE q.store_id=p_store AND q.shift_id=p_shift AND q.cashier_id=p_cashier;
 END $$;
 
+-- Bind the durable V31 intent to the CURRENT open shift at prepare time.
+-- An intent from a closed/missing shift cannot be attached to a later shift.
+CREATE OR REPLACE FUNCTION zhirox_local.assign_intent_shift_v37()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $
+DECLARE active_shift uuid;
+BEGIN
+ IF NEW.shift_id_v37 IS NOT NULL THEN
+  RAISE EXCEPTION 'caller must not supply shift ID' USING ERRCODE='P3701'; END IF;
+ SELECT q.shift_id INTO active_shift FROM zhirox_local.cash_shifts_v37 q
+ WHERE q.store_id=NEW.store_id AND q.cashier_id=NEW.cashier_id AND q.state='open'
+ FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'open shift required before prepare' USING ERRCODE='P3701'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM zhirox_local.checkout_intents_v31 i
+    WHERE i.store_id=NEW.store_id AND i.cashier_id=NEW.cashier_id
+      AND i.request_id=NEW.request_id AND i.state='prepared'
+      AND i.shift_id_v37=active_shift)
+ THEN RAISE EXCEPTION 'sale must follow a prepared intent from same shift'
+      USING ERRCODE='P3701'; END IF;
+ NEW.shift_id_v37:=active_shift;
+ RETURN NEW;
+END $;
+DROP TRIGGER IF EXISTS v37_enforce_intent_shift ON zhirox_local.checkout_intents_v31;
+CREATE TRIGGER v37_enforce_intent_shift BEFORE INSERT ON zhirox_local.checkout_intents_v31
+ FOR EACH ROW EXECUTE FUNCTION zhirox_local.assign_intent_shift_v37();
+CREATE OR REPLACE FUNCTION zhirox_local.prevent_intent_shift_change_v37()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhirox_local AS $
+BEGIN
+ IF NEW.shift_id_v37 IS DISTINCT FROM OLD.shift_id_v37 THEN
+   RAISE EXCEPTION 'intent shift immutable' USING ERRCODE='P3701'; END IF;
+ RETURN NEW;
+END $;
+DROP TRIGGER IF EXISTS v37_immutable_intent_shift ON zhirox_local.checkout_intents_v31;
+CREATE TRIGGER v37_immutable_intent_shift BEFORE UPDATE OF shift_id_v37
+ ON zhirox_local.checkout_intents_v31
+ FOR EACH ROW EXECUTE FUNCTION zhirox_local.prevent_intent_shift_change_v37();
 -- This trigger is inserted in the same database transaction as V31 checkout.
 -- Even a rogue direct SQL INSERT without an open shift fails closed. Existing
 -- historical sales are NULL: NO backfill / manufactured shift attribution.
@@ -129,4 +169,6 @@ REVOKE ALL ON zhirox_local.cash_shifts_v37 FROM PUBLIC;
 REVOKE ALL ON FUNCTION zhirox_local.open_cash_shift_v37(uuid,uuid,uuid,bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION zhirox_local.close_cash_shift_v37(uuid,uuid,uuid,bigint) FROM PUBLIC;
 REVOKE ALL ON FUNCTION zhirox_local.assign_sale_shift_v37() FROM PUBLIC;
+REVOKE ALL ON FUNCTION zhirox_local.assign_intent_shift_v37() FROM PUBLIC;
+REVOKE ALL ON FUNCTION zhirox_local.prevent_intent_shift_change_v37() FROM PUBLIC;
 COMMIT;
