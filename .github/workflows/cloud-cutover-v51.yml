@@ -1,0 +1,40 @@
+name: V51 Cloud Cutover and Catalog Conflict DRY RUN
+on:
+  pull_request:
+    paths:
+      - 'offline/cloud-cutover-v51.mjs'
+      - 'offline/catalog-conflicts-v51.mjs'
+      - 'offline/tests/cloud-cutover-v51.test.mjs'
+      - 'docs/V51_CLOUD_CUTOVER_AND_CATALOG_DRYRUN.md'
+      - '.github/workflows/cloud-cutover-v51.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/cloud-cutover-v51.mjs'
+      - 'offline/catalog-conflicts-v51.mjs'
+      - 'offline/tests/cloud-cutover-v51.test.mjs'
+      - '.github/workflows/cloud-cutover-v51.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  no-production-cloud-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V51 strict external URL, source authority, version conflicts and cost privacy
+        run: node --test offline/tests/cloud-cutover-v51.test.mjs
+      - name: V50 HTTPS and local/cloud event parity regression
+        run: node --test offline/tests/cloud-readiness-v50.test.mjs offline/tests/staging-https-v50.test.mjs
+      - name: V27 and V49 signed delivery and automatic retry regression
+        run: node --test offline/tests/outbox-sync-v27.test.mjs offline/tests/autosync-v49.test.mjs
+      - name: Preserve official NO-GO
+        run: |
+          node --test scripts/release-readiness-v46.test.mjs
+          node scripts/release-readiness-v46.mjs --json
