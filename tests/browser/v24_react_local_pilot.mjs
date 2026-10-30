@@ -153,7 +153,7 @@ try {
  await page.getByRole("button",{name:"سکان",exact:true}).click();
  await page.getByText(/لیبڵەی کێشدارە پێشتر/).waitFor();
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
- await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە/).waitFor();
+ await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #2 — 13,475 IQD/).waitFor();
  assert.equal(attempts,4);
  assert.equal(await page.getByRole("button",{name:/پسووڵەکانی ئەمڕۆ \(0\)/}).count(),1,
    "isolated local checkout must not mutate React DEMO receipt list");
