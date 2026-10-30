@@ -121,7 +121,7 @@ export async function startV33LanTrial(){
  if(v35&&!v34)throw Error("v35_requires_v34_receipts");
  const v36=process.env.ZHIROX_V36_LAN_PILOT_ENABLED==="true";
  if(v36&&(!v35||!v34))throw Error("v36_requires_print_and_receipt_api");
- if(v36&&!origin)throw Error("v36_requires_exact_https_origin");
+ if(v36&&origin!=="https://"+host+":3433")throw Error("v36_requires_exact_https_origin");
  const localHandler=v35?
   (await import("./local-print-queue-v35.mjs")).createLocalPrintQueueHandlerV35({pool,secret}):
   v34?(await import("./local-receipts-v34.mjs")).createLocalReceiptHandlerV34({pool,secret}):null;
