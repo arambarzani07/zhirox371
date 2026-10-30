@@ -29,6 +29,45 @@ export function parseV33Peers(value){
   throw Error("invalid_peer_allowlist");
  return new Set(peers);
 }
+// V64 isolated protection: an independent login-only budget, separate from
+// ordinary scan/checkouts. Counts every login (including invalid credentials),
+// so attackers cannot evade the limit by guessing unknown usernames.
+// Source is the real TLS socket peer, never X-Forwarded-For.
+export function createV64LoginLimiter({now=()=>Date.now(),windowMs=60_000,limit=8,maxPeers=64}={}){
+ if(!Number.isSafeInteger(windowMs)||windowMs<1000||
+    !Number.isSafeInteger(limit)||limit<1||
+    !Number.isSafeInteger(maxPeers)||maxPeers<1)throw Error("invalid_v64_login_limits");
+ const sessions=new Map();
+ return peer=>{
+  const timestamp=now();
+  if(sessions.size>=maxPeers&&!sessions.has(peer)){
+   for(const [address,entry] of sessions){
+    if(timestamp>=entry.expires)sessions.delete(address);
+   }
+   if(sessions.size>=maxPeers)return false;
+  }
+  const old=sessions.get(peer);
+  const entry=!old||timestamp>=old.expires?
+    {n:0,expires:timestamp+windowMs}:old;
+  if(entry.n>=limit)return false;
+  entry.n++;sessions.set(peer,entry);
+  return true;
+ };
+}
+// Only these routes have been reviewed for V63 local cash-only trial.
+// Other financial APIs require independent authorization gates in later work.
+export const V64_CASH_API_ALLOWLIST=new Set([
+ "/api/local/v3/login",
+ "/api/local/v26/scan",
+ "/api/local/v31/prepare","/api/local/v31/commit",
+ "/api/local/v31/cancel","/api/local/v31/recover",
+ "/api/local/v32/receipts","/api/local/v32/intent",
+ "/api/local/v34/receipt",
+ "/api/local/v35/print-jobs",
+ "/api/local/v37/shift","/api/local/v37/shift/open","/api/local/v37/shift/close",
+ // Their HTTP handlers return 410 in V63; preserve the explicit denial.
+ "/api/local/v3/checkout","/api/local/v25/checkout","/api/local/v26/checkout"
+]);
 const securityHeaders={
  "Cache-Control":"no-store, private",
  "X-Content-Type-Options":"nosniff",
@@ -58,7 +97,8 @@ export function createV33ClientLimiter({now=()=>Date.now(),windowMs=60000,limit=
  };
 }
 export function createV33LanHandler({pool,secret,peers,allowedOrigin=null,now=()=>Date.now(),
- limiter=createV33ClientLimiter({now}),localHandler=null,staticHandler=null}){
+ limiter=createV33ClientLimiter({now}),localHandler=null,staticHandler=null,
+ v64Protected=false,loginLimiter=createV64LoginLimiter({now})}){
  if(!pool||typeof pool.query!=="function"||typeof pool.connect!=="function"||
     !(peers instanceof Set)||!peers.size||[...peers].some(p=>!privateIPv4(p))||
     typeof secret!=="string"||Buffer.byteLength(secret)<32||
@@ -87,6 +127,12 @@ export function createV33LanHandler({pool,secret,peers,allowedOrigin=null,now=()
    if(!staticHandler)return reject(res,404,"not_found");
    try{return await staticHandler(req,res,url);}
    catch{return reject(res,503,"trial_assets_unavailable");}
+  }
+  if(v64Protected){
+   if(!V64_CASH_API_ALLOWLIST.has(url.pathname))
+     return reject(res,410,"api_route_not_cleared_v64");
+   if(url.pathname==="/api/local/v3/login"&&req.method==="POST"&&!loginLimiter(peer))
+     return reject(res,429,"login_rate_limited",{"Retry-After":"60"});
   }
   // Content length is only a preflight guard. Underlying V3/V31 routes also
   // validate parsed JSON; do not assume this bounds streamed bodies.
@@ -155,7 +201,10 @@ export async function startV33LanTrial(){
  const staticHandler=v36?
   await (await import("./lan-pilot-static-v36.mjs")).createV36StaticHandler(
     process.env.ZHIROX_V36_STATIC_DIR||""):null;
- const handler=createV33LanHandler({pool,secret,peers,allowedOrigin:origin,localHandler,staticHandler});
+ const v64Protected=process.env.ZHIROX_V64_AUTH_GATE_ENABLED==="true";
+ if(v64Protected && process.env.ZHIROX_V63_DB_ACTOR_PROOF!=="true")
+  throw Error("v64_requires_v63_database_actor_proof");
+ const handler=createV33LanHandler({pool,secret,peers,allowedOrigin:origin,localHandler,staticHandler,v64Protected});
  const server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},handler);
  server.listen(3433,host);
  server.on("close",()=>pool.end());
