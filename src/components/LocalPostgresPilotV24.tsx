@@ -185,7 +185,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        <button disabled={busy||!uuid.test(store)} type="submit">چوونەژوورەوەی تاقیکردنەوە</button>
      </form>:<>
        <div style={{marginTop:10}}>پەیوەندی ناوخۆیی چالاکە — تەنها هەمان PC</div>
-       {v37Shifts&&<LocalV37ShiftControls token={token} onShiftOpen={setV37ShiftOpen}/>}
+       {v37Shifts&&<LocalV37ShiftControls token={token} store={store} onShiftOpen={setV37ShiftOpen}/>}
        <form onSubmit={submitScan} style={{display:"flex",gap:8,marginTop:10}}>
          <input style={{...inputStyle,flex:1}} value={scan} onChange={e=>setScan(e.target.value)}
            aria-label="بارکۆدی دانە، کارتۆن یان تەرازوو" placeholder="بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە" disabled={busy||!!pending}/>

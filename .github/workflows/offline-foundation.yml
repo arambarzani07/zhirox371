@@ -121,3 +121,30 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f offline/migrations/014_cash_movements_v38.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/014_cash_movements_v38.sql
+      - name: V39 manager-approved cash refunds, restock and refund-aware closing
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/015_manager_cash_refunds_v39.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/015_manager_cash_refunds_v39.sql
+      - name: Two simultaneous refund attempts cannot overdraw shared cash balance
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f offline/tests/016_v39_refund_race_seed.sql
+          sale_id=$(psql -At -c "SELECT id FROM zhirox_local.sales WHERE store_id='10000000-0000-0000-0000-000000000049' LIMIT 1")
+          test -n "$sale_id"
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          psql -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.refund_full_line_v39('10000000-0000-0000-0000-000000000049','20000000-0000-0000-0000-000000000050','20000000-0000-0000-0000-000000000051','40000000-0000-0000-0000-000000000050','60000000-0000-0000-0000-000000000049','$sale_id',1,false,'race line one')" > "$tmp/a.log" 2>&1 &
+          a=$!
+          psql -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.refund_full_line_v39('10000000-0000-0000-0000-000000000049','20000000-0000-0000-0000-000000000050','20000000-0000-0000-0000-000000000051','40000000-0000-0000-0000-000000000050','60000000-0000-0000-0000-000000000050','$sale_id',2,false,'race line two')" > "$tmp/b.log" 2>&1 &
+          b=$!
+          set +e
+          wait "$a"; sa=$?
+          wait "$b"; sb=$?
+          set -e
+          if ! { { [ "$sa" -eq 0 ] && [ "$sb" -ne 0 ]; } || { [ "$sb" -eq 0 ] && [ "$sa" -ne 0 ]; }; }; then
+            cat "$tmp/a.log"; cat "$tmp/b.log"
+            echo "V39 concurrent refund safety failure"
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -f offline/tests/016_v39_refund_race_verify.sql
