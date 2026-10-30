@@ -1,0 +1,44 @@
+-- V46 disposable CI RESTORE SEED, intentionally committed to disposable DB.
+-- NEVER execute on a real cashier/production PostgreSQL or Supabase instance.
+BEGIN;
+INSERT INTO zhirox_local.stores(id,name)
+ VALUES('10000000-0000-0000-0000-000000000056','کانی چنار — تاقیکردنەوەی backup V46');
+INSERT INTO zhirox_local.local_users(store_id,id,username,password_hash,role)
+ VALUES('10000000-0000-0000-0000-000000000056',
+ '20000000-0000-0000-0000-000000000056','v46-backup-test',
+ 'TEST-ONLY-UNUSABLE-PASSWORD','cashier');
+INSERT INTO zhirox_local.products(store_id,id,name,price_minor,stock_base_units)
+ VALUES('10000000-0000-0000-0000-000000000056',
+ '30000000-0000-0000-0000-000000000056','شێری تاقیکردنەوە',1250,5);
+INSERT INTO zhirox_local.barcodes(store_id,code,product_id,quantity_base_units)
+ VALUES('10000000-0000-0000-0000-000000000056','6260053183956',
+ '30000000-0000-0000-0000-000000000056',1);
+SELECT * FROM zhirox_local.open_cash_shift_v37(
+ '10000000-0000-0000-0000-000000000056',
+ '20000000-0000-0000-0000-000000000056',
+ '40000000-0000-0000-0000-000000000056',500);
+SELECT * FROM zhirox_local.prepare_checkout_v31(
+ '10000000-0000-0000-0000-000000000056',
+ '20000000-0000-0000-0000-000000000056',
+ '50000000-0000-0000-0000-000000000056',
+ '[{"barcode":"6260053183956","qty":2}]'::jsonb,2500);
+SELECT * FROM zhirox_local.commit_checkout_v31(
+ '10000000-0000-0000-0000-000000000056',
+ '20000000-0000-0000-0000-000000000056',
+ '50000000-0000-0000-0000-000000000056');
+DO $ci$
+DECLARE sid uuid;
+BEGIN
+ SELECT sale_id INTO STRICT sid FROM zhirox_local.checkout_intents_v31
+ WHERE store_id='10000000-0000-0000-0000-000000000056'
+ AND request_id='50000000-0000-0000-0000-000000000056';
+ PERFORM * FROM zhirox_local.queue_print_v35(
+ '10000000-0000-0000-0000-000000000056',
+ '20000000-0000-0000-0000-000000000056',
+ sid,'60000000-0000-0000-0000-000000000056',80::smallint);
+END $ci$;
+SELECT * FROM zhirox_local.close_cash_shift_v38(
+ '10000000-0000-0000-0000-000000000056',
+ '20000000-0000-0000-0000-000000000056',
+ '40000000-0000-0000-0000-000000000056',3000);
+COMMIT;
