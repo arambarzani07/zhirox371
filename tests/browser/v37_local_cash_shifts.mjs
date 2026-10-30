@@ -56,6 +56,7 @@ try{
  const submit=page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"});
  await page.getByRole("button",{name:"کردنەوەی شێفت"}).waitFor();
  assert.equal(await submit.isDisabled(),true);
+ await page.getByLabel("پارەی سەرەتای سندووق").fill("10000");
  await page.getByRole("button",{name:"کردنەوەی شێفت"}).click();
  await page.getByText(/شێفت کراوە — فرۆشتنی نەختینە/).waitFor();
  const scan=page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە");
