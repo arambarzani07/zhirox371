@@ -62,7 +62,7 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {activeReceiptForModal && (
+      {activeReceiptForModal && !(localCashierV32 && currentView === 'pos') && (
         <ThermalReceiptModal
           receipt={activeReceiptForModal}
           onClose={() => setActiveReceiptForModal(null)}
