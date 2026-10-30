@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ckb" dir="rtl">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+ <meta name="theme-color" content="#14283d">
+ <meta name="robots" content="noindex,nofollow,noarchive">
+ <title>ZHIROX Owner — تاقیکردنەوە</title>
+ <link rel="stylesheet" href="/v29/owner.css">
+ <script type="module" src="/v29/owner-app.js"></script>
+</head>
+<body>
+ <main class="wrap">
+  <header>
+   <div class="brand"><span class="symbol">Z</span><span><b>ZHIROX Owner</b><small>سوپەرمارکێتی کانی چنار</small></span></div>
+   <span class="demo">تاقیکردنەوە — نەک Production</span>
+  </header>
+  <section class="intro">
+   <h1>چاودێری فرۆشتنەکان</h1>
+   <p>ئەم ڕووکارە تەنها ڕووداوە وەرگیراوەکانی کلاود پیشان دەدات؛ فرۆشتنی ئۆفلاینی نەنێردراو لێرە دەرناکەوێت.</p>
+  </section>
+  <form id="login" autocomplete="off" class="card">
+   <h2>پەیوەندی تاقیکردنەوە</h2>
+   <label for="store">ناسنامەی فرۆشگا (UUID)</label>
+   <input id="store" name="store" required maxlength="36" spellcheck="false" placeholder="UUID ـی فرۆشگا" autocomplete="off">
+   <label for="token">کلیلی تایبەتی خاوەن</label>
+   <input id="token" name="token" type="password" required minlength="32" autocomplete="off" placeholder="کلیلی خاوەن">
+   <p class="hint">کلیل تەنها لە بیرگەی کاتیی ئەم پەڕەیە دەهێڵدرێتەوە. لە LocalStorage یان URL پاشەکەوت ناکرێت.</p>
+   <button type="submit" class="primary">بینینی زانیارییەکان</button>
+  </form>
+  <div id="status" role="status" aria-live="polite"></div>
+  <section id="dashboard" hidden>
+   <div class="toolbar"><span id="updated"></span><div><button id="refresh" type="button">نوێکردنەوە</button><button id="logout" type="button">دەرچوون</button></div></div>
+   <div class="metrics">
+    <article class="card metric"><p>ژمارەی فرۆشتنی وەرگیراو</p><strong id="sales">—</strong></article>
+    <article class="card metric"><p>کۆی فرۆشتنی وەرگیراو</p><strong id="total">—</strong><small>IQD</small></article>
+    <article class="card metric"><p>دوایین ژمارەی پسووڵە</p><strong id="receipt">—</strong></article>
+   </div>
+   <section class="card">
+    <h2>دۆخی داتا</h2>
+    <p id="warning" class="warning">ئەم ڕووکارە بە تەنها بڕی داتای گەیشتوو پیشان دەدات.</p>
+    <p id="last-seen" class="subtle"></p>
+   </section>
+   <section class="card">
+    <h2>ئاگادارکردنەوەکان</h2>
+    <div class="categories">
+     <div><span>فرۆشتنی نوێ</span><b class="on">ڕووداوی وەرگیراو</b></div>
+     <div><span>گۆڕینی نرخ</span><b>هێشتا ناچالاکە</b></div>
+     <div><span>کەمی کۆگا</span><b>هێشتا ناچالاکە</b></div>
+     <div><span>گەڕاندنەوەی کاڵا</span><b>هێشتا ناچالاکە</b></div>
+     <div><span>کردنەوە/داخستنی شێفت</span><b>هێشتا ناچالاکە</b></div>
+     <div><span>ئاگاداریی ئەمنی</span><b>هێشتا ناچالاکە</b></div>
+    </div>
+    <p class="hint">Push Notification و ئاگادارکردنەوەی ئۆتۆماتیکی لە V29 چالاک نییە.</p>
+   </section>
+   <section class="card">
+    <h2>دوایین فرۆشتنە وەرگیراوەکان</h2>
+    <div class="table-wrap"><table>
+     <thead><tr><th scope="col">پسووڵە</th><th scope="col">کۆی پارە</th><th scope="col">کاتی وەرگرتن</th></tr></thead>
+     <tbody id="rows"></tbody>
+    </table></div>
+   </section>
+  </section>
+  <footer>V29 · Read-Only Preview · بەبێ دەستکاریی داتای فرۆشگا</footer>
+ </main>
+</body></html>
