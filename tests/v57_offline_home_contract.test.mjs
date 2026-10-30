@@ -8,9 +8,10 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const read=name=>readFileSync(resolve(root,name),"utf8");
 const sha1blob=b=>createHash("sha1").update("blob "+b.length+"\0").update(b).digest("hex");
 
-test("V57 leaves approved locked visual assets byte-for-byte unchanged",()=>{
+test("V57 retains inherited React index and archived original Home unmodified",()=>{
  const hashes={
- "index.html":"c364336a84b2c92cf121d7682671b309eccd4b05",
+ "index.html":"ba44208524868a80297790edba872ec4745622df",
+ "design/source-faithful-home-preview.html":"de57472e89371d1b446a1eaddaf2c454f2654ace",
  "ui-global.css":"14474a71940bfa79a25173623bcfbaf5387d3660",
  "ui-fixed-pc.css":"e55fc2ddbec2aa0e0e19d97c568592a6e6501a0c",
  "card-icons.css":"1c774c9d6f21221fb0972d88d3d4f303707f77a1",
