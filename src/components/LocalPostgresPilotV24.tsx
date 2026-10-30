@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import {checkoutLocal,loginLocal,makePilotPending,scanLocal,validPilotPending} from '../localPilotV24';
+import {prepareDurableLocal,commitDurableLocal,cancelDurableLocal,recoverDurableLocal,loginLocal,makePilotPending,scanLocal,validPilotPending} from '../localPilotV24';
 import type {LocalPilotItem,PilotPending,PilotResult} from '../localPilotV24';
 
 type Line={item:LocalPilotItem;qty:number};
@@ -33,7 +33,15 @@ export const LocalPostgresPilotV24:React.FC=()=>{
      const raw=sessionStorage.getItem(pendingKey(store));
      const parsed=raw?JSON.parse(raw) as unknown:null;
      if(raw&&!validPilotPending(parsed))throw new Error("هەڵە لە مامەڵەی چاوەڕوانە؛ بەدەستی مەیسڕەوە");
-     setPending(parsed as PilotPending|null);
+     // The PostgreSQL journal is authoritative across tabs and PC/browser restarts.
+     // A stale browser hint may still be retried with the SAME UUID and quote.
+     const serverIntent=await recoverDurableLocal(session.token);
+     const revived=serverIntent?{
+       request_id:serverIntent.request_id,lines:serverIntent.lines,
+       expected_total_minor:serverIntent.expected_total_minor
+     }:parsed as PilotPending|null;
+     if(revived)sessionStorage.setItem(pendingKey(store),JSON.stringify(revived));
+     setPending(revived);
      setToken(session.token);setExpiresAt(Date.now()+session.expires_in_seconds*1000);
      setCart([]);setLast(null);
    }catch{setToken("");setError("چوونەژوورەوە سەرکەوتوو نەبوو یان داواکارییەکی ناتەواو هەیە");}
@@ -83,16 +91,30 @@ export const LocalPostgresPilotV24:React.FC=()=>{
    }catch(err){setError(err instanceof Error?err.message:"هەڵە لە سەبەتە");return;}
    setBusy(true);setError("");
    try{
-     const receipt=await checkoutLocal(token,request);
+     // First SQL statement durably prepares; only then can the second statement
+     // execute the real atomic sale. Repeated calls use exactly the same UUID.
+     await prepareDurableLocal(token,request);
+     const receipt=await commitDurableLocal(token,request.request_id);
      sessionStorage.removeItem(pendingKey(store));
      setPending(null);setCart([]);setLast(receipt);
    }catch(err){
      if(err instanceof Error && err.message==="price_changed"){
-       // SQL P2501 is a definitive rollback. Clear the old quote so the
-       // cashier must rescan every item at the new authoritative server price.
-       sessionStorage.removeItem(pendingKey(store));
-       setPending(null);setCart([]);setScan("");
-       setError("نرخی کاڵا لە سێرڤەر گۆڕاوە؛ هیچ فرۆشتنێک تۆمار نەکرا. کاڵاکان دووبارە بسکانە.");
+       // Price failure rolls back V26 sale. Keep the cart locked until the
+       // server confirms the prepared intent was safely cancelled (or committed).
+       try{
+         const status=await cancelDurableLocal(token,request.request_id);
+         if(status==="committed"){
+           const receipt=await commitDurableLocal(token,request.request_id);
+           sessionStorage.removeItem(pendingKey(store));
+           setPending(null);setCart([]);setLast(receipt);
+         }else{
+           sessionStorage.removeItem(pendingKey(store));
+           setPending(null);setCart([]);setScan("");
+           setError("نرخی کاڵا لە سێرڤەر گۆڕاوە؛ داواکاری هەڵوەشێندرایەوە. کاڵاکان دووبارە بسکانە.");
+         }
+       }catch{
+         setError("نرخی کاڵا گۆڕاوە، بەڵام هەڵوەشاندنەوە پشتڕاست نەکراوەتەوە. هەمان داواکاری دووبارە بپشکنە.");
+       }
      }else{
        setError("ئەنجامی فرۆشتن دڵنیا نییە؛ تەنها هەمان داواکاری دووبارە بنێرە. سەبەتە مەگۆڕە.");
      }
@@ -112,7 +134,7 @@ export const LocalPostgresPilotV24:React.FC=()=>{
  };
  return <section style={box} dir="rtl" aria-label="تاقیکردنەوەی PostgreSQL ـی ناوخۆیی">
    <button type="button" onClick={()=>setOpen(x=>!x)} style={{fontWeight:850,padding:9}}>
-     {open?"داخستنی":"کردنەوەی"} V26 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
+     {open?"داخستنی":"کردنەوەی"} V31 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
    </button>
    {open&&<div style={{marginTop:12}}>
      <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
@@ -156,7 +178,7 @@ export const LocalPostgresPilotV24:React.FC=()=>{
          </button>
        </form>
        {pending&&<div role="alert" style={{color:"#9a3412",marginTop:8}}>
-         مامەڵەی چاوەڕوانە هەیە؛ بۆ ڕێگریکردن لە دووبارەفرۆشتن سەبەتە قوفڵ کراوە.
+         مامەڵەی چاوەڕوانە هەیە؛ لە PostgreSQL پاشەکەوت دەکرێت و سەبەتە قوفڵ کراوە. دوای داخستنی پەڕە دەتوانرێت بگەڕێنرێتەوە.
        </div>}
        {last&&<div role="status" style={{marginTop:8,fontWeight:850}}>
          پسووڵەی PostgreSQL ـی تاقیکردنەوە: #{last.receipt_no} — {money(last.total_minor)}

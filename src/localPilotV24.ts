@@ -97,3 +97,62 @@ export function makePilotPending(lines:PilotLine[],id:string,expectedTotal:numbe
  if(!validPilotPending(next))throw new Error("invalid_checkout");
  return next;
 }
+
+/* V31: PostgreSQL owns checkout intent BEFORE any financial write. The browser
+   sessionStorage key is only a recovery hint; it is never the system of record. */
+export interface DurableLocalIntent {
+ request_id:string;
+ state:"prepared"|"committed"|"cancelled";
+ lines:PilotLine[];
+ expected_total_minor:number;
+ sale_id:string|null;
+ receipt_no:number|null;
+ total_minor:number|null;
+}
+const parseIntent=(data:unknown):DurableLocalIntent=>{
+ const value=data as Record<string,unknown>;
+ if(!value||!uuid.test(String(value.request_id||""))||
+    !["prepared","committed","cancelled"].includes(String(value.state))||
+    !validPilotPending({request_id:value.request_id,lines:value.lines,
+      expected_total_minor:Number(value.expected_total_minor)}))
+   throw new Error("invalid_server_intent");
+ const completed=value.state==="committed";
+ const receiptNo=value.receipt_no===null?null:Number(value.receipt_no);
+ const total=value.total_minor===null?null:Number(value.total_minor);
+ if(completed? !uuid.test(String(value.sale_id||""))||
+    !Number.isSafeInteger(receiptNo)||Number(receiptNo)<1||
+    !Number.isSafeInteger(total)||Number(total)<0 :
+    value.sale_id!==null||value.receipt_no!==null||value.total_minor!==null)
+   throw new Error("invalid_server_intent");
+ return {...value,expected_total_minor:Number(value.expected_total_minor),
+   receipt_no:receiptNo,total_minor:total} as DurableLocalIntent;
+};
+export async function prepareDurableLocal(token:string,request:PilotPending){
+ if(!validPilotPending(request))throw new Error("invalid_checkout");
+ const data=await requestV31<{ok:true;intent:unknown}>("/api/local/v31/prepare",token,request);
+ return parseIntent(data.intent);
+}
+const requestV31=async<T>(path:string,token:string,body?:unknown):Promise<T>=>
+ request<T>(path,body===undefined?{}:{method:"POST",body:JSON.stringify(body)},token);
+export async function recoverDurableLocal(token:string):Promise<DurableLocalIntent|null>{
+ const data=await requestV31<{ok:true;intent:unknown|null}>("/api/local/v31/recover",token);
+ return data.intent===null?null:parseIntent(data.intent);
+}
+export async function commitDurableLocal(token:string,id:string):Promise<PilotResult>{
+ if(!uuid.test(id))throw new Error("invalid_request_id");
+ const data=await requestV31<{ok:true;receipt:{
+  sale_id:string;receipt_no:string|number;total_minor:string|number;replayed:boolean
+ }}>("/api/local/v31/commit",token,{request_id:id});
+ const r=data.receipt,number=Number(r?.receipt_no),total=Number(r?.total_minor);
+ if(!uuid.test(r?.sale_id||"")||!Number.isSafeInteger(number)||number<1||
+    !Number.isSafeInteger(total)||total<0||typeof r?.replayed!=="boolean")
+   throw new Error("invalid_receipt");
+ return {sale_id:r.sale_id,receipt_no:number,total_minor:total,replayed:r.replayed};
+}
+export async function cancelDurableLocal(token:string,id:string):Promise<"cancelled"|"committed">{
+ if(!uuid.test(id))throw new Error("invalid_request_id");
+ const data=await requestV31<{ok:true;state:string}>("/api/local/v31/cancel",token,{request_id:id});
+ if(data.state!=="cancelled"&&data.state!=="committed")
+   throw new Error("invalid_cancel_response");
+ return data.state;
+}

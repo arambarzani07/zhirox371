@@ -9,7 +9,7 @@ const store="10000000-0000-0000-0000-000000000001";
 const prod="30000000-0000-0000-0000-000000000003";
 const sale="40000000-0000-0000-0000-000000000004";
 page.on("pageerror",e=>errors.push(e.message));
-let attempts=0;
+let attempts=0,serverPending=null;
 await page.route("**/api/local/**",async route=>{
  const request=route.request(),url=new URL(request.url()),path=url.pathname;
  if(path==="/api/local/v3/login"){
@@ -51,25 +51,47 @@ await page.route("**/api/local/**",async route=>{
        price_minor:"2500",unit_price_minor:"2500",stock_base_units:"30"
      }})});
  }
- if(path==="/api/local/v26/checkout"){
+ if(path==="/api/local/v31/recover"){
+   return route.fulfill({status:200,contentType:"application/json",
+     body:JSON.stringify({ok:true,intent:serverPending})});
+ }
+ if(path==="/api/local/v31/prepare"){
+   const body=request.postDataJSON();
+   if(serverPending&&serverPending.request_id!==body.request_id)
+     throw Error("Unfinished server checkout was overwritten");
+   serverPending={...body,state:"prepared",sale_id:null,receipt_no:null,total_minor:null};
+   return route.fulfill({status:200,contentType:"application/json",
+     body:JSON.stringify({ok:true,intent:serverPending})});
+ }
+ if(path==="/api/local/v31/cancel"){
+   const body=request.postDataJSON();
+   assert.equal(body.request_id,serverPending?.request_id);
+   serverPending=null;
+   return route.fulfill({status:200,contentType:"application/json",
+     body:JSON.stringify({ok:true,state:"cancelled"})});
+ }
+ if(path==="/api/local/v31/commit"){
    assert.equal(request.method(),"POST");attempts++;
-   const body=request.postDataJSON();requests.push(body);
+   const body=request.postDataJSON();
+   assert.equal(body.request_id,serverPending?.request_id);
+   requests.push({...serverPending});
    if(attempts<4){
-     assert.deepEqual(body.lines,[{barcode:"6260053183974",qty:1}]);
-     assert.equal(body.expected_total_minor,2500);
+     assert.deepEqual(serverPending.lines,[{barcode:"6260053183974",qty:1}]);
+     assert.equal(serverPending.expected_total_minor,2500);
    }else{
-     assert.deepEqual(body.lines,[
+     assert.deepEqual(serverPending.lines,[
        {barcode:"6260053183998",qty:1},
        {barcode:"2700001004806",qty:1},
        {barcode:"2700001002451",qty:1}
      ]);
-     assert.equal(body.expected_total_minor,13475);
+     assert.equal(serverPending.expected_total_minor,13475);
    }
    assert.ok(!("store_id" in body)&&!("cashier_id" in body));
    assert.match(body.request_id,/^[a-f0-9-]{36}$/i);
    if(attempts===3)return route.fulfill({status:409,contentType:"application/json",body:'{"error":"price_changed"}'});
    if(attempts===1)return route.fulfill({status:503,contentType:"application/json",
        body:'{"error":"local_database_unavailable"}'});
+   serverPending=null;
    return route.fulfill({status:200,contentType:"application/json",
      body:JSON.stringify({ok:true,receipt:{sale_id:sale,receipt_no:attempts===4?2:1,
        total_minor:attempts===4?"13475":"2500",replayed:attempts!==4}})});
@@ -79,7 +101,7 @@ await page.route("**/api/local/**",async route=>{
 try {
  await page.goto("http://127.0.0.1:3000/",{waitUntil:"networkidle"});
  await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
- await page.getByRole("button",{name:/کردنەوەی V26/}).click();
+ await page.getByRole("button",{name:/کردنەوەی V31/}).click();
  assert.match(await page.getByText(/تەنها تاقیکردنەوە لەسەر هەمان PC/).innerText(),/Production/);
  await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
  await page.getByPlaceholder("ناوی بەکارهێنەر").fill("cashier");
@@ -95,6 +117,17 @@ try {
  const persisted=await page.evaluate(k=>sessionStorage.getItem(k),sessionKey);
  assert.equal(JSON.parse(persisted).request_id,requests[0].request_id);
  assert.match(await page.getByText(/سەبەتە قوفڵ کراوە/).innerText(),/قوفڵ/);
+ // Simulate a browser crash/reload after an uncertain HTTP response. Server
+ // journal still owns the same UUID and cashier can recover it after re-login.
+ await page.reload({waitUntil:"networkidle"});
+ await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
+ await page.getByRole("button",{name:/کردنەوەی V31/}).click();
+ await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
+ await page.getByPlaceholder("ناوی بەکارهێنەر").fill("cashier");
+ await page.getByPlaceholder("وشەی نهێنی ناوخۆیی").fill("test-password-for-isolated-pilot");
+ await page.getByRole("button",{name:"چوونەژوورەوەی تاقیکردنەوە"}).click();
+ await page.getByRole("button",{name:"دووبارە ناردنی هەمان داواکاری"}).waitFor();
+ assert.equal(serverPending?.request_id,requests[0].request_id);
  await page.getByRole("button",{name:"دووبارە ناردنی هەمان داواکاری"}).click();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە/).waitFor();
  assert.equal(attempts,2);
@@ -120,7 +153,7 @@ try {
  await page.getByRole("button",{name:"سکان",exact:true}).click();
  await page.getByText(/لیبڵەی کێشدارە پێشتر/).waitFor();
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
- await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە/).waitFor();
+ await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #2 — 13,475 IQD/).waitFor();
  assert.equal(attempts,4);
  assert.equal(await page.getByRole("button",{name:/پسووڵەکانی ئەمڕۆ \(0\)/}).count(),1,
    "isolated local checkout must not mutate React DEMO receipt list");
