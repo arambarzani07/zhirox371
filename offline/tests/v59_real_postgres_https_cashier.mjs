@@ -104,6 +104,14 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     "INSERT INTO zhirox_local.local_users(store_id,id,username,password_hash,role) VALUES($1,$2,$3,$4,'cashier')",
     [store,id,username,hash]);
   }
+  if(process.env.ZHIROX_V63_CI_ACTOR_PROOF==="true"){
+    // CI-only bcrypt enrollment. Existing scrypt hashes are never silently
+    // converted. Real store users would need separately approved reenrollment.
+    await pool.query(
+      "INSERT INTO zhirox_local.actor_credentials_v63(store_id,cashier_id,verifier) SELECT store_id,id,zhirox_local.crypt($1,zhirox_local.gen_salt('bf',8)) FROM zhirox_local.local_users WHERE store_id=$2::uuid",
+      [password,store]
+    );
+  }
   await pool.query(
    "INSERT INTO zhirox_local.products(store_id,id,name,price_minor,stock_base_units) VALUES ($1,$2,'V59 Synthetic Last Unit',1250,2),($1,$3,'V59 Synthetic Stale Quote',400,3)",
    [store,item,second]);
@@ -131,6 +139,12 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
       for(const [key,value] of Object.entries(result.rows[0])){
         assert.equal(value,false,"V62 caller must not have "+key);
       }
+    }
+    if(process.env.ZHIROX_V63_CI_ACTOR_PROOF==="true"){
+      const sql="SELECT has_function_privilege(current_user,'zhirox_local.prepare_checkout_v31(uuid,uuid,uuid,jsonb,bigint)','EXECUTE') AS raw_prepare, has_function_privilege(current_user,'zhirox_local.commit_checkout_v31(uuid,uuid,uuid)','EXECUTE') AS raw_commit, has_function_privilege(current_user,'zhirox_local.open_cash_shift_v37(uuid,uuid,uuid,bigint)','EXECUTE') AS raw_shift";
+      const r=(await runtimePool.query(sql)).rows[0];
+      for(const [key,value] of Object.entries(r))
+       assert.equal(value,false,"V63 unguarded SQL must not be callable by "+key);
     }
     // A compromised cashier API account must not own the schema or mutate
     // it structurally, even though existing SECURITY INVOKER routines still
@@ -186,6 +200,39 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
   assert.equal(loginB.status,200);
   const tokenA=loginA.data.token,tokenB=loginB.data.token;
   assert.ok(tokenA&&tokenB&&tokenA!==tokenB);
+  if(process.env.ZHIROX_V63_CI_ACTOR_PROOF==="true"){
+    for(const route of ["/api/local/v3/checkout","/api/local/v25/checkout","/api/local/v26/checkout"]){
+      const blocked=await post(route,{},tokenA);
+      assert.equal(blocked.status,410,"legacy direct checkout must be unavailable: "+route);
+      assert.equal(blocked.data.error,"legacy_checkout_disabled_use_v31");
+    }
+  }
+  let proofA=null,proofB=null;
+  if(process.env.ZHIROX_V63_CI_ACTOR_PROOF==="true"){
+    const actorA=JSON.parse(Buffer.from(tokenA.split(".")[0],"base64url").toString("utf8"));
+    const actorB=JSON.parse(Buffer.from(tokenB.split(".")[0],"base64url").toString("utf8"));
+    proofA=actorA.db_proof;proofB=actorB.db_proof;
+    assert.match(proofA,/^[a-f0-9]{64}$/);
+    assert.match(proofB,/^[a-f0-9]{64}$/);
+    assert.notEqual(proofA,proofB,"separate cashiers have distinct DB sessions");
+    for(const [proof,st,actor] of [
+      [proofA,store,b],[proofB,store,a],["0".repeat(64),store,a],
+      [proofA,"10000000-0000-0000-0000-000000000060",a]
+    ]){
+      await assert.rejects(
+        runtimePool.query("SELECT * FROM zhirox_local.open_cash_shift_v63($1,$2::uuid,$3::uuid,$4::uuid,$5::bigint)",
+          [proof,st,actor,shiftA,0]),
+        error=>error?.code==="P6301",
+        "forged/cross-store/cross-cashier DB actor must be rejected"
+      );
+    }
+    await assert.rejects(
+      runtimePool.query("SELECT * FROM zhirox_local.prepare_checkout_v31($1::uuid,$2::uuid,$3::uuid,$4::jsonb,$5::bigint)",
+        [store,a,stale,JSON.stringify([{barcode:otherBarcode,qty:1}]),400]),
+      error=>error?.code==="42501",
+      "network-facing API cannot invoke unguarded V31 even using correct actor UUID"
+    );
+  }
   assert.equal((await post("/api/local/v31/prepare",
    {store_id:store,request_id:reqA,lines:[],expected_total_minor:0},tokenA)).status,400,
    "browser may not inject store identity");
@@ -269,6 +316,29 @@ test("V59 REAL PostgreSQL + TLS: two authenticated cashiers never oversell or du
     {shift_id:shiftB,counted_minor:aWins?500:3000},tokenB)).status,200);
   assert.equal((await get("/api/local/v37/shift",tokenA)).data.shift,null);
   assert.equal((await get("/api/local/v37/shift",tokenB)).data.shift,null);
+  if(proofA){
+    // Revocation is immediately enforced by DB even if the HMAC JWT remains
+    // otherwise valid: no actor cache or connection-affinity trust.
+    await pool.query(
+      "UPDATE zhirox_local.local_users SET session_version=session_version+1 WHERE store_id=$1 AND id=$2",
+      [store,a]
+    );
+    await assert.rejects(
+      runtimePool.query("SELECT * FROM zhirox_local.open_cash_shift_v63($1,$2::uuid,$3::uuid,$4::uuid,$5::bigint)",
+        [proofA,store,a,shiftA,0]),
+      error=>error?.code==="P6301",
+      "revoked cashier must be rejected independently by database"
+    );
+    await pool.query(
+      "UPDATE zhirox_local.actor_proofs_v63 SET expires_at=clock_timestamp()-interval '1 second' WHERE cashier_id=$1",[b]
+    );
+    await assert.rejects(
+      runtimePool.query("SELECT * FROM zhirox_local.open_cash_shift_v63($1,$2::uuid,$3::uuid,$4::uuid,$5::bigint)",
+        [proofB,store,b,shiftB,0]),
+      error=>error?.code==="P6301",
+      "expired proof must fail closed"
+    );
+  }
   console.log((process.env.ZHIROX_V62_CI_INTENT_SHIFT_GUARD==="true"?"V62 guarded intents/shifts + ":process.env.ZHIROX_V61_CI_CASH_EXECUTOR==="true"?"V61 NOLOGIN cash executor + ":v60?"V60 restricted API role + ":"V59 ")+"PASS: real disposable PostgreSQL, verified loopback TLS, 2 sessions/shifts, 1 last-stock winner, immutable receipt, idempotent queue, pending local outbox. NO_GO");
  }finally{
   if(server)await new Promise(resolve=>server.close(resolve));
