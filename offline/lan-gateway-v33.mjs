@@ -58,13 +58,14 @@ export function createV33ClientLimiter({now=()=>Date.now(),windowMs=60000,limit=
  };
 }
 export function createV33LanHandler({pool,secret,peers,allowedOrigin=null,now=()=>Date.now(),
- limiter=createV33ClientLimiter({now}),localHandler=null}){
+ limiter=createV33ClientLimiter({now}),localHandler=null,staticHandler=null}){
  if(!pool||typeof pool.query!=="function"||typeof pool.connect!=="function"||
     !(peers instanceof Set)||!peers.size||[...peers].some(p=>!privateIPv4(p))||
     typeof secret!=="string"||Buffer.byteLength(secret)<32||
     (allowedOrigin!==null&&!/^https:\/\/[A-Za-z0-9.:-]+$/.test(allowedOrigin)))
   throw Error("invalid_v33_gateway");
  if(localHandler!==null&&typeof localHandler!=="function")throw Error("invalid_local_handler");
+ if(staticHandler!==null&&typeof staticHandler!=="function")throw Error("invalid_static_handler");
  const local=localHandler||createLocalCashierHandlerV32({pool,secret});
  return async(req,res)=>{
   if(!req.socket?.encrypted)return reject(res,426,"https_required");
@@ -82,7 +83,11 @@ export function createV33LanHandler({pool,secret,peers,allowedOrigin=null,now=()
    res.writeHead(200,{"Content-Type":"application/json",...securityHeaders});
    return res.end(JSON.stringify({ok:true,mode:"isolated_lan_test"}));
   }
-  if(!url.pathname.startsWith("/api/local/"))return reject(res,404,"not_found");
+  if(!url.pathname.startsWith("/api/local/")){
+   if(!staticHandler)return reject(res,404,"not_found");
+   try{return await staticHandler(req,res,url);}
+   catch{return reject(res,503,"trial_assets_unavailable");}
+  }
   // Content length is only a preflight guard. Underlying V3/V31 routes also
   // validate parsed JSON; do not assume this bounds streamed bodies.
   if(Number(req.headers["content-length"]||0)>65536)
@@ -114,10 +119,16 @@ export async function startV33LanTrial(){
  const v34=process.env.ZHIROX_V34_RECEIPT_PREVIEW_ENABLED==="true";
  const v35=process.env.ZHIROX_V35_PRINT_QUEUE_ENABLED==="true";
  if(v35&&!v34)throw Error("v35_requires_v34_receipts");
+ const v36=process.env.ZHIROX_V36_LAN_PILOT_ENABLED==="true";
+ if(v36&&(!v35||!v34))throw Error("v36_requires_print_and_receipt_api");
+ if(v36&&!origin)throw Error("v36_requires_exact_https_origin");
  const localHandler=v35?
   (await import("./local-print-queue-v35.mjs")).createLocalPrintQueueHandlerV35({pool,secret}):
   v34?(await import("./local-receipts-v34.mjs")).createLocalReceiptHandlerV34({pool,secret}):null;
- const handler=createV33LanHandler({pool,secret,peers,allowedOrigin:origin,localHandler});
+ const staticHandler=v36?
+  await (await import("./lan-pilot-static-v36.mjs")).createV36StaticHandler(
+    process.env.ZHIROX_V36_STATIC_DIR||""):null;
+ const handler=createV33LanHandler({pool,secret,peers,allowedOrigin:origin,localHandler,staticHandler});
  const server=createHttpsServer({cert,key,minVersion:"TLSv1.2"},handler);
  server.listen(3433,host);
  server.on("close",()=>pool.end());
