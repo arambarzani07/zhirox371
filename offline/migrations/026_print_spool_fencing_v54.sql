@@ -40,8 +40,8 @@ BEGIN
  END IF;
  INSERT INTO zhirox_local.print_dispatch_attempts_v54(store_id,job_id,sale_id)
  VALUES(p_store,p_job,q.sale_id);
- UPDATE zhirox_local.print_requests_v35 SET state='claimed'
- WHERE store_id=p_store AND job_id=p_job;
+ UPDATE zhirox_local.print_requests_v35 AS pr SET state='claimed'
+ WHERE pr.store_id=p_store AND pr.job_id=p_job;
  RETURN QUERY SELECT q.job_id,q.sale_id,q.width_mm,snap.receipt_no,
    snap.total_minor,snap.store_name_snapshot,snap.issued_at,snap.lines;
 END $$;
