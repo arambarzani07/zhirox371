@@ -41,10 +41,27 @@ export function createLocalAuthV3({ pool, secret, clock = () => Date.now() }) {
           "UPDATE zhirox_local.local_users SET failed_attempts=0,locked_until=NULL WHERE store_id=$1 AND id=$2",
           [store_id, user.id]
         );
+        // V63 isolated opt-in: the database independently verifies a newly
+        // enrolled bcrypt verifier and issues a random, stored-hash actor proof.
+        // A forged JWT actor UUID alone is not sufficient to mutate finances.
+        let dbProof;
+        if(process.env.ZHIROX_V63_DB_ACTOR_PROOF==="true"){
+          const proofResult=await client.query(
+            "SELECT cashier_id,proof FROM zhirox_local.issue_actor_proof_v63($1::uuid,$2::text,$3::text)",
+            [store_id,username,password]
+          );
+          const issued=proofResult.rows?.[0];
+          if(!issued||issued.cashier_id!==user.id||!(/^[a-f0-9]{64}$/).test(issued.proof)){
+            await client.query("ROLLBACK");
+            return null;
+          }
+          dbProof=issued.proof;
+        }
         await client.query("COMMIT");
         return {
           token: codec.issue({ user_id: user.id, store_id: user.store_id,
-            role: user.role, session_version: user.session_version }),
+            role: user.role, session_version: user.session_version,
+            ...(dbProof?{db_proof:dbProof}:{}) }),
           role: user.role, expires_in_seconds: 900
         };
       } catch (error) {
