@@ -64,7 +64,7 @@ await page.route("**/api/local/**",async route=>{
  throw Error("Unexpected local API: "+p);
 });
 try{
- await page.goto("http://127.0.0.1:3042/",{waitUntil:"networkidle"});
+ await page.goto("http://127.0.0.1:3043/",{waitUntil:"networkidle"});
  assert.equal(await page.locator("[data-local-v36-pilot=true]").count(),1);
  assert.equal(await page.getByRole("heading",{name:"بەشە سەرەکییەکان"}).count(),0);
  await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
