@@ -9,7 +9,7 @@ const store="10000000-0000-0000-0000-000000000001";
 const prod="30000000-0000-0000-0000-000000000003";
 const sale="40000000-0000-0000-0000-000000000004";
 page.on("pageerror",e=>errors.push(e.message));
-let attempts=0;
+let attempts=0,serverPending=null;
 await page.route("**/api/local/**",async route=>{
  const request=route.request(),url=new URL(request.url()),path=url.pathname;
  if(path==="/api/local/v3/login"){
@@ -51,9 +51,30 @@ await page.route("**/api/local/**",async route=>{
        price_minor:"2500",unit_price_minor:"2500",stock_base_units:"30"
      }})});
  }
- if(path==="/api/local/v26/checkout"){
+ if(path==="/api/local/v31/recover"){
+   return route.fulfill({status:200,contentType:"application/json",
+     body:JSON.stringify({ok:true,intent:serverPending})});
+ }
+ if(path==="/api/local/v31/prepare"){
+   const body=request.postDataJSON();
+   if(serverPending&&serverPending.request_id!==body.request_id)
+     throw Error("Unfinished server checkout was overwritten");
+   serverPending={...body,state:"prepared",sale_id:null,receipt_no:null,total_minor:null};
+   return route.fulfill({status:200,contentType:"application/json",
+     body:JSON.stringify({ok:true,intent:serverPending})});
+ }
+ if(path==="/api/local/v31/cancel"){
+   const body=request.postDataJSON();
+   assert.equal(body.request_id,serverPending?.request_id);
+   serverPending=null;
+   return route.fulfill({status:200,contentType:"application/json",
+     body:JSON.stringify({ok:true,state:"cancelled"})});
+ }
+ if(path==="/api/local/v31/commit"){
    assert.equal(request.method(),"POST");attempts++;
-   const body=request.postDataJSON();requests.push(body);
+   const body=request.postDataJSON();
+   assert.equal(body.request_id,serverPending?.request_id);
+   requests.push({...serverPending});
    if(attempts<4){
      assert.deepEqual(body.lines,[{barcode:"6260053183974",qty:1}]);
      assert.equal(body.expected_total_minor,2500);
@@ -70,6 +91,7 @@ await page.route("**/api/local/**",async route=>{
    if(attempts===3)return route.fulfill({status:409,contentType:"application/json",body:'{"error":"price_changed"}'});
    if(attempts===1)return route.fulfill({status:503,contentType:"application/json",
        body:'{"error":"local_database_unavailable"}'});
+   serverPending=null;
    return route.fulfill({status:200,contentType:"application/json",
      body:JSON.stringify({ok:true,receipt:{sale_id:sale,receipt_no:attempts===4?2:1,
        total_minor:attempts===4?"13475":"2500",replayed:attempts!==4}})});
@@ -79,7 +101,7 @@ await page.route("**/api/local/**",async route=>{
 try {
  await page.goto("http://127.0.0.1:3000/",{waitUntil:"networkidle"});
  await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
- await page.getByRole("button",{name:/کردنەوەی V26/}).click();
+ await page.getByRole("button",{name:/کردنەوەی V31/}).click();
  assert.match(await page.getByText(/تەنها تاقیکردنەوە لەسەر هەمان PC/).innerText(),/Production/);
  await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
  await page.getByPlaceholder("ناوی بەکارهێنەر").fill("cashier");
