@@ -98,6 +98,10 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f offline/tests/028_v61_checkout_executor_ci.sql
       - name: Isolate intent and shift mutations behind NOLOGIN guards
         run: psql -v ON_ERROR_STOP=1 -f offline/tests/029_v62_intent_shift_executors_ci.sql
+      - name: Verify legacy sessions and authentication remain compatible when V63 is OFF
+        env:
+          ZHIROX_V63_DB_ACTOR_PROOF: 'false'
+        run: node --test offline/tests/local-auth-v3.test.mjs offline/tests/local-session.test.mjs
       - name: Activate independent database proof issuance and guarded wrappers
         run: psql -v ON_ERROR_STOP=1 -f offline/tests/030_v63_database_actor_proof_ci.sql
       - name: Run ACTUAL cash HTTPS API under limited database login
