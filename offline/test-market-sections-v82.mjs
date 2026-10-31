@@ -9,8 +9,9 @@ const debtEntries=new Set(["customer-repayment"]);
 const settings=new Set(["manage-users","access-key"]);
 const verifySale=new Set(["transaction-check"]);
 const suppliers=new Set(["supplier-building","purchase-order","receive-goods","supplier-accounts"]);
-const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell",...suppliers]);
-const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale,...suppliers]);
+const returns=new Set(["return-arrow"]);
+const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell",...suppliers,...returns]);
+const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale,...suppliers,...returns]);
 const column=(key,label,format)=>({key,label,...(format?{format}:{})});
 const productColumns=[
  column("name","ناوی کاڵا"),column("barcode","بارکۆد"),
@@ -32,6 +33,10 @@ const receivingColumns=[column("display_name","دابینکەر"),column("produc
   column("unit_cost_minor","نرخی کڕینی یەکە","money"),column("received_at","بەروار","date")];
 const commitmentColumns=[column("display_name","دابینکەر"),column("purchase_orders","ژمارەی داواکاری","number"),
  column("total_ordered_cost_minor","کۆی نرخە تۆمارکراوەکانی داواکاری","money")];
+const returnColumns=[column("receipt_no","ژمارەی پسووڵە"),column("name_snapshot","ناوی کاڵا"),
+ column("quantity_base_units","بڕی گەڕاوە","number"),column("amount_minor","نرخی گەڕاندنەوە (تۆماری ژمێریاری)","money"),
+ column("restocked","گەڕایەوە بۆ کۆگا","bool"),column("reason","هۆکار"),
+ column("created_at","بەروار","date")];
 const noopColumns=[column("status","دۆخ")];
 const sqlProducts=`SELECT p.id,p.name,p.price_minor,p.stock_base_units,
  b.code AS barcode FROM zhirox_local.products p
@@ -99,8 +104,15 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
    ON l.store_id=g.store_id AND l.receipt_id=g.receipt_id
    JOIN zhirox_local.products p ON p.store_id=l.store_id AND p.id=l.product_id
    WHERE g.store_id=$1::uuid
+   UNION ALL
+   SELECT p.name AS product_name,r.quantity_base_units AS delta_base_units,
+   r.created_at,s.receipt_no,r.return_id AS movement_id
+   FROM zhirox_local.sale_returns_v84 r
+   JOIN zhirox_local.products p ON p.store_id=r.store_id AND p.id=r.product_id
+   JOIN zhirox_local.sales s ON s.store_id=r.store_id AND s.id=r.sale_id
+   WHERE r.store_id=$1::uuid AND r.restocked
    ) movements ORDER BY created_at DESC,movement_id DESC LIMIT 100`,[store]);
-  columns=stockColumns;note="هاتووچۆی ڕاستەقینەی SQL: فرۆشتن بڕ کەم دەکات و وەرگرتنی دابینکەر بڕ زیاد دەکات.";
+  columns=stockColumns;note="هاتووچۆی SQL: فرۆشتن بڕ کەم دەکات، وەرگرتن و گەڕاندنەوەی کاڵای سالم بڕ زیاد دەکەن؛ کاڵای خراپ ناچێتەوە کۆگا.";
  }else if(customers.has(sectionId)){
   result=await pool.query(`SELECT customer_id,display_name,balance_minor
   FROM zhirox_local.customer_debt_balances_v79
@@ -116,6 +128,17 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
   result=await pool.query(`SELECT username,role,enabled FROM zhirox_local.local_users
    WHERE store_id=$1::uuid ORDER BY username LIMIT 100`,[store]);
   columns=userColumns;note="هەژمارەکان لە PostgreSQL نیشان دەدرێن؛ گۆڕینی دەسەڵات لێرە ناچالاکە.";
+ }else if(returns.has(sectionId)){
+  result=await pool.query(`SELECT s.receipt_no,l.name_snapshot,r.quantity_base_units,
+    r.amount_minor,r.restocked,r.reason,r.created_at
+   FROM zhirox_local.sale_returns_v84 r
+   JOIN zhirox_local.sales s ON s.store_id=r.store_id AND s.id=r.sale_id
+   JOIN zhirox_local.sale_lines l ON l.store_id=r.store_id
+      AND l.sale_id=r.sale_id AND l.line_no=r.line_no
+   WHERE r.store_id=$1::uuid
+   ORDER BY r.created_at DESC,r.return_id DESC LIMIT 100`,[store]);
+  columns=returnColumns;
+  note="نرخی گەڕاندنەوە لە پسووڵەی سەرەکی هەژمار کراوە؛ هیچ نەختینە، بانکی یان پارەی واقعی بە کڕیار نەدراوە. فرۆشتنی کۆن نەگۆڕاوە.";
  }else if(suppliers.has(sectionId)){
   if(sectionId==="supplier-building"){
    result=await pool.query(`SELECT display_name,phone,active FROM zhirox_local.suppliers_v83
