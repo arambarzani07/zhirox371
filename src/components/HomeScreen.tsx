@@ -28,7 +28,7 @@ export const HomeScreen: React.FC = () => {
         بەشە سەرەکییەکان
       </h1>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
+      <div style={{ display: 'grid', gap: '16px', position: 'relative' }}>
         {[0, 1, 2].map(rowIndex => {
           const rowSpecs = MODULE_SPECS.slice(rowIndex * 4, rowIndex * 4 + 4);
           const isRowOpen = openModuleIndex >= rowIndex * 4 && openModuleIndex < rowIndex * 4 + 4;
@@ -142,7 +142,16 @@ export const HomeScreen: React.FC = () => {
                     borderRadius: '15px',
                     padding: '19px',
                     boxShadow: '0 8px 24px rgba(32,57,84,0.08)',
-                    margin: '2px 0 10px'
+                    margin: 0,
+                    position: 'absolute',
+                    top: `${rowIndex * 169 + 161}px`,
+                    insetInline: 0,
+                    width: '100%',
+                    zIndex: 12,
+                    maxHeight: 'min(265px, 52dvh)',
+                    overflowY: 'auto',
+                    animation: 'none',
+                    transition: 'none'
                   }}
                 >
                   <div
