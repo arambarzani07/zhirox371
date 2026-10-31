@@ -36,7 +36,31 @@ try{
  }));
  assert.equal(tokens.banner,"56px");
  assert.ok(Math.abs(tokens.header.top-tokens.market.bottom)<2,"only ribbon sits directly beneath market name");
+ // A native PC viewport must be filled, not a centered card inside margins.
+ const assertFullscreen=async(width,height)=>{
+   await page.setViewportSize({width,height});
+   const geometry=await page.evaluate(()=>{
+     const rect=selector=>{const el=document.querySelector(selector);if(!el)throw Error("not found: "+selector);
+       const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom};};
+     return {windowWidth:window.innerWidth,windowHeight:window.innerHeight,
+       banner:rect(".market-banner"),viewport:rect("#root > .viewport"),
+       desktop:rect("#root > .viewport > .desktop"),header:rect("header.system-strip-only"),
+       app:rect("#app"),home:document.querySelector(".home-strip-only")?rect(".home-strip-only"):null};
+   });
+   assert.ok(Math.abs(geometry.banner.width-width)<=2,"market banner fills PC width");
+   assert.ok(Math.abs(geometry.desktop.width-width)<=2,"desktop occupies PC width");
+   assert.ok(Math.abs(geometry.app.width-width)<=2,"workspace occupies PC width");
+   assert.ok(Math.abs(geometry.app.bottom-height)<=3,"workspace ends at PC bottom");
+   assert.ok(geometry.header.x>=-2&&Math.abs(geometry.header.width-width)<=2,"full-width horizontal strip");
+   if(geometry.home)assert.ok(Math.abs(geometry.home.width-width)<=2,"no centered Home card");
+ };
+ await assertFullscreen(1440,900);
  await page.screenshot({path:"artifacts/system-v2/01-home.png",fullPage:false});
+ await assertFullscreen(1920,1080);
+ await page.screenshot({path:"artifacts/system-v2/00-home-full-pc-1920.png",fullPage:false});
+ await assertFullscreen(1366,768);
+ await page.screenshot({path:"artifacts/system-v2/00-home-full-pc-1366.png",fullPage:false});
+ await assertFullscreen(1440,900);
  assert.equal(await page.locator(".home-strip-only").innerText(),"","Home has no unnecessary text");
  for(const [label,file] of names){
   const button=nav.getByRole("button",{name:label,exact:true});
@@ -45,7 +69,13 @@ try{
   const content=page.locator("#app");
   assert.ok((await content.innerText()).length>12,"feature view is reachable: "+label);
   assert.equal(await page.locator(".module,.drawer,.sub").count(),0,"feature never resurrects cards");
+  await assertFullscreen(1440,900);
   await page.screenshot({path:"artifacts/system-v2/"+file,fullPage:false});
+  if(label==="کاڵاکان"){
+    await assertFullscreen(1920,1080);
+    await page.screenshot({path:"artifacts/system-v2/15-products-full-pc-1920.png",fullPage:false});
+    await assertFullscreen(1440,900);
+  }
  }
  await nav.getByRole("button",{name:"سەرەتا",exact:true}).click();
  assert.equal(await page.locator(".home-strip-only").count(),1);
