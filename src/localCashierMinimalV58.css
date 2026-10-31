@@ -1,0 +1,75 @@
+/* V58 cashier-only presentation. No Home / immutable CSS / database changes.
+   Isolated pilot remains non-commercial, with the warning always visible. */
+.local-cashier-v58 {
+  --pos-ink:#172b45;--pos-muted:#64748b;--pos-line:#e3eaf2;
+  --pos-blue:#243d60;--pos-bg:#f5f7fa;
+  width:100%;max-width:1500px;margin:0 auto;padding:22px 30px 40px;
+  color:var(--pos-ink);direction:rtl;font-family:"Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;
+}
+.local-cashier-v58 * {box-sizing:border-box;}
+.local-cashier-v58-top {display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;}
+.local-cashier-v58-top h1 {margin:0;font-size:22px;font-weight:900;color:var(--pos-ink);}
+.local-cashier-v58-stage {background:#fff5dc;color:#825309;border:1px solid #f0dab1;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;}
+.local-cashier-v58-disclosure {color:#50637c;font-size:12px;margin:0 0 14px;}
+.local-cashier-v58-disclosure summary {cursor:pointer;display:inline-block;color:#64748b;list-style:none;}
+.local-cashier-v58-disclosure summary::-webkit-details-marker {display:none;}
+.local-cashier-v58-disclosure[open] {padding:10px 14px;background:#fff;border:1px solid var(--pos-line);border-radius:10px;line-height:1.9;}
+.local-cashier-v58 .local-v58-panel {margin:0;border:0;background:transparent;padding:0;}
+.local-cashier-v58 .local-v58-body {margin:0;}
+.local-cashier-v58 .local-v58-pilot-note {display:flex;align-items:center;gap:8px;color:#795a21;font-size:12px;margin:0 0 14px;}
+.local-cashier-v58 .local-v58-pilot-note strong {font-weight:900;}
+.local-cashier-v58 .local-v58-pilot-note details {display:inline;}
+.local-cashier-v58 .local-v58-pilot-note summary {color:#64748b;cursor:pointer;display:inline-block;}
+.local-cashier-v58 .local-v58-pilot-note details[open] {display:block;padding:10px 14px;background:#fff;border:1px solid var(--pos-line);border-radius:8px;}
+.local-cashier-v58 button {border:1px solid var(--pos-line);border-radius:9px;background:#fff;color:var(--pos-ink);padding:10px 14px;font-weight:850;min-height:41px;}
+.local-cashier-v58 button:disabled {opacity:.5;cursor:not-allowed;}
+.local-cashier-v58 input {min-width:0;border:1px solid #cfd9e6;border-radius:10px;background:#fff;color:var(--pos-ink);min-height:46px;padding:9px 13px;font-size:14px;outline-offset:2px;}
+.local-cashier-v58 .local-v58-login {
+  max-width:440px;margin:48px auto 0;padding:25px;
+  border:1px solid var(--pos-line);border-radius:16px;background:#fff;
+  box-shadow:0 6px 24px rgba(24,45,72,.04);
+  display:grid;gap:13px;
+}
+.local-cashier-v58 .local-v58-login input {width:100%!important;margin:0!important;}
+.local-cashier-v58 .local-v58-login button,
+.local-cashier-v58 .local-v58-scan button,
+.local-cashier-v58 .local-v58-checkout button[type="submit"] {
+  color:#fff;background:var(--pos-blue);border-color:var(--pos-blue);
+}
+.local-cashier-v58 .local-v58-login button {width:100%;}
+.local-cashier-v58 .local-v58-workspace {display:grid;grid-template-columns:minmax(0,1fr) 305px;gap:18px;align-items:start;}
+.local-cashier-v58 .local-v58-work-area {min-width:0;background:#fff;border:1px solid var(--pos-line);border-radius:15px;padding:18px;}
+.local-cashier-v58 .local-v58-scan {display:flex;gap:10px;align-items:center;margin:0 0 18px!important;}
+.local-cashier-v58 .local-v58-scan input {margin:0!important;flex:1;font-size:15px;}
+.local-cashier-v58 .local-v58-scan button {min-width:96px;}
+.local-cashier-v58 .local-v58-table-wrap {overflow-x:auto;min-height:240px;}
+.local-cashier-v58 .local-v58-basket {margin:0!important;border-collapse:collapse;table-layout:auto;width:100%;font-size:13px;}
+.local-cashier-v58 .local-v58-basket thead {background:#f4f7fb;}
+.local-cashier-v58 .local-v58-basket th {color:#4c5f77;font-weight:850;}
+.local-cashier-v58 .local-v58-basket th,
+.local-cashier-v58 .local-v58-basket td {border:0!important;border-bottom:1px solid #edf1f6!important;padding:12px 10px!important;vertical-align:middle;}
+.local-cashier-v58 .local-v58-basket tbody tr:hover {background:#fafcff;}
+.local-cashier-v58 .local-v58-basket td:last-child {font-weight:850;white-space:nowrap;}
+.local-cashier-v58 .local-v58-basket .local-v58-qty {display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.local-cashier-v58 .local-v58-qty button {min-width:30px;width:30px;min-height:30px;padding:0;border-radius:8px;background:#f5f8fc;font-weight:900;}
+.local-cashier-v58 .local-v58-qty strong {min-width:25px;text-align:center;margin:0!important;}
+.local-cashier-v58 .local-v58-summary {display:flex;flex-direction:column;gap:12px;min-width:0;background:#fff;border:1px solid var(--pos-line);border-radius:15px;padding:20px;position:sticky;top:12px;}
+.local-cashier-v58 .local-v58-total {display:flex;flex-direction:column;gap:8px;padding:0 0 17px;border-bottom:1px solid var(--pos-line);margin:0!important;font-size:13px;color:var(--pos-muted);}
+.local-cashier-v58 .local-v58-total strong {font-size:28px;font-weight:950;color:var(--pos-blue);direction:ltr;text-align:right;}
+.local-cashier-v58 .local-v58-checkout {display:block;}
+.local-cashier-v58 .local-v58-checkout button {width:100%;min-height:54px;font-size:15px;}
+.local-cashier-v58 .local-v58-pending {padding:10px 12px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12px;line-height:1.7;}
+.local-cashier-v58 .local-v58-history {background:#fff;border:1px solid var(--pos-line);border-radius:15px;padding:17px;margin-top:18px;}
+.local-cashier-v58 .local-v58-history table {border-collapse:collapse;width:100%;}
+.local-cashier-v58 .local-v58-history th,.local-cashier-v58 .local-v58-history td {border:0!important;border-bottom:1px solid var(--pos-line)!important;padding:9px 10px!important;}
+.local-cashier-v58 .local-v58-connection {font-size:12px;color:#25815b;font-weight:850;margin-bottom:12px;}
+.local-cashier-v58 .local-v58-logout {margin-top:14px;font-size:12px;color:#536882;background:transparent;}
+.local-cashier-v58 .local-v58-error {margin:12px 0;padding:10px 14px;border:1px solid #f7c3be;border-radius:9px;background:#fff3f2;color:#a21d1d;}
+@media(max-width:1180px){.local-cashier-v58 .local-v58-workspace{grid-template-columns:minmax(0,1fr) 265px;}}
+@media(max-width:680px){
+ .local-cashier-v58{padding:16px;}
+ .local-cashier-v58 .local-v58-workspace{grid-template-columns:1fr;}
+ .local-cashier-v58 .local-v58-summary{position:static;}
+ .local-cashier-v58 .local-v58-login{margin:20px auto 0;}
+}
+@media print { .local-cashier-v58 .local-v58-scan,.local-cashier-v58 .local-v58-login,.local-cashier-v58 .local-v58-disclosure{display:none!important;} }
