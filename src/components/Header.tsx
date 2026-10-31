@@ -5,6 +5,17 @@ import { money } from '../utils/retailHelpers';
 export const Header: React.FC = () => {
   const { currentView, navigateTo, currentShift, cart } = useApp();
 
+  // The owner-locked PC Home has only the original brand and Home control.
+  // Operational quick links belong to feature pages, never the locked Home.
+  if (currentView === 'home') {
+    return (
+      <header>
+        <div className="brand"><i>◈</i><span>سیستەمی کاشێر</span></div>
+        <button className="home" type="button" onClick={() => navigateTo('home')} title="سەرەتا" aria-label="سەرەتا">⌂</button>
+      </header>
+    );
+  }
+
   return (
     <header>
       <div
