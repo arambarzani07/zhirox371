@@ -46,8 +46,7 @@ export const App: React.FC = () => {
         <div className="desktop">
           {currentView === 'pos' && localCashierV32 ? (
             <header className="pos-local-appbar">
-              <strong>کاشێر</strong>
-              <button type="button" onClick={() => navigateTo('home')} aria-label="سەرەتا">سەرەتا</button>
+              <button type="button" onClick={() => navigateTo('home')} aria-label="سەرەتا" title="سەرەتا">⌂</button>
             </header>
           ) : <Header />}
           <main id="app">
