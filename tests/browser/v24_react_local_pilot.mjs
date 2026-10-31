@@ -100,7 +100,8 @@ await page.route("**/api/local/**",async route=>{
 });
 try {
  await page.goto("http://127.0.0.1:3000/",{waitUntil:"networkidle"});
- await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
+ await page.locator(".module").first().click();
+ await page.locator(".drawer .sub").first().click();
  await page.getByRole("button",{name:/کردنەوەی V31/}).click();
  assert.match(await page.getByText(/تەنها تاقیکردنەوە لەسەر هەمان PC/).innerText(),/Production/);
  await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
