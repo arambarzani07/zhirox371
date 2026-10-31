@@ -235,7 +235,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        <div className={standalone?"pos-clean__transaction":undefined}>
        <form className={standalone?"pos-clean__scan":undefined} onSubmit={submitScan} style={standalone?undefined:{display:"flex",gap:8,marginTop:10}}>
          <input style={{...inputStyle,flex:1}} value={scan} onChange={e=>setScan(e.target.value)}
-           aria-label="بارکۆدی دانە، کارتۆن یان تەرازوو" placeholder="بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە" disabled={busy||!!pending}/>
+           aria-label="بارکۆدی دانە، کارتۆن یان تەرازوو" placeholder={standalone?"بارکۆد":"بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە"} disabled={busy||!!pending}/>
          <button type="submit" disabled={busy||!!pending}>سکان</button>
        </form>
        <div className={standalone?"pos-clean__basket":undefined}>
