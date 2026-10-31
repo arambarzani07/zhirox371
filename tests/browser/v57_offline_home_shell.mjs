@@ -25,6 +25,18 @@ try{
  const cashier=tabs.filter({hasText:"کاشێر"}).first();
  assert.equal(await cashier.isDisabled(),false,"only connected PG cashier may be entered");
  assert.equal(await nav.locator("button[data-module-id]:not(:disabled)").count(),1,"unfinished modules must fail closed");
+ assert.equal(await page.locator(".system-module-column .system-module-link").count(),12);
+ assert.equal(await page.locator(".system-submodule-column .system-submodule-link").count(),4);
+ await page.locator(".system-module-column .system-module-link[data-module-id='1']").click();
+ assert.equal(await page.locator(".system-submodule-heading").innerText(),"کاڵاکان");
+ assert.equal(await page.locator(".system-submodule-link:not(:disabled)").count(),0,"unconnected product submodules remain blocked");
+ await page.locator(".system-module-column .system-module-link[data-module-id='0']").click();
+ assert.equal(await page.locator(".system-submodule-link:not(:disabled)").count(),2,"only two cashier subroutes enabled");
+ await page.locator(".system-submodule-link[data-sub-icon='barcode-scan']").click();
+ assert.equal(await page.locator(".system-submodule-link.selected").count(),1,"active subcard is clearly marked");
+ assert.equal(await page.locator(".system-selected-check").count(),1);
+ await page.screenshot({path:"artifacts/v57/03-offline-selected-submodule.png",fullPage:false});
+ await page.keyboard.press("Escape");
  await mkdir("artifacts/v57",{recursive:true});
  await page.screenshot({path:"artifacts/v57/01-navigation-only.png",fullPage:false});
  await cashier.click();
