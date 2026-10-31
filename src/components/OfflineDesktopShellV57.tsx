@@ -3,20 +3,12 @@ import {MODULE_SPECS,CardIcon} from "./CardIcon";
 import {LocalCashierV32} from "./LocalCashierV32";
 import "../offlineDesktopShellV57.css";
 
-// V57 ISOLATED PRE-INSTALLATION SHELL.
-// Copy the approved Home geometry (12 modules / 48 submodules) without
-// importing AppProvider, Demo cashier, Demo receipt or any cloud service.
-// The original locked Home files and React HomeScreen stay UNMODIFIED.
-// In this stage the only enabled functionality is the V36 isolated local cashier.
-// All other routes fail closed rather than opening fake/demo finance screens.
-export const V57_APPROVED_MODULE_COUNT=12;
-export const V57_APPROVED_SUBMODULE_COUNT=48;
-const allowed=(module:number,sub:number)=>module===0&&(sub===0||sub===1);
-
-if(MODULE_SPECS.length!==V57_APPROVED_MODULE_COUNT||
-   MODULE_SPECS.some(m=>m.submodules.length!==4)||
-   MODULE_SPECS.reduce((total,m)=>total+m.submodules.length,0)!==V57_APPROVED_SUBMODULE_COUNT)
- throw Error("v57_locked_home_structure_mismatch");
+// V57 ISOLATED PRE-INSTALLATION SHELL, visually editable by owner instruction.
+// No frozen number, card order, row arrangement or design hash. Navigation
+// authorization is tied to stable semantic IDs, never the visual card position.
+// Only the local PostgreSQL cashier can become interactive in this pilot.
+const allowed=(moduleId:number,iconName:string)=>
+ moduleId===0&&(iconName==="barcode-scan"||iconName==="receipt");
 
 export const OfflineDesktopShellV57:React.FC=()=>{
  const [screen,setScreen]=useState<"home"|"cashier">("home");
@@ -36,7 +28,7 @@ export const OfflineDesktopShellV57:React.FC=()=>{
  const returnHome=()=>{setScreen("home");setOpen(-1);};
  return (
   <div className="v57-app" dir="rtl" data-local-v36-pilot="true"
-       data-v57-locked-home="true" data-offline-only="true">
+       data-v57-home="true" data-offline-only="true">
    <div className="market-banner">سوپەرمارکێتی کانی چنار</div>
    <div className="v57-desktop">
      <header className="v57-header">
@@ -51,7 +43,7 @@ export const OfflineDesktopShellV57:React.FC=()=>{
        <div className="v57-home" data-v57-screen="home">
         <h1>بەشە سەرەکییەکان</h1>
         <div className="v57-module-rows">
-        {[0,1,2].map(r=>(
+        {Array.from({length:Math.ceil(MODULE_SPECS.length/4)},(_,i)=>i).map(r=>(
           <div className="v57-row-block" key={r}>
             <div className="v57-row" role="group" aria-label={"ڕیزی "+(r+1)}>
             {MODULE_SPECS.slice(r*4,r*4+4).map((module,i)=>{
@@ -80,7 +72,7 @@ export const OfflineDesktopShellV57:React.FC=()=>{
                 </div>
                 <div className="v57-subgrid">
                 {module.submodules.map((sub,j)=>{
-                  const enabled=allowed(open,j);
+                  const enabled=allowed(module.id,sub.iconName);
                   return <button key={sub.iconName} type="button"
                      className="v57-sub" data-sub={j}
                      disabled={!enabled} aria-disabled={!enabled}
