@@ -5,13 +5,14 @@ import "../testMarketV81.css";
 // Never import AppContext or browser-local financial storage. All values
 // arrive only from the authenticated local PostgreSQL endpoint.
 type Login={token:string;role:"owner"|"manager"|"cashier";store_name:string};
-type View="overview"|"products"|"sales"|"customers"|"ledger";
+type View="home"|"overview"|"products"|"sales"|"customers"|"ledger";
 type Data={ok:boolean;[key:string]:unknown};
-const PRIMARY=["سەرەتا","کاشێر و فرۆشتن","کاڵاکان","کڕیاران و حسابەکان"];
+const PRIMARY=["سەرەتا","کاشێر و فرۆشتن","کاڵاکان","کڕیاران و حسابەکان","ڕاپۆرت"];
 const SUBS:Record<number,{id:View;name:string}[]>={
  1:[{id:"sales",name:"پسووڵەکان"}],
  2:[{id:"products",name:"لیستی کاڵاکان"}],
- 3:[{id:"customers",name:"کڕیاران"},{id:"ledger",name:"قەرزەکان"}]
+ 3:[{id:"customers",name:"کڕیاران"},{id:"ledger",name:"قەرزەکان"}],
+ 4:[{id:"overview",name:"پوختەی ژمێریاری"}]
 };
 const money=(n:unknown)=>Number(n||0).toLocaleString("en-US")+" IQD";
 const count=(n:unknown)=>Number(n||0).toLocaleString("en-US");
@@ -42,13 +43,13 @@ export const TestMarketDesktopV81:React.FC=()=>{
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [main,setMain]=useState(0);
- const [view,setView]=useState<View>("overview");
+ const [view,setView]=useState<View>("home");
  const [data,setData]=useState<Data|null>(null);
  const [selectedCustomer,setSelectedCustomer]=useState("");
  const [customerName,setCustomerName]=useState("");
 
  useEffect(()=>{
-  if(!session)return;
+  if(!session||view==="home")return;
   let cancelled=false;
   setBusy(true);setData(null);setError("");
   let path:string=view;
@@ -70,15 +71,16 @@ export const TestMarketDesktopV81:React.FC=()=>{
    if(typeof result.token!=="string"||!["owner","manager","cashier"].includes(String(result.role)))
     throw Error("bad_login");
    setSession({token:result.token,role:result.role as Login["role"],store_name:String(result.store_name)});
-   setPassword("");setMain(0);setView("overview");setSelectedCustomer("");setCustomerName("");
+   setPassword("");setMain(0);setView("home");setSelectedCustomer("");setCustomerName("");
   }catch(e){setError(message((e as Error).message==="request_failed"?"bad_login":(e as Error).message))}
   finally{setBusy(false)}
  };
  const nav=(i:number)=>{
   setMain(i);setData(null);setError("");setSelectedCustomer("");
-  setView(i===0?"overview":i===1?"sales":i===2?"products":"customers");
+  setView(i===0?"home":i===1?"sales":i===2?"products":i===3?"customers":"overview");
+  if(i===0)setBusy(false);
  };
- const label=view==="overview"?"پوختەی مارکێتی تاقیکردنەوە":
+ const label=view==="home"?"":view==="overview"?"پوختەی مارکێتی تاقیکردنەوە":
    view==="products"?"لیستی کاڵاکان":view==="sales"?"پسووڵە تۆمارکراوەکان":
    view==="customers"?"کڕیاران و قەرزەکان":"مێژووی قەرزی "+customerName;
  const table=(columns:{key:string;title:string;format?:(v:unknown)=>string}[],values:Record<string,unknown>[])=>(
@@ -111,7 +113,7 @@ export const TestMarketDesktopV81:React.FC=()=>{
       {PRIMARY.map((name,i)=><button type="button" key={name}
        className={main===i?"selected":""} onClick={()=>nav(i)}>{name}</button>)}
      </nav>
-     <button type="button" onClick={()=>{setSession(null);setData(null);setPassword("");setMain(0);setView("overview")}}>دەرچوون</button>
+     <button type="button" onClick={()=>{setSession(null);setData(null);setPassword("");setMain(0);setView("home")}}>دەرچوون</button>
     </div>
     <nav className="v81-second-row" aria-label="ژێربەشەکان">
      {(SUBS[main]||[]).map(t=><button type="button" key={t.id}
@@ -120,10 +122,10 @@ export const TestMarketDesktopV81:React.FC=()=>{
        }}>{t.name}{view===t.id?" ✓":""}</button>)}
     </nav>
     <main className="v81-body">
-     <header className="v81-page-heading">
+     {view!=="home"&&<header className="v81-page-heading">
       <h1>{label}</h1>
       <span>تەنها خوێندنەوە · {session.role==="cashier"?"کاشێر":"خاوەن مارکێت"}</span>
-     </header>
+     </header>}
      {busy&&<p role="status">زانیارییەکان لە داتابەیس دەخوێندرێنەوە…</p>}
      {error&&<p role="alert" className="v81-error">{error}</p>}
      {data&&!busy&&view==="overview"&&
