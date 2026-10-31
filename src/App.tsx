@@ -44,7 +44,12 @@ export const App: React.FC = () => {
       <div className="market-banner">سوپەرمارکێتی کانی چنار</div>
       <div className="viewport">
         <div className="desktop">
-          <Header />
+          {currentView === 'pos' && localCashierV32 ? (
+            <header className="pos-local-appbar">
+              <strong>کاشێر</strong>
+              <button type="button" onClick={() => navigateTo('home')} aria-label="سەرەتا">سەرەتا</button>
+            </header>
+          ) : <Header />}
           <main id="app">
             {currentView === 'home' && <HomeScreen />}
             {currentView === 'pos' && (localCashierV32 ? <LocalCashierV32 /> : <CashierPos />)}
