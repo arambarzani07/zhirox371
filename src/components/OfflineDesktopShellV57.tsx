@@ -35,7 +35,7 @@ export const OfflineDesktopShellV57:React.FC=()=>{
     data-v57-home="true" data-offline-only="true">
    <div className="market-banner">سوپەرمارکێتی کانی چنار</div>
    <div className="v57-desktop">
-    <header className="v57-header v57-strip-header v57-double-strip">
+    <header className={`v57-header v57-strip-header v57-double-strip ${selected?"has-subnav":""}`}>
      <nav className="system-nav system-primary-nav" aria-label="بەشە سەرەکییەکان" data-v57-navigation="true">
       <button type="button" className={moduleId===null?"active":""}
          aria-current={moduleId===null?"page":undefined} onClick={returnHome}>سەرەتا</button>
@@ -56,7 +56,7 @@ export const OfflineDesktopShellV57:React.FC=()=>{
            disabled={!enabled} aria-disabled={!enabled}
            aria-current={active?"page":undefined}
            onClick={()=>{if(enabled)showCashier(sub.iconName);}}>
-             {sub.label}
+             {sub.label}{active&&<span className="system-subnav-check" aria-hidden="true">✓</span>}
          </button>;
        })}
      </nav>
