@@ -132,7 +132,7 @@ export const TestMarketDesktopV81:React.FC=()=>{
        <div><strong>کۆی فرۆشتن</strong><output>{money((data.sales as Record<string,unknown>)?.sale_total)}</output></div>
        <div><strong>کاڵاکان</strong><output>{count((data.stock as Record<string,unknown>)?.product_count)}</output></div>
        <div><strong>کۆی بڕی کۆگا</strong><output>{count((data.stock as Record<string,unknown>)?.stock_total)}</output></div>
-       {data.customers&&<div><strong>قەرزی ماوە</strong><output>{money((data.customers as Record<string,unknown>)?.debt_total)}</output></div>}
+       {Boolean(data.customers)&&<div><strong>قەرزی ماوە</strong><output>{money((data.customers as Record<string,unknown>)?.debt_total)}</output></div>}
       </div>}
      {data&&!busy&&view==="products"&&table([
       {key:"name",title:"ناوی کاڵا"},{key:"barcode",title:"بارکۆد"},
