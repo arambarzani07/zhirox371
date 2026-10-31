@@ -144,7 +144,7 @@ export const HomeScreen: React.FC = () => {
                     boxShadow: '0 8px 24px rgba(32,57,84,0.08)',
                     margin: 0,
                     position: 'absolute',
-                    top: `${rowIndex * 169 + 161}px`,
+                    top: `${rowIndex * 184 + 161}px`,
                     insetInline: 0,
                     width: '100%',
                     zIndex: 12,
