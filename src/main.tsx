@@ -7,6 +7,13 @@ import './index.css';
 // Normal preview continues unchanged; official builds remain blocked by Vite.
 const root=ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 if(import.meta.env.PROD&&import.meta.env.VITE_V36_ISOLATED_LAN_PILOT==="true"){
+  if(import.meta.env.VITE_V57_ISOLATED_DESKTOP_SHELL==="true"){
+    import('./components/OfflineDesktopShellV57').then(({OfflineDesktopShellV57})=>{
+      root.render(<React.StrictMode><OfflineDesktopShellV57/></React.StrictMode>);
+    }).catch(()=>{
+      root.render(<div role="alert" dir="rtl">ژینگەی تاقیکردنەوەی ئۆفلاین بەردەست نییە؛ فرۆشتن ڕاگیرا.</div>);
+    });
+  }else{
   import('./components/LocalCashierV32').then(({LocalCashierV32})=>{
     root.render(<React.StrictMode>
       <div className="market-banner">سوپەرمارکێتی کانی چنار</div>
@@ -17,6 +24,7 @@ if(import.meta.env.PROD&&import.meta.env.VITE_V36_ISOLATED_LAN_PILOT==="true"){
   }).catch(()=>{
     root.render(<div role="alert" dir="rtl">ژینگەی تاقیکردنەوەی ناوخۆیی بەردەست نییە؛ فرۆشتن ڕاگیرا.</div>);
   });
+  }
 }else{
   Promise.all([import('./App'),import('./context/AppContext')])
     .then(([{App},{AppProvider}])=>{

@@ -1,0 +1,74 @@
+name: V59 TWO-CASHIER REAL PG HTTPS OFFLINE acceptance (NO-GO)
+on:
+  push:
+    branches:
+      - feature/v59-real-postgres-https-cashier-acceptance-20261030
+    paths:
+      - 'offline/tests/v59_real_postgres_https_cashier.mjs'
+      - '.github/workflows/v59-real-pg-https-cashier.yml'
+  pull_request:
+    paths:
+      - 'offline/tests/v59_real_postgres_https_cashier.mjs'
+      - '.github/workflows/v59-real-pg-https-cashier.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  two-cashiers-real-db-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v59_ci_test
+          POSTGRES_USER: localtest
+          POSTGRES_PASSWORD: v59_disposable_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U localtest -d zhirox_v59_ci_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: '127.0.0.1'
+      PGPORT: '5432'
+      PGDATABASE: zhirox_v59_ci_test
+      PGUSER: localtest
+      PGPASSWORD: v59_disposable_test_password
+      ZHIROX_V59_DISPOSABLE_CI_TEST: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install local PostgreSQL CLI / test driver only
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          npm install --no-package-lock --no-save --ignore-scripts pg@8.16.3
+      - name: Apply current local-only schema to EMPTY disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(psql -At -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='zhirox_local'")" = "0"
+          for file in \
+            001_core.sql 002_atomic_checkout.sql 003_local_users.sql \
+            004_catalog_indexes.sql 005_price_locked_checkout.sql \
+            006_packs_scale_checkout.sql 007_outbox_leases.sql \
+            009_durable_checkout_intents.sql 011_immutable_receipts_v34.sql \
+            012_print_queue_v35.sql 013_cash_shifts_v37.sql \
+            014_cash_movements_v38.sql 015_manager_cash_refunds_v39.sql \
+            017_partial_cash_refunds_v40.sql 018_split_tender_draft_v41.sql \
+            019_external_settlement_accounting_v42.sql \
+            020_reservation_v43.sql 021_tender_reconciliation_v44.sql \
+            022_financial_integrity_audit_v45.sql 026_print_spool_fencing_v54.sql; do
+            psql -v ON_ERROR_STOP=1 -f "offline/migrations/$file"
+          done
+      - name: Verify authenticated CASH transactions over genuine TLS against real PostgreSQL without Internet
+        run: node --test offline/tests/v59_real_postgres_https_cashier.mjs
+      - name: Release classification
+        run: echo "V59 CI proves disposable PostgreSQL and TLS local cash only, NOT physical store operational readiness or cloud. GO-LIVE NO_GO."

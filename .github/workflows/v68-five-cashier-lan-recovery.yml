@@ -1,0 +1,242 @@
+name: V72 five-cashier HTTPS telemetry and 3 automated disposable backups (NO-GO)
+on:
+  push:
+    branches:
+      - feature/v72-market-telemetry-rolling-backup-20261031
+    paths:
+      - 'offline/tests/v59_real_postgres_https_cashier.mjs'
+      - 'offline/tests/027_v60_restricted_api_ci_role.sql'
+      - 'offline/tests/028_v61_checkout_executor_ci.sql'
+      - 'offline/tests/029_v62_intent_shift_executors_ci.sql'
+      - 'offline/tests/030_v63_database_actor_proof_ci.sql'
+      - 'offline/tests/031_v64_login_column_grants_ci.sql'
+      - 'offline/tests/v65_wan_egress_guard.cjs'
+      - 'offline/tests/v66_postgres_recovery_lab.mjs'
+      - 'offline/tests/v67_twin_wan_reconnect_sync.mjs'
+      - 'offline/tests/v68_five_cashiers_lan_recovery.mjs'
+      - 'offline/tests/v70_docker_cashier_soak_client.mjs'
+      - 'offline/tests/v71_postgres_sigkill_printer_fence.mjs'
+      - 'offline/tests/v72_telemetry_periodic_backup_restore.mjs'
+      - 'offline/tests/v70_five_pc_load_final_audit.mjs'
+      - 'offline/tests/033_v70_five_pc_soak_fixture_ci.sql'
+      - 'offline/tests/v69_docker_internal_lan_acceptance.sh'
+      - 'offline/cloud-migrations/008_v28_received_sales.sql'
+      - 'offline/outbox-sync-worker-v27.mjs'
+      - 'offline/cloud-receiver-v28.mjs'
+      - 'offline/tests/v64_gateway_auth_guard.test.mjs'
+      - 'offline/lan-gateway-v33.mjs'
+      - 'offline/local-pos-api-v3.mjs'
+      - 'offline/local-session.mjs'
+      - 'offline/local-auth-v3.mjs'
+      - 'offline/local-durable-server-v31.mjs'
+      - 'offline/local-shifts-v37.mjs'
+      - '.github/workflows/v68-five-cashier-lan-recovery.yml'
+  pull_request:
+    paths:
+      - 'offline/tests/v59_real_postgres_https_cashier.mjs'
+      - 'offline/tests/027_v60_restricted_api_ci_role.sql'
+      - 'offline/tests/028_v61_checkout_executor_ci.sql'
+      - 'offline/tests/029_v62_intent_shift_executors_ci.sql'
+      - 'offline/tests/030_v63_database_actor_proof_ci.sql'
+      - 'offline/tests/031_v64_login_column_grants_ci.sql'
+      - 'offline/tests/v65_wan_egress_guard.cjs'
+      - 'offline/tests/v66_postgres_recovery_lab.mjs'
+      - 'offline/tests/v67_twin_wan_reconnect_sync.mjs'
+      - 'offline/tests/v68_five_cashiers_lan_recovery.mjs'
+      - 'offline/tests/v70_docker_cashier_soak_client.mjs'
+      - 'offline/tests/v71_postgres_sigkill_printer_fence.mjs'
+      - 'offline/tests/v72_telemetry_periodic_backup_restore.mjs'
+      - 'offline/tests/v70_five_pc_load_final_audit.mjs'
+      - 'offline/tests/033_v70_five_pc_soak_fixture_ci.sql'
+      - 'offline/tests/v69_docker_internal_lan_acceptance.sh'
+      - 'offline/cloud-migrations/008_v28_received_sales.sql'
+      - 'offline/outbox-sync-worker-v27.mjs'
+      - 'offline/cloud-receiver-v28.mjs'
+      - 'offline/tests/v64_gateway_auth_guard.test.mjs'
+      - 'offline/lan-gateway-v33.mjs'
+      - 'offline/local-pos-api-v3.mjs'
+      - 'offline/local-session.mjs'
+      - 'offline/local-auth-v3.mjs'
+      - 'offline/local-durable-server-v31.mjs'
+      - 'offline/local-shifts-v37.mjs'
+      - '.github/workflows/v68-five-cashier-lan-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-db-two-cashiers-restricted-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v59_ci_test
+          POSTGRES_USER: localtest
+          POSTGRES_PASSWORD: v60_disposable_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U localtest -d zhirox_v59_ci_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: '127.0.0.1'
+      PGPORT: '5432'
+      PGDATABASE: zhirox_v59_ci_test
+      PGUSER: localtest
+      PGPASSWORD: v60_disposable_test_password
+      ZHIROX_V59_DISPOSABLE_CI_TEST: 'true'
+      ZHIROX_V60_CI_RESTRICTED_ROLE: 'true'
+      ZHIROX_V61_CI_CASH_EXECUTOR: 'true'
+      ZHIROX_V62_CI_INTENT_SHIFT_GUARD: 'true'
+      ZHIROX_V63_CI_ACTOR_PROOF: 'true'
+      ZHIROX_V64_CI_AUTH_GATE: 'true'
+      ZHIROX_V65_MARKET_DIGITAL_TWIN: 'true'
+      ZHIROX_V66_ISOLATED_RECOVERY_TEST: 'true'
+      ZHIROX_V67_ISOLATED_SYNC_TEST: 'true'
+      ZHIROX_V68_FIVE_CASHIER_LAB: 'true'
+      ZHIROX_V69_ISOLATED_BRIDGE: 'true'
+      ZHIROX_V70_SOAK_ENABLED: 'true'
+      ZHIROX_V71_CRASH_TEST: 'true'
+      ZHIROX_V72_BOUNDED_TELEMETRY_TEST: 'true'
+      ZHIROX_V72_EVIDENCE_DIR: 'market-lab-evidence'
+      ZHIROX_V71_EVIDENCE_DIR: 'market-lab-evidence'
+      ZHIROX_V68_EVIDENCE_DIR: 'market-lab-evidence'
+      ZHIROX_V67_RECEIVER_DB: 'zhirox_v67_receiver_ci_test'
+      ZHIROX_V67_EVIDENCE_DIR: 'market-lab-evidence'
+      ZHIROX_V66_EVIDENCE_DIR: 'market-lab-evidence'
+      ZHIROX_V65_EVIDENCE_DIR: 'market-lab-evidence'
+      ZHIROX_V64_AUTH_GATE_ENABLED: 'true'
+      ZHIROX_V63_DB_ACTOR_PROOF: 'true'
+      ZHIROX_V60_CI_DB_USER: zhirox_v60_api_ci
+      ZHIROX_V60_CI_DB_PASSWORD: V60-SYNTHETIC-CI-ONLY-DO-NOT-REUSE
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test driver and local PostgreSQL CLI
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          npm install --no-package-lock --no-save --ignore-scripts pg@8.16.3
+      - name: Apply current local schema ONLY to empty disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(psql -At -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='zhirox_local'")" = "0"
+          for file in \
+            001_core.sql 002_atomic_checkout.sql 003_local_users.sql \
+            004_catalog_indexes.sql 005_price_locked_checkout.sql \
+            006_packs_scale_checkout.sql 007_outbox_leases.sql \
+            009_durable_checkout_intents.sql 011_immutable_receipts_v34.sql \
+            012_print_queue_v35.sql 013_cash_shifts_v37.sql \
+            014_cash_movements_v38.sql 015_manager_cash_refunds_v39.sql \
+            017_partial_cash_refunds_v40.sql 018_split_tender_draft_v41.sql \
+            019_external_settlement_accounting_v42.sql \
+            020_reservation_v43.sql 021_tender_reconciliation_v44.sql \
+            022_financial_integrity_audit_v45.sql \
+            026_print_spool_fencing_v54.sql; do
+            psql -v ON_ERROR_STOP=1 -f "offline/migrations/$file" > /dev/null
+          done
+      - name: Provision separate non-owner test API login (not DBA)
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/027_v60_restricted_api_ci_role.sql
+      - name: Isolate transactional sale and inventory DML in NOLOGIN SECURITY DEFINER executor
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/028_v61_checkout_executor_ci.sql
+      - name: Isolate intent and shift mutations behind NOLOGIN guards
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/029_v62_intent_shift_executors_ci.sql
+      - name: Verify legacy sessions and authentication remain compatible when V63 is OFF
+        env:
+          ZHIROX_V63_DB_ACTOR_PROOF: 'false'
+        run: node --test offline/tests/local-auth-v3.test.mjs offline/tests/local-session.test.mjs
+      - name: Activate independent database proof issuance and guarded wrappers
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/030_v63_database_actor_proof_ci.sql
+      - name: Revoke sensitive local users and stores SQL UPDATE rights
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/031_v64_login_column_grants_ci.sql
+      - name: Test independent login throttling and route allowlist
+        run: node --test offline/tests/v64_gateway_auth_guard.test.mjs
+      - name: Run REAL market checkout lab with WAN egress blocked for the Node process
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node --test offline/tests/v59_real_postgres_https_cashier.mjs
+      - name: Save exact committed financial and stock baseline after V65
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v66_postgres_recovery_lab.mjs before
+      - name: RESTART actual PostgreSQL 16 isolated service container (no Windows mains test)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker restart '${{ job.services.postgres.id }}'
+          ready=false
+          for i in $(seq 1 40); do
+            if pg_isready -h 127.0.0.1 -p 5432 -d zhirox_v59_ci_test -U localtest; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = "true"
+      - name: Authenticate cashier and POST new 400-IQD REAL HTTPS sale after DB restart
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v66_postgres_recovery_lab.mjs after-restart
+      - name: Verify persistent records, then create real isolated PostgreSQL compressed backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v66_postgres_recovery_lab.mjs after-sale
+          test "$PGDATABASE" = "zhirox_v59_ci_test"
+          pg_dump --format=custom --file="$RUNNER_TEMP/v66-synthetic-only.dump"
+          test -s "$RUNNER_TEMP/v66-synthetic-only.dump"
+          pg_restore --list "$RUNNER_TEMP/v66-synthetic-only.dump" > "$RUNNER_TEMP/v66-toc.txt"
+          grep -q 'zhirox_local' "$RUNNER_TEMP/v66-toc.txt"
+          sha256sum "$RUNNER_TEMP/v66-synthetic-only.dump" | awk '{print $1}' > market-lab-evidence/v66-backup-sha256.txt
+      - name: RESTORE backup into a second clean disposable PostgreSQL database
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PGDATABASE" = "zhirox_v59_ci_test"
+          test "$(psql -At -d postgres -c "SELECT count(*) FROM pg_database WHERE datname='zhirox_v66_restore_ci_test'")" = "0"
+          createdb -T template0 zhirox_v66_restore_ci_test
+          pg_restore --exit-on-error --dbname=zhirox_v66_restore_ci_test "$RUNNER_TEMP/v66-synthetic-only.dump" > /dev/null
+      - name: Assert exact receipts, ledger, inventory, outbox and guarded DB privileges after restore
+        env:
+          PGDATABASE: zhirox_v66_restore_ci_test
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v66_postgres_recovery_lab.mjs restored
+      - name: Provision second cloud-like RECEIVER database (local and synthetic only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PGDATABASE" = "zhirox_v59_ci_test"
+          test "$(psql -At -d postgres -c "SELECT count(*) FROM pg_database WHERE datname='zhirox_v67_receiver_ci_test'")" = "0"
+          createdb -T template0 zhirox_v67_receiver_ci_test
+          PGDATABASE=zhirox_v67_receiver_ci_test psql -v ON_ERROR_STOP=1 -f offline/cloud-migrations/008_v28_received_sales.sql > /dev/null
+          test "$(PGDATABASE=zhirox_v67_receiver_ci_test psql -At -c "SELECT count(*) FROM zhirox_cloud_v28.received_sales")" = "0"
+      - name: REAL sender fails offline, succeeds on loopback recovery, dedupes genuine financial events
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v67_twin_wan_reconnect_sync.mjs
+      - name: V68 REAL 5-cashier stock race and local gateway interruption with unfinished checkout recovery
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v68_five_cashiers_lan_recovery.mjs
+      - name: Seed fifth cashier LAN test data
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/032_v69_five_docker_pc_fixture_ci.sql
+      - name: Five Docker-connected cashiers and network isolation acceptance
+        shell: bash
+        env:
+          ZHIROX_V69_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash offline/tests/v69_docker_internal_lan_acceptance.sh
+      - name: V71 ACTUAL PostgreSQL docker SIGKILL, WAL recovery, pending checkout and one-shot print fence
+        env:
+          ZHIROX_V71_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v71_postgres_sigkill_printer_fence.mjs
+      - name: V72 75-second real 5-cashier HTTPS telemetry, three pg_dump snapshots and verified final restore
+        env:
+          ZHIROX_V72_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v72_telemetry_periodic_backup_restore.mjs
+      - name: Upload authentic lab receipts and transaction audit (not hardware proof)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhirox-v72-telemetry-rolling-backup-evidence
+          path: market-lab-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Never classify CI as commercial sale certification
+        run: echo "V68 five HTTPS cashier sessions share real PostgreSQL, race over 15 units, fail two oversells, retain prepared intent during actual gateway socket downtime, recover once, reconcile shifts and outbox. No physical Windows/LAN outage or production. GO-LIVE NO-GO. PHYSICAL GO-LIVE NO-GO."

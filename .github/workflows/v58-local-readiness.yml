@@ -1,0 +1,104 @@
+name: V58 local PostgreSQL readiness gate — disposable test only
+on:
+  push:
+    branches:
+      - feature/v58-local-postgres-readiness-gate-20261030
+    paths:
+      - 'offline/local-readiness-v58.mjs'
+      - 'offline/tests/local-readiness-v58.test.mjs'
+      - '.github/workflows/v58-local-readiness.yml'
+  pull_request:
+    paths:
+      - 'offline/local-readiness-v58.mjs'
+      - 'offline/tests/local-readiness-v58.test.mjs'
+      - '.github/workflows/v58-local-readiness.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres16-read-only-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v58_test
+          POSTGRES_USER: localtest
+          POSTGRES_PASSWORD: local_ci_disposable_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U localtest -d zhirox_v58_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: zhirox_v58_test
+      PGUSER: localtest
+      PGPASSWORD: local_ci_disposable_password
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test fail-closed config and read-only mock
+        run: node --test offline/tests/local-readiness-v58.test.mjs
+      - name: Install PostgreSQL CLI and minimal Node pg client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          npm install --no-package-lock --no-save --ignore-scripts pg@8.16.3
+      - name: Migrate ONLY new disposable PostgreSQL 16 (no live data)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            001_core.sql 002_atomic_checkout.sql 003_local_users.sql \
+            004_catalog_indexes.sql 005_price_locked_checkout.sql \
+            006_packs_scale_checkout.sql 007_outbox_leases.sql \
+            009_durable_checkout_intents.sql 011_immutable_receipts_v34.sql \
+            012_print_queue_v35.sql 013_cash_shifts_v37.sql \
+            014_cash_movements_v38.sql 015_manager_cash_refunds_v39.sql \
+            017_partial_cash_refunds_v40.sql 018_split_tender_draft_v41.sql \
+            019_external_settlement_accounting_v42.sql \
+            020_reservation_v43.sql 021_tender_reconciliation_v44.sql \
+            022_financial_integrity_audit_v45.sql \
+            026_print_spool_fencing_v54.sql; do
+            psql -v ON_ERROR_STOP=1 -f "offline/migrations/$file"
+          done
+      - name: Create ONE disposable store and a restricted read-only auditor
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO zhirox_local.stores(id,name)
+          VALUES('10000000-0000-0000-0000-000000000058','V58 DISPOSABLE TEST SHOP');
+          CREATE ROLE zhirox_v58_auditor LOGIN PASSWORD 'ci_v58_readonly_disposable_only';
+          GRANT CONNECT ON DATABASE zhirox_v58_test TO zhirox_v58_auditor;
+          GRANT USAGE ON SCHEMA zhirox_local TO zhirox_v58_auditor;
+          GRANT SELECT ON ALL TABLES IN SCHEMA zhirox_local TO zhirox_v58_auditor;
+          SQL
+      - name: Verify real PostgreSQL read-only readiness does not grant sales
+        shell: bash
+        env:
+          ZHIROX_V58_ISOLATED_PREFLIGHT: 'true'
+          ZHIROX_V58_SYNTHETIC_TEST_ONLY: 'true'
+          ZHIROX_V58_STORE_ID: '10000000-0000-0000-0000-000000000058'
+          ZHIROX_V58_LOCAL_DB_URL: postgresql://zhirox_v58_auditor:ci_v58_readonly_disposable_only@127.0.0.1:5432/zhirox_v58_test
+        run: |
+          set -euo pipefail
+          node offline/local-readiness-v58.mjs > /tmp/v58-readiness.json
+          node --input-type=module -e 'import{readFileSync}from"node:fs";const x=JSON.parse(readFileSync("/tmp/v58-readiness.json","utf8"));if(x.release_status!=="NO_GO"||x.passed!==true||x.ready_for_production!==false)process.exit(1);console.log("V58 REAL DISPOSABLE READ-ONLY CHECKS PASS; GO-LIVE NO-GO")'
+          # An intentionally unprivileged auditor must never be able to write sales.
+          if PGPASSWORD=ci_v58_readonly_disposable_only PGUSER=zhirox_v58_auditor \
+            psql -v ON_ERROR_STOP=1 -c "INSERT INTO zhirox_local.stores(id,name) VALUES('10000000-0000-0000-0000-000000000059','UNAUTHORIZED')"; then
+            echo "::error::Read-only DB role wrote data"
+            exit 1
+          fi
+      - name: Release classification
+        run: echo "V58 is only an isolated schema/read-role preflight; field PostgreSQL and cashier sales have not been certified. NO_GO."

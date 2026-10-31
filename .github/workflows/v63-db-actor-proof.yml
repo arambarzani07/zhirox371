@@ -1,0 +1,110 @@
+name: V63 PostgreSQL independently verified cashier actor proof (NO-GO)
+on:
+  push:
+    branches:
+      - feature/v63-db-actor-proof-20261031
+    paths:
+      - 'offline/tests/v59_real_postgres_https_cashier.mjs'
+      - 'offline/tests/027_v60_restricted_api_ci_role.sql'
+      - 'offline/tests/028_v61_checkout_executor_ci.sql'
+      - 'offline/tests/029_v62_intent_shift_executors_ci.sql'
+      - 'offline/tests/030_v63_database_actor_proof_ci.sql'
+      - 'offline/local-session.mjs'
+      - 'offline/local-auth-v3.mjs'
+      - 'offline/local-durable-server-v31.mjs'
+      - 'offline/local-shifts-v37.mjs'
+      - '.github/workflows/v63-db-actor-proof.yml'
+  pull_request:
+    paths:
+      - 'offline/tests/v59_real_postgres_https_cashier.mjs'
+      - 'offline/tests/027_v60_restricted_api_ci_role.sql'
+      - 'offline/tests/028_v61_checkout_executor_ci.sql'
+      - 'offline/tests/029_v62_intent_shift_executors_ci.sql'
+      - 'offline/tests/030_v63_database_actor_proof_ci.sql'
+      - 'offline/local-session.mjs'
+      - 'offline/local-auth-v3.mjs'
+      - 'offline/local-durable-server-v31.mjs'
+      - 'offline/local-shifts-v37.mjs'
+      - '.github/workflows/v63-db-actor-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-db-two-cashiers-restricted-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v59_ci_test
+          POSTGRES_USER: localtest
+          POSTGRES_PASSWORD: v60_disposable_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U localtest -d zhirox_v59_ci_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: '127.0.0.1'
+      PGPORT: '5432'
+      PGDATABASE: zhirox_v59_ci_test
+      PGUSER: localtest
+      PGPASSWORD: v60_disposable_test_password
+      ZHIROX_V59_DISPOSABLE_CI_TEST: 'true'
+      ZHIROX_V60_CI_RESTRICTED_ROLE: 'true'
+      ZHIROX_V61_CI_CASH_EXECUTOR: 'true'
+      ZHIROX_V62_CI_INTENT_SHIFT_GUARD: 'true'
+      ZHIROX_V63_CI_ACTOR_PROOF: 'true'
+      ZHIROX_V63_DB_ACTOR_PROOF: 'true'
+      ZHIROX_V60_CI_DB_USER: zhirox_v60_api_ci
+      ZHIROX_V60_CI_DB_PASSWORD: V60-SYNTHETIC-CI-ONLY-DO-NOT-REUSE
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test driver and local PostgreSQL CLI
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          npm install --no-package-lock --no-save --ignore-scripts pg@8.16.3
+      - name: Apply current local schema ONLY to empty disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(psql -At -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='zhirox_local'")" = "0"
+          for file in \
+            001_core.sql 002_atomic_checkout.sql 003_local_users.sql \
+            004_catalog_indexes.sql 005_price_locked_checkout.sql \
+            006_packs_scale_checkout.sql 007_outbox_leases.sql \
+            009_durable_checkout_intents.sql 011_immutable_receipts_v34.sql \
+            012_print_queue_v35.sql 013_cash_shifts_v37.sql \
+            014_cash_movements_v38.sql 015_manager_cash_refunds_v39.sql \
+            017_partial_cash_refunds_v40.sql 018_split_tender_draft_v41.sql \
+            019_external_settlement_accounting_v42.sql \
+            020_reservation_v43.sql 021_tender_reconciliation_v44.sql \
+            022_financial_integrity_audit_v45.sql \
+            026_print_spool_fencing_v54.sql; do
+            psql -v ON_ERROR_STOP=1 -f "offline/migrations/$file" > /dev/null
+          done
+      - name: Provision separate non-owner test API login (not DBA)
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/027_v60_restricted_api_ci_role.sql
+      - name: Isolate transactional sale and inventory DML in NOLOGIN SECURITY DEFINER executor
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/028_v61_checkout_executor_ci.sql
+      - name: Isolate intent and shift mutations behind NOLOGIN guards
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/029_v62_intent_shift_executors_ci.sql
+      - name: Verify legacy sessions and authentication remain compatible when V63 is OFF
+        env:
+          ZHIROX_V63_DB_ACTOR_PROOF: 'false'
+        run: node --test offline/tests/local-auth-v3.test.mjs offline/tests/local-session.test.mjs
+      - name: Activate independent database proof issuance and guarded wrappers
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/030_v63_database_actor_proof_ci.sql
+      - name: Run ACTUAL cash HTTPS API under limited database login
+        run: node --test offline/tests/v59_real_postgres_https_cashier.mjs
+      - name: Never classify CI as commercial sale certification
+        run: echo "V63 independently-issued DB proofs are required for V31 and V37 writes; other workflows and hardware remain NO-GO. PHYSICAL GO-LIVE NO-GO."
