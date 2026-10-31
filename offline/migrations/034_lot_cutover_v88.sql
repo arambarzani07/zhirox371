@@ -138,7 +138,7 @@ RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,zhi
 BEGIN
  IF EXISTS(SELECT 1 FROM zhirox_local.lot_cutovers_v88 c WHERE c.store_id=NEW.store_id)
  AND NOT(TG_TABLE_NAME='sales' AND
-   current_setting('zhirox.v88_fefo_route',true)='test_v88_authorized') THEN
+   COALESCE(current_setting('zhirox.v88_fefo_route',true),'')='test_v88_authorized') THEN
   RAISE EXCEPTION 'legacy sale, return or goods receipt blocked after test FEFO cutover'
   USING ERRCODE='P8808';
  END IF;
