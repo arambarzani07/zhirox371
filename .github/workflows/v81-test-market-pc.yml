@@ -3,24 +3,30 @@ on:
   pull_request:
     paths:
       - 'offline/local-test-market-v81.mjs'
+      - 'offline/test-market-sections-v82.mjs'
+      - 'offline/tests/test-market-sections-v82.test.mjs'
       - 'offline/tests/test-market-v81-api.test.mjs'
       - 'src/components/TestMarketDesktopV81.tsx'
       - 'src/testMarketV81.css'
       - 'src/main.tsx'
       - 'vite.config.ts'
       - 'tests/browser/v81_test_market_real_pg.mjs'
+      - 'src/components/CardIcon.tsx'
       - '.github/workflows/v81-test-market-pc.yml'
       - 'docs/V81_TEST_MARKET_PC.md'
   push:
     branches: [main]
     paths:
       - 'offline/local-test-market-v81.mjs'
+      - 'offline/test-market-sections-v82.mjs'
+      - 'offline/tests/test-market-sections-v82.test.mjs'
       - 'offline/tests/test-market-v81-api.test.mjs'
       - 'src/components/TestMarketDesktopV81.tsx'
       - 'src/testMarketV81.css'
       - 'src/main.tsx'
       - 'vite.config.ts'
       - 'tests/browser/v81_test_market_real_pg.mjs'
+      - 'src/components/CardIcon.tsx'
       - '.github/workflows/v81-test-market-pc.yml'
 permissions:
   contents: read
@@ -58,7 +64,7 @@ jobs:
         with:
           node-version: '24'
       - name: Check authenticated read-only V81 API security
-        run: node --test offline/tests/test-market-v81-api.test.mjs
+        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs
       - name: Install app, disposable SQL driver and pinned Chromium
         run: |
           npm install --no-save --no-package-lock pg playwright@1.56.1
@@ -81,6 +87,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/migrations/002_atomic_checkout.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/003_local_users.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/028_customer_debt_ledger_v79.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/027_section_settings_v78.sql
           node offline/test-market-v80.mjs
           node offline/tests/verify-test-market-login-v80.mjs
           psql -v ON_ERROR_STOP=1 -f offline/tests/036_v80_test_market_persisted.sql
