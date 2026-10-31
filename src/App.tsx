@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useApp } from './context/AppContext';
 import { Header } from './components/Header';
+import { SystemNavigator } from './components/SystemNavigator';
 import { HomeScreen } from './components/HomeScreen';
 import { CashierPos } from './components/CashierPos';
 import { LocalCashierV32 } from './components/LocalCashierV32';
@@ -44,8 +45,10 @@ export const App: React.FC = () => {
       <div className="market-banner">سوپەرمارکێتی کانی چنار</div>
       <div className="viewport">
         <div className="desktop">
-          <Header localPilot={currentView === 'pos' && localCashierV32} />
-          <main id="app">
+          <Header localPilot={localCashierV32} />
+          <main id="app" className="system-three-columns">
+            <SystemNavigator localPilot={localCashierV32} />
+            <div className="system-content-column">
             {currentView === 'home' && <HomeScreen />}
             {currentView === 'pos' && (localCashierV32 ? <LocalCashierV32 /> : <CashierPos />)}
             {currentView === 'products' && <ProductCatalogView />}
@@ -58,6 +61,7 @@ export const App: React.FC = () => {
             {(currentView === 'qa' || currentView === 'settings' || currentView === 'audit' || currentView === 'offers') && (
               <DiagnosticsQaView />
             )}
+            </div>
           </main>
         </div>
       </div>
