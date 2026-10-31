@@ -1,0 +1,25 @@
+name: V76 Windows commercial installer safety gate (NO-GO until validated)
+on:
+  push:
+    branches:
+      - feature/v76-oneclick-production-readiness-20261031
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-readiness-fails-closed:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure unfinished commercial EXE is NEVER declared production-ready
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $report = & ./windows/Test-ZHIROX-Production-Readiness-V76.ps1 -Json | Out-String
+          $actualCode = $LASTEXITCODE
+          if ($actualCode -ne 2) { throw 'V76 preflight must refuse commercial GO' }
+          $parsed = $report | ConvertFrom-Json
+          if ($parsed.status -ne 'NO_GO') { throw 'Commercial release was misclassified' }
+          if ($parsed.checks.production_signed_auto_update_verified -ne $false) { throw 'Unverified automatic updates incorrectly approved' }
+          if ($parsed.checks.production_rollback_and_backup_verified -ne $false) { throw 'Unverified database backup incorrectly approved' }
+          Write-Output 'V76 PASS: read-only gate rejects unsupported formal cashier release.'
