@@ -73,12 +73,50 @@ button {
     padding: 0;
     overscroll-behavior-y: contain;
   }
-  /* Home in the React tree must match the approved PC Home margins. */
-  #root > .viewport > .desktop > main > div {
+  /* The approved 39/44px Home spacing must NOT override cashier or other routes. */
+  #root > .viewport > .desktop > main > .locked-home {
     padding: 39px 44px 60px !important;
   }
-  /* Retain four columns even when opened on a phone: pan horizontally. */
-  #root > .viewport > .desktop > main .row {
+  /* Keep the approved fixed PC 3x4 grid only on Home, never on POS tables. */
+  #root > .viewport > .desktop > main > .locked-home .row {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  /* Original 75px PC header styles were embedded in the old index.html.
+     They were lost when the React root replaced that document. Restore only
+     the approved header geometry, without touching locked CSS or assets. */
+  #root > .viewport > .desktop > header {
+    background: #fff;
+    padding: 0 42px;
+    border-bottom: 1px solid #e7ecf2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #root > .viewport > .desktop > header .brand {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    font-size: 19px;
+    font-weight: 800;
+  }
+  #root > .viewport > .desktop > header .brand i {
+    width: 43px;
+    height: 43px;
+    border-radius: 12px;
+    background: #243d60;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-style: normal;
+    font-size: 25px;
+  }
+  #root > .viewport > .desktop > header .home {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid #e5eaf0;
+    background: #f7f9fc;
+    color: #556a84;
   }
 }
