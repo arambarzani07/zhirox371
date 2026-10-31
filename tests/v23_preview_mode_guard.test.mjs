@@ -49,8 +49,8 @@ test("Every printable React thermal receipt is marked not a fiscal sale",()=>{
  assert.match(receipt,/پسووڵەی تاقیکردنەوە/);
  assert.match(receipt,/window\.print\(\)/);
 });
-test("PC Home component and 60-card icon definitions retain unchanged source blobs",()=>{
- assert.equal(gitBlob(home),"ddadae3c316835c730ed1ef3ba9db4be92336912");
+test("Approved React Home repair and immutable original reference remain source-locked",()=>{
+ assert.equal(gitBlob(home),"08f241a5b650bff5fbeda73416b65db3a209177d","repair is frozen to its reviewed Home implementation");
  // Existing owner-locked legacy Home source is also unchanged by this patch.
  assert.match(read("tests/owner_locked_home_sha.test.mjs"),/c364336a84b2c92cf121d7682671b309eccd4b05/);
  assert.match(icon.toString("utf8"),/MODULE_SPECS/);
