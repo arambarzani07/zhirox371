@@ -22,7 +22,8 @@ export default defineConfig(({mode})=>{
       port:3000,
       strictPort:true,
       ...(pilot?{proxy:{'/api/local':{
-        target:testMarket?'http://127.0.0.1:3311':localCashier?'http://127.0.0.1:3308':'http://127.0.0.1:3307',
+        target:localCashier?'http://127.0.0.1:3308':'http://127.0.0.1:3307',
+        ...(testMarket?{target:'http://127.0.0.1:3311'}:{}),
         changeOrigin:false,
         secure:false
       }}}:{})
