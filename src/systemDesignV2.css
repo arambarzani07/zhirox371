@@ -373,197 +373,128 @@
 /* No fullscreen overrides under @media print: preserve actual receipts. */
 
 
-/* ZHIROX V4 — two vertical RTL navigation columns.
-   Right: module list. Middle: selected module's four submodules, stacked.
-   Left: the actual routed feature fills remaining Windows PC viewport.
-   The horizontal ribbon beneath the supermarket name is preserved. */
+/* V5 owner-approved PC layout: two HORIZONTAL navigation lines, not cards
+   or sidebar columns. Print receipts are never given these screen-only rules. */
 @media screen {
- #root > .viewport > .desktop > main#app.system-three-columns {
-   display:grid!important;direction:rtl;
-   grid-template-columns:202px 222px minmax(0,1fr)!important;
-   grid-template-rows:minmax(0,1fr)!important;
-   gap:0!important;align-items:stretch!important;
+ #root > .viewport > .desktop > header.system-double-strip,
+ .v57-app .v57-header.v57-double-strip {
+   box-sizing:border-box!important;
+   width:100%!important;max-width:none!important;height:auto!important;
+   min-height:57px!important;flex:0 0 auto!important;
+   display:flex!important;flex-direction:column!important;
+   justify-content:flex-start!important;align-items:stretch!important;
    padding:0!important;margin:0!important;
-   height:auto!important;min-height:0!important;overflow:hidden!important;
-   width:100%!important;max-width:none!important;
+   gap:0!important;border-radius:0!important;
+   background:#fff!important;border-bottom:1px solid #dce5ef!important;
+   position:relative;z-index:5;
  }
- #app.system-three-columns > .system-module-column,
- #app.system-three-columns > .system-submodule-column {
-   box-sizing:border-box;min-width:0;max-width:none;
-   height:100%!important;min-height:0!important;
-   background:#fff;overflow-y:auto;overflow-x:hidden;
-   padding:14px 10px!important;margin:0!important;
-   scrollbar-width:thin;overscroll-behavior-y:contain;
+ #root > .viewport > .desktop > header.system-double-strip .system-primary-nav,
+ .v57-app .v57-double-strip .system-primary-nav {
+   box-sizing:border-box!important;
+   flex:0 0 57px!important;width:100%!important;min-width:0;
+   height:57px!important;max-height:57px!important;
+   display:flex!important;align-items:center;justify-content:flex-start!important;
+   flex-wrap:nowrap!important;gap:5px!important;
+   padding:0 13px!important;margin:0!important;
+   background:#fff!important;overflow-x:auto!important;overflow-y:hidden!important;
+   scrollbar-width:thin;scrollbar-color:#bed0e0 transparent;
+   border-bottom:0!important;
  }
- #app.system-three-columns > .system-module-column {
-   border-inline-end:1px solid #dde7f0;background:#fff;
+ #root > .viewport > .desktop > header.system-double-strip.has-subnav .system-primary-nav,
+ .v57-app .v57-double-strip.has-subnav .system-primary-nav {
+   border-bottom:1px solid #e8eef5!important;
  }
- #app.system-three-columns > .system-submodule-column {
-   border-inline-end:1px solid #dae5ef;background:#f8fafd;
+ #root > .viewport > .desktop > header.system-double-strip .system-primary-nav .ws-link,
+ .v57-app .v57-double-strip .system-primary-nav button {
+   box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+   flex:0 0 auto!important;height:38px!important;min-height:38px!important;
+   width:auto!important;margin:0!important;padding:8px 13px!important;
+   border:1px solid transparent!important;border-radius:8px!important;
+   font:850 12px Tahoma,"Segoe UI",sans-serif!important;
+   background:transparent!important;color:#536b83!important;
+   white-space:nowrap;cursor:pointer;
  }
- .system-module-list,.system-submodule-list {
-   display:flex;flex-direction:column;gap:5px;min-width:0;
+ #root > .viewport > .desktop > header.system-double-strip .system-primary-nav .ws-link.active,
+ .v57-app .v57-double-strip .system-primary-nav button.active {
+   background:#24486e!important;color:#fff!important;border-color:#24486e!important;
  }
- .system-module-link,.system-submodule-link {
-   display:flex;align-items:center;gap:9px;width:100%;min-height:43px;
-   border:1px solid transparent;border-radius:9px;
-   padding:9px 10px;text-align:right;direction:rtl;
-   font:850 12px Tahoma,"Segoe UI",sans-serif;
-   background:transparent;color:#3d5570;cursor:pointer;
-   box-shadow:none;transition:background-color .12s,border-color .12s;
- }
- .system-module-link span:nth-of-type(1),.system-submodule-link span:nth-of-type(1) {
-   flex:1;min-width:0;line-height:1.7;
- }
- .system-module-link svg,.system-submodule-link svg {
-   flex:none;width:18px;height:18px;stroke:#64809c;color:#64809c;
- }
- .system-module-link:hover:not(:disabled),.system-submodule-link:hover:not(:disabled) {
-   background:#eaf2f9;border-color:#d5e2ee;
- }
- .system-module-link.selected {
-   background:#eaf1f9;border-color:#c4d6e8;color:#1f466e;
-   box-shadow:inset 3px 0 0 #2c608f;
- }
- .system-module-link.selected svg {stroke:#24486e;color:#24486e;}
- .system-module-arrow {color:#95a9bb;font-size:19px;flex:none!important;}
- .system-submodule-heading {
-   font-size:12px;font-weight:900;color:#61768d;
-   padding:11px 12px 15px;line-height:1.7;
-   border-bottom:1px solid #e4ebf3;margin-bottom:10px;
- }
- .system-submodule-link {background:#fff;border-color:#e4ebf2;min-height:47px;}
- .system-submodule-link.selected {
-   border-color:#24486e!important;background:#24486e!important;
-   color:white!important;font-weight:900;
-   box-shadow:inset 3px 0 0 #a9c9e9;
- }
- .system-submodule-link.selected svg {stroke:white!important;color:white!important;}
- .system-submodule-link:disabled {
-   color:#9aa8b6!important;background:#f5f7fa!important;
-   border-color:#e5ebf0!important;opacity:.58;cursor:not-allowed;
- }
- .system-selected-check {
-   flex:none!important;color:#fff!important;
-   display:grid;place-items:center;background:#496d95;
-   border-radius:50%;width:19px;height:19px;font-size:12px;font-weight:900;
- }
- #app.system-three-columns > .system-content-column {
-   box-sizing:border-box!important;min-width:0!important;width:100%!important;
-   height:100%!important;min-height:0!important;max-width:none!important;
-   margin:0!important;padding:0!important;background:var(--system-bg)!important;
-   overflow-y:auto!important;overflow-x:hidden!important;
-   overscroll-behavior-y:contain;scrollbar-gutter:auto!important;
- }
- #app.system-three-columns > .system-content-column > .home-strip-only {
-   width:100%!important;max-width:none!important;min-height:100%!important;
-   margin:0!important;padding:0!important;background:var(--system-bg)!important;
- }
- #app.system-three-columns > .system-content-column > :not(.home-strip-only) {
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav,
+ .v57-app .v57-double-strip .system-subnav {
    box-sizing:border-box!important;width:100%!important;max-width:none!important;
-   margin:0!important;min-height:100%!important;padding:20px 24px 28px!important;
+   height:48px!important;min-height:48px!important;flex:0 0 48px!important;
+   display:flex!important;flex-direction:row!important;align-items:center!important;
+   justify-content:flex-start!important;flex-wrap:nowrap!important;
+   padding:0 14px!important;margin:0!important;gap:8px!important;
+   overflow-x:auto!important;overflow-y:hidden!important;
+   background:#f8fafc!important;
+   border-top:0!important;scrollbar-width:thin;
+   scrollbar-color:#c2d2e2 transparent;
  }
- #app.system-three-columns .pos-clean__workspace {
-   grid-template-columns:minmax(0,1fr) minmax(240px,290px)!important;
-   min-height:calc(100dvh - 250px);
+ #root > .viewport > .desktop > header.system-double-strip:not(.has-subnav) .system-subnav,
+ .v57-app .v57-double-strip:not(.has-subnav) .system-subnav {display:none!important;}
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link,
+ .v57-app .v57-double-strip .system-subnav .system-subnav-link {
+   box-sizing:border-box!important;flex:0 0 auto!important;
+   display:inline-flex!important;align-items:center!important;gap:8px!important;
+   justify-content:center!important;min-width:100px;width:auto!important;
+   height:35px!important;min-height:35px!important;margin:0!important;
+   padding:6px 16px!important;border:1px solid #e1e8f0!important;
+   border-radius:8px!important;background:#fff!important;
+   color:#506981!important;font:850 12px Tahoma,"Segoe UI",sans-serif!important;
+   text-align:center!important;white-space:nowrap;cursor:pointer;
  }
- #app.system-three-columns .pos-clean__transaction {min-height:calc(100dvh - 250px);}
- #app.system-three-columns .pos-clean__basket {max-height:calc(100dvh - 380px);}
- @media (max-width:1220px) {
-  #root > .viewport > .desktop > main#app.system-three-columns {
-   grid-template-columns:176px 197px minmax(0,1fr)!important;
-  }
-  #app.system-three-columns > .system-content-column > :not(.home-strip-only) {
-   padding:15px 17px 24px!important;
-  }
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link.selected,
+ .v57-app .v57-double-strip .system-subnav .system-subnav-link.selected {
+   background:#e5f0fc!important;color:#153f68!important;
+   border:2px solid #2f6da6!important;
+   font-weight:900!important;
+   box-shadow:inset 0 -3px 0 #2f6da6!important;
  }
- /* Only the on-screen app gets these columns. Print/receipt styles remain untouched. */
-}
-
-
-/* Apply the same three-column screen to the isolated V57 offline PC shell.
-   All unsupported module destination buttons retain disabled state. */
-@media screen {
- .v57-app .v57-content.v57-three-columns {
-   display:grid!important;direction:rtl;
-   grid-template-columns:202px 222px minmax(0,1fr)!important;
-   grid-template-rows:minmax(0,1fr)!important;
-   gap:0!important;align-items:stretch!important;
-   width:100%!important;min-height:0!important;padding:0!important;
-   margin:0!important;overflow:hidden!important;
+ .system-subnav .system-subnav-link .system-subnav-check {
+   display:inline-flex;align-items:center;justify-content:center;
+   min-width:16px;height:16px;border-radius:100%;font-size:12px;
+   background:#276aa2;color:#fff;line-height:1;font-weight:900;
  }
- .v57-three-columns > .system-module-column,
- .v57-three-columns > .system-submodule-column {
-   box-sizing:border-box;min-width:0;min-height:0;height:100%;
-   overflow-y:auto;overflow-x:hidden;
-   padding:14px 10px;scrollbar-width:thin;
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link:disabled,
+ .v57-app .v57-double-strip .system-subnav .system-subnav-link:disabled {
+   background:#f0f3f6!important;color:#8e9bab!important;
+   border-color:#e8edf2!important;cursor:not-allowed;opacity:.75;
  }
- .v57-three-columns > .system-module-column {
-   background:#fff;border-inline-end:1px solid #dde7f0;
- }
- .v57-three-columns > .system-submodule-column {
-   background:#f8fafd;border-inline-end:1px solid #dae5ef;
- }
- .v57-app .v57-three-columns .system-module-link,
- .v57-app .v57-three-columns .system-submodule-link {
-   text-align:right!important;border-radius:9px!important;
-   padding:9px 10px!important;min-height:43px!important;
-   width:100%!important;font-size:12px!important;
-   display:flex!important;align-items:center!important;gap:9px!important;
- }
- .v57-app .v57-three-columns .system-module-link.selected {
-   background:#eaf1f9!important;border-color:#c4d6e8!important;color:#1f466e!important;
- }
- .v57-app .v57-three-columns .system-submodule-link.selected {
-   background:#24486e!important;border-color:#24486e!important;color:#fff!important;
- }
- .v57-app .v57-three-columns .system-submodule-link:disabled {
-   opacity:.58!important;cursor:not-allowed!important;background:#f5f7fa!important;
-   color:#9aa8b6!important;
- }
- .v57-three-columns > .v57-workspace-column {
-   width:100%!important;max-width:none!important;height:100%!important;
-   min-width:0!important;min-height:0!important;box-sizing:border-box;
-   overflow-y:auto!important;overflow-x:hidden!important;
-   background:var(--system-bg);
- }
- .v57-workspace-column > .v57-home-empty {
+ #root > .viewport > .desktop > main#app.system-two-rows {
+   box-sizing:border-box!important;display:block!important;
    width:100%!important;max-width:none!important;
+   flex:1 1 0%!important;min-height:0!important;height:auto!important;
+   margin:0!important;padding:0!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   background:var(--system-bg)!important;
+ }
+ #root > .viewport > .desktop > main#app.system-two-rows > .home-strip-only {
+   width:100%!important;max-width:none!important;min-height:100%!important;
+   margin:0!important;padding:0!important;border:0!important;
+   border-radius:0!important;box-shadow:none!important;
+ }
+ #root > .viewport > .desktop > main#app.system-two-rows > :not(.home-strip-only) {
+   box-sizing:border-box!important;width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:20px 26px 28px!important;
+ }
+ .v57-app .v57-content.v57-horizontal-workspace {
+   display:block!important;width:100%!important;max-width:none!important;
+   height:auto!important;flex:1 1 0%!important;
+   min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+   margin:0!important;padding:0!important;background:var(--system-bg)!important;
+ }
+ .v57-app .v57-horizontal-workspace > .v57-home-empty {
+   box-sizing:border-box!important;width:100%!important;max-width:none!important;
    min-height:100%!important;margin:0!important;padding:0!important;
  }
- .v57-workspace-column > [data-v57-screen="cashier"] .pos-clean {
+ .v57-app .v57-horizontal-workspace > [data-v57-screen="cashier"] {
+   width:100%!important;min-height:100%!important;margin:0!important;padding:0!important;
+ }
+ .v57-app .v57-horizontal-workspace .pos-clean {
    width:100%!important;max-width:none!important;
-   min-height:100%!important;margin:0!important;padding:17px 20px!important;
+   margin:0!important;padding:18px 26px 28px!important;
  }
- .v57-workspace-column .pos-clean__workspace {
-   grid-template-columns:minmax(0,1fr) minmax(240px,290px)!important;
-   min-height:calc(100dvh - 250px);
- }
- @media (max-width:1220px) {
-  .v57-app .v57-content.v57-three-columns {
-    grid-template-columns:176px 197px minmax(0,1fr)!important;
-  }
- }
-}
-
-
-/* Higher specificity than the historical full-screen adapter's
- * #root > .viewport > .desktop > main > div:not(.home-strip-only) rule.
- * Without this, that legacy rule adds a 26px inset on all four sides
- * of the entire third column and breaks true PC edge-to-edge geometry. */
-@media screen {
- #root > .viewport > .desktop > main#app.system-three-columns > div.system-content-column {
-  box-sizing:border-box!important;min-width:0!important;
-  width:100%!important;height:100%!important;min-height:0!important;
-  max-width:none!important;max-height:none!important;
-  margin:0!important;padding:0!important;
-  overflow-x:hidden!important;overflow-y:auto!important;
-  border:none!important;border-radius:0!important;
-  background:var(--system-bg)!important;
- }
- #root > .viewport > .desktop > main#app.system-three-columns > div.system-content-column > div.home-strip-only {
-  width:100%!important;min-height:100%!important;
-  max-width:none!important;margin:0!important;padding:0!important;
-  border:0!important;border-radius:0!important;
+ .v57-app .v57-horizontal-workspace .pos-clean__workspace {
+   width:100%!important;grid-template-columns:minmax(0,1fr) minmax(270px,315px)!important;
  }
 }
