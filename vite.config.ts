@@ -14,6 +14,7 @@ export default defineConfig(({mode})=>{
   }
   const pilot=env.VITE_ENABLE_LOCAL_PILOT==='true';
   const localCashier=pilot&&env.VITE_V32_LOCAL_CASHIER==='true'&&mode!=='production';
+  const testMarket=pilot&&env.VITE_V81_TEST_MARKET==='true'&&mode!=='production';
   return {
     plugins:[react()],
     server:{
@@ -22,6 +23,7 @@ export default defineConfig(({mode})=>{
       strictPort:true,
       ...(pilot?{proxy:{'/api/local':{
         target:localCashier?'http://127.0.0.1:3308':'http://127.0.0.1:3307',
+        ...(testMarket?{target:'http://127.0.0.1:3311'}:{}),
         changeOrigin:false,
         secure:false
       }}}:{})
