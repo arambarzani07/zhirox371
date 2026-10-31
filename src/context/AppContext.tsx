@@ -26,7 +26,8 @@ const STORAGE_KEY = 'kanichnar_retail_pos_v18';
 interface AppContextType {
   currentView: NavView;
   subtab: string;
-  navigateTo: (view: NavView, subtab?: string) => void;
+  activeSectionId: string | null;
+  navigateTo: (view: NavView, subtab?: string, sectionId?: string) => void;
 
   products: Product[];
   addProduct: (p: Omit<Product, 'id'>) => Product;
@@ -85,6 +86,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentView, setCurrentView] = useState<NavView>('home');
   const [subtab, setSubtab] = useState<string>('');
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>(() => {
     try {
@@ -240,11 +242,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setAuditLogs(prev => [entry, ...prev.slice(0, 99)]);
   };
 
-  const navigateTo = (view: NavView, targetSubtab?: string) => {
+  const navigateTo = (view: NavView, targetSubtab?: string, sectionId?: string) => {
     setCurrentView(view);
-    if (targetSubtab !== undefined) {
-      setSubtab(targetSubtab);
-    }
+    setSubtab(targetSubtab ?? '');
+    setActiveSectionId(sectionId ?? null);
   };
 
   const addProduct = (p: Omit<Product, 'id'>): Product => {
@@ -791,6 +792,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       value={{
         currentView,
         subtab,
+        activeSectionId,
         navigateTo,
         products,
         addProduct,
