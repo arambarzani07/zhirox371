@@ -75,7 +75,7 @@ export const TestMarketDesktopV81:React.FC=()=>{
   finally{setBusy(false)}
  };
  const nav=(i:number)=>{
-  setMain(i);setError("");setSelectedCustomer("");
+  setMain(i);setData(null);setError("");setSelectedCustomer("");
   setView(i===0?"overview":i===1?"sales":i===2?"products":"customers");
  };
  const label=view==="overview"?"پوختەی مارکێتی تاقیکردنەوە":
@@ -116,7 +116,7 @@ export const TestMarketDesktopV81:React.FC=()=>{
     <nav className="v81-second-row" aria-label="ژێربەشەکان">
      {(SUBS[main]||[]).map(t=><button type="button" key={t.id}
        className={view===t.id?"selected":""} onClick={()=>{
-        setView(t.id);setError("");setSelectedCustomer("");
+        setView(t.id);setData(null);setError("");setSelectedCustomer("");
        }}>{t.name}{view===t.id?" ✓":""}</button>)}
     </nav>
     <main className="v81-body">
@@ -149,7 +149,7 @@ export const TestMarketDesktopV81:React.FC=()=>{
        <tbody>{rows(data.customers).map(c=><tr key={String(c.customer_id)}>
         <td>{text(c.display_name)}</td><td>{money(c.balance_minor)}</td>
         <td><button type="button" onClick={()=>{
-         setSelectedCustomer(String(c.customer_id));setCustomerName(text(c.display_name));setView("ledger");
+         setSelectedCustomer(String(c.customer_id));setCustomerName(text(c.display_name));setData(null);setView("ledger");
         }}>بینینی مامەڵەکان</button></td></tr>)}</tbody>
       </table>
      </div>}
