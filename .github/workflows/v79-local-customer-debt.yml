@@ -5,6 +5,8 @@ on:
       - 'offline/migrations/028_customer_debt_ledger_v79.sql'
       - 'offline/tests/035_v79_customer_debt.sql'
       - 'offline/tests/customer-debt-contract-v79.test.mjs'
+      - 'offline/local-customer-debt-v79.mjs'
+      - 'offline/tests/local-customer-debt-v79.test.mjs'
       - '.github/workflows/v79-local-customer-debt.yml'
   push:
     branches: [main]
@@ -12,6 +14,8 @@ on:
       - 'offline/migrations/028_customer_debt_ledger_v79.sql'
       - 'offline/tests/035_v79_customer_debt.sql'
       - 'offline/tests/customer-debt-contract-v79.test.mjs'
+      - 'offline/local-customer-debt-v79.mjs'
+      - 'offline/tests/local-customer-debt-v79.test.mjs'
       - '.github/workflows/v79-local-customer-debt.yml'
 permissions:
   contents: read
@@ -44,7 +48,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify no direct financial API or production migration
-        run: node --test offline/tests/customer-debt-contract-v79.test.mjs
+        run: node --test offline/tests/customer-debt-contract-v79.test.mjs offline/tests/local-customer-debt-v79.test.mjs
       - name: PostgreSQL disposable fixture safety
         run: |
           test "$PGDATABASE" = "zhirox_v79_disposable"
