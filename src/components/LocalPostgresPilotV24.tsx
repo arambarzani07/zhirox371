@@ -209,17 +209,27 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
      return target*x.item.quantity_base_units+others>x.item.stock_base_units?[x]:[{...x,qty:target}];
    }));
  };
- return <section style={box} dir="rtl" aria-label="تاقیکردنەوەی PostgreSQL ـی ناوخۆیی">
+ return <section className={standalone?"local-v58-panel":undefined} style={standalone?undefined:box} dir="rtl" aria-label="تاقیکردنەوەی PostgreSQL ـی ناوخۆیی">
    {!standalone&&<button type="button" onClick={()=>setOpen(x=>!x)} style={{fontWeight:850,padding:9}}>
      {open?"داخستنی":"کردنەوەی"} V31 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
    </button>}
-   {open&&<div style={{marginTop:12}}>
-     <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
-       تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ دانە، کارتۆن و کیلۆگرام بە نەختینە. نرخی کۆتایی لە سێرڤەر پشتڕاست دەکرێتەوە.
-       داشکاندن، قەرز و فرۆشتنی Production پشتگیری ناکرێن.
-       ئەم بەشە بە سەبەتەی Demo تێکەڵ نابێت.
-     </div>
-     {!available?<form onSubmit={submitLogin} style={{marginTop:12}}>
+   {open&&<div className={standalone?"local-v58-body":undefined} style={standalone?undefined:{marginTop:12}}>
+     {standalone?(
+       <div className="local-v58-pilot-note" role="status">
+         <strong>● تاقیکردنەوە</strong>
+         <details><summary>وردەکاری</summary>
+           تەنها لەسەر PC و PostgreSQL ـی ناوخۆیی. فرۆشتنی Production چالاک نییە.
+           قەرز و داشکاندن پشتگیری ناکرێن و داتای Demo تێکەڵ ناکرێت.
+         </details>
+       </div>
+     ):(
+       <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
+         تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ دانە، کارتۆن و کیلۆگرام بە نەختینە. نرخی کۆتایی لە سێرڤەر پشتڕاست دەکرێتەوە.
+         داشکاندن، قەرز و فرۆشتنی Production پشتگیری ناکرێن.
+         ئەم بەشە بە سەبەتەی Demo تێکەڵ نابێت.
+       </div>
+     )}
+     {!available?<form className={standalone?"local-v58-login":undefined} onSubmit={submitLogin} style={standalone?undefined:{marginTop:12}}>
        <input style={{...inputStyle,width:320}} value={store} onChange={e=>setStore(e.target.value.trim())}
           placeholder="UUID ـی فرۆشگا" required aria-label="UUID ـی فرۆشگا"/>
        <input style={inputStyle} value={username} onChange={e=>setUsername(e.target.value)} placeholder="ناوی بەکارهێنەر" required/>
@@ -227,30 +237,41 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
           placeholder="وشەی نهێنی ناوخۆیی" required autoComplete="off"/>
        <button disabled={busy||!uuid.test(store)} type="submit">چوونەژوورەوەی تاقیکردنەوە</button>
      </form>:<>
-       <div style={{marginTop:10}}>پەیوەندی ناوخۆیی چالاکە — تەنها هەمان PC</div>
+       <div className={standalone?"local-v58-connection":undefined} style={standalone?undefined:{marginTop:10}}>● پەیوەندی ناوخۆیی چالاکە</div>
        {v37Shifts&&<LocalV37ShiftControls token={token} store={store} onShiftOpen={setV37ShiftOpen}/>}
        {isolatedLanPilotV36&&import.meta.env.VITE_V44_RECONCILIATION_LAB==="true"&&<LocalV44ManagerReview store={store}/>}
-       <form onSubmit={submitScan} style={{display:"flex",gap:8,marginTop:10}}>
+       <div className={standalone?"local-v58-workspace":undefined}>
+       <div className={standalone?"local-v58-work-area":undefined}>
+       <form className={standalone?"local-v58-scan":undefined} onSubmit={submitScan} style={standalone?undefined:{display:"flex",gap:8,marginTop:10}}>
          <input style={{...inputStyle,flex:1}} value={scan} onChange={e=>setScan(e.target.value)}
            aria-label="بارکۆدی دانە، کارتۆن یان تەرازوو" placeholder="بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە" disabled={busy||!!pending}/>
          <button type="submit" disabled={busy||!!pending}>سکان</button>
        </form>
-       <table style={{borderCollapse:"collapse",width:"100%",marginTop:10}}>
+       <div className={standalone?"local-v58-table-wrap":undefined}>
+       <table className={standalone?"local-v58-basket":undefined} style={standalone?undefined:{borderCollapse:"collapse",width:"100%",marginTop:10}}>
          <thead><tr>{["ژمارە","ناوی کاڵا","یەکە","نرخ","بڕ","کۆ"].map(x=><th key={x} style={{border:"1px solid #555",padding:6}}>{x}</th>)}</tr></thead>
          <tbody>{cart.map((x,i)=><tr key={x.item.barcode}>
            {[i+1,x.item.name,x.item.sale_mode==="scale"?"کیلۆگرام":
               x.item.sale_mode==="carton"?"کارتۆن":"دانە",
               x.item.sale_mode==="scale"?money(x.item.unit_price_minor):money(x.item.price_minor)
            ].map((v,k)=><td key={k} style={{border:"1px solid #555",padding:7}}>{v}</td>)}
-           <td style={{border:"1px solid #555",padding:7}}>
+           <td style={{border:"1px solid #555",padding:7}}><div className={standalone?"local-v58-qty":undefined}>
              <button disabled={busy||!!pending} type="button" onClick={()=>changeQty(x.item.barcode,-1)}>−</button>
              <strong style={{margin:7}}>{x.item.sale_mode==="scale"?
                 (x.item.quantity_base_units/1000).toFixed(3):x.qty}</strong>
              <button disabled={busy||!!pending||x.item.sale_mode==="scale"} type="button" onClick={()=>changeQty(x.item.barcode,1)}>+</button>
-           </td><td style={{border:"1px solid #555",padding:7}}>{money(x.qty*x.item.price_minor)}</td>
+           </div></td><td style={{border:"1px solid #555",padding:7}}>{money(x.qty*x.item.price_minor)}</td>
          </tr>)}</tbody>
        </table>
-       <strong style={{display:"block",margin:"10px 0"}}>کۆی نموونەیی: {money(total)}</strong>
+       {cart.length===0&&<div style={{textAlign:"center",color:"#94a3b8",padding:40,fontSize:13}}>سەبەتە بەتاڵە</div>}
+       </div>
+       </div>
+       <aside className={standalone?"local-v58-summary":undefined}>
+       {standalone?(
+         <div className="local-v58-total"><span>کۆی گشتی</span><strong>{money(total)}</strong></div>
+       ):(
+         <strong style={{display:"block",margin:"10px 0"}}>کۆی نموونەیی: {money(total)}</strong>
+       )}
        {v41Tender&&!pending&&<button type="button"
          disabled={busy||!available||!v37ShiftOpen||!cart.length}
          onClick={()=>void prepareV41Draft()} style={{margin:"8px 0",fontWeight:800}}>
@@ -261,12 +282,12 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          onCashCheckoutAllowed={setV41CashAllowed}/>}
        {v41Tender&&pending&&<button type="button" disabled={busy}
          onClick={()=>void cancelV41Draft()}>هەڵوەشاندنەوەی پلانی چاوەڕوان</button>}
-       <form onSubmit={submitCheckout}>
+       <form className={standalone?"local-v58-checkout":undefined} onSubmit={submitCheckout}>
          <button type="submit" disabled={busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length)||(v41Tender&&!!pending&&!v41CashAllowed)} style={{fontWeight:850}}>
            {pending?"دووبارە ناردنی هەمان داواکاری":"تاقیکردنەوەی فرۆشتنی Atomic"}
          </button>
        </form>
-       {pending&&<div role="alert" style={{color:"#9a3412",marginTop:8}}>
+       {pending&&<div className={standalone?"local-v58-pending":undefined} role="alert" style={standalone?undefined:{color:"#9a3412",marginTop:8}}>
          مامەڵەی چاوەڕوانە هەیە؛ لە PostgreSQL پاشەکەوت دەکرێت و سەبەتە قوفڵ کراوە. دوای داخستنی پەڕە دەتوانرێت بگەڕێنرێتەوە.
        </div>}
        {last&&<div role="status" style={{marginTop:8,fontWeight:850}}>
@@ -274,7 +295,9 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          {last.replayed?" (دووبارە ناردن، فرۆشتنی نوێ نییە)":""}
        </div>}
        {isolatedLanPilotV36&&standalone&&last&&available&&<LocalV36ReceiptTools key={last.sale_id} token={token} saleId={last.sale_id}/>}
-       {standalone&&<section aria-label="مێژووی پسووڵەی ناوخۆیی" style={{marginTop:18}}>
+       </aside>
+       </div>
+       {standalone&&<section className="local-v58-history" aria-label="مێژووی پسووڵەی ناوخۆیی">
          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
            <strong>پسووڵەکانی PostgreSQL ـی ناوخۆیی</strong>
            <button disabled={busy} type="button" onClick={async()=>{
@@ -294,11 +317,11 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          </table>
          {!history.length&&!historyError&&<div>هیچ پسووڵەیەکی PostgreSQL ـی تاقیکردنەوە نەدۆزرایەوە</div>}
        </section>}
-       <button type="button" style={{marginTop:10}} onClick={()=>{setV37ShiftOpen(false);setToken("");setExpiresAt(0);setCart([]);setLast(null);setHistory([]);setHistoryError("");}}>
+       <button className={standalone?"local-v58-logout":undefined} type="button" style={standalone?undefined:{marginTop:10}} onClick={()=>{setV37ShiftOpen(false);setToken("");setExpiresAt(0);setCart([]);setLast(null);setHistory([]);setHistoryError("");}}>
          دەرچوون لە تاقیکردنەوە
        </button>
      </>}
-     {error&&<div role="alert" style={{color:"#a21d1d",fontWeight:800,padding:8}}>{error}</div>}
+     {error&&<div className={standalone?"local-v58-error":undefined} role="alert" style={standalone?undefined:{color:"#a21d1d",fontWeight:800,padding:8}}>{error}</div>}
    </div>}
  </section>;
 };
