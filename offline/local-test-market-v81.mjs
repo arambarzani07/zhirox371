@@ -2,6 +2,7 @@ import http from "node:http";
 import {fileURLToPath} from "node:url";
 import {createLocalAuthV3} from "./local-auth-v3.mjs";
 import {TEST_MARKET} from "./test-market-v80.mjs";
+import {getTestSectionV82} from "./test-market-sections-v82.mjs";
 
 // V81 isolated, read-only test-market dashboard. No sale/refund/debt POST APIs.
 // All identity comes from a verified session and an independently checked DB.
@@ -47,9 +48,10 @@ export function createTestMarketHandlerV81({pool,secret,clock}){
    return json(res,404,{error:"not_found"});
   const route=url.pathname.slice("/api/local/v81/".length);
   const ledger=route.match(/^customers\/([0-9a-f-]+)\/ledger$/i);
+  const section=route.match(/^sections\/([a-z][a-z0-9-]{2,63})$/);
   const login=route==="login";
   const overview=routeNames.has(route);
-  if(!login&&!overview&&!ledger)return json(res,404,{error:"not_found"});
+  if(!login&&!overview&&!ledger&&!section)return json(res,404,{error:"not_found"});
   if(req.method!==(login?"POST":"GET"))return json(res,405,{error:"method_not_allowed"});
   if(url.search)return json(res,400,{error:"unexpected_query"});
   if(ledger&&!UUID.test(ledger[1]))return json(res,400,{error:"invalid_customer"});
@@ -79,6 +81,10 @@ export function createTestMarketHandlerV81({pool,secret,clock}){
    return json(res,403,{error:"manager_required"});
   try{
    const store=principal.store_id;
+   if(section){
+    const result=await getTestSectionV82({pool,store,actor:principal.user_id,role:principal.role,sectionId:section[1]});
+    return json(res,result.status,result.body);
+   }
    if(route==="overview"){
     const [sale,goods,debts]=await Promise.all([
      pool.query("SELECT count(*)::integer AS sale_count,coalesce(sum(total_minor),0)::bigint AS sale_total FROM zhirox_local.sales WHERE store_id=$1::uuid"+(principal.role==="cashier"?" AND cashier_id=$2::uuid":""),principal.role==="cashier"?[store,principal.user_id]:[store]),
