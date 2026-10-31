@@ -12,10 +12,8 @@ try {
  assert.equal(await page.locator("html").getAttribute("dir"),"rtl");
  // No frozen Home dimensions, row counts, icon choices or subcard count.
  // This browser smoke test only verifies that the cashier remains reachable.
- assert.ok(await page.locator(".module").count()>0,"Home navigation must render");
- await page.locator(".module").first().click();
- assert.ok(await page.locator(".drawer .sub").count()>0,"Cashier navigation must render");
- await page.locator(".drawer .sub").first().click();
+ await page.getByRole("button",{name:/کاشێر و فرۆشتن/}).first().click();
+ await page.getByRole("button",{name:/فرۆشتنی نوێ/}).first().click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
  assert.match(await banner.innerText(),/فرۆشتنی ڕاستەقینە نییە/);
