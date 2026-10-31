@@ -49,7 +49,7 @@ export const OfflineDesktopShellV57:React.FC=()=>{
             {MODULE_SPECS.slice(r*4,r*4+4).map((module,i)=>{
               const index=r*4+i,selected=index===open;
               return <button className="v57-module" type="button" key={module.id}
-                  data-module={index} aria-expanded={selected}
+                  data-module={index} data-module-id={module.id} aria-expanded={selected}
                   aria-controls={"v57-drawer-"+index}
                   style={{"--color":module.color,"--light":module.lightBg} as React.CSSProperties}
                   onClick={()=>setOpen(prev=>prev===index?-1:index)}>
