@@ -281,7 +281,8 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
   }
  }else if(returns.has(sectionId)){
   result=await pool.query(`SELECT s.receipt_no,l.name_snapshot,r.quantity_base_units,
-    r.amount_minor,r.restocked,r.reason,r.created_at,COALESCE(b.lot_code,'—') AS lot_code
+    r.amount_minor,r.restocked,r.reason,r.created_at,
+    COALESCE(b.lot_code,ob90.lot_code,nb90.lot_code,'—') AS lot_code
    FROM zhirox_local.sale_returns_v84 r
    JOIN zhirox_local.sales s ON s.store_id=r.store_id AND s.id=r.sale_id
    JOIN zhirox_local.sale_lines l ON l.store_id=r.store_id
@@ -290,6 +291,16 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
      ON lr.store_id=r.store_id AND lr.return_id=r.return_id
    LEFT JOIN zhirox_local.opening_lot_counts_v88 b
      ON b.store_id=lr.store_id AND b.opening_id=lr.opening_id
+   LEFT JOIN zhirox_local.lot_returns_v90 lr90
+     ON lr90.store_id=r.store_id AND lr90.return_id=r.return_id
+   LEFT JOIN zhirox_local.lot_sale_allocations_v90 a90
+     ON a90.store_id=lr90.store_id AND a90.sale_id=lr90.sale_id
+     AND a90.line_no=lr90.line_no AND a90.allocation_no=lr90.allocation_no
+   LEFT JOIN zhirox_local.opening_lot_counts_v88 ob90
+     ON ob90.store_id=a90.store_id AND ob90.opening_id=a90.opening_id
+   LEFT JOIN zhirox_local.lot_receipt_lines_v89 nb90
+     ON nb90.store_id=a90.store_id AND nb90.receipt_id=a90.receipt_id
+     AND nb90.line_no=a90.receipt_line_no
    WHERE r.store_id=$1::uuid
    ORDER BY r.created_at DESC,r.return_id DESC LIMIT 100`,[store]);
   columns=returnColumns;
