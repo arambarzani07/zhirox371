@@ -25,6 +25,14 @@ try {
  assert.equal(await page.locator(".system-header").count(),1);
  assert.equal(await page.locator(".system-header .ws-link").count(),9);
  assert.equal(await page.locator(".module").count(),12);
+ const icons=await page.locator(".module .icon svg").evaluateAll(nodes=>nodes.map(node=>{
+  const rect=node.getBoundingClientRect();
+  const stroke=getComputedStyle(node).stroke;
+  return {width:rect.width,height:rect.height,stroke};
+ }));
+ assert.equal(icons.length,12,"each Home module has a local SVG");
+ assert.ok(icons.every(icon=>icon.width>=24&&icon.height>=24&&icon.stroke!=="none"&&icon.stroke!==""),
+  "all twelve Home SVG icons must have visible semantic strokes");
  const tokens=await page.evaluate(()=>({
   banner:getComputedStyle(document.documentElement).getPropertyValue("--market-banner-height").trim(),
   background:getComputedStyle(document.querySelector("#app")).backgroundColor
