@@ -16,7 +16,7 @@ import { DiagnosticsQaView } from './components/DiagnosticsQaView';
 import { ThermalReceiptModal } from './components/ThermalReceiptModal';
 
 export const App: React.FC = () => {
-  const { currentView, navigateTo, activeReceiptForModal, setActiveReceiptForModal } = useApp();
+  const { currentView, subtab, navigateTo, activeReceiptForModal, setActiveReceiptForModal } = useApp();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,11 +48,11 @@ export const App: React.FC = () => {
           <main id="app" className="system-two-rows">
             {currentView === 'home' && <HomeScreen />}
             {currentView === 'pos' && (localCashierV32 ? <LocalCashierV32 /> : <CashierPos />)}
-            {currentView === 'products' && <ProductCatalogView />}
-            {currentView === 'stock' && <InventoryStockView />}
-            {currentView === 'customers' && <CustomersLedgerView />}
-            {currentView === 'suppliers' && <SuppliersView />}
-            {(currentView === 'finance' || currentView === 'shifts') && <FinanceShiftView />}
+            {currentView === 'products' && <ProductCatalogView key={`products:${subtab}`} />}
+            {currentView === 'stock' && <InventoryStockView key={`stock:${subtab}`} />}
+            {currentView === 'customers' && <CustomersLedgerView key={`customers:${subtab}`} />}
+            {currentView === 'suppliers' && <SuppliersView key={`suppliers:${subtab}`} />}
+            {(currentView === 'finance' || currentView === 'shifts') && <FinanceShiftView key={`finance:${subtab}`} />}
             {currentView === 'reports' && <ReportsAnalyticsView />}
             {currentView === 'labels' && <LabelsPrintView />}
             {(currentView === 'qa' || currentView === 'settings' || currentView === 'audit' || currentView === 'offers') && (
