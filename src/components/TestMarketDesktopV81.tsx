@@ -98,6 +98,9 @@ export const TestMarketDesktopV81:React.FC=()=>{
   setData(null);setSummary(null);setError("");setDetailId("");setDetailName("");
  };
  const chooseSub=(id:string)=>{
+  // A second click on the already selected tab must not erase a completed
+  // PostgreSQL read without changing the effect dependencies.
+  if(sectionId===id&&!detailId)return;
   setSectionId(id);setData(null);setSummary(null);setError("");setDetailId("");setDetailName("");
  };
  const renderTable=(columns:Column[],entries:Record<string,unknown>[])=>(
