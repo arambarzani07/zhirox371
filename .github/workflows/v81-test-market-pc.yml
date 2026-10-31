@@ -18,6 +18,10 @@ on:
       - 'offline/tests/v91_unified_lot_concurrency_real_pg.mjs'
       - 'offline/tests/v91-concurrency-contract.test.mjs'
       - 'docs/V91_ISOLATED_POSTGRES_LOT_CONCURRENCY.md'
+      - 'offline/migrations/037_v92_isolated_viewer_privilege_boundary.sql'
+      - 'offline/tests/v92_real_pg_viewer_boundary.mjs'
+      - 'offline/tests/v92-viewer-boundary-contract.test.mjs'
+      - 'docs/V92_ISOLATED_POSTGRES_VIEWER_ROLE.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -68,6 +72,10 @@ on:
       - 'offline/tests/v91_unified_lot_concurrency_real_pg.mjs'
       - 'offline/tests/v91-concurrency-contract.test.mjs'
       - 'docs/V91_ISOLATED_POSTGRES_LOT_CONCURRENCY.md'
+      - 'offline/migrations/037_v92_isolated_viewer_privilege_boundary.sql'
+      - 'offline/tests/v92_real_pg_viewer_boundary.mjs'
+      - 'offline/tests/v92-viewer-boundary-contract.test.mjs'
+      - 'docs/V92_ISOLATED_POSTGRES_VIEWER_ROLE.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -134,7 +142,7 @@ jobs:
         with:
           node-version: '24'
       - name: Check authenticated read-only V81 API security
-        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs
+        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs offline/tests/v92-viewer-boundary-contract.test.mjs
       - name: Install app, disposable SQL driver and pinned Chromium
         run: |
           npm install --no-save --no-package-lock pg playwright@1.56.1
@@ -212,22 +220,26 @@ jobs:
           fi
       - name: V91 concurrent LOT checkout and return acceptance
         run: node offline/tests/v91_unified_lot_concurrency_real_pg.mjs
-      - name: Preserve a restorable REAL PostgreSQL V91 concurrency test-market snapshot
+      - name: V92 create isolated NOLOGIN viewer and lock public SQL function grants
+        run: psql -v ON_ERROR_STOP=1 -f offline/migrations/037_v92_isolated_viewer_privilege_boundary.sql
+      - name: V92 independent PostgreSQL login and forbidden finance operations
+        run: node offline/tests/v92_real_pg_viewer_boundary.mjs
+      - name: Preserve a restorable REAL PostgreSQL V92 restricted viewer test-market snapshot
         shell: bash
         run: |
           set -euo pipefail
           test "$PGDATABASE" = "zhirox_v80_disposable"
           mkdir -p artifacts/v91
           umask 077
-          pg_dump -Fc --schema=zhirox_local -f artifacts/v91/ZHIROX-V91-TEST-MARKET.dump
-          test -s artifacts/v91/ZHIROX-V91-TEST-MARKET.dump
-          printf 'V91 isolated real PostgreSQL concurrency test transactions with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v91/README.txt
+          pg_dump -Fc --schema=zhirox_local -f artifacts/v92/ZHIROX-V92-TEST-MARKET.dump
+          test -s artifacts/v92/ZHIROX-V92-TEST-MARKET.dump
+          printf 'V92 isolated PostgreSQL reader-role proof after real V91 concurrency transactions with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v92/README.txt
       - name: Save the current isolated sale returns, purchasing and inventory test archive
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ZHIROX-V91-CONCURRENT-LOT-POSTGRESQL-SNAPSHOT
-          path: artifacts/v91/
+          name: ZHIROX-V92-RESTRICTED-VIEWER-POSTGRESQL-SNAPSHOT
+          path: artifacts/v92/
           retention-days: 30
       - name: Save unaltered Chromium screenshots of actual V81 PC
         uses: actions/upload-artifact@v4
