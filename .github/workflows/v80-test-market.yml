@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'offline/test-market-v80.mjs'
+      - 'offline/test-market-reset-passwords-v80.mjs'
       - 'offline/tests/test-market-v80.test.mjs'
       - 'offline/tests/036_v80_test_market_persisted.sql'
       - 'offline/tests/verify-test-market-login-v80.mjs'
@@ -12,6 +13,7 @@ on:
     branches: [main]
     paths:
       - 'offline/test-market-v80.mjs'
+      - 'offline/test-market-reset-passwords-v80.mjs'
       - 'offline/tests/test-market-v80.test.mjs'
       - 'offline/tests/036_v80_test_market_persisted.sql'
       - 'offline/tests/verify-test-market-login-v80.mjs'
