@@ -70,8 +70,7 @@ const login=async()=>{
 };
 try{
  await page.goto("http://127.0.0.1:3001/",{waitUntil:"networkidle"});
- await page.locator(".module").first().click();
- await page.locator(".drawer .sub").first().click();
+ await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
  assert.equal(await page.locator(".pos-clean__trial").count(),1,"local PG trial marker remains visible");
  assert.equal(await page.locator("header.system-header.system-local-only").count(),1,"no Demo shift/finance header on local cashier");
@@ -119,8 +118,7 @@ try{
  await page.evaluate(([key,p])=>sessionStorage.setItem(key,JSON.stringify(p)),
   [pendingKey,prepared]);
  await page.reload({waitUntil:"networkidle"});
- await page.locator(".module").first().click();
- await page.locator(".drawer .sub").first().click();
+ await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  await login();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #7/).waitFor();
  assert.equal(await page.evaluate(k=>sessionStorage.getItem(k),pendingKey),null);
