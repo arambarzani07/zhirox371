@@ -56,8 +56,8 @@ try{
   }
  }
  assert.equal(visited.size,48,"every submodule needs own section endpoint");
- assert.equal(maturity.read_only,31,"31 real PostgreSQL-backed read-only subsection screens");
- assert.equal(maturity.planned,17,"17 explicitly unimplemented subsection screens");
+ assert.equal(maturity.read_only,32,"32 real PostgreSQL-backed read-only subsection screens");
+ assert.equal(maturity.planned,16,"16 explicitly unimplemented subsection screens");
  // Real PostgreSQL financial view is within reports, not Home.
  await moduleButton(6).click();
  await section("sales-trend").waitFor();
@@ -157,6 +157,19 @@ try{
  assert.match(await section("shift-clock").innerText(),/52,500 IQD/);
  assert.match(await section("shift-clock").innerText(),/-500 IQD/);
  await page.screenshot({path:"artifacts/v81/15-v85-closed-shift-variance.png",fullPage:false});
+ // V86: distinct real PostgreSQL receipt-linked expiry lots,
+ // NO manufactured remaining-stock or sales-to-batch allocation.
+ await moduleButton(2).click();
+ await subButton("expiry").click();
+ await section("expiry").waitFor();
+ const expiryText=await section("expiry").innerText();
+ assert.match(expiryText,/TEST-EXP-001/);
+ assert.match(expiryText,/TEST-SOON-002/);
+ assert.match(expiryText,/TEST-SAFE-003/);
+ assert.match(expiryText,/بەرواری تێپەڕیوە/);
+ assert.match(expiryText,/نزیکە بە بەسەرچوون/);
+ assert.match(expiryText,/کۆگای ماوەی هەر بەچ نازانرێت/);
+ await page.screenshot({path:"artifacts/v81/16-v86-real-expiry-lots.png",fullPage:false});
  await moduleButton(8).click();
  await subButton("coupon-ticket").click();
  await section("coupon-ticket").waitFor();
@@ -180,6 +193,11 @@ try{
  assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
  await moduleButton(5).click();
  await subButton("cash-drawer").click();
+ await page.getByRole("alert").waitFor();
+ assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
+ assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
+ await moduleButton(2).click();
+ await subButton("expiry").click();
  await page.getByRole("alert").waitFor();
  assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
  assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
