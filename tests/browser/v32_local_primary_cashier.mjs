@@ -66,7 +66,7 @@ const login=async()=>{
  await page.getByPlaceholder("ناوی بەکارهێنەر").fill("cashier");
  await page.getByPlaceholder("وشەی نهێنی ناوخۆیی").fill("v32-test-password");
  await page.getByRole("button",{name:"چوونەژوورەوەی تاقیکردنەوە"}).click();
- await page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە").waitFor();
+ await page.getByPlaceholder("بارکۆد").waitFor();
 };
 try{
  await page.goto("http://127.0.0.1:3001/",{waitUntil:"networkidle"});
@@ -95,7 +95,7 @@ try{
  });
  assert.equal(geometry,true,"PC cashier total is beside the basket without overlap");
  await page.screenshot({path:"artifacts/cashier-v1/02-empty-basket.png",fullPage:false});
- const input=page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە");
+ const input=page.getByPlaceholder("بارکۆد");
  await input.fill(barcode);
  await page.getByRole("button",{name:"سکان",exact:true}).click();
  await page.getByText("local_api_503").waitFor();
