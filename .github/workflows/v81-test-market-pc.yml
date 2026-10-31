@@ -1,0 +1,118 @@
+name: V81 real PostgreSQL test market full-PC read-only acceptance
+on:
+  pull_request:
+    paths:
+      - 'offline/local-test-market-v81.mjs'
+      - 'offline/tests/test-market-v81-api.test.mjs'
+      - 'src/components/TestMarketDesktopV81.tsx'
+      - 'src/testMarketV81.css'
+      - 'src/main.tsx'
+      - 'vite.config.ts'
+      - 'tests/browser/v81_test_market_real_pg.mjs'
+      - '.github/workflows/v81-test-market-pc.yml'
+      - 'docs/V81_TEST_MARKET_PC.md'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/local-test-market-v81.mjs'
+      - 'offline/tests/test-market-v81-api.test.mjs'
+      - 'src/components/TestMarketDesktopV81.tsx'
+      - 'src/testMarketV81.css'
+      - 'src/main.tsx'
+      - 'vite.config.ts'
+      - 'tests/browser/v81_test_market_real_pg.mjs'
+      - '.github/workflows/v81-test-market-pc.yml'
+permissions:
+  contents: read
+jobs:
+  real-postgres-pc:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v80_disposable
+          POSTGRES_USER: v81test
+          POSTGRES_PASSWORD: disposable_v81_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U v81test -d zhirox_v80_disposable"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: v81test
+      PGPASSWORD: disposable_v81_ci_only
+      PGDATABASE: zhirox_v80_disposable
+      ZHIROX_LOCAL_DB_URL: postgresql://v81test:disposable_v81_ci_only@127.0.0.1:5432/zhirox_v80_disposable
+      ZHIROX_V80_CREATE_MARKET: YES_CREATE_TEST_MARKET
+      ZHIROX_V81_TEST_MARKET: YES_LOCAL_TEST_READ_ONLY
+      VITE_ENABLE_LOCAL_PILOT: 'true'
+      VITE_V81_TEST_MARKET: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check authenticated read-only V81 API security
+        run: node --test offline/tests/test-market-v81-api.test.mjs
+      - name: Install app, disposable SQL driver and pinned Chromium
+        run: |
+          npm install --no-save --no-package-lock pg playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Local PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Generate ephemeral credentials without printing
+        shell: bash
+        run: |
+          echo "ZHIROX_TEST_OWNER_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "ZHIROX_TEST_CASHIER_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "ZHIROX_LOCAL_SESSION_SECRET=$(openssl rand -hex 48)" >> "$GITHUB_ENV"
+      - name: Provision actual isolated PostgreSQL test store and two sales
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PGDATABASE" = "zhirox_v80_disposable"
+          test "$PGHOST" = "127.0.0.1"
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/001_core.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/002_atomic_checkout.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/003_local_users.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/028_customer_debt_ledger_v79.sql
+          node offline/test-market-v80.mjs
+          node offline/tests/verify-test-market-login-v80.mjs
+          psql -v ON_ERROR_STOP=1 -f offline/tests/036_v80_test_market_persisted.sql
+      - name: Start loopback-only read-only API on 3311 and Vite PC preview on 3000
+        shell: bash
+        run: |
+          set -euo pipefail
+          (node offline/local-test-market-v81.mjs >/tmp/zv81-api.log 2>&1 &)
+          for attempt in $(seq 1 35); do
+            if curl -s http://127.0.0.1:3311/api/local/v81/overview | grep -q 'invalid_session'; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3311/api/local/v81/overview | grep -q 'invalid_session'
+          (npm run dev -- --host 127.0.0.1 >/tmp/zv81-vite.log 2>&1 &)
+          for attempt in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3000/ >/dev/null
+      - name: Validate real PostgreSQL browser screens, access restrictions and no WAN
+        run: node tests/browser/v81_test_market_real_pg.mjs
+      - name: Confirm official POS release remains blocked
+        shell: bash
+        run: |
+          if VITE_ZHIROX_RELEASE_MODE=official npm run build; then
+            echo "Uncertified official build must remain blocked"
+            exit 1
+          fi
+      - name: Save unaltered Chromium screenshots of actual V81 PC
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ZHIROX-V81-REAL-POSTGRESQL-PC-SCREENS
+          path: artifacts/v81/
+          if-no-files-found: ignore
