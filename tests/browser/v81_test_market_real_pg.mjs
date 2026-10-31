@@ -56,8 +56,8 @@ try{
   }
  }
  assert.equal(visited.size,48,"every submodule needs own section endpoint");
- assert.ok(maturity.read_only>=15,"real PG-backed subsection coverage");
- assert.ok(maturity.planned>=12,"unimplemented subsections are labeled, not fabricated");
+ assert.equal(maturity.read_only,26,"26 real PostgreSQL-backed read-only subsection screens");
+ assert.equal(maturity.planned,22,"22 explicitly unimplemented subsection screens");
  // Real PostgreSQL financial view is within reports, not Home.
  await moduleButton(6).click();
  await section("sales-trend").waitFor();
@@ -86,6 +86,37 @@ try{
  await page.locator(".v81-table").getByText("15,000 IQD").waitFor();
  assert.match(await section("single-customer").innerText(),/5,000 IQD/);
  await page.screenshot({path:"artifacts/v81/04-real-postgres-customer-debt-history.png",fullPage:false});
+ // V83: the four formerly unimplemented supplier sections are real SQL pages.
+ await moduleButton(4).click();
+ await subButton("supplier-building").click();
+ await section("supplier-building").waitFor();
+ assert.match(await section("supplier-building").innerText(),/دابینکەری نموونەی تاقیکردنەوە/);
+ await page.screenshot({path:"artifacts/v81/06-v83-real-suppliers.png",fullPage:false});
+ await subButton("purchase-order").click();
+ await section("purchase-order").waitFor();
+ assert.match(await section("purchase-order").innerText(),/20,200 IQD/);
+ assert.match(await section("purchase-order").innerText(),/6,600 IQD/);
+ await page.screenshot({path:"artifacts/v81/07-v83-purchase-orders.png",fullPage:false});
+ await subButton("receive-goods").click();
+ await section("receive-goods").waitFor();
+ assert.match(await section("receive-goods").innerText(),/نموونە — ئاوی تاقیکردنەوە/);
+ assert.match(await section("receive-goods").innerText(),/6/);
+ await page.screenshot({path:"artifacts/v81/08-v83-real-stock-receiving.png",fullPage:false});
+ await subButton("supplier-accounts").click();
+ await section("supplier-accounts").waitFor();
+ assert.match(await section("supplier-accounts").innerText(),/26,800 IQD/);
+ assert.match(await section("supplier-accounts").innerText(),/قەرز، وەرگرتنی نەختینە یان پارەدانی ڕاستەقینەی دابینکەر نین/);
+ await page.screenshot({path:"artifacts/v81/09-v83-supplier-order-commitments.png",fullPage:false});
+ await moduleButton(1).click();
+ await subButton("product-list").click();
+ await section("product-list").waitFor();
+ assert.match(await section("product-list").innerText(),/28/);
+ assert.match(await section("product-list").innerText(),/20/);
+ await moduleButton(2).click();
+ await subButton("stock-transfer").click();
+ await section("stock-transfer").waitFor();
+ assert.match(await section("stock-transfer").innerText(),/هاتووچۆی ڕاستەقینەی SQL/);
+ await page.screenshot({path:"artifacts/v81/10-v83-incoming-and-outgoing-stock-ledger.png",fullPage:false});
  await moduleButton(8).click();
  await subButton("coupon-ticket").click();
  await section("coupon-ticket").waitFor();
@@ -99,6 +130,10 @@ try{
  await page.locator(".v81-first-row nav").waitFor();
  assert.equal(await page.locator(".v81-first-row nav button").count(),13);
  await moduleButton(3).click();
+ await page.getByRole("alert").waitFor();
+ assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
+ assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
+ await moduleButton(4).click();
  await page.getByRole("alert").waitFor();
  assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
  assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
