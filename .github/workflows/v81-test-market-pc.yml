@@ -229,7 +229,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$PGDATABASE" = "zhirox_v80_disposable"
-          mkdir -p artifacts/v91
+          mkdir -p artifacts/v92
           umask 077
           pg_dump -Fc --schema=zhirox_local -f artifacts/v92/ZHIROX-V92-TEST-MARKET.dump
           test -s artifacts/v92/ZHIROX-V92-TEST-MARKET.dump
