@@ -10,8 +10,9 @@ const settings=new Set(["manage-users","access-key"]);
 const verifySale=new Set(["transaction-check"]);
 const suppliers=new Set(["supplier-building","purchase-order","receive-goods","supplier-accounts"]);
 const returns=new Set(["return-arrow"]);
-const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell",...suppliers,...returns]);
-const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale,...suppliers,...returns]);
+const cashbook=new Set(["cash-drawer","cash-movements","expense-fall","shift-clock"]);
+const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell",...suppliers,...returns,...cashbook]);
+const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale,...suppliers,...returns,...cashbook]);
 const column=(key,label,format)=>({key,label,...(format?{format}:{})});
 const productColumns=[
  column("name","ناوی کاڵا"),column("barcode","بارکۆد"),
@@ -36,6 +37,21 @@ const commitmentColumns=[column("display_name","دابینکەر"),column("purch
 const returnColumns=[column("receipt_no","ژمارەی پسووڵە"),column("name_snapshot","ناوی کاڵا"),
  column("quantity_base_units","بڕی گەڕاوە","number"),column("amount_minor","نرخی گەڕاندنەوە (تۆماری ژمێریاری)","money"),
  column("restocked","گەڕایەوە بۆ کۆگا","bool"),column("reason","هۆکار"),
+ column("created_at","بەروار","date")];
+const shiftColumns=[column("username","کاشێر"),column("status","دۆخی شێفت"),
+ column("opening_minor","پارەی سەرەتایی تاقیکردنەوە","money"),
+ column("expected_minor","پارەی چاوەڕوانکراو (بێ فرۆشتن)","money"),
+ column("counted_minor","پارەی ژمێردراوی نموونە","money"),
+ column("variance_minor","جیاوازی","money"),column("closed_at","کاتی داخستن","date")];
+const drawerColumns=[column("username","کاشێر"),column("status","دۆخ"),
+ column("opening_minor","سەرەتایی","money"),
+ column("cash_in_minor","زیادکراوی تاقیکردنەوە","money"),
+ column("cash_out_minor","دەرکراوی تاقیکردنەوە","money"),
+ column("expense_minor","خەرجی تاقیکردنەوە","money"),
+ column("expected_minor","چاوەڕوانکراو","money"),
+ column("variance_minor","جیاوازی","money")];
+const movementColumns=[column("username","کاشێر"),column("kind","جۆر"),
+ column("amount_minor","بڕ","money"),column("reason","هۆکار"),
  column("created_at","بەروار","date")];
 const noopColumns=[column("status","دۆخ")];
 const sqlProducts=`SELECT p.id,p.name,p.price_minor,p.stock_base_units,
@@ -128,6 +144,43 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
   result=await pool.query(`SELECT username,role,enabled FROM zhirox_local.local_users
    WHERE store_id=$1::uuid ORDER BY username LIMIT 100`,[store]);
   columns=userColumns;note="هەژمارەکان لە PostgreSQL نیشان دەدرێن؛ گۆڕینی دەسەڵات لێرە ناچالاکە.";
+ }else if(cashbook.has(sectionId)){
+  if(sectionId==="shift-clock"){
+   result=await pool.query(`SELECT u.username,q.status,q.opening_minor,
+     q.expected_minor,q.counted_minor,q.variance_minor,q.closed_at
+     FROM zhirox_local.test_cash_shifts_v85 q
+     JOIN zhirox_local.local_users u ON u.store_id=q.store_id AND u.id=q.cashier_id
+     WHERE q.store_id=$1::uuid ORDER BY q.opened_at DESC,q.shift_id DESC LIMIT 100`,[store]);
+   columns=shiftColumns;
+   note="ئەم شێفتە تەنها تۆماری تاقیکردنەوەییە؛ فرۆشتنەکانی V80 بە شێفتەکە نەبەستراونەتەوە.";
+  }else if(sectionId==="cash-drawer"){
+   result=await pool.query(`SELECT u.username,q.status,q.opening_minor,
+    coalesce(sum(m.amount_minor) FILTER(WHERE m.kind='cash_in'),0)::bigint AS cash_in_minor,
+    coalesce(sum(m.amount_minor) FILTER(WHERE m.kind='cash_out'),0)::bigint AS cash_out_minor,
+    coalesce(sum(m.amount_minor) FILTER(WHERE m.kind='expense'),0)::bigint AS expense_minor,
+    q.expected_minor,q.variance_minor
+    FROM zhirox_local.test_cash_shifts_v85 q
+    JOIN zhirox_local.local_users u ON u.store_id=q.store_id AND u.id=q.cashier_id
+    LEFT JOIN zhirox_local.test_cash_movements_v85 m
+      ON m.store_id=q.store_id AND m.shift_id=q.shift_id
+    WHERE q.store_id=$1::uuid
+    GROUP BY q.store_id,q.shift_id,q.opened_at,q.status,q.opening_minor,
+      q.expected_minor,q.variance_minor,u.username
+    ORDER BY q.opened_at DESC,q.shift_id DESC LIMIT 100`,[store]);
+   columns=drawerColumns;
+   note="سندووقی تاقیکردنەوە: هیچ پارەی فیزیکی نەگوازراوەتەوە و فرۆشتنی کۆن لەم چاوەڕوانکراوەدا نییە.";
+  }else{
+   result=await pool.query(`SELECT u.username,m.kind,m.amount_minor,m.reason,m.created_at
+     FROM zhirox_local.test_cash_movements_v85 m
+     JOIN zhirox_local.test_cash_shifts_v85 q
+       ON q.store_id=m.store_id AND q.shift_id=m.shift_id
+     JOIN zhirox_local.local_users u
+       ON u.store_id=q.store_id AND u.id=q.cashier_id
+     WHERE m.store_id=$1::uuid ${sectionId==="expense-fall"?"AND m.kind='expense'":""}
+     ORDER BY m.created_at DESC,m.entry_id DESC LIMIT 100`,[store]);
+   columns=movementColumns;
+   note="تەنها جووڵەی پارەی تاقیکردنەوەیی. هیچ پارەی نەختینەی ڕاستەقینە وەرنەگیراوە و نەدراوە.";
+  }
  }else if(returns.has(sectionId)){
   result=await pool.query(`SELECT s.receipt_no,l.name_snapshot,r.quantity_base_units,
     r.amount_minor,r.restocked,r.reason,r.created_at
