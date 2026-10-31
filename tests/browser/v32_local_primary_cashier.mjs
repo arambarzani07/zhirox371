@@ -72,11 +72,23 @@ try{
  await page.locator(".module").first().click();
  await page.locator(".drawer .sub").first().click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
+ assert.equal(await page.locator(".local-cashier-v58-stage").count(),1,"safe trial badge remains visible");
+ assert.equal(await page.locator(".local-v58-login").count(),1,"isolated cashier login uses clean single-panel layout");
  assert.equal(await page.locator("#finish-sale").count(),0);
  assert.equal(await page.getByRole("button",{name:/کردنەوەی V31/}).count(),0,
   "V32 must render its own primary local page, not demo plus a collapsible panel");
  assert.equal(await page.locator("text=تاقیکردنەوە — داتای ئەم کاشێرە لە وێبگەڕ").count(),0);
  await login();
+ assert.equal(await page.locator(".local-v58-workspace").count(),1,"compact cashier work area");
+ assert.equal(await page.locator(".local-v58-summary").count(),1,"single total-and-checkout column");
+ assert.equal(await page.locator(".local-v58-basket thead th").count(),6,"six approved Sorani basket columns");
+ assert.equal(await page.locator(".local-v58-login").count(),0,"no technical login form after connection");
+ const positions=await page.evaluate(()=>{
+  const work=document.querySelector(".local-v58-work-area").getBoundingClientRect();
+  const summary=document.querySelector(".local-v58-summary").getBoundingClientRect();
+  return {sideBySide:summary.right<=work.left+5||work.right<=summary.left+5};
+ });
+ assert.equal(positions.sideBySide,true,"PC total should stay beside the basket");
  const input=page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە");
  await input.fill(barcode);
  await page.getByRole("button",{name:"سکان",exact:true}).click();
