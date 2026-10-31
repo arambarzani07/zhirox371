@@ -18,7 +18,9 @@ test("Pilot cannot be enabled in production build or externally accessed by Vite
  assert.match(config,/target:localCashier\?'http:\/\/127\.0\.0\.1:3308':'http:\/\/127\.0\.0\.1:3307'/);
  assert.match(config,/\.\.\.\(pilot\?\{proxy/);
  assert.match(cashier,/\{pilotEnabled && <LocalPostgresPilotV24/);
- assert.match(home,/MODULE_SPECS/);
+ // Owner requested navigation exclusively in the top strip, not Home cards.
+ assert.match(read("src/components/Header.tsx"),/system-strip-only/);
+ assert.doesNotMatch(home,/MODULE_SPECS|CardIcon/);
 });
 
 test("Browser never receives PostgreSQL credentials or an arbitrary API target",()=>{
