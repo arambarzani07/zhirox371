@@ -17,6 +17,8 @@ try{
  assert.equal(await page.locator("text=مارکێتی تاقیکردنەوە").count()>0,true);
  await page.getByLabel("وشەی نهێنی").fill(process.env.ZHIROX_TEST_OWNER_PASSWORD);
  await page.getByRole("button",{name:"چوونە ژوورەوە"}).click();
+ assert.equal(await page.locator(".v81-overview").count(),0,"Home is empty, not a set of report cards");
+ await page.getByRole("button",{name:"ڕاپۆرت"}).click();
  await page.locator("[data-testid=real-postgres-overview]").waitFor();
  const overview=await page.locator("[data-testid=real-postgres-overview]").innerText();
  assert.match(overview,/11,000 IQD/);
@@ -49,6 +51,7 @@ try{
  await page.getByLabel("ناوی هەژمار").fill("test-market-cashier");
  await page.getByLabel("وشەی نهێنی").fill(process.env.ZHIROX_TEST_CASHIER_PASSWORD);
  await page.getByRole("button",{name:"چوونە ژوورەوە"}).click();
+ await page.getByRole("button",{name:"ڕاپۆرت"}).click();
  await page.locator("[data-testid=real-postgres-overview]").waitFor();
  await page.getByRole("button",{name:"کڕیاران و حسابەکان"}).click();
  await page.getByRole("alert").waitFor();
