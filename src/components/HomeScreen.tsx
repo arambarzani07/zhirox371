@@ -21,6 +21,7 @@ export const HomeScreen:React.FC=()=>{
         {group.map((mod,offset)=>{
           const index=start+offset;
           return <button className="module" data-module={index} type="button" key={mod.id}
+             style={{'--color':mod.color,'--light':mod.lightBg} as React.CSSProperties}
              aria-expanded={open===index} onClick={()=>setOpen(v=>v===index?-1:index)}>
             <span className="icon" style={{color:mod.color,background:mod.lightBg}}>
               <CardIcon id={mod.iconName} size={27}/>
@@ -31,7 +32,8 @@ export const HomeScreen:React.FC=()=>{
             </span>
           </button>;
         })}
-        {selected&&<div className="drawer" role="region" aria-label={selected.title}>
+        {selected&&<div className="drawer" role="region" aria-label={selected.title}
+          style={{'--color':selected.color,'--light':selected.lightBg} as React.CSSProperties}>
           <div className="drawerhead">
             <strong>{selected.title}</strong>
             <button className="close" aria-label="داخستن" title="داخستن" type="button"
