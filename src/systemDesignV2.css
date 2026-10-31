@@ -221,3 +221,51 @@
   #root > .viewport > .desktop > header.system-header {padding:0 14px!important;}
  }
 }
+
+/* Horizontal navigation-only Home, immediately beneath the market banner.
+   No modules, subcards, grid or helper copy render in the Home workspace. */
+@media screen {
+ #root > .viewport > .desktop > header.system-strip-only {
+  min-width:0!important;width:100%!important;
+  height:57px!important;min-height:57px!important;flex:0 0 57px!important;
+  padding:0 16px!important;justify-content:flex-start!important;
+  background:#fff!important;border-bottom:1px solid var(--system-line)!important;
+ }
+ #root > .viewport > .desktop > header.system-strip-only .system-nav {
+  width:100%;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;
+  display:flex;flex-wrap:nowrap;align-items:center;gap:6px;
+  scrollbar-width:thin;scrollbar-color:#b9c9da transparent;
+ }
+ .system-strip-only .ws-link {flex:none!important;min-height:38px!important;
+  padding:7px 13px!important;font-size:12px!important;}
+ .system-strip-only .ws-link:disabled {
+  opacity:.45;cursor:not-allowed;background:#fff!important;color:#687b90!important;
+ }
+ #app > .home-strip-only {display:block!important;width:100%!important;
+  max-width:none!important;min-height:calc(100% - 1px);margin:0!important;
+  padding:0!important;border:0!important;box-shadow:none!important;
+  background:var(--system-bg)!important;}
+ #app > .home-strip-only :is(.module,.drawer,.sub,.row) {display:none!important;}
+ /* Isolated V57 trial: same lone ribbon, with no fake/unconnected routes. */
+ .v57-app .v57-header.v57-strip-header {
+  min-width:0;height:57px!important;min-height:57px!important;flex:0 0 57px!important;
+  padding:0 16px!important;justify-content:flex-start!important;
+ }
+ .v57-strip-header .system-nav {width:100%;min-width:0;flex:1;display:flex;
+  flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;align-items:center;gap:6px;
+  scrollbar-width:thin;}
+ .v57-app .v57-strip-header .system-nav button {
+  flex:none;min-height:38px;padding:7px 14px;border:1px solid transparent;
+  border-radius:8px;background:transparent!important;color:#536b83!important;
+  font:850 12px Tahoma,"Segoe UI",sans-serif;white-space:nowrap;cursor:pointer;
+ }
+ .v57-app .v57-strip-header .system-nav button.active {
+  background:var(--system-blue)!important;border-color:var(--system-blue)!important;
+  color:#fff!important;
+ }
+ .v57-app .v57-strip-header .system-nav button:disabled {
+  background:transparent!important;color:#7589a0!important;
+  opacity:.55!important;cursor:not-allowed;
+ }
+ .v57-app .v57-home-empty {padding:0!important;min-height:100%;max-width:none!important;}
+}
