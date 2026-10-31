@@ -269,3 +269,104 @@
  }
  .v57-app .v57-home-empty {padding:0!important;min-height:100%;max-width:none!important;}
 }
+
+
+/*
+ * ZHIROX PC FULL-SCREEN V3 (owner request)
+ * Screen layout only; no database/financial/receipt changes.
+ * Fill actual desktop width and height rather than centering a 1520px card.
+ * Browser screenshots at 1366x768 and 1920x1080 are regression-tested.
+ */
+@media screen {
+ html,body,#root {
+   width:100%;height:100%;margin:0;min-height:0;
+ }
+ body {overflow:hidden!important;}
+ #root {display:block;min-width:0;overflow:hidden;}
+ #root > .market-banner,.market-banner {
+   width:100vw!important;max-width:none!important;inset-inline:0;
+ }
+ #root > .viewport {
+   box-sizing:border-box;width:100vw!important;max-width:none!important;
+   height:calc(100dvh - var(--market-banner-height,56px))!important;
+   min-height:0!important;margin:0!important;
+   overflow-x:auto!important;overflow-y:hidden!important;
+ }
+ #root > .viewport > .desktop {
+   min-width:1020px;width:100%!important;max-width:none!important;
+   height:100%!important;min-height:0!important;margin:0!important;
+   overflow:hidden!important;display:flex!important;flex-direction:column!important;
+ }
+ #root > .viewport > .desktop > header.system-strip-only {
+   width:100%!important;max-width:none!important;flex:none!important;
+   margin:0!important;border-radius:0!important;box-shadow:none!important;
+ }
+ #root > .viewport > .desktop > main#app {
+   width:100%!important;max-width:none!important;min-height:0!important;
+   flex:1 1 0!important;height:auto!important;
+   margin:0!important;padding:0!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   background:var(--system-bg)!important;
+ }
+ #root > .viewport > .desktop > main#app > .home-screen.home-strip-only {
+   width:100%!important;max-width:none!important;min-height:100%!important;
+   background:var(--system-bg)!important;border-radius:0!important;
+   box-shadow:none!important;
+ }
+ #root > .viewport > .desktop > main#app > div:not(.home-strip-only),
+ #root > .viewport > .desktop > main#app > section.pos-clean,
+ #root > .viewport > .desktop > main#app > .pos-clean {
+   box-sizing:border-box;width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:20px 26px 28px!important;
+ }
+ #root > .viewport > .desktop > main#app :is(.surface,.page,.pane,.panel) {
+   max-width:none;
+ }
+ /* Local cash register workspace: use the full remaining width and height. */
+ #root > .viewport > .desktop > main#app .pos-clean__workspace {
+   width:100%;grid-template-columns:minmax(0,1fr) minmax(285px,320px);
+   align-items:stretch;min-height:calc(100dvh - 250px);
+ }
+ #root > .viewport > .desktop > main#app .pos-clean__transaction {
+   min-height:calc(100dvh - 250px);
+ }
+ #root > .viewport > .desktop > main#app .pos-clean__basket {
+   max-height:calc(100dvh - 380px);min-height:240px;
+ }
+ /* Isolated offline V57 shell: same no-margin desktop geometry. */
+ .v57-app {
+   box-sizing:border-box;width:100vw!important;max-width:none!important;
+   min-width:1020px;height:100dvh;overflow:hidden;
+ }
+ .v57-app > .market-banner {width:100vw!important;max-width:none!important;}
+ .v57-app > .v57-desktop {
+   width:100%!important;max-width:none!important;min-width:1020px;
+   height:calc(100dvh - var(--market-banner-height,56px))!important;
+   max-height:calc(100dvh - var(--market-banner-height,56px))!important;
+   overflow:hidden!important;
+ }
+ .v57-app .v57-header.v57-strip-header {width:100%!important;max-width:none!important;}
+ .v57-app .v57-content {
+   width:100%!important;max-width:none!important;flex:1 1 0!important;
+   min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+   margin:0!important;padding:0!important;
+ }
+ .v57-app .v57-home.v57-home-empty {
+   width:100%!important;max-width:none!important;margin:0!important;
+   min-height:100%!important;padding:0!important;border-radius:0!important;
+ }
+ .v57-app .pos-clean {width:100%!important;max-width:none!important;
+   margin:0!important;min-height:100%;padding:20px 26px 28px!important;}
+ .v57-app .pos-clean__workspace {
+   width:100%;grid-template-columns:minmax(0,1fr) minmax(285px,320px);
+   min-height:calc(100dvh - 250px);align-items:stretch;
+ }
+ .v57-app .pos-clean__transaction {min-height:calc(100dvh - 250px);}
+ .v57-app .pos-clean__basket {max-height:calc(100dvh - 380px);min-height:240px;}
+ @media (max-width:1100px) {
+   #root > .viewport > .desktop > main#app > div:not(.home-strip-only),
+   #root > .viewport > .desktop > main#app > .pos-clean,
+   .v57-app .pos-clean {padding:16px 18px 24px!important;}
+ }
+}
+/* No fullscreen overrides under @media print: preserve actual receipts. */
