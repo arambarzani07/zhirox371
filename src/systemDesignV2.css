@@ -306,6 +306,7 @@
    flex:1 1 0!important;height:auto!important;
    margin:0!important;padding:0!important;
    overflow-y:auto!important;overflow-x:hidden!important;
+   scrollbar-gutter:auto!important;
    background:var(--system-bg)!important;
  }
  #root > .viewport > .desktop > main#app > .home-screen.home-strip-only {
