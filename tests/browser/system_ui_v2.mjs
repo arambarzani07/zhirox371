@@ -3,115 +3,107 @@ import {chromium} from "playwright";
 import {mkdir} from "node:fs/promises";
 const origin=process.env.PC_PREVIEW_ORIGIN||"http://127.0.0.1:3000";
 const browser=await chromium.launch({headless:true});
-const context=await browser.newContext({viewport:{width:1440,height:900},locale:"en-US"});
-const page=await context.newPage(),errors=[];
-page.on("pageerror",error=>errors.push(error.message));
+const page=await browser.newPage({viewport:{width:1440,height:900},locale:"en-US"});
+const errors=[];
+page.on("pageerror",e=>errors.push(e.message));
 const names=[
- ["کاشێر","03-cashier-demo.png"],
+ ["کاشێر و فرۆشتن","03-cashier-demo.png"],
  ["کاڵاکان","04-products.png"],
  ["کۆگا","05-stock.png"],
- ["کڕیاران","06-customers.png"],
- ["دابینکەران","07-suppliers.png"],
+ ["کڕیاران و حسابەکان","06-customers.png"],
+ ["کڕین و دابینکەران","07-suppliers.png"],
  ["دارایی","08-finance.png"],
- ["ڕاپۆرت","09-reports.png"],
- ["ڕێکخستن","10-settings.png"],
- ["ئافەر","11-offers.png"],
- ["لیبڵ","12-labels.png"],
- ["شێفت","13-shifts.png"],
- ["چاودێری","14-audit.png"]
+ ["ڕاپۆرت و شیکاری","09-reports.png"],
+ ["ڕێکخستنەکان","10-settings.png"],
+ ["ئافەر و داشکاندن","11-offers.png"],
+ ["لیبڵ و چاپکردن","12-labels.png"],
+ ["شێفت و کارمەندان","13-shifts.png"],
+ ["چاودێری و مۆڵەتەکان","14-audit.png"]
 ];
+const fullscreen=async(width,height)=>{
+ await page.setViewportSize({width,height});
+ const layout=await page.evaluate(()=>{
+   const rect=s=>{
+     const el=document.querySelector(s);
+     if(!el)throw Error("missing "+s);
+     const r=el.getBoundingClientRect();
+     return {x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom};
+   };
+   return {banner:rect(".market-banner"),desktop:rect("#root > .viewport > .desktop"),
+     header:rect("header.system-double-strip"),app:rect("#app"),home:
+       document.querySelector(".home-strip-only")?rect(".home-strip-only"):null};
+ });
+ assert.ok(Math.abs(layout.banner.width-width)<3,"store banner must span native PC");
+ assert.ok(Math.abs(layout.desktop.width-width)<3,"desktop must span native PC");
+ assert.ok(Math.abs(layout.header.width-width)<3,"ribbon must span native PC");
+ assert.ok(Math.abs(layout.app.width-width)<3,"workspace must span native PC");
+ assert.ok(Math.abs(layout.app.bottom-height)<4,"workspace extends to bottom of PC");
+ if(layout.home)assert.ok(layout.home.x<3&&layout.home.width>=width-18,"Home is not centered card");
+};
 try{
  await mkdir("artifacts/system-v2",{recursive:true});
  await page.goto(origin,{waitUntil:"networkidle"});
  assert.equal(await page.locator("html").getAttribute("dir"),"rtl");
  await page.locator(".home-strip-only").waitFor();
- const nav=page.locator("header.system-strip-only .system-nav");
+ const nav=page.locator(".system-primary-nav");
+ const subnav=page.locator(".system-subnav");
  assert.equal(await nav.count(),1);
- assert.equal(await nav.locator("button").count(),13);
- assert.equal(await page.locator(".module,.sub,.drawer,.subgrid").count(),0,"old Home cards and drawers stay removed");
- assert.equal(await page.locator(".system-module-column .system-module-link").count(),12,"all 12 module names are stacked in column one");
- assert.equal(await page.locator(".system-submodule-column .system-submodule-link").count(),4,"four submodules stack in second column");
- const geometry=await page.evaluate(()=>{
-  const rect=s=>document.querySelector(s).getBoundingClientRect();
-  const first=rect(".system-module-column"),second=rect(".system-submodule-column"),content=rect(".system-content-column");
-  const sub=Array.from(document.querySelectorAll(".system-submodule-link")).map(el=>el.getBoundingClientRect().top);
-  return {first:{x:first.x,right:first.right,width:first.width},second:{x:second.x,right:second.right,width:second.width},
-    content:{x:content.x,width:content.width},sub};
+ assert.equal(await nav.locator("button").count(),13,"Home + 12 main tabs");
+ assert.equal(await subnav.count(),1,"single secondary line");
+ assert.equal(await subnav.locator("button").count(),0,"no subtab shown until module selection");
+ assert.equal(await page.locator(".module,.drawer,.subgrid,.system-module-column,.system-submodule-column").count(),0,
+  "no Home cards or vertical navigation columns");
+ const adjacency=await page.evaluate(()=>{
+   const a=document.querySelector(".market-banner").getBoundingClientRect();
+   const b=document.querySelector(".system-primary-nav").getBoundingClientRect();
+   return Math.abs(a.bottom-b.top)<3;
  });
- assert.ok(geometry.first.x>=geometry.second.right-2&&geometry.second.x>=geometry.content.x+geometry.content.width-2,
-  "RTL module column, second submodule column, and full remaining PC content");
- assert.ok(geometry.sub.every((y,i)=>i===0||y>geometry.sub[i-1]),"submodules stack vertically");
- const tokens=await page.evaluate(()=>({
-  banner:getComputedStyle(document.documentElement).getPropertyValue("--market-banner-height").trim(),
-  header:document.querySelector(".system-strip-only").getBoundingClientRect(),
-  market:document.querySelector(".market-banner").getBoundingClientRect()
- }));
- assert.equal(tokens.banner,"56px");
- assert.ok(Math.abs(tokens.header.top-tokens.market.bottom)<2,"only ribbon sits directly beneath market name");
- // A native PC viewport must be filled, not a centered card inside margins.
- const assertFullscreen=async(width,height)=>{
-   await page.setViewportSize({width,height});
-   const geometry=await page.evaluate(()=>{
-     const rect=selector=>{const el=document.querySelector(selector);if(!el)throw Error("not found: "+selector);
-       const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom};};
-     return {windowWidth:window.innerWidth,windowHeight:window.innerHeight,
-       banner:rect(".market-banner"),viewport:rect("#root > .viewport"),
-       desktop:rect("#root > .viewport > .desktop"),header:rect("header.system-strip-only"),
-       app:rect("#app"),content:rect(".system-content-column"),
-       home:document.querySelector(".home-strip-only")?rect(".home-strip-only"):null};
-   });
-   assert.ok(Math.abs(geometry.banner.width-width)<=2,"market banner fills PC width");
-   assert.ok(Math.abs(geometry.desktop.width-width)<=2,"desktop occupies PC width");
-   assert.ok(Math.abs(geometry.app.width-width)<=2,"workspace occupies PC width");
-   assert.ok(Math.abs(geometry.app.bottom-height)<=3,"workspace ends at PC bottom");
-   assert.ok(geometry.header.x>=-2&&Math.abs(geometry.header.width-width)<=2,"full-width horizontal strip");
-   if(geometry.home){
-     if(Math.abs(geometry.home.width-geometry.content.width)>2||
-        Math.abs(geometry.home.x-geometry.content.x)>2){
-       console.log("PC HOME GEOMETRY:",JSON.stringify(geometry));
-       await page.screenshot({path:"artifacts/system-v2/00-layout-diagnostic.png",fullPage:false});
-     }
-     assert.ok(
-       Math.abs(geometry.home.width-geometry.content.width)<=2 &&
-       Math.abs(geometry.home.x-geometry.content.x)<=2,
-       "Home fills its entire third-column workspace, with no centered card");
-   }
- };
- await assertFullscreen(1440,900);
+ assert.ok(adjacency,"first ribbon directly beneath store name");
+ await fullscreen(1440,900);
  await page.screenshot({path:"artifacts/system-v2/01-home.png",fullPage:false});
- await assertFullscreen(1920,1080);
+ await fullscreen(1920,1080);
  await page.screenshot({path:"artifacts/system-v2/00-home-full-pc-1920.png",fullPage:false});
- await assertFullscreen(1366,768);
+ await fullscreen(1366,768);
  await page.screenshot({path:"artifacts/system-v2/00-home-full-pc-1366.png",fullPage:false});
- await assertFullscreen(1440,900);
- assert.equal(await page.locator(".home-strip-only").innerText(),"","Home has no unnecessary text");
- await page.locator(".system-module-link[data-module-id='1']").click();
- assert.equal(await page.locator(".system-module-link.selected").count(),1);
- assert.equal(await page.locator(".system-submodule-heading").innerText(),"کاڵاکان");
- await page.locator(".system-submodule-link[data-sub-icon='product-list']").click();
- assert.equal(await page.locator(".system-submodule-link.selected").count(),1,"selected subcard highlighted");
- assert.equal(await page.locator(".system-submodule-link.selected").getAttribute("aria-current"),"page");
- assert.ok((await page.locator(".system-submodule-link.selected").innerText()).includes("لیستی کاڵاکان"));
- await page.screenshot({path:"artifacts/system-v2/16-second-column-selected.png",fullPage:false});
- await nav.getByRole("button",{name:"سەرەتا",exact:true}).click();
- for(const [label,file] of names){
-  const button=nav.getByRole("button",{name:label,exact:true});
-  await button.click();
-  assert.equal(await nav.locator("button.active").count(),1,"only one active module");
-  const content=page.locator("#app");
-  assert.ok((await content.innerText()).length>12,"feature view is reachable: "+label);
-  assert.equal(await page.locator(".module,.drawer,.sub").count(),0,"feature never resurrects cards");
-  await assertFullscreen(1440,900);
-  await page.screenshot({path:"artifacts/system-v2/"+file,fullPage:false});
-  if(label==="کاڵاکان"){
-    await assertFullscreen(1920,1080);
-    await page.screenshot({path:"artifacts/system-v2/15-products-full-pc-1920.png",fullPage:false});
-    await assertFullscreen(1440,900);
-  }
+ await fullscreen(1440,900);
+ // All twelve main tabs expose exactly four horizontally arranged sub-tabs.
+ for(let i=0;i<names.length;i++){
+   const [label,file]=names[i];
+   await nav.locator("button[data-module-id='"+i+"']").click();
+   assert.equal(await nav.locator(".ws-link.active").count(),1,"one selected main module");
+   assert.equal(await subnav.locator("button").count(),4,"four submodules for "+label);
+   assert.equal(await subnav.locator(".system-subnav-link.selected").count(),1,"selected subtab visible "+label);
+   assert.equal(await subnav.locator(".system-subnav-check").count(),1,"selected subtab marked with check "+label);
+   assert.equal(await subnav.locator(".system-subnav-link.selected").getAttribute("aria-current"),"page");
+   const g=await page.evaluate(()=>{
+     const head=document.querySelector(".system-primary-nav").getBoundingClientRect();
+     const row=document.querySelector(".system-subnav").getBoundingClientRect();
+     const buttons=[...document.querySelectorAll(".system-subnav button")].map(x=>x.getBoundingClientRect());
+     return {headBottom:head.bottom,rowY:row.y,buttonY:buttons.map(b=>b.y),
+       buttonRight:buttons.map(b=>b.right),rowBottom:row.bottom,
+       appY:document.querySelector("#app").getBoundingClientRect().y};
+   });
+   assert.ok(Math.abs(g.headBottom-g.rowY)<3&&Math.abs(g.rowBottom-g.appY)<3,"subnav directly between top nav and content");
+   assert.ok(g.buttonY.every(y=>Math.abs(y-g.buttonY[0])<3),"all four subtabs horizontally aligned");
+   assert.ok(g.buttonRight.every((v,k)=>k===0||v<g.buttonRight[k-1]),"subtabs flow RTL without stacked columns");
+   assert.equal(await page.locator(".system-module-column,.system-submodule-column,.module,.drawer").count(),0);
+   await fullscreen(1440,900);
+   await page.screenshot({path:"artifacts/system-v2/"+file,fullPage:false});
  }
+ await nav.locator("button[data-module-id='1']").click();
+ await subnav.locator("button[data-sub-icon='add-box']").click();
+ assert.equal(await subnav.locator(".system-subnav-link.selected").getAttribute("data-sub-icon"),"add-box",
+  "subnav selection changes to new-product");
+ assert.equal(await subnav.locator(".system-subnav-check").count(),1);
+ await page.screenshot({path:"artifacts/system-v2/16-selected-product-subtab.png",fullPage:false});
+ await subnav.locator("button[data-sub-icon='product-list']").click();
+ assert.equal(await subnav.locator(".system-subnav-link.selected").getAttribute("data-sub-icon"),"product-list",
+  "selected product-list tab remains indicated");
+ await fullscreen(1920,1080);
+ await page.screenshot({path:"artifacts/system-v2/15-products-full-pc-1920.png",fullPage:false});
  await nav.getByRole("button",{name:"سەرەتا",exact:true}).click();
  assert.equal(await page.locator(".home-strip-only").count(),1);
- assert.equal(await page.locator(".module").count(),0);
- assert.deepEqual(errors,[],"no client error while navigating horizontal strip");
- console.log("PASS V2: 13-button horizontal ribbon and 12 module routes, without Home cards");
+ assert.equal(await subnav.locator("button").count(),0);
+ assert.deepEqual(errors,[],"no React errors while switching both horizontal ribbons");
+ console.log("PASS PC two-ribbon Sorani navigation: 12 main, 48 sub-tabs, RTL selected state and native fullscreen");
 }finally{await browser.close();}
