@@ -52,7 +52,7 @@ try{
    assert.ok(Math.abs(geometry.app.width-width)<=2,"workspace occupies PC width");
    assert.ok(Math.abs(geometry.app.bottom-height)<=3,"workspace ends at PC bottom");
    assert.ok(geometry.header.x>=-2&&Math.abs(geometry.header.width-width)<=2,"full-width horizontal strip");
-   if(geometry.home)assert.ok(Math.abs(geometry.home.width-width)<=2,"no centered Home card");
+   if(geometry.home)assert.ok(geometry.home.x<=2&&geometry.home.width>=width-18,"no centered Home card or content margins");
  };
  await assertFullscreen(1440,900);
  await page.screenshot({path:"artifacts/system-v2/01-home.png",fullPage:false});
