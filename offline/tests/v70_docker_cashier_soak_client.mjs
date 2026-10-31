@@ -114,6 +114,6 @@ if(mode==="login"){
  },s.token);
  assert.equal(closed.status,200);
  assert.equal(String(closed.data.shift.variance_minor),"0");
- output({20_sales_confirmed:true,shift_closed:true,variance_iqd:0,
+ output({sales_20_confirmed:true,shift_closed:true,variance_iqd:0,
   total_iqd:15000});
 }
