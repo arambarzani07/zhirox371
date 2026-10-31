@@ -1,0 +1,72 @@
+name: V78 48-section local PostgreSQL settings isolation
+on:
+  pull_request:
+    paths:
+      - 'src/components/CardIcon.tsx'
+      - 'src/components/SectionWorkspace.tsx'
+      - 'src/context/AppContext.tsx'
+      - 'offline/migrations/027_section_settings_v78.sql'
+      - 'offline/tests/034_v78_section_settings.sql'
+      - 'offline/tests/section-registry-v78.test.mjs'
+      - '.github/workflows/v78-section-settings.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/CardIcon.tsx'
+      - 'src/components/SectionWorkspace.tsx'
+      - 'offline/migrations/027_section_settings_v78.sql'
+      - 'offline/tests/034_v78_section_settings.sql'
+      - 'offline/tests/section-registry-v78.test.mjs'
+      - '.github/workflows/v78-section-settings.yml'
+permissions:
+  contents: read
+jobs:
+  section-schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v78_disposable
+          POSTGRES_USER: v78test
+          POSTGRES_PASSWORD: disposable_v78_not_production
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U v78test -d zhirox_v78_disposable"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: v78test
+      PGPASSWORD: disposable_v78_not_production
+      PGDATABASE: zhirox_v78_disposable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: All 48 UI section IDs must match the SQL registry and safety rules
+        run: node --test offline/tests/section-registry-v78.test.mjs
+      - name: PostgreSQL client only for disposable CI fixture
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Assert isolation before database access
+        shell: bash
+        run: |
+          test "$PGDATABASE" = "zhirox_v78_disposable"
+          test "$PGUSER" = "v78test"
+          test "$PGHOST" = "127.0.0.1"
+      - name: Apply V78 migration only to disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/001_core.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/003_local_users.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/027_section_settings_v78.sql
+      - name: Verify 48 sections, tenant isolation, role gate and immutable audit
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/034_v78_section_settings.sql
+      - name: Confirm no fixture store survived transaction rollback
+        run: |
+          test "$(psql -Atc "SELECT count(*) FROM zhirox_local.stores WHERE name LIKE 'V78 disposable %'")" = "0"

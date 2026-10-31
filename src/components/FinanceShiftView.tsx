@@ -5,10 +5,10 @@ import { money, formatDateTime } from '../utils/retailHelpers';
 export const FinanceShiftView: React.FC = () => {
   const { currentShift, expenses, recordExpense, closeShift, openNewShift, subtab } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'drawer' | 'expenses' | 'shifts'>('drawer');
+  const [activeTab, setActiveTab] = useState<'drawer' | 'expenses' | 'shifts'>(subtab === 'expenses' ? 'expenses' : 'drawer');
 
   // Expense modal state
-  const [showExpenseModal, setShowExpenseModal] = useState(subtab === 'expenses');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [expenseTitle, setExpenseTitle] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseCategory, setExpenseCategory] = useState('خەرجی ڕۆژانە');

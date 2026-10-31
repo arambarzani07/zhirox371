@@ -3,9 +3,9 @@ import { useApp } from '../context/AppContext';
 import { inspectBarcode, formatDateTime, money } from '../utils/retailHelpers';
 
 export const DiagnosticsQaView: React.FC = () => {
-  const { auditLogs, exportBackupJson, importBackupJson, cart, lastReceipt } = useApp();
+  const { auditLogs, exportBackupJson, importBackupJson, cart, lastReceipt, subtab } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'hardware' | 'backup' | 'customer_display' | 'audit'>('hardware');
+  const [activeTab, setActiveTab] = useState<'hardware' | 'backup' | 'customer_display' | 'audit'>(subtab === 'diagnostics' ? 'audit' : 'hardware');
 
   // Barcode diagnostic test input
   const [testBarcodeInput, setTestBarcodeInput] = useState('8690504100234');

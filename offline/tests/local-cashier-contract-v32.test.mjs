@@ -23,7 +23,8 @@ test("V32 session-specific receipts never fall back to Demo after an offline fai
  assert.match(ui,/getLocalIntentStatusV32\(session\.token/);
  assert.match(ui,/status\?\.state==="committed"/);
  assert.match(ui,/sessionStorage\.removeItem\(pendingKey\(store\)\)/);
- assert.match(ui,/standalone&&<section aria-label="مێژووی پسووڵەی ناوخۆیی"/);
+ assert.match(ui,/standalone&&<details className="pos-clean__history" open=\{Boolean\(last\)\}/);
+ assert.match(ui,/<section aria-label="مێژووی پسووڵەی ناوخۆیی"/);
  assert.doesNotMatch(server,/supabase|DEMO-RCP|localhost:3000/);
  assert.match(server,/cashier_id=\$2::uuid/);
  assert.match(server,/store_id=\$1::uuid/);

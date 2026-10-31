@@ -60,7 +60,7 @@ try{
  await page.getByPlaceholder("ناوی بەکارهێنەر").fill("cashier-v36");
  await page.getByPlaceholder("وشەی نهێنی ناوخۆیی").fill("some-test-secret");
  await page.getByRole("button",{name:"چوونەژوورەوەی تاقیکردنەوە"}).click();
- const field=page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە");
+ const field=page.getByPlaceholder("بارکۆد");
  await field.waitFor();await field.fill(barcode);
  await page.getByRole("button",{name:"سکان",exact:true}).click();
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();

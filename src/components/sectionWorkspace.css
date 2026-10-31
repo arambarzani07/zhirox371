@@ -1,0 +1,73 @@
+/* Distinct full-width section for every one of the 48 semantic submodules.
+   This stylesheet does not apply to thermal receipts or print media. */
+@media screen {
+ #root > .viewport > .desktop > main#app.system-two-rows > section.section-workspace {
+   box-sizing:border-box;width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:20px 24px 30px!important;
+   background:#f4f6fa;color:#203650;
+ }
+ #app .section-workspace__header {
+   display:flex;align-items:center;gap:12px;min-height:45px;
+   margin:0 0 18px;
+ }
+ #app .section-workspace__header h1 {
+   flex:1;min-width:0;margin:0!important;
+   font:900 21px Tahoma,"Segoe UI",sans-serif!important;
+   color:#1d3450!important;line-height:1.55;
+ }
+ #app .section-workspace__icon {
+   flex:none;width:44px;height:44px;
+   display:grid;place-items:center;
+   background:#e8f1fa;color:#24486e;
+   border:1px solid #dbe7f3;border-radius:10px;
+ }
+ #app .section-workspace__icon svg {width:24px;height:24px;stroke:currentColor;}
+ #app .section-workspace__pending {
+   flex:none;border:1px solid #e7d5b4;background:#fff8e9;color:#936620;
+   border-radius:8px;padding:7px 11px;font:850 11px Tahoma,"Segoe UI",sans-serif;
+ }
+ #app .section-workspace__table {
+   min-height:calc(100dvh - 260px);background:#fff;
+   border:1px solid #dde6f0;border-radius:12px;
+   overflow:auto;box-shadow:none;
+ }
+ #app .section-workspace__table table {
+   width:100%;border-collapse:collapse;text-align:right;
+   font:750 12px Tahoma,"Segoe UI",sans-serif;
+ }
+ #app .section-workspace__table th {
+   background:#f5f8fb!important;color:#536c85!important;
+   border-bottom:1px solid #e0e8f0!important;
+   padding:14px!important;text-align:right!important;white-space:nowrap;
+ }
+ #app .section-workspace__table td {
+   background:#fff!important;color:#233950;
+   border-bottom:1px solid #eaf0f5!important;
+   padding:13px 14px!important;vertical-align:middle;
+ }
+ #app .section-workspace__table td.section-workspace__empty {
+   text-align:center!important;padding:85px 14px!important;
+   color:#8b9aac!important;
+ }
+ #app .section-workspace__metric {
+   display:block;padding:19px 17px;color:#204365;
+   font:900 24px Tahoma,"Segoe UI",sans-serif;
+   border-bottom:1px solid #e4ebf1;
+   direction:ltr;text-align:right;
+ }
+ #app .section-workspace__live {
+   width:100%;max-width:none;margin:0;padding:0;
+ }
+ #app .section-workspace__live > div,
+ #app .section-workspace__live > section {
+   width:100%!important;max-width:none!important;
+   margin:0!important;padding:0!important;
+ }
+ #app .section-workspace__live > .pos-clean {
+   width:100%!important;max-width:none!important;padding:0!important;
+ }
+ /* Hide duplicated page heading, but not inner view controls or content. */
+ #app .section-workspace__live > div > h1:first-child {
+   display:none;
+ }
+}

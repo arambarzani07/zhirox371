@@ -1,134 +1,79 @@
-import React from 'react';
-import { useApp } from '../context/AppContext';
-import { money } from '../utils/retailHelpers';
+import React,{useEffect,useState} from "react";
+import {useApp} from "../context/AppContext";
+import {MODULE_SPECS} from "./CardIcon";
+import {NavView} from "../types";
 
-export const Header: React.FC = () => {
-  const { currentView, navigateTo, currentShift, cart } = useApp();
+// Full-screen PC navigation: main modules on the first horizontal line,
+// their four submodules on the second horizontal line. No cards or sidebars.
+// Navigation changes presentation only; cashier roles and data paths stay intact.
+export const Header:React.FC<{localPilot?:boolean}>=({localPilot=false})=>{
+ const {currentView,subtab,activeSectionId,navigateTo,cart}=useApp();
+ const [moduleId,setModuleId]=useState<number|null>(null);
+ const [pickedSub,setPickedSub]=useState<string|null>(null);
 
-  // The owner-locked PC Home has only the original brand and Home control.
-  // Operational quick links belong to feature pages, never the locked Home.
-  if (currentView === 'home') {
-    return (
-      <header>
-        <div className="brand"><i>◈</i><span>سیستەمی کاشێر</span></div>
-        <button className="home" type="button" onClick={() => navigateTo('home')} title="سەرەتا" aria-label="سەرەتا">⌂</button>
-      </header>
-    );
-  }
+ useEffect(()=>{
+   if(currentView==="home"){setModuleId(null);setPickedSub(null);return;}
+   const explicit=activeSectionId && MODULE_SPECS.find(m=>m.submodules.some(s=>s.iconName===activeSectionId));
+   if(explicit){
+     setModuleId(explicit.id);
+     setPickedSub(activeSectionId);
+     return;
+   }
+   const current=MODULE_SPECS.find(m=>m.id===moduleId);
+   const matching=current?.submodules.find(s=>s.targetView===currentView&&s.targetSubtab===subtab);
+   const module=matching?current:MODULE_SPECS.find(m=>m.submodules.some(s=>s.targetView===currentView&&s.targetSubtab===subtab))
+     ??(current?.submodules.some(s=>s.targetView===currentView)?current:MODULE_SPECS.find(m=>m.submodules.some(s=>s.targetView===currentView)));
+   if(!module)return;
+   setModuleId(module.id);
+   const chosen=module.submodules.find(s=>s.targetView===currentView&&s.targetSubtab===subtab)
+     ??module.submodules.find(s=>s.targetView===currentView);
+   if(chosen)setPickedSub(chosen.iconName);
+ },[currentView,subtab,activeSectionId]);
 
-  return (
-    <header>
-      <div
-        className="brand"
-        onClick={() => navigateTo('home')}
-        style={{ cursor: 'pointer', userSelect: 'none' }}
-      >
-        <i>◈</i>
-        <span>سیستەمی کاشێر</span>
-      </div>
-
-      <div className="right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <button
-          type="button"
-          className={`ws-link ${currentView === 'pos' ? 'active' : ''}`}
-          onClick={() => navigateTo('pos')}
-          style={{
-            position: 'relative',
-            background: currentView === 'pos' ? '#1e3a8a' : undefined,
-            color: currentView === 'pos' ? '#ffffff' : undefined
-          }}
-        >
-          کاشێر (F1)
-          {cart.length > 0 && (
-            <span
-              style={{
-                marginInlineStart: '6px',
-                background: '#ef4444',
-                color: '#fff',
-                borderRadius: '10px',
-                padding: '1px 6px',
-                fontSize: '11px',
-                fontWeight: 900
-              }}
-            >
-              {cart.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          className={`ws-link ${currentView === 'stock' ? 'active' : ''}`}
-          onClick={() => navigateTo('stock', 'overview')}
-          style={{
-            background: currentView === 'stock' ? '#1e3a8a' : undefined,
-            color: currentView === 'stock' ? '#ffffff' : undefined
-          }}
-        >
-          کۆگا (F3)
-        </button>
-
-        <button
-          type="button"
-          className={`ws-link ${currentView === 'products' ? 'active' : ''}`}
-          onClick={() => navigateTo('products', 'list')}
-          style={{
-            background: currentView === 'products' ? '#1e3a8a' : undefined,
-            color: currentView === 'products' ? '#ffffff' : undefined
-          }}
-        >
-          کاڵاکان
-        </button>
-
-        <button
-          type="button"
-          className={`ws-link ${currentView === 'shifts' ? 'active' : ''}`}
-          onClick={() => navigateTo('shifts')}
-          style={{
-            background: currentView === 'shifts' ? '#1e3a8a' : undefined,
-            color: currentView === 'shifts' ? '#ffffff' : undefined
-          }}
-        >
-          شێفت ({money(currentShift.expectedCash)})
-        </button>
-
-        <button
-          type="button"
-          className={`ws-link ${currentView === 'qa' ? 'active' : ''}`}
-          onClick={() => navigateTo('qa')}
-          title="ئامێرەکان و پشکنین"
-          style={{
-            background: currentView === 'qa' ? '#1e3a8a' : undefined,
-            color: currentView === 'qa' ? '#ffffff' : undefined
-          }}
-        >
-          ئامێرەکان
-        </button>
-
-        <span
-          className="who"
-          style={{
-            background: '#f1f5f9',
-            padding: '5px 10px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: 800,
-            color: '#1e293b'
-          }}
-        >
-          {currentShift.cashierName}
-        </span>
-
-        <button
-          className="home"
-          type="button"
-          onClick={() => navigateTo('home')}
-          title="سەرەتا"
-          aria-label="سەرەتا"
-        >
-          ⌂
-        </button>
-      </div>
-    </header>
-  );
+ const chosen=MODULE_SPECS.find(m=>m.id===moduleId);
+ const selectMain=(id:number)=>{
+   const module=MODULE_SPECS.find(m=>m.id===id);
+   if(!module)return;
+   setModuleId(id);
+   const first=module.submodules[0];
+   setPickedSub(localPilot&&id!==0?null:first.iconName);
+   // In the isolated PG trial, disconnected modules are browse-only;
+   // selecting a module never enables its blocked subroutes.
+   if(!localPilot||id===0)navigateTo(first.targetView as NavView,first.targetSubtab,first.iconName);
+ };
+ const selectSub=(sub:typeof MODULE_SPECS[number]["submodules"][number])=>{
+   if(!chosen)return;
+   const enabled=!localPilot||(chosen.id===0&&(sub.iconName==="barcode-scan"||sub.iconName==="receipt"));
+   if(!enabled)return;
+   setPickedSub(sub.iconName);
+   navigateTo(sub.targetView as NavView,sub.targetSubtab,sub.iconName);
+ };
+ return <header className={`system-header system-strip-only system-double-strip ${chosen?"has-subnav":""} ${localPilot?"system-local-only":""}`}>
+   <nav className="system-nav system-primary-nav" aria-label="بەشە سەرەکییەکان">
+     <button type="button" className={`ws-link ${currentView==="home"&&moduleId===null?"active":""}`}
+       aria-current={currentView==="home"&&moduleId===null?"page":undefined}
+       onClick={()=>{setModuleId(null);setPickedSub(null);navigateTo("home");}}>سەرەتا</button>
+     {MODULE_SPECS.map(module=><button type="button" key={module.id}
+       data-module-id={module.id}
+       className={`ws-link ${moduleId===module.id?"active":""}`}
+       aria-current={moduleId===module.id?"true":undefined}
+       aria-expanded={moduleId===module.id}
+       onClick={()=>selectMain(module.id)}>
+       {module.title}
+       {module.id===0&&cart.length>0&&<span className="system-counter">{cart.length}</span>}
+     </button>)}
+   </nav>
+   <nav className="system-subnav" aria-label="ژێربەشەکان" data-subnav="horizontal">
+     {chosen?.submodules.map(sub=>{
+       const enabled=!localPilot||(chosen.id===0&&(sub.iconName==="barcode-scan"||sub.iconName==="receipt"));
+       const selected=pickedSub===sub.iconName;
+       return <button type="button" key={sub.iconName}
+         data-sub-icon={sub.iconName}
+         className={`system-subnav-link ${selected?"selected":""}`}
+         aria-current={selected?"page":undefined}
+         disabled={!enabled} aria-disabled={!enabled}
+         onClick={()=>selectSub(sub)}>{sub.label}{selected&&<span className="system-subnav-check" aria-hidden="true">✓</span>}</button>;
+     })}
+   </nav>
+ </header>;
 };

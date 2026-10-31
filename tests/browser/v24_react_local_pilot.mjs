@@ -100,8 +100,7 @@ await page.route("**/api/local/**",async route=>{
 });
 try {
  await page.goto("http://127.0.0.1:3000/",{waitUntil:"networkidle"});
- await page.locator(".module").first().click();
- await page.locator(".drawer .sub").first().click();
+ await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  await page.getByRole("button",{name:/کردنەوەی V31/}).click();
  assert.match(await page.getByText(/تەنها تاقیکردنەوە لەسەر هەمان PC/).innerText(),/Production/);
  await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
@@ -121,8 +120,7 @@ try {
  // Simulate a browser crash/reload after an uncertain HTTP response. Server
  // journal still owns the same UUID and cashier can recover it after re-login.
  await page.reload({waitUntil:"networkidle"});
- await page.locator(".module").first().click();
- await page.locator(".drawer .sub").first().click();
+ await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  await page.getByRole("button",{name:/کردنەوەی V31/}).click();
  await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).fill(store);
  await page.getByPlaceholder("ناوی بەکارهێنەر").fill("cashier");

@@ -93,7 +93,7 @@ try{
  await page.getByLabel("پارەی سەرەتای سندووق").fill("10000");
  await page.getByRole("button",{name:"کردنەوەی شێفت"}).click();
  await page.getByText(/شێفت کراوە — فرۆشتنی نەختینە/).waitFor();
- const scan=page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە");
+ const scan=page.getByPlaceholder("بارکۆد");
  await scan.fill(barcode);
  await page.getByRole("button",{name:"سکان",exact:true}).click();
  await page.getByText("کاڵای V37").waitFor();

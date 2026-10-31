@@ -1,105 +1,70 @@
 import React,{useEffect,useState} from "react";
-import {MODULE_SPECS,CardIcon} from "./CardIcon";
+import {MODULE_SPECS} from "./CardIcon";
 import {LocalCashierV32} from "./LocalCashierV32";
 import "../offlineDesktopShellV57.css";
+import "../systemDesignV2.css";
 
-// V57 ISOLATED PRE-INSTALLATION SHELL, visually editable by owner instruction.
-// No frozen number, card order, row arrangement or design hash. Navigation
-// authorization is tied to stable semantic IDs, never the visual card position.
-// Only the local PostgreSQL cashier can become interactive in this pilot.
+// Local offline trial: all module names can be explored, but only the
+// two isolated PostgreSQL cashier destinations can be executed. No cloud.
 const allowed=(moduleId:number,iconName:string)=>
  moduleId===0&&(iconName==="barcode-scan"||iconName==="receipt");
 
 export const OfflineDesktopShellV57:React.FC=()=>{
  const [screen,setScreen]=useState<"home"|"cashier">("home");
- const [open,setOpen]=useState(-1);
+ const [moduleId,setModuleId]=useState<number|null>(null);
+ const [selectedSub,setSelectedSub]=useState<string|null>(null);
+ const returnHome=()=>{setScreen("home");setModuleId(null);setSelectedSub(null);};
+ const showCashier=(icon="barcode-scan")=>{
+   setModuleId(0);setSelectedSub(icon);setScreen("cashier");
+ };
  useEffect(()=>{
-   const onKey=(e:KeyboardEvent)=>{
-     if(e.key==="Escape"){
-       if(screen!=="home"){e.preventDefault();setScreen("home");setOpen(-1);}
-       else if(open!==-1){e.preventDefault();setOpen(-1);}
-     }else if(e.key==="F1"&&screen==="home"){
-       e.preventDefault();setOpen(-1);setScreen("cashier");
-     }
-   };
-   window.addEventListener("keydown",onKey);
-   return ()=>window.removeEventListener("keydown",onKey);
- },[screen,open]);
- const returnHome=()=>{setScreen("home");setOpen(-1);};
- return (
-  <div className="v57-app" dir="rtl" data-local-v36-pilot="true"
-       data-v57-home="true" data-offline-only="true">
+  const onKey=(event:KeyboardEvent)=>{
+   if(event.key==="Escape"&&screen!=="home"){event.preventDefault();returnHome();}
+   if(event.key==="F1"&&screen==="home"){event.preventDefault();showCashier();}
+  };
+  window.addEventListener("keydown",onKey);
+  return ()=>window.removeEventListener("keydown",onKey);
+ },[screen]);
+ const selected=MODULE_SPECS.find(m=>m.id===moduleId);
+ const changeModule=(id:number)=>{
+   setModuleId(id);setSelectedSub(null);
+   // A disabled module remains a menu preview, never a usable checkout.
+   if(screen!=="home")setScreen("home");
+ };
+ return <div className="v57-app" dir="rtl" data-local-v36-pilot="true"
+    data-v57-home="true" data-offline-only="true">
    <div className="market-banner">سوپەرمارکێتی کانی چنار</div>
    <div className="v57-desktop">
-     <header className="v57-header">
-       <strong>سیستەمی کاشێر</strong>
-       <button type="button" onClick={returnHome} aria-label="سەرەتا">⌂ سەرەتا</button>
-     </header>
-     <main className="v57-content" id="v57-main">
-      {screen==="cashier"?
-       <div data-v57-screen="cashier">
-        <LocalCashierV32/>
-       </div>:
-       <div className="v57-home" data-v57-screen="home">
-        <h1>بەشە سەرەکییەکان</h1>
-        <div className="v57-module-rows">
-        {Array.from({length:Math.ceil(MODULE_SPECS.length/4)},(_,i)=>i).map(r=>(
-          <div className="v57-row-block" key={r}>
-            <div className="v57-row" role="group" aria-label={"ڕیزی "+(r+1)}>
-            {MODULE_SPECS.slice(r*4,r*4+4).map((module,i)=>{
-              const index=r*4+i,selected=index===open;
-              return <button className="v57-module" type="button" key={module.id}
-                  data-module={index} data-module-id={module.id} aria-expanded={selected}
-                  aria-controls={"v57-drawer-"+index}
-                  style={{"--color":module.color,"--light":module.lightBg} as React.CSSProperties}
-                  onClick={()=>setOpen(prev=>prev===index?-1:index)}>
-                <span className="v57-icon"><CardIcon id={module.iconName} size={29}/></span>
-                <span className="v57-module-foot">
-                  <span className="v57-module-name">{module.title}</span>
-                  <span className="v57-chevron" aria-hidden="true">⌄</span>
-                </span>
-              </button>;
-            })}
-            </div>
-            {open>=r*4&&open<(r+1)*4&&(()=>{
-              const module=MODULE_SPECS[open];
-              return <div id={"v57-drawer-"+open} className="v57-drawer" role="region"
-                          aria-label={module.title}>
-                <div className="v57-drawer-head">
-                  <strong>{module.title}</strong>
-                  <button type="button" className="v57-close" onClick={()=>setOpen(-1)}
-                          aria-label="داخستن">✕</button>
-                </div>
-                <div className="v57-subgrid">
-                {module.submodules.map((sub,j)=>{
-                  const enabled=allowed(module.id,sub.iconName);
-                  return <button key={sub.iconName} type="button"
-                     className="v57-sub" data-sub={j}
-                     disabled={!enabled} aria-disabled={!enabled}
-                     title={enabled?sub.label:"ئەم بەشە هێشتا بە PostgreSQL ـی ناوخۆیی پەیوەست نەکراوە"}
-                     onClick={()=>{
-                       if(!enabled)return;
-                       setOpen(-1);setScreen("cashier");
-                     }}>
-                    <span className="v57-subicon"
-                      style={{color:module.color,background:module.lightBg}}>
-                      <CardIcon id={sub.iconName} size={23}/>
-                    </span>
-                    <span className="v57-subfoot">
-                      <span>{sub.label}</span><span aria-hidden="true">↖</span>
-                    </span>
-                  </button>;
-                })}
-                </div>
-              </div>;
-            })()}
-          </div>
-        ))}
-        </div>
-       </div>
-      }
-     </main>
+    <header className={`v57-header v57-strip-header v57-double-strip ${selected?"has-subnav":""}`}>
+     <nav className="system-nav system-primary-nav" aria-label="بەشە سەرەکییەکان" data-v57-navigation="true">
+      <button type="button" className={moduleId===null?"active":""}
+         aria-current={moduleId===null?"page":undefined} onClick={returnHome}>سەرەتا</button>
+      {MODULE_SPECS.map(m=><button type="button" key={m.id}
+          data-module-id={m.id} className={moduleId===m.id?"active":""}
+          aria-current={moduleId===m.id?"true":undefined}
+          aria-expanded={moduleId===m.id} onClick={()=>changeModule(m.id)}>
+          {m.title}
+       </button>)}
+     </nav>
+     <nav className="system-subnav" aria-label="ژێربەشەکان" data-v57-subnav="horizontal">
+       {selected?.submodules.map(sub=>{
+         const enabled=allowed(selected.id,sub.iconName);
+         const active=screen==="cashier"&&selectedSub===sub.iconName;
+         return <button type="button" key={sub.iconName}
+           className={`system-subnav-link ${active?"selected":""}`}
+           data-sub-icon={sub.iconName}
+           disabled={!enabled} aria-disabled={!enabled}
+           aria-current={active?"page":undefined}
+           onClick={()=>{if(enabled)showCashier(sub.iconName);}}>
+             {sub.label}{active&&<span className="system-subnav-check" aria-hidden="true">✓</span>}
+         </button>;
+       })}
+     </nav>
+    </header>
+    <main className="v57-content v57-horizontal-workspace" id="v57-main">
+      {screen==="cashier"?<div data-v57-screen="cashier"><LocalCashierV32/></div>:
+        <div className="v57-home v57-home-empty" data-v57-screen="home"/>}
+    </main>
    </div>
-  </div>
- );
+ </div>;
 };

@@ -1,0 +1,500 @@
+/*
+ * ZHIROX | System UI V2
+ * One open, editable Sorani design system for every React route and isolated
+ * offline pilot Home. Presentation only; no auth, checkout, DB or receipt
+ * operations. Never imported into the printable thermal ticket.
+ */
+@media screen {
+ :root {
+  --market-banner-height:56px;
+  --system-ink:#1c314b;
+  --system-muted:#687c93;
+  --system-blue:#24486e;
+  --system-blue-dark:#1a385a;
+  --system-line:#e1e8f0;
+  --system-surface:#fff;
+  --system-bg:#f4f6fa;
+  --system-shadow:0 4px 22px rgba(25,53,82,.045);
+ }
+ html,body,#root {color-scheme:light;}
+ body {background:var(--system-bg)!important;color:var(--system-ink)!important;
+  font-family:Tahoma,"Segoe UI",Arial,sans-serif!important;font-weight:600;}
+ .market-banner,.v57-app .market-banner {
+  min-height:56px!important;height:56px!important;max-height:56px!important;
+  padding:7px 20px!important;border-bottom:1px solid #345c87!important;
+  background:#203f64!important;color:#fff!important;
+  font-size:19px!important;line-height:1.5!important;
+  box-shadow:none!important;font-weight:900!important;
+ }
+ #root > .viewport > .desktop > header.system-header {
+  background:#fff!important;height:60px!important;min-height:60px!important;
+  flex:0 0 60px!important;padding:0 24px!important;
+  display:flex;align-items:center;gap:16px;
+  border-bottom:1px solid var(--system-line)!important;
+  position:relative;z-index:4;
+ }
+ .system-header .brand {
+  display:inline-flex!important;align-items:center;gap:9px!important;
+  font-size:15px!important;font-weight:900!important;white-space:nowrap;
+  padding:0;border:0;background:transparent;cursor:pointer;color:var(--system-ink);
+ }
+ .system-header .brand i {
+  display:grid;place-items:center;width:31px!important;height:31px!important;
+  border-radius:9px!important;background:var(--system-blue);color:#fff;
+  font-size:16px!important;font-style:normal;
+ }
+ .system-nav {flex:1;min-width:0;display:flex;align-items:center;gap:4px;
+  overflow-x:auto;scrollbar-width:thin;padding:3px 2px;}
+ .system-header .ws-link {
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  height:35px;min-height:35px;font-size:12px;font-weight:850;padding:5px 12px;
+  border-radius:8px;border:1px solid transparent;color:#526881;background:transparent;
+  cursor:pointer;
+ }
+ .system-header .ws-link:hover {background:#f1f5f9;border-color:#e3eaf2;}
+ .system-header .ws-link.active {
+  background:var(--system-blue)!important;border-color:var(--system-blue)!important;
+  color:#fff!important;
+ }
+ .system-counter {display:inline-grid;place-items:center;
+  min-width:17px;height:17px;padding:0 3px;border-radius:5px;
+  background:#eaf2ff;color:var(--system-blue);font-size:10px;}
+ .system-header .home {display:grid;place-items:center;flex:none;
+  width:35px!important;height:35px!important;background:#f3f6fa!important;
+  border:1px solid var(--system-line)!important;border-radius:9px!important;
+  font-size:22px;color:var(--system-blue)!important;}
+ #root > .viewport > .desktop > main#app {background:var(--system-bg);scrollbar-gutter:stable;}
+ /* Home: compact, consistent cards. No frozen dimensions or source hashes. */
+ #app > .home-screen {
+  width:min(100%,1520px);max-width:1520px!important;margin:0 auto!important;
+  padding:27px 32px 54px!important;
+ }
+ #app .home-screen h1 {
+  margin:0 0 22px!important;color:var(--system-ink)!important;
+  font-size:21px!important;font-weight:900!important;
+ }
+ .system-module-rows {display:grid;gap:14px;}
+ #app .home-screen .row {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  position:relative;gap:14px;min-height:135px;
+ }
+ #app .home-screen .module {
+  background:#fff!important;color:var(--system-ink)!important;
+  min-height:137px;border:1px solid var(--system-line)!important;
+  border-radius:13px!important;padding:17px!important;
+  display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:space-between;text-align:right;
+  box-shadow:var(--system-shadow)!important;
+  cursor:pointer;
+ }
+ #app .home-screen .module:hover,#app .home-screen .module[aria-expanded="true"] {
+  border-color:#9bb5d0!important;box-shadow:0 5px 17px #203f6416!important;
+ }
+ #app .home-screen .module .icon {
+  display:grid;place-items:center;flex:none;width:43px;height:43px;
+  border-radius:11px;
+ }
+ #app .home-screen .module .end {display:flex;width:100%;gap:10px;
+  align-items:center;justify-content:space-between;}
+ #app .home-screen .module .name {
+  color:var(--system-ink)!important;font-size:14px!important;font-weight:900;
+  line-height:1.65;text-align:right;
+ }
+ #app .home-screen .module .chev {color:#95a4b6!important;font-size:18px;}
+ #app .home-screen .drawer {
+  position:absolute;inset-inline:0;top:calc(100% + 3px);z-index:25;
+  width:100%;padding:15px;background:#fff;border:1px solid #cedae7;
+  border-radius:13px;box-shadow:0 12px 36px #1e3b591b;
+  max-height:min(300px,55dvh);overflow-y:auto;
+ }
+ #app .home-screen .drawerhead {display:flex;align-items:center;
+  justify-content:space-between;margin-bottom:13px;gap:10px;}
+ #app .home-screen .drawerhead strong {color:var(--system-ink);font-size:15px;}
+ #app .home-screen .drawerhead .close {width:30px;height:30px;
+  border:0;background:#f1f5fa;border-radius:7px;color:#58718e;cursor:pointer;}
+ #app .home-screen .subgrid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+ #app .home-screen .sub {display:flex;flex-direction:column;
+  justify-content:space-between;align-items:flex-start;
+  gap:11px;min-height:95px;padding:13px;text-align:right;
+  border:1px solid var(--system-line)!important;background:#f9fbfd!important;
+  border-radius:10px;cursor:pointer;box-shadow:none;}
+ #app .home-screen .sub:hover {background:#eef4fb!important;border-color:#b9cce0!important;}
+ #app .home-screen .sub-icon {width:32px;height:32px;border-radius:8px;
+  display:grid;place-items:center;}
+ #app .home-screen .sub-footer,#app .home-screen .sub-name {
+  color:var(--system-ink)!important;font-size:12px!important;font-weight:850!important;
+  line-height:1.6;
+ }
+ /* Every legacy React feature page uses the same visual tokens and surfaces.
+    Important rules deliberately override OLD presentation-only inline styles. */
+ #app > div:not(.home-screen) {
+  width:min(100%,1520px);max-width:1520px!important;
+  margin:0 auto!important;padding:22px 30px 38px!important;
+  color:var(--system-ink);
+ }
+ #app > div:not(.home-screen) h1 {color:var(--system-ink)!important;
+  font-size:21px!important;font-weight:900!important;letter-spacing:0;margin-bottom:18px;}
+ #app :is(.surface,.panel,.pane,.card,.detail,.metric) {
+  background:#fff!important;border:1px solid var(--system-line)!important;
+  border-radius:12px!important;box-shadow:none!important;color:var(--system-ink);
+ }
+ #app .tabs {display:flex;flex-wrap:wrap;gap:6px;margin:0 0 15px!important;
+  padding:5px!important;background:#fff;border:1px solid var(--system-line);
+  border-radius:11px;box-shadow:none;}
+ #app .tabs button,#app .tabs .tab {
+  border:1px solid transparent!important;background:transparent!important;
+  color:#667a91!important;border-radius:8px!important;padding:9px 13px!important;
+  font-size:12px!important;min-height:36px;font-weight:850;cursor:pointer;
+ }
+ #app .tabs :is(button,.tab).active {
+  background:var(--system-blue)!important;border-color:var(--system-blue)!important;color:#fff!important;
+ }
+ #app .toolbar {
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  background:#fff!important;border:1px solid var(--system-line)!important;
+  border-radius:11px!important;padding:11px 13px!important;
+ }
+ #app :is(input:not([type="checkbox"]),select,textarea) {
+  border-radius:8px!important;border:1px solid #cfdae6!important;
+  background:#fff!important;color:var(--system-ink)!important;
+  box-shadow:none!important;font-size:13px;
+ }
+ #app :is(input,select,textarea):focus-visible {outline:3px solid #93b6d9;outline-offset:1px;}
+ #app :is(.primary,.catalog-buttons .primary) {
+  background:var(--system-blue)!important;color:#fff!important;
+  border:1px solid var(--system-blue)!important;border-radius:8px!important;
+  box-shadow:none!important;font-size:12px!important;font-weight:850!important;
+ }
+ #app :is(.secondary,.catalog-table-btn,.plain) {
+  background:#f4f7fa!important;color:#354e6b!important;
+  border:1px solid #dce5ed!important;border-radius:8px!important;
+  box-shadow:none!important;font-size:12px;font-weight:800;
+ }
+ #app :is(.surface,.panel,.pane) h2 {color:var(--system-ink)!important;}
+ #app :is(.table,.cash-basket-grid,table):not(.pos-clean__basket table) {
+  border-collapse:collapse;border-spacing:0;width:100%;font-size:12px;
+ }
+ #app :is(.table,.cash-basket-grid,table) th {
+  background:#f4f7fa!important;color:#60758d!important;
+  border-bottom:1px solid var(--system-line)!important;
+  font-size:12px!important;font-weight:850!important;padding:11px 10px!important;
+ }
+ #app :is(.table,.cash-basket-grid,table) td {
+  border-bottom:1px solid #edf1f5!important;
+  padding:11px 10px!important;color:var(--system-ink);
+  background-color:transparent!important;
+ }
+ #app :is(.blank,.empty) {color:#7588a0;font-size:12px;}
+ #app [style*="linear-gradient"] {background:#fff!important;border-color:var(--system-line)!important;}
+ #app > div:not(.home-screen) > div[style*="grid"] > div[style*="background"] {
+  background:#fff!important;border:1px solid var(--system-line)!important;
+  border-radius:12px!important;box-shadow:none!important;
+ }
+ #app [role="alert"] {color:#a52d2d!important;}
+ #app button:focus-visible,#app a:focus-visible {outline:3px solid #94b6d8;outline-offset:2px;}
+ /* Full-system offline-shell Home uses identical card styling.
+    Inactive modules remain disabled by the original local-only logic. */
+ .v57-app {color:var(--system-ink)!important;background:var(--system-bg)!important;}
+ .v57-app .v57-header {height:60px!important;min-height:60px!important;flex:0 0 60px!important;
+  background:#fff!important;border-bottom:1px solid var(--system-line)!important;padding:0 30px!important;}
+ .v57-app .v57-header strong {color:var(--system-ink);font-size:16px!important;}
+ .v57-app .v57-header button {border-radius:8px;background:#f3f6f9;color:var(--system-blue);
+  border:1px solid var(--system-line);padding:8px 14px;font-size:12px;}
+ .v57-app .v57-content {background:var(--system-bg)!important;}
+ .v57-app .v57-home {width:min(100%,1520px)!important;max-width:1520px;
+  padding:27px 32px 54px!important;}
+ .v57-app .v57-home h1 {font-size:21px!important;margin:0 0 22px!important;color:var(--system-ink)!important;}
+ .v57-app .v57-row,.v57-app .v57-module-rows {gap:14px!important;}
+ .v57-app .v57-module {min-height:137px!important;padding:17px!important;
+  border:1px solid var(--system-line)!important;background:#fff!important;
+  border-radius:13px!important;box-shadow:var(--system-shadow)!important;}
+ .v57-app .v57-module-name {font-size:14px!important;color:var(--system-ink)!important;}
+ .v57-app .v57-icon {width:43px!important;height:43px!important;border-radius:11px!important;}
+ .v57-app .v57-drawer {background:#fff!important;border:1px solid #d0dce8!important;
+  border-radius:13px!important;box-shadow:0 12px 36px #1e3b591b!important;}
+ .v57-app .v57-sub {background:#f9fbfd!important;border:1px solid var(--system-line)!important;
+  border-radius:10px!important;box-shadow:none!important;}
+ .v57-app .v57-sub:disabled {opacity:.58;cursor:not-allowed;}
+ @media (max-width:1100px) {
+  #app > .home-screen {padding:18px 20px 45px!important;}
+  #app > div:not(.home-screen) {padding:18px 20px 30px!important;}
+  #root > .viewport > .desktop > header.system-header {padding:0 14px!important;}
+ }
+}
+
+/* Horizontal navigation-only Home, immediately beneath the market banner.
+   No modules, subcards, grid or helper copy render in the Home workspace. */
+@media screen {
+ #root > .viewport > .desktop > header.system-strip-only {
+  min-width:0!important;width:100%!important;
+  height:57px!important;min-height:57px!important;flex:0 0 57px!important;
+  padding:0 16px!important;justify-content:flex-start!important;
+  background:#fff!important;border-bottom:1px solid var(--system-line)!important;
+ }
+ #root > .viewport > .desktop > header.system-strip-only .system-nav {
+  width:100%;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;
+  display:flex;flex-wrap:nowrap;align-items:center;gap:6px;
+  scrollbar-width:thin;scrollbar-color:#b9c9da transparent;
+ }
+ .system-strip-only .ws-link {flex:none!important;min-height:38px!important;
+  padding:7px 13px!important;font-size:12px!important;}
+ .system-strip-only .ws-link:disabled {
+  opacity:.45;cursor:not-allowed;background:#fff!important;color:#687b90!important;
+ }
+ #app > .home-strip-only {display:block!important;width:100%!important;
+  max-width:none!important;min-height:calc(100% - 1px);margin:0!important;
+  padding:0!important;border:0!important;box-shadow:none!important;
+  background:var(--system-bg)!important;}
+ #app > .home-strip-only :is(.module,.drawer,.sub,.row) {display:none!important;}
+ /* Isolated V57 trial: same lone ribbon, with no fake/unconnected routes. */
+ .v57-app .v57-header.v57-strip-header {
+  min-width:0;height:57px!important;min-height:57px!important;flex:0 0 57px!important;
+  padding:0 16px!important;justify-content:flex-start!important;
+ }
+ .v57-strip-header .system-nav {width:100%;min-width:0;flex:1;display:flex;
+  flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;align-items:center;gap:6px;
+  scrollbar-width:thin;}
+ .v57-app .v57-strip-header .system-nav button {
+  flex:none;min-height:38px;padding:7px 14px;border:1px solid transparent;
+  border-radius:8px;background:transparent!important;color:#536b83!important;
+  font:850 12px Tahoma,"Segoe UI",sans-serif;white-space:nowrap;cursor:pointer;
+ }
+ .v57-app .v57-strip-header .system-nav button.active {
+  background:var(--system-blue)!important;border-color:var(--system-blue)!important;
+  color:#fff!important;
+ }
+ .v57-app .v57-strip-header .system-nav button:disabled {
+  background:transparent!important;color:#7589a0!important;
+  opacity:.55!important;cursor:not-allowed;
+ }
+ .v57-app .v57-home-empty {padding:0!important;min-height:100%;max-width:none!important;}
+}
+
+
+/*
+ * ZHIROX PC FULL-SCREEN V3 (owner request)
+ * Screen layout only; no database/financial/receipt changes.
+ * Fill actual desktop width and height rather than centering a 1520px card.
+ * Browser screenshots at 1366x768 and 1920x1080 are regression-tested.
+ */
+@media screen {
+ html,body,#root {
+   width:100%;height:100%;margin:0;min-height:0;
+ }
+ body {overflow:hidden!important;}
+ #root {display:block;min-width:0;overflow:hidden;}
+ #root > .market-banner,.market-banner {
+   width:100vw!important;max-width:none!important;inset-inline:0;
+ }
+ #root > .viewport {
+   box-sizing:border-box;width:100vw!important;max-width:none!important;
+   height:calc(100dvh - var(--market-banner-height,56px))!important;
+   min-height:0!important;margin:0!important;
+   overflow-x:auto!important;overflow-y:hidden!important;
+ }
+ #root > .viewport > .desktop {
+   min-width:1020px;width:100%!important;max-width:none!important;
+   height:100%!important;min-height:0!important;margin:0!important;
+   overflow:hidden!important;display:flex!important;flex-direction:column!important;
+ }
+ #root > .viewport > .desktop > header.system-strip-only {
+   width:100%!important;max-width:none!important;flex:none!important;
+   margin:0!important;border-radius:0!important;box-shadow:none!important;
+ }
+ #root > .viewport > .desktop > main#app {
+   width:100%!important;max-width:none!important;min-height:0!important;
+   flex:1 1 0!important;height:auto!important;
+   margin:0!important;padding:0!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   scrollbar-gutter:auto!important;
+   background:var(--system-bg)!important;
+ }
+ #root > .viewport > .desktop > main#app > .home-screen.home-strip-only {
+   width:100%!important;max-width:none!important;min-height:100%!important;
+   background:var(--system-bg)!important;border-radius:0!important;
+   box-shadow:none!important;
+ }
+ #root > .viewport > .desktop > main#app > div:not(.home-strip-only),
+ #root > .viewport > .desktop > main#app > section.pos-clean,
+ #root > .viewport > .desktop > main#app > .pos-clean {
+   box-sizing:border-box;width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:20px 26px 28px!important;
+ }
+ #root > .viewport > .desktop > main#app :is(.surface,.page,.pane,.panel) {
+   max-width:none;
+ }
+ /* Local cash register workspace: use the full remaining width and height. */
+ #root > .viewport > .desktop > main#app .pos-clean__workspace {
+   width:100%;grid-template-columns:minmax(0,1fr) minmax(285px,320px);
+   align-items:stretch;min-height:calc(100dvh - 250px);
+ }
+ #root > .viewport > .desktop > main#app .pos-clean__transaction {
+   min-height:calc(100dvh - 250px);
+ }
+ #root > .viewport > .desktop > main#app .pos-clean__basket {
+   max-height:calc(100dvh - 380px);min-height:240px;
+ }
+ /* Isolated offline V57 shell: same no-margin desktop geometry. */
+ .v57-app {
+   box-sizing:border-box;width:100vw!important;max-width:none!important;
+   min-width:1020px;height:100dvh;overflow:hidden;
+ }
+ .v57-app > .market-banner {width:100vw!important;max-width:none!important;}
+ .v57-app > .v57-desktop {
+   width:100%!important;max-width:none!important;min-width:1020px;
+   height:calc(100dvh - var(--market-banner-height,56px))!important;
+   max-height:calc(100dvh - var(--market-banner-height,56px))!important;
+   overflow:hidden!important;
+ }
+ .v57-app .v57-header.v57-strip-header {width:100%!important;max-width:none!important;}
+ .v57-app .v57-content {
+   width:100%!important;max-width:none!important;flex:1 1 0!important;
+   min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+   margin:0!important;padding:0!important;
+ }
+ .v57-app .v57-home.v57-home-empty {
+   width:100%!important;max-width:none!important;margin:0!important;
+   min-height:100%!important;padding:0!important;border-radius:0!important;
+ }
+ .v57-app .pos-clean {width:100%!important;max-width:none!important;
+   margin:0!important;min-height:100%;padding:20px 26px 28px!important;}
+ .v57-app .pos-clean__workspace {
+   width:100%;grid-template-columns:minmax(0,1fr) minmax(285px,320px);
+   min-height:calc(100dvh - 250px);align-items:stretch;
+ }
+ .v57-app .pos-clean__transaction {min-height:calc(100dvh - 250px);}
+ .v57-app .pos-clean__basket {max-height:calc(100dvh - 380px);min-height:240px;}
+ @media (max-width:1100px) {
+   #root > .viewport > .desktop > main#app > div:not(.home-strip-only),
+   #root > .viewport > .desktop > main#app > .pos-clean,
+   .v57-app .pos-clean {padding:16px 18px 24px!important;}
+ }
+}
+/* No fullscreen overrides under @media print: preserve actual receipts. */
+
+
+/* V5 owner-approved PC layout: two HORIZONTAL navigation lines, not cards
+   or sidebar columns. Print receipts are never given these screen-only rules. */
+@media screen {
+ #root > .viewport > .desktop > header.system-double-strip,
+ .v57-app .v57-header.v57-double-strip {
+   box-sizing:border-box!important;
+   width:100%!important;max-width:none!important;height:auto!important;
+   min-height:57px!important;flex:0 0 auto!important;
+   display:flex!important;flex-direction:column!important;
+   justify-content:flex-start!important;align-items:stretch!important;
+   padding:0!important;margin:0!important;
+   gap:0!important;border-radius:0!important;
+   background:#fff!important;border-bottom:1px solid #dce5ef!important;
+   position:relative;z-index:5;
+ }
+ #root > .viewport > .desktop > header.system-double-strip .system-primary-nav,
+ .v57-app .v57-double-strip .system-primary-nav {
+   box-sizing:border-box!important;
+   flex:0 0 57px!important;width:100%!important;min-width:0;
+   height:57px!important;max-height:57px!important;
+   display:flex!important;align-items:center;justify-content:flex-start!important;
+   flex-wrap:nowrap!important;gap:5px!important;
+   padding:0 13px!important;margin:0!important;
+   background:#fff!important;overflow-x:auto!important;overflow-y:hidden!important;
+   scrollbar-width:thin;scrollbar-color:#bed0e0 transparent;
+   border-bottom:0!important;
+ }
+ #root > .viewport > .desktop > header.system-double-strip.has-subnav .system-primary-nav,
+ .v57-app .v57-double-strip.has-subnav .system-primary-nav {
+   border-bottom:1px solid #e8eef5!important;
+ }
+ #root > .viewport > .desktop > header.system-double-strip .system-primary-nav .ws-link,
+ .v57-app .v57-double-strip .system-primary-nav button {
+   box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+   flex:0 0 auto!important;height:38px!important;min-height:38px!important;
+   width:auto!important;margin:0!important;padding:8px 13px!important;
+   border:1px solid transparent!important;border-radius:8px!important;
+   font:850 12px Tahoma,"Segoe UI",sans-serif!important;
+   background:transparent!important;color:#536b83!important;
+   white-space:nowrap;cursor:pointer;
+ }
+ #root > .viewport > .desktop > header.system-double-strip .system-primary-nav .ws-link.active,
+ .v57-app .v57-double-strip .system-primary-nav button.active {
+   background:#24486e!important;color:#fff!important;border-color:#24486e!important;
+ }
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav,
+ .v57-app .v57-double-strip .system-subnav {
+   box-sizing:border-box!important;width:100%!important;max-width:none!important;
+   height:48px!important;min-height:48px!important;flex:0 0 48px!important;
+   display:flex!important;flex-direction:row!important;align-items:center!important;
+   justify-content:flex-start!important;flex-wrap:nowrap!important;
+   padding:0 14px!important;margin:0!important;gap:8px!important;
+   overflow-x:auto!important;overflow-y:hidden!important;
+   background:#f8fafc!important;
+   border-top:0!important;scrollbar-width:thin;
+   scrollbar-color:#c2d2e2 transparent;
+ }
+ #root > .viewport > .desktop > header.system-double-strip:not(.has-subnav) .system-subnav,
+ .v57-app .v57-double-strip:not(.has-subnav) .system-subnav {display:none!important;}
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link,
+ .v57-app .v57-double-strip .system-subnav .system-subnav-link {
+   box-sizing:border-box!important;flex:0 0 auto!important;
+   display:inline-flex!important;align-items:center!important;gap:8px!important;
+   justify-content:center!important;min-width:100px;width:auto!important;
+   height:35px!important;min-height:35px!important;margin:0!important;
+   padding:6px 16px!important;border:1px solid #e1e8f0!important;
+   border-radius:8px!important;background:#fff!important;
+   color:#506981!important;font:850 12px Tahoma,"Segoe UI",sans-serif!important;
+   text-align:center!important;white-space:nowrap;cursor:pointer;
+ }
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link.selected,
+ .v57-app .v57-double-strip .system-subnav .system-subnav-link.selected {
+   background:#e5f0fc!important;color:#153f68!important;
+   border:2px solid #2f6da6!important;
+   font-weight:900!important;
+   box-shadow:inset 0 -3px 0 #2f6da6!important;
+ }
+ .system-subnav .system-subnav-link .system-subnav-check {
+   display:inline-flex;align-items:center;justify-content:center;
+   min-width:16px;height:16px;border-radius:100%;font-size:12px;
+   background:#276aa2;color:#fff;line-height:1;font-weight:900;
+ }
+ #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link:disabled,
+ .v57-app .v57-double-strip .system-subnav .system-subnav-link:disabled {
+   background:#f0f3f6!important;color:#8e9bab!important;
+   border-color:#e8edf2!important;cursor:not-allowed;opacity:.75;
+ }
+ #root > .viewport > .desktop > main#app.system-two-rows {
+   box-sizing:border-box!important;display:block!important;
+   width:100%!important;max-width:none!important;
+   flex:1 1 0%!important;min-height:0!important;height:auto!important;
+   margin:0!important;padding:0!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   background:var(--system-bg)!important;
+ }
+ #root > .viewport > .desktop > main#app.system-two-rows > .home-strip-only {
+   width:100%!important;max-width:none!important;min-height:100%!important;
+   margin:0!important;padding:0!important;border:0!important;
+   border-radius:0!important;box-shadow:none!important;
+ }
+ #root > .viewport > .desktop > main#app.system-two-rows > :not(.home-strip-only) {
+   box-sizing:border-box!important;width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:20px 26px 28px!important;
+ }
+ .v57-app .v57-content.v57-horizontal-workspace {
+   display:block!important;width:100%!important;max-width:none!important;
+   height:auto!important;flex:1 1 0%!important;
+   min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+   margin:0!important;padding:0!important;background:var(--system-bg)!important;
+ }
+ .v57-app .v57-horizontal-workspace > .v57-home-empty {
+   box-sizing:border-box!important;width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:0!important;
+ }
+ .v57-app .v57-horizontal-workspace > [data-v57-screen="cashier"] {
+   width:100%!important;min-height:100%!important;margin:0!important;padding:0!important;
+ }
+ .v57-app .v57-horizontal-workspace .pos-clean {
+   width:100%!important;max-width:none!important;
+   margin:0!important;padding:18px 26px 28px!important;
+ }
+ .v57-app .v57-horizontal-workspace .pos-clean__workspace {
+   width:100%!important;grid-template-columns:minmax(0,1fr) minmax(270px,315px)!important;
+ }
+}

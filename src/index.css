@@ -1,6 +1,7 @@
 @import "../ui-global.css";
 @import "../ui-fixed-pc.css";
 @import "../card-icons.css";
+@import "./systemDesignV2.css";
 
 /* Base Resets & Layout */
 * {
