@@ -69,7 +69,8 @@ const login=async()=>{
 };
 try{
  await page.goto("http://127.0.0.1:3001/",{waitUntil:"networkidle"});
- await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
+ await page.locator(".module").first().click();
+ await page.locator(".drawer .sub").first().click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
  assert.equal(await page.locator("#finish-sale").count(),0);
  assert.equal(await page.getByRole("button",{name:/کردنەوەی V31/}).count(),0,
@@ -97,7 +98,8 @@ try{
  await page.evaluate(([key,p])=>sessionStorage.setItem(key,JSON.stringify(p)),
   [pendingKey,prepared]);
  await page.reload({waitUntil:"networkidle"});
- await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
+ await page.locator(".module").first().click();
+ await page.locator(".drawer .sub").first().click();
  await login();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #7/).waitFor();
  assert.equal(await page.evaluate(k=>sessionStorage.getItem(k),pendingKey),null);
