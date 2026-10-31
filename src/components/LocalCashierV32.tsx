@@ -1,22 +1,24 @@
 import React from "react";
 import {LocalPostgresPilotV24} from "./LocalPostgresPilotV24";
+import "../cashierCleanV1.css";
 
-// This screen deliberately has no browser Demo financial actions.
-// When the local API is unavailable, it must fail CLOSED.
+// UI-only iteration. The local PostgreSQL service owns real prices,
+// stock, transaction idempotency and receipt numbers. This screen stays
+// explicitly labelled as a trial until financial/hardware acceptance.
 export const LocalCashierV32:React.FC=()=>(
- <section dir="rtl" aria-label="کاشێری PostgreSQL ـی ناوخۆیی V32"
-  style={{maxWidth:1500,margin:"0 auto",padding:"16px 24px 32px"}}>
-  <div role="status" style={{border:"2px solid #946200",
-    background:"#fff8e8",borderRadius:9,padding:13,marginBottom:12,fontWeight:850}}>
-    V32 — کاشێری PostgreSQL ـی ناوخۆیی، تەنها تاقیکردنەوە
-    <div style={{fontWeight:500,marginTop:5}}>
-      فرۆشتن لەم پەڕەیە تەنها لە داتابەیسی ناوخۆیی تاقی دەکرێتەوە.
-      کاشێری Demo و پسووڵەکانی تێکەڵ ناکرێن. هێشتا بۆ بەکارهێنانی فەرمی ئامادە نییە.
+  <section className="pos-clean" dir="rtl" aria-label="کاشێری PostgreSQL ـی ناوخۆیی V32">
+    <div className="pos-clean__top">
+      <h1 aria-label="کاشێر و فرۆشتن — PostgreSQL">کاشێر</h1>
+      <div className="pos-clean__top-actions">
+        <span className="pos-clean__trial" role="status">تاقیکردنەوە</span>
+      </div>
     </div>
-  </div>
-  <h1 style={{fontSize:23,fontWeight:900,margin:"0 0 12px"}}>
-   کاشێر و فرۆشتن — PostgreSQL
-  </h1>
-  <LocalPostgresPilotV24 standalone/>
- </section>
+    <details className="pos-clean__notes">
+      <summary>زانیاریی دۆخی سیستەم</summary>
+      <p>ئەم کاشێرە تەنها بۆ تاقیکردنەوەی PostgreSQL ـی ناوخۆییە.
+      فرۆشتنی فەرمی و پارەدانی بانکی چالاک نییە؛
+      هیچ داتای Demo یان ئەژماری ڕاستەقینە تێکەڵ ناکرێت.</p>
+    </details>
+    <LocalPostgresPilotV24 standalone/>
+  </section>
 );
