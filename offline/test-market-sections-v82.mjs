@@ -85,12 +85,22 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
   if(sectionId==="payment-notes")note="ئەمە فرۆشتنە نەختینەییەکانی SQL ـە؛ جۆرەکانی پارەدان و هاوکاتکردنی بانک چالاک نین.";
   if(sectionId==="income-rise")note="کۆی فرۆشتن، نەک قازانج یان پارەی بانکە.";
  }else if(stockChanges.has(sectionId)){
-  result=await pool.query(`SELECT p.name AS product_name,l.delta_base_units,l.created_at,s.receipt_no
+  result=await pool.query(`SELECT product_name,delta_base_units,created_at,receipt_no FROM (
+   SELECT p.name AS product_name,l.delta_base_units,l.created_at,s.receipt_no,l.id AS movement_id
    FROM zhirox_local.stock_ledger l JOIN zhirox_local.products p
    ON p.store_id=l.store_id AND p.id=l.product_id
    LEFT JOIN zhirox_local.sales s ON s.store_id=l.store_id AND s.id=l.sale_id
-   WHERE l.store_id=$1::uuid ORDER BY l.created_at DESC,l.id DESC LIMIT 100`,[store]);
-  columns=stockColumns;note="تۆماری هاتووچۆی کۆگا؛ لە داتای تاقیکردنەوەدا تەنها کەمبوونەوە لە فرۆشتن تۆمار کراوە.";
+   WHERE l.store_id=$1::uuid
+   UNION ALL
+   SELECT p.name AS product_name,l.quantity_base_units AS delta_base_units,
+   g.received_at AS created_at,NULL::bigint AS receipt_no,g.receipt_id AS movement_id
+   FROM zhirox_local.goods_receipts_v83 g
+   JOIN zhirox_local.goods_receipt_lines_v83 l
+   ON l.store_id=g.store_id AND l.receipt_id=g.receipt_id
+   JOIN zhirox_local.products p ON p.store_id=l.store_id AND p.id=l.product_id
+   WHERE g.store_id=$1::uuid
+   ) movements ORDER BY created_at DESC,movement_id DESC LIMIT 100`,[store]);
+  columns=stockColumns;note="هاتووچۆی ڕاستەقینەی SQL: فرۆشتن بڕ کەم دەکات و وەرگرتنی دابینکەر بڕ زیاد دەکات.";
  }else if(customers.has(sectionId)){
   result=await pool.query(`SELECT customer_id,display_name,balance_minor
   FROM zhirox_local.customer_debt_balances_v79
