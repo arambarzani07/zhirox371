@@ -57,7 +57,7 @@ const movementColumns=[column("username","کاشێر"),column("kind","جۆر"),
 const expiryColumns=[
  column("product_name","ناوی کاڵا"),column("lot_code","کۆدی بەچ"),
  column("received_qty_base_units","بڕی وەرگیراو (نەک ماوەی ئێستا)","number"),
- column("expires_on","بەرواری بەسەرچوون"),
+ column("expires_on","بەرواری بەسەرچوون","date_only"),
  column("days_to_expiry","ڕۆژی ماوە","number"),
  column("expiry_state","دۆخی بەروار","expiry_state")
 ];
