@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
+import { SectionWorkspace } from './components/SectionWorkspace';
 import { CashierPos } from './components/CashierPos';
 import { LocalCashierV32 } from './components/LocalCashierV32';
 import { localCashierV32 } from './localCashierModeV32';
@@ -16,7 +17,7 @@ import { DiagnosticsQaView } from './components/DiagnosticsQaView';
 import { ThermalReceiptModal } from './components/ThermalReceiptModal';
 
 export const App: React.FC = () => {
-  const { currentView, subtab, navigateTo, activeReceiptForModal, setActiveReceiptForModal } = useApp();
+  const { currentView, subtab, activeSectionId, navigateTo, activeReceiptForModal, setActiveReceiptForModal } = useApp();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,15 +48,16 @@ export const App: React.FC = () => {
           <Header localPilot={localCashierV32} />
           <main id="app" className="system-two-rows">
             {currentView === 'home' && <HomeScreen />}
-            {currentView === 'pos' && (localCashierV32 ? <LocalCashierV32 /> : <CashierPos />)}
-            {currentView === 'products' && <ProductCatalogView key={`products:${subtab}`} />}
-            {currentView === 'stock' && <InventoryStockView key={`stock:${subtab}`} />}
-            {currentView === 'customers' && <CustomersLedgerView key={`customers:${subtab}`} />}
-            {currentView === 'suppliers' && <SuppliersView key={`suppliers:${subtab}`} />}
-            {(currentView === 'finance' || currentView === 'shifts') && <FinanceShiftView key={`finance:${subtab}`} />}
-            {currentView === 'reports' && <ReportsAnalyticsView />}
-            {currentView === 'labels' && <LabelsPrintView />}
-            {(currentView === 'qa' || currentView === 'settings' || currentView === 'audit' || currentView === 'offers') && (
+            {currentView !== 'home' && activeSectionId && <SectionWorkspace key={activeSectionId} sectionId={activeSectionId} />}
+            {!activeSectionId && currentView === 'pos' && (localCashierV32 ? <LocalCashierV32 /> : <CashierPos />)}
+            {!activeSectionId && currentView === 'products' && <ProductCatalogView key={`products:${subtab}`} />}
+            {!activeSectionId && currentView === 'stock' && <InventoryStockView key={`stock:${subtab}`} />}
+            {!activeSectionId && currentView === 'customers' && <CustomersLedgerView key={`customers:${subtab}`} />}
+            {!activeSectionId && currentView === 'suppliers' && <SuppliersView key={`suppliers:${subtab}`} />}
+            {!activeSectionId && (currentView === 'finance' || currentView === 'shifts') && <FinanceShiftView key={`finance:${subtab}`} />}
+            {!activeSectionId && currentView === 'reports' && <ReportsAnalyticsView />}
+            {!activeSectionId && currentView === 'labels' && <LabelsPrintView />}
+            {!activeSectionId && (currentView === 'qa' || currentView === 'settings' || currentView === 'audit' || currentView === 'offers') && (
               <DiagnosticsQaView />
             )}
           </main>
