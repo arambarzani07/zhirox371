@@ -132,7 +132,7 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
     WHERE g.store_id=$1::uuid ORDER BY g.received_at DESC,g.receipt_id DESC,l.line_no LIMIT 100`,[store]);
    columns=receivingColumns;note="وەرگرتنی کاڵا لە PostgreSQL تۆمار کراوە و کۆگا زیاد کراوە؛ ئەم پەڕەیە تەنها بۆ خوێندنەوەیە.";
   }else{
-   result=await pool.query(`SELECT s.display_name,count(o.order_id)::integer AS purchase_orders,
+   result=await pool.query(`SELECT s.display_name,count(DISTINCT o.order_id)::integer AS purchase_orders,
     coalesce(sum(l.quantity_base_units::numeric*l.unit_cost_minor),0)::bigint AS total_ordered_cost_minor
     FROM zhirox_local.suppliers_v83 s
     LEFT JOIN zhirox_local.purchase_orders_v83 o
