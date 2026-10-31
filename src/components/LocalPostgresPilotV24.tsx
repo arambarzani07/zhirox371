@@ -214,15 +214,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
      {open?"داخستنی":"کردنەوەی"} V31 — تاقیکردنەوەی PostgreSQL ـی ناوخۆیی
    </button>}
    {open&&<div className={standalone?"local-v58-body":undefined} style={standalone?undefined:{marginTop:12}}>
-     {standalone?(
-       <div className="local-v58-pilot-note" role="status">
-         <strong>● تاقیکردنەوە</strong>
-         <details><summary>وردەکاری</summary>
-           تەنها لەسەر PC و PostgreSQL ـی ناوخۆیی. فرۆشتنی Production چالاک نییە.
-           قەرز و داشکاندن پشتگیری ناکرێن و داتای Demo تێکەڵ ناکرێت.
-         </details>
-       </div>
-     ):(
+     {standalone?null:(
        <div role="status" style={{padding:12,border:"2px solid #b45309",background:"#fff7ed",fontWeight:800}}>
          تەنها تاقیکردنەوە لەسەر هەمان PC و PostgreSQL ـی جیاکراوە؛ دانە، کارتۆن و کیلۆگرام بە نەختینە. نرخی کۆتایی لە سێرڤەر پشتڕاست دەکرێتەوە.
          داشکاندن، قەرز و فرۆشتنی Production پشتگیری ناکرێن.
