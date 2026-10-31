@@ -14,8 +14,8 @@ try {
  assert.equal(await page.locator(".module").first().getAttribute("data-module"),"0");
  await page.locator(".module").first().click();
  assert.equal(await page.locator(".drawer .sub").count(),4,"each selected main card has four subcards");
- // Navigation via actual React header, not removed legacy operations.html.
- await page.getByRole("button",{name:/کاشێر \(F1\)/}).click();
+ // Locked Home has no cashier shortcut in its header; navigate through the real subcard.
+ await page.locator(".drawer .sub").first().click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
  assert.match(await banner.innerText(),/فرۆشتنی ڕاستەقینە نییە/);
