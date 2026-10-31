@@ -63,7 +63,7 @@ try{
  await section("sales-trend").waitFor();
  await page.locator("[data-testid=real-postgres-overview]").waitFor();
  const overview=await page.locator("[data-testid=real-postgres-overview]").innerText();
- assert.match(overview,/11,000 IQD/);
+ assert.match(overview,/24,500 IQD/);
  assert.match(overview,/10,000 IQD/);
  await page.screenshot({path:"artifacts/v81/01-real-pg-test-market-home-1920.png",fullPage:false});
  await moduleButton(1).click();
@@ -76,6 +76,7 @@ try{
  await subButton("receipt").click();
  await section("receipt").waitFor();
  assert.match(await section("receipt").innerText(),/8,000 IQD/);
+ assert.match(await section("receipt").innerText(),/13,500 IQD/);
  await page.screenshot({path:"artifacts/v81/03-real-postgres-receipts.png",fullPage:false});
  await moduleButton(3).click();
  await subButton("single-customer").click();
@@ -110,8 +111,8 @@ try{
  await moduleButton(1).click();
  await subButton("product-list").click();
  await section("product-list").waitFor();
- assert.match(await section("product-list").innerText(),/29/);
- assert.match(await section("product-list").innerText(),/20/);
+ assert.match(await section("product-list").innerText(),/26/);
+ assert.match(await section("product-list").innerText(),/18/);
  await moduleButton(2).click();
  await subButton("stock-transfer").click();
  await section("stock-transfer").waitFor();
@@ -128,7 +129,7 @@ try{
  await moduleButton(1).click();
  await subButton("product-list").click();
  await section("product-list").waitFor();
- assert.match(await section("product-list").innerText(),/29/);
+ assert.match(await section("product-list").innerText(),/26/);
  await moduleButton(2).click();
  await subButton("stock-transfer").click();
  await section("stock-transfer").waitFor();
@@ -168,7 +169,9 @@ try{
  assert.match(expiryText,/TEST-SAFE-003/);
  assert.match(expiryText,/بەرواری تێپەڕیوە/);
  assert.match(expiryText,/نزیکە بە بەسەرچوون/);
- assert.match(expiryText,/کۆگای ماوەی هەر بەچ نازانرێت/);
+ assert.match(expiryText,/کۆگای فیزیکی و پاراستنی تەواوی فرۆشتن نییە/);
+ assert.match(expiryText,/ماوەی تخصیصی V87/);
+ assert.match(expiryText,/فرۆشراوی تۆمارکراوی V87/);
  await page.screenshot({path:"artifacts/v81/16-v86-real-expiry-lots.png",fullPage:false});
  await moduleButton(8).click();
  await subButton("coupon-ticket").click();
