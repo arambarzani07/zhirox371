@@ -28,7 +28,19 @@ try{
  const nav=page.locator("header.system-strip-only .system-nav");
  assert.equal(await nav.count(),1);
  assert.equal(await nav.locator("button").count(),13);
- assert.equal(await page.locator(".module,.sub,.drawer,.subgrid").count(),0,"all Home cards and subcards removed");
+ assert.equal(await page.locator(".module,.sub,.drawer,.subgrid").count(),0,"old Home cards and drawers stay removed");
+ assert.equal(await page.locator(".system-module-column .system-module-link").count(),12,"all 12 module names are stacked in column one");
+ assert.equal(await page.locator(".system-submodule-column .system-submodule-link").count(),4,"four submodules stack in second column");
+ const geometry=await page.evaluate(()=>{
+  const rect=s=>document.querySelector(s).getBoundingClientRect();
+  const first=rect(".system-module-column"),second=rect(".system-submodule-column"),content=rect(".system-content-column");
+  const sub=Array.from(document.querySelectorAll(".system-submodule-link")).map(el=>el.getBoundingClientRect().top);
+  return {first:{x:first.x,right:first.right,width:first.width},second:{x:second.x,right:second.right,width:second.width},
+    content:{x:content.x,width:content.width},sub};
+ });
+ assert.ok(geometry.first.x>=geometry.second.right-2&&geometry.second.x>=geometry.content.x+geometry.content.width-2,
+  "RTL module column, second submodule column, and full remaining PC content");
+ assert.ok(geometry.sub.every((y,i)=>i===0||y>geometry.sub[i-1]),"submodules stack vertically");
  const tokens=await page.evaluate(()=>({
   banner:getComputedStyle(document.documentElement).getPropertyValue("--market-banner-height").trim(),
   header:document.querySelector(".system-strip-only").getBoundingClientRect(),
@@ -62,6 +74,15 @@ try{
  await page.screenshot({path:"artifacts/system-v2/00-home-full-pc-1366.png",fullPage:false});
  await assertFullscreen(1440,900);
  assert.equal(await page.locator(".home-strip-only").innerText(),"","Home has no unnecessary text");
+ await page.locator(".system-module-link[data-module-id='1']").click();
+ assert.equal(await page.locator(".system-module-link.selected").count(),1);
+ assert.equal(await page.locator(".system-submodule-heading").innerText(),"کاڵاکان");
+ await page.locator(".system-submodule-link[data-sub-icon='product-list']").click();
+ assert.equal(await page.locator(".system-submodule-link.selected").count(),1,"selected subcard highlighted");
+ assert.equal(await page.locator(".system-submodule-link.selected").getAttribute("aria-current"),"page");
+ assert.ok((await page.locator(".system-submodule-link.selected").innerText()).includes("لیستی کاڵاکان"));
+ await page.screenshot({path:"artifacts/system-v2/16-second-column-selected.png",fullPage:false});
+ await nav.getByRole("button",{name:"سەرەتا",exact:true}).click();
  for(const [label,file] of names){
   const button=nav.getByRole("button",{name:label,exact:true});
   await button.click();
