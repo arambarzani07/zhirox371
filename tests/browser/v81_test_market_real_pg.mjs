@@ -63,7 +63,7 @@ try{
  await section("sales-trend").waitFor();
  await page.locator("[data-testid=real-postgres-overview]").waitFor();
  const overview=await page.locator("[data-testid=real-postgres-overview]").innerText();
- assert.match(overview,/24,500 IQD/);
+ assert.match(overview,/32,500 IQD/);
  assert.match(overview,/10,000 IQD/);
  await page.screenshot({path:"artifacts/v81/01-real-pg-test-market-home-1920.png",fullPage:false});
  await moduleButton(1).click();
@@ -111,8 +111,8 @@ try{
  await moduleButton(1).click();
  await subButton("product-list").click();
  await section("product-list").waitFor();
- assert.match(await section("product-list").innerText(),/26/);
- assert.match(await section("product-list").innerText(),/18/);
+ assert.match(await section("product-list").innerText(),/24/);
+ assert.match(await section("product-list").innerText(),/17/);
  await moduleButton(2).click();
  await subButton("stock-transfer").click();
  await section("stock-transfer").waitFor();
@@ -129,7 +129,7 @@ try{
  await moduleButton(1).click();
  await subButton("product-list").click();
  await section("product-list").waitFor();
- assert.match(await section("product-list").innerText(),/26/);
+ assert.match(await section("product-list").innerText(),/24/);
  await moduleButton(2).click();
  await subButton("stock-transfer").click();
  await section("stock-transfer").waitFor();
@@ -169,10 +169,13 @@ try{
  assert.match(expiryText,/TEST-SAFE-003/);
  assert.match(expiryText,/بەرواری تێپەڕیوە/);
  assert.match(expiryText,/نزیکە بە بەسەرچوون/);
- assert.match(expiryText,/کۆگای فیزیکی و پاراستنی تەواوی فرۆشتن نییە/);
- assert.match(expiryText,/ماوەی تخصیصی V87/);
- assert.match(expiryText,/فرۆشراوی تۆمارکراوی V87/);
+ assert.match(expiryText,/بەڵگەی ژماردنەوەی فیزیکیی مارکێتی ڕاستەقینە نییە/);
+ assert.match(expiryText,/ماوەی تۆمارکراوی V88/);
+ assert.match(expiryText,/TEST-FUTURE-004/);
+ assert.match(expiryText,/بڕی ژمێردراوی سەرەتا/);
+ assert.match(expiryText,/فرۆشراوی تخصیصکراوی V88/);
  await page.screenshot({path:"artifacts/v81/16-v86-real-expiry-lots.png",fullPage:false});
+ await page.screenshot({path:"artifacts/v81/17-v88-isolated-reconciled-lot-opening.png",fullPage:false});
  await moduleButton(8).click();
  await subButton("coupon-ticket").click();
  await section("coupon-ticket").waitFor();
