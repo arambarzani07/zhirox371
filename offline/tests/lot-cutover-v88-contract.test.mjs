@@ -41,8 +41,8 @@ test("V88 opening LOT read-only PC is store-scoped and manager-only, reports onl
  assert.equal(own.body.rows[0].tracked_remaining,"0");
  assert.deepEqual(calls.at(-1).args,["isolated"]);
  assert.match(calls.at(-1).query,/lot_sale_allocations_v88/);
- assert.match(own.body.note,/بەڵگەی ژماردنەوەی فیزیکیی مارکێتی ڕاستەقینە نییە/);
+ assert.match(own.body.note,/ژماردنەوەی فیزیکیی پشتڕاستکراوی مارکێتی ڕاستەقینە نییە/);
  assert.deepEqual(own.body.columns.map(x=>x.key).slice(2,5),
-  ["counted_qty","allocated_v88","tracked_remaining"]);
+  ["lot_origin","counted_qty","allocated_v88"]);
  assert.ok(calls.every(x=>x.query.includes("section_registry_v78")||x.args[0]==="isolated"));
 });
