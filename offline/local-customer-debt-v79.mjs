@@ -3,7 +3,7 @@ import {createLocalAuthV3} from "./local-auth-v3.mjs";
 // V79 isolated, opt-in READ-ONLY endpoint. This does not bind a network socket,
 // alter cash accounting or expose a live debt-payment action. A real HTTPS/LAN
 // gateway can mount this handler only after explicit release authorization.
-const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const send=(res,status,payload)=>{
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
    "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"});
