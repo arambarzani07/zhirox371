@@ -63,6 +63,15 @@ const expiryColumns=[
  column("days_to_expiry","ڕۆژی ماوە","number"),
  column("expiry_state","دۆخی بەروار","expiry_state")
 ];
+const unifiedColumns=[
+ column("product_name","ناوی کاڵا"),column("lot_code","کۆدی LOT"),
+ column("lot_origin","سەرچاوەی LOT"),
+ column("starting_qty","بڕی سەرەتایی یان وەرگیراو","number"),
+ column("net_outflow","کۆی ڕۆیشتنی دوای گەڕاندنەوە","number"),
+ column("tracked_remaining","ماوەی تۆمارکراوی V90","number"),
+ column("expires_on","بەرواری بەسەرچوون","date_only"),
+ column("expiry_state","دۆخی بەروار","expiry_state")
+];
 const openingColumns=[
  column("product_name","ناوی کاڵا"),column("lot_code","کۆدی LOT"),column("lot_origin","سەرچاوەی LOT"),
  column("counted_qty","بڕی سەرەتایی یان وەرگیراو","number"),
@@ -106,8 +115,25 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
  if(expiryLots.has(sectionId)){
   const cutover=await pool.query(`SELECT EXISTS(
      SELECT 1 FROM zhirox_local.lot_cutovers_v88 WHERE store_id=$1::uuid
-   ) AS enabled`,[store]);
+   ) AS enabled, EXISTS(
+     SELECT 1 FROM zhirox_local.lot_cutovers_v90 WHERE store_id=$1::uuid
+   ) AS unified`,[store]);
   if(cutover.rows?.[0]?.enabled){
+   if(cutover.rows?.[0]?.unified){
+    result=await pool.query(`SELECT p.name AS product_name,
+      v.lot_code,v.lot_origin,v.starting_qty,
+      (v.starting_qty-v.tracked_remaining)::bigint AS net_outflow,
+      v.tracked_remaining,v.expires_on,
+      CASE WHEN v.expires_on<current_date THEN 'expired'
+       WHEN v.expires_on<=current_date+30 THEN 'near_expiry'
+       ELSE 'later' END AS expiry_state
+      FROM zhirox_local.lot_inventory_v90 v
+      JOIN zhirox_local.products p ON p.store_id=v.store_id AND p.id=v.product_id
+      WHERE v.store_id=$1::uuid
+      ORDER BY v.expires_on,v.lot_code LIMIT 100`,[store]);
+    columns=unifiedColumns;
+    note="V90: ماوەی LOT لە یەک حسابدا هەژمارکراوە: بڕی سەرەتا + وەرگرتن + گەڕاندنەوەی سالم − فرۆشتن. هێشتا تەنها داتای تاقیکردنەوەی SQL ـە، نەک ژماردنەوەی فیزیکیی مارکێتی ڕاستەقینە.";
+   }else{
    result=await pool.query(`SELECT x.product_name,x.lot_code,x.lot_origin,
    x.counted_qty,x.allocated_v88,x.tracked_remaining,x.expires_on,
    CASE WHEN x.expires_on<current_date THEN 'expired'
@@ -136,6 +162,7 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
    ) x ORDER BY x.expires_on,x.lot_code LIMIT 100`,[store]);
    columns=openingColumns;
    note="V89: ماوەی تۆمارکراو = بڕی سەرەتا یان وەرگیراو کەم فرۆشتنی LOT ـدار، لەگەڵ گەڕاندنەوەی کاڵای سالم. LOT ـی تازە وەرگیراو هێشتا لە ڕێگای فرۆشتنی V88 بەکارناهێنرێت؛ ئەمە ژماردنەوەی فیزیکیی پشتڕاستکراوی مارکێتی ڕاستەقینە نییە.";
+   }
   }else{
    result=await pool.query(`SELECT p.name AS product_name,b.lot_code,b.received_qty_base_units,
    coalesce(a.allocated_units,0)::bigint AS allocated_v87,
