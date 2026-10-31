@@ -7,12 +7,18 @@ import {NavView} from "../types";
 // their four submodules on the second horizontal line. No cards or sidebars.
 // Navigation changes presentation only; cashier roles and data paths stay intact.
 export const Header:React.FC<{localPilot?:boolean}>=({localPilot=false})=>{
- const {currentView,subtab,navigateTo,cart}=useApp();
+ const {currentView,subtab,activeSectionId,navigateTo,cart}=useApp();
  const [moduleId,setModuleId]=useState<number|null>(null);
  const [pickedSub,setPickedSub]=useState<string|null>(null);
 
  useEffect(()=>{
    if(currentView==="home"){setModuleId(null);setPickedSub(null);return;}
+   const explicit=activeSectionId && MODULE_SPECS.find(m=>m.submodules.some(s=>s.iconName===activeSectionId));
+   if(explicit){
+     setModuleId(explicit.id);
+     setPickedSub(activeSectionId);
+     return;
+   }
    const current=MODULE_SPECS.find(m=>m.id===moduleId);
    const matching=current?.submodules.find(s=>s.targetView===currentView&&s.targetSubtab===subtab);
    const module=matching?current:MODULE_SPECS.find(m=>m.submodules.some(s=>s.targetView===currentView&&s.targetSubtab===subtab))
@@ -22,7 +28,7 @@ export const Header:React.FC<{localPilot?:boolean}>=({localPilot=false})=>{
    const chosen=module.submodules.find(s=>s.targetView===currentView&&s.targetSubtab===subtab)
      ??module.submodules.find(s=>s.targetView===currentView);
    if(chosen)setPickedSub(chosen.iconName);
- },[currentView,subtab]);
+ },[currentView,subtab,activeSectionId]);
 
  const chosen=MODULE_SPECS.find(m=>m.id===moduleId);
  const selectMain=(id:number)=>{
@@ -33,14 +39,14 @@ export const Header:React.FC<{localPilot?:boolean}>=({localPilot=false})=>{
    setPickedSub(localPilot&&id!==0?null:first.iconName);
    // In the isolated PG trial, disconnected modules are browse-only;
    // selecting a module never enables its blocked subroutes.
-   if(!localPilot||id===0)navigateTo(first.targetView as NavView,first.targetSubtab);
+   if(!localPilot||id===0)navigateTo(first.targetView as NavView,first.targetSubtab,first.iconName);
  };
  const selectSub=(sub:typeof MODULE_SPECS[number]["submodules"][number])=>{
    if(!chosen)return;
    const enabled=!localPilot||(chosen.id===0&&(sub.iconName==="barcode-scan"||sub.iconName==="receipt"));
    if(!enabled)return;
    setPickedSub(sub.iconName);
-   navigateTo(sub.targetView as NavView,sub.targetSubtab);
+   navigateTo(sub.targetView as NavView,sub.targetSubtab,sub.iconName);
  };
  return <header className={`system-header system-strip-only system-double-strip ${chosen?"has-subnav":""} ${localPilot?"system-local-only":""}`}>
    <nav className="system-nav system-primary-nav" aria-label="بەشە سەرەکییەکان">
