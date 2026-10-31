@@ -1,3 +1,17 @@
+/* Only the isolated V32 route gets this compact app header.
+   The regular Demo header and every Home module remain untouched. */
+#root > .viewport > .desktop > header.pos-local-appbar {
+  height:65px;min-height:65px;flex:0 0 65px;background:#fff;
+  border-bottom:1px solid #e4eaf1;padding:0 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  color:#192c44;font-family:Tahoma,"Segoe UI",sans-serif;
+}
+.pos-local-appbar strong {font-size:16px;font-weight:900;}
+.pos-local-appbar button {font-size:12px;font-weight:800;background:#f2f5f9;
+  border:1px solid #dce5ef;border-radius:8px;color:#254c77;
+  padding:8px 14px;cursor:pointer;}
+.pos-local-appbar button:focus-visible {outline:3px solid #98b6da;outline-offset:2px;}
+
 /* ZHIROX cashier V1: clean-slate presentation, fully redesignable.
    Scoped to isolated PostgreSQL trial only. Never alters financial logic,
    archived Home, or credentials. No external images/fonts. */
