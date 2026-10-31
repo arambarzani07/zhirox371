@@ -24,6 +24,7 @@ const fmt=(v:unknown,kind?:string)=>{
  if(kind==="date")return v?new Date(String(v)).toLocaleString("en-GB"):"—";
  if(kind==="bool")return v?"بەڵێ":"نەخێر";
  if(kind==="debt_kind")return v==="opening_debt"?"قەرزی تۆمارکراو":"پارەدانی ژمێریاری (تاقیکردنەوە)";
+ if(kind==="expiry_state")return v==="expired"?"بەرواری تێپەڕیوە":v==="near_expiry"?"نزیکە بە بەسەرچوون":"هێشتا دوورە";
  return text(v);
 };
 const errors:Record<string,string>={
