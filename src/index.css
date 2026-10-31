@@ -35,3 +35,50 @@ button {
     display: none !important;
   }
 }
+
+
+/* React root adapter for the owner-approved, locked 1020px PC shell.
+   The original locked rules target body > .viewport, but React wraps
+   the viewport inside #root. Do not alter the locked stylesheets. */
+@media screen {
+  #root > .viewport {
+    width: 100%;
+    height: calc(100dvh - var(--market-banner-height));
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior: contain;
+  }
+  #root > .viewport > .desktop {
+    min-width: 1020px;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #root > .viewport > .desktop > header {
+    flex: 0 0 75px;
+    height: 75px;
+    min-height: 75px;
+    width: 100%;
+  }
+  #root > .viewport > .desktop > main {
+    flex: 1 1 0%;
+    width: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 0 auto;
+    padding: 0;
+    overscroll-behavior-y: contain;
+  }
+  /* Home in the React tree must match the approved PC Home margins. */
+  #root > .viewport > .desktop > main > div {
+    padding: 39px 44px 60px !important;
+  }
+  /* Retain four columns even when opened on a phone: pan horizontally. */
+  #root > .viewport > .desktop > main .row {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
