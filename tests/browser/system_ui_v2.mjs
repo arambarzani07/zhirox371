@@ -65,10 +65,17 @@ try{
    assert.ok(Math.abs(geometry.app.width-width)<=2,"workspace occupies PC width");
    assert.ok(Math.abs(geometry.app.bottom-height)<=3,"workspace ends at PC bottom");
    assert.ok(geometry.header.x>=-2&&Math.abs(geometry.header.width-width)<=2,"full-width horizontal strip");
-   if(geometry.home)assert.ok(
-     Math.abs(geometry.home.width-geometry.content.width)<=2 &&
-     Math.abs(geometry.home.x-geometry.content.x)<=2,
-     "Home fills its entire third-column workspace, with no centered card");
+   if(geometry.home){
+     if(Math.abs(geometry.home.width-geometry.content.width)>2||
+        Math.abs(geometry.home.x-geometry.content.x)>2){
+       console.log("PC HOME GEOMETRY:",JSON.stringify(geometry));
+       await page.screenshot({path:"artifacts/system-v2/00-layout-diagnostic.png",fullPage:false});
+     }
+     assert.ok(
+       Math.abs(geometry.home.width-geometry.content.width)<=2 &&
+       Math.abs(geometry.home.x-geometry.content.x)<=2,
+       "Home fills its entire third-column workspace, with no centered card");
+   }
  };
  await assertFullscreen(1440,900);
  await page.screenshot({path:"artifacts/system-v2/01-home.png",fullPage:false});
