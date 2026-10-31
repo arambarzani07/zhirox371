@@ -110,7 +110,7 @@ try{
  await moduleButton(1).click();
  await subButton("product-list").click();
  await section("product-list").waitFor();
- assert.match(await section("product-list").innerText(),/28/);
+ assert.match(await section("product-list").innerText(),/29/);
  assert.match(await section("product-list").innerText(),/20/);
  await moduleButton(2).click();
  await subButton("stock-transfer").click();
