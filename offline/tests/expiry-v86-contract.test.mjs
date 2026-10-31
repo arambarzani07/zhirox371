@@ -32,7 +32,7 @@ test("expiry warehouse page uses session-derived store, denies cashiers and does
  assert.equal(allowed.body.status,"read_only");assert.equal(allowed.body.write_enabled,false);
  assert.equal(allowed.body.rows.length,1);
  assert.ok(allowed.body.columns.some(x=>x.key==="received_qty_base_units"));
- assert.match(allowed.body.note,/کۆگای ماوەی هەر بەچ نازانرێت/);
+ assert.match(allowed.body.note,/کۆگای فیزیکی و پاراستنی تەواوی فرۆشتن نییە/);
  const q=calls.at(-1);assert.deepEqual(q.args,["test-store"]);
  assert.match(q.sql,/WHERE b\.store_id=\$1::uuid/);
  assert.doesNotMatch(q.sql,/\b(?:UPDATE|INSERT|DELETE|TRUNCATE)\b/i);
