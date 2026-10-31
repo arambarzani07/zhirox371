@@ -77,3 +77,11 @@ jobs:
           exit 1
       - name: Verify primary cashier uses PostgreSQL only, receipts and restart safety
         run: node tests/browser/v32_local_primary_cashier.mjs
+      - name: Save actual Chromium cashier UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZHIROX-CASHIER-V1-CHROMIUM
+          path: artifacts/cashier-v1/*.png
+          if-no-files-found: warn
+          retention-days: 14
