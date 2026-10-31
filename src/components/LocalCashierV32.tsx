@@ -7,7 +7,7 @@ import "../localCashierMinimalV58.css";
 export const LocalCashierV32:React.FC=()=>(
  <section className="local-cashier-v58" dir="rtl" aria-label="کاشێری PostgreSQL ـی ناوخۆیی V32">
   <div className="local-cashier-v58-top">
-   <h1>کاشێر و فرۆشتن — PostgreSQL</h1>
+   <h1 aria-label="کاشێر و فرۆشتن — PostgreSQL">کاشێر</h1>
    <span className="local-cashier-v58-stage" role="status">V32 · تاقیکردنەوە</span>
   </div>
   <details className="local-cashier-v58-disclosure">
