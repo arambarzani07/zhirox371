@@ -11,8 +11,9 @@ const verifySale=new Set(["transaction-check"]);
 const suppliers=new Set(["supplier-building","purchase-order","receive-goods","supplier-accounts"]);
 const returns=new Set(["return-arrow"]);
 const cashbook=new Set(["cash-drawer","cash-movements","expense-fall","shift-clock"]);
-const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell",...suppliers,...returns,...cashbook]);
-const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale,...suppliers,...returns,...cashbook]);
+const expiryLots=new Set(["expiry"]);
+const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell",...suppliers,...returns,...cashbook,...expiryLots]);
+const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale,...suppliers,...returns,...cashbook,...expiryLots]);
 const column=(key,label,format)=>({key,label,...(format?{format}:{})});
 const productColumns=[
  column("name","ناوی کاڵا"),column("barcode","بارکۆد"),
@@ -53,6 +54,13 @@ const drawerColumns=[column("username","کاشێر"),column("status","دۆخ"),
 const movementColumns=[column("username","کاشێر"),column("kind","جۆر"),
  column("amount_minor","بڕ","money"),column("reason","هۆکار"),
  column("created_at","بەروار","date")];
+const expiryColumns=[
+ column("product_name","ناوی کاڵا"),column("lot_code","کۆدی بەچ"),
+ column("received_qty_base_units","بڕی وەرگیراو (نەک ماوەی ئێستا)","number"),
+ column("expires_on","بەرواری بەسەرچوون"),
+ column("days_to_expiry","ڕۆژی ماوە","number"),
+ column("expiry_state","دۆخی بەروار","expiry_state")
+];
 const noopColumns=[column("status","دۆخ")];
 const sqlProducts=`SELECT p.id,p.name,p.price_minor,p.stock_base_units,
  b.code AS barcode FROM zhirox_local.products p
@@ -85,7 +93,19 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
    return {status:403,body:{error:"manager_required",section:base.section}};
  const cashier=role==="cashier",p=cashier?[store,actor]:[store];
  let result,columns,note="";
- if(products.has(sectionId)){
+ if(expiryLots.has(sectionId)){
+  result=await pool.query(`SELECT p.name AS product_name,b.lot_code,b.received_qty_base_units,
+   b.expires_on,(b.expires_on-current_date)::integer AS days_to_expiry,
+   CASE WHEN b.expires_on<current_date THEN 'expired'
+    WHEN b.expires_on<=current_date+30 THEN 'near_expiry'
+    ELSE 'later' END AS expiry_state
+   FROM zhirox_local.expiry_lots_v86 b
+   JOIN zhirox_local.products p ON p.store_id=b.store_id AND p.id=b.product_id
+   WHERE b.store_id=$1::uuid
+   ORDER BY b.expires_on ASC,b.batch_id ASC LIMIT 100`,[store]);
+  columns=expiryColumns;
+  note="بڕەکان تەنها بڕی تۆمارکراوی وەرگرتنن؛ کۆگای ماوەی هەر بەچ نازانرێت چونکە فرۆشتن بە LOT نەبەستراوە. ئەمە تەنها ئاگاداریی بەروارە و بەڵگەی کێشەی ستۆکی ئێستا نییە.";
+ }else if(products.has(sectionId)){
   result=await pool.query(sqlProducts,[store]);columns=productColumns;
   if(sectionId==="low-stock"||sectionId==="alert-bell"){
    // Explicit demo-only quantity threshold; not an authentic configured min_stock.
