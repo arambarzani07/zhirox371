@@ -371,3 +371,111 @@
  }
 }
 /* No fullscreen overrides under @media print: preserve actual receipts. */
+
+
+/* ZHIROX V4 — two vertical RTL navigation columns.
+   Right: module list. Middle: selected module's four submodules, stacked.
+   Left: the actual routed feature fills remaining Windows PC viewport.
+   The horizontal ribbon beneath the supermarket name is preserved. */
+@media screen {
+ #root > .viewport > .desktop > main#app.system-three-columns {
+   display:grid!important;direction:rtl;
+   grid-template-columns:202px 222px minmax(0,1fr)!important;
+   grid-template-rows:minmax(0,1fr)!important;
+   gap:0!important;align-items:stretch!important;
+   padding:0!important;margin:0!important;
+   height:auto!important;min-height:0!important;overflow:hidden!important;
+   width:100%!important;max-width:none!important;
+ }
+ #app.system-three-columns > .system-module-column,
+ #app.system-three-columns > .system-submodule-column {
+   box-sizing:border-box;min-width:0;max-width:none;
+   height:100%!important;min-height:0!important;
+   background:#fff;overflow-y:auto;overflow-x:hidden;
+   padding:14px 10px!important;margin:0!important;
+   scrollbar-width:thin;overscroll-behavior-y:contain;
+ }
+ #app.system-three-columns > .system-module-column {
+   border-inline-end:1px solid #dde7f0;background:#fff;
+ }
+ #app.system-three-columns > .system-submodule-column {
+   border-inline-end:1px solid #dae5ef;background:#f8fafd;
+ }
+ .system-module-list,.system-submodule-list {
+   display:flex;flex-direction:column;gap:5px;min-width:0;
+ }
+ .system-module-link,.system-submodule-link {
+   display:flex;align-items:center;gap:9px;width:100%;min-height:43px;
+   border:1px solid transparent;border-radius:9px;
+   padding:9px 10px;text-align:right;direction:rtl;
+   font:850 12px Tahoma,"Segoe UI",sans-serif;
+   background:transparent;color:#3d5570;cursor:pointer;
+   box-shadow:none;transition:background-color .12s,border-color .12s;
+ }
+ .system-module-link span:nth-of-type(1),.system-submodule-link span:nth-of-type(1) {
+   flex:1;min-width:0;line-height:1.7;
+ }
+ .system-module-link svg,.system-submodule-link svg {
+   flex:none;width:18px;height:18px;stroke:#64809c;color:#64809c;
+ }
+ .system-module-link:hover:not(:disabled),.system-submodule-link:hover:not(:disabled) {
+   background:#eaf2f9;border-color:#d5e2ee;
+ }
+ .system-module-link.selected {
+   background:#eaf1f9;border-color:#c4d6e8;color:#1f466e;
+   box-shadow:inset 3px 0 0 #2c608f;
+ }
+ .system-module-link.selected svg {stroke:#24486e;color:#24486e;}
+ .system-module-arrow {color:#95a9bb;font-size:19px;flex:none!important;}
+ .system-submodule-heading {
+   font-size:12px;font-weight:900;color:#61768d;
+   padding:11px 12px 15px;line-height:1.7;
+   border-bottom:1px solid #e4ebf3;margin-bottom:10px;
+ }
+ .system-submodule-link {background:#fff;border-color:#e4ebf2;min-height:47px;}
+ .system-submodule-link.selected {
+   border-color:#24486e!important;background:#24486e!important;
+   color:white!important;font-weight:900;
+   box-shadow:inset 3px 0 0 #a9c9e9;
+ }
+ .system-submodule-link.selected svg {stroke:white!important;color:white!important;}
+ .system-submodule-link:disabled {
+   color:#9aa8b6!important;background:#f5f7fa!important;
+   border-color:#e5ebf0!important;opacity:.58;cursor:not-allowed;
+ }
+ .system-selected-check {
+   flex:none!important;color:#fff!important;
+   display:grid;place-items:center;background:#496d95;
+   border-radius:50%;width:19px;height:19px;font-size:12px;font-weight:900;
+ }
+ #app.system-three-columns > .system-content-column {
+   box-sizing:border-box!important;min-width:0!important;width:100%!important;
+   height:100%!important;min-height:0!important;max-width:none!important;
+   margin:0!important;padding:0!important;background:var(--system-bg)!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   overscroll-behavior-y:contain;scrollbar-gutter:auto!important;
+ }
+ #app.system-three-columns > .system-content-column > .home-strip-only {
+   width:100%!important;max-width:none!important;min-height:100%!important;
+   margin:0!important;padding:0!important;background:var(--system-bg)!important;
+ }
+ #app.system-three-columns > .system-content-column > :not(.home-strip-only) {
+   box-sizing:border-box!important;width:100%!important;max-width:none!important;
+   margin:0!important;min-height:100%!important;padding:20px 24px 28px!important;
+ }
+ #app.system-three-columns .pos-clean__workspace {
+   grid-template-columns:minmax(0,1fr) minmax(240px,290px)!important;
+   min-height:calc(100dvh - 250px);
+ }
+ #app.system-three-columns .pos-clean__transaction {min-height:calc(100dvh - 250px);}
+ #app.system-three-columns .pos-clean__basket {max-height:calc(100dvh - 380px);}
+ @media (max-width:1220px) {
+  #root > .viewport > .desktop > main#app.system-three-columns {
+   grid-template-columns:176px 197px minmax(0,1fr)!important;
+  }
+  #app.system-three-columns > .system-content-column > :not(.home-strip-only) {
+   padding:15px 17px 24px!important;
+  }
+ }
+ /* Only the on-screen app gets these columns. Print/receipt styles remain untouched. */
+}
