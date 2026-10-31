@@ -57,14 +57,18 @@ try{
      return {windowWidth:window.innerWidth,windowHeight:window.innerHeight,
        banner:rect(".market-banner"),viewport:rect("#root > .viewport"),
        desktop:rect("#root > .viewport > .desktop"),header:rect("header.system-strip-only"),
-       app:rect("#app"),home:document.querySelector(".home-strip-only")?rect(".home-strip-only"):null};
+       app:rect("#app"),content:rect(".system-content-column"),
+       home:document.querySelector(".home-strip-only")?rect(".home-strip-only"):null};
    });
    assert.ok(Math.abs(geometry.banner.width-width)<=2,"market banner fills PC width");
    assert.ok(Math.abs(geometry.desktop.width-width)<=2,"desktop occupies PC width");
    assert.ok(Math.abs(geometry.app.width-width)<=2,"workspace occupies PC width");
    assert.ok(Math.abs(geometry.app.bottom-height)<=3,"workspace ends at PC bottom");
    assert.ok(geometry.header.x>=-2&&Math.abs(geometry.header.width-width)<=2,"full-width horizontal strip");
-   if(geometry.home)assert.ok(geometry.home.x<=2&&geometry.home.width>=width-18,"no centered Home card or content margins");
+   if(geometry.home)assert.ok(
+     Math.abs(geometry.home.width-geometry.content.width)<=2 &&
+     Math.abs(geometry.home.x-geometry.content.x)<=2,
+     "Home fills its entire third-column workspace, with no centered card");
  };
  await assertFullscreen(1440,900);
  await page.screenshot({path:"artifacts/system-v2/01-home.png",fullPage:false});
