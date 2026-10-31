@@ -88,6 +88,8 @@ try{
  assert.equal(await page.locator(".pos-clean__workspace").count(),1,"cashier grid is active");
  assert.equal(await page.locator(".pos-clean__basket thead th").count(),6,"table has Sorani 6-column basket");
  assert.equal(await page.locator(".pos-clean__side").count(),1,"total and checkout panel exists");
+ assert.equal(await page.locator(".pos-clean__history").count(),1,"receipt history remains accessible");
+ assert.equal(await page.locator(".pos-clean__history[open]").count(),0,"receipt history stays collapsed before sale");
  const geometry=await page.evaluate(()=>{
    const basket=document.querySelector(".pos-clean__transaction").getBoundingClientRect();
    const total=document.querySelector(".pos-clean__side").getBoundingClientRect();
