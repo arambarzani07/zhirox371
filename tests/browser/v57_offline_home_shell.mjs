@@ -9,7 +9,7 @@ page.on("request",req=>{
  const url=new URL(req.url());
  if(!["127.0.0.1","localhost"].includes(url.hostname))external.push(url.hostname);
 });
-try{
+try {
  await page.goto("http://127.0.0.1:3057/",{waitUntil:"networkidle"});
  await page.locator("[data-v57-home=true]").waitFor();
  assert.equal(await page.locator("[data-local-v36-pilot=true]").count(),1);
@@ -17,40 +17,42 @@ try{
  assert.equal(await page.locator(".market-banner").count(),1);
  assert.equal(await page.locator("#finish-sale").count(),0);
  assert.equal(await page.locator("[data-demo-watermark]").count(),0);
- assert.equal(await page.locator(".v57-module,.v57-drawer,.v57-sub").count(),0,"no Home cards or subcards");
+ assert.equal(await page.locator(".system-module-column,.system-submodule-column,.v57-module,.v57-drawer").count(),0,
+   "offline shell no longer contains sidebars or cards");
  const nav=page.locator("[data-v57-navigation=true]");
- assert.equal(await nav.count(),1,"exactly one navigation strip");
- assert.equal(await nav.locator("button").count(),13,"Home and twelve module labels remain discoverable");
- const tabs=nav.locator("button[data-module-id]");
- const cashier=tabs.filter({hasText:"کاشێر"}).first();
- assert.equal(await cashier.isDisabled(),false,"only connected PG cashier may be entered");
- assert.equal(await nav.locator("button[data-module-id]:not(:disabled)").count(),1,"unfinished modules must fail closed");
+ const subs=page.locator("[data-v57-subnav=horizontal]");
+ assert.equal(await nav.count(),1);
+ assert.equal(await nav.locator("button").count(),13,"Home plus twelve main tabs");
+ assert.equal(await subs.locator("button").count(),0,"no selected submodules until a module is chosen");
  await mkdir("artifacts/v57",{recursive:true});
- assert.equal(await page.locator(".system-module-column .system-module-link").count(),12);
- assert.equal(await page.locator(".system-submodule-column .system-submodule-link").count(),4);
- await page.locator(".system-module-column .system-module-link[data-module-id='1']").click();
- assert.equal(await page.locator(".system-submodule-heading").innerText(),"کاڵاکان");
- assert.equal(await page.locator(".system-submodule-link:not(:disabled)").count(),0,"unconnected product submodules remain blocked");
- await page.locator(".system-module-column .system-module-link[data-module-id='0']").click();
- assert.equal(await page.locator(".system-submodule-link:not(:disabled)").count(),2,"only two cashier subroutes enabled");
- await page.locator(".system-submodule-link[data-sub-icon='barcode-scan']").click();
- assert.equal(await page.locator(".system-submodule-link.selected").count(),1,"active subcard is clearly marked");
- assert.equal(await page.locator(".system-selected-check").count(),1);
- await page.screenshot({path:"artifacts/v57/03-offline-selected-submodule.png",fullPage:false});
- await page.keyboard.press("Escape");
  await page.screenshot({path:"artifacts/v57/01-navigation-only.png",fullPage:false});
- await cashier.click();
- await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
+ // All module names are browsable; none of the unconnected module actions is executable.
+ for(let id=0;id<12;id++){
+   await nav.locator("button[data-module-id='"+id+"']").click();
+   assert.equal(await subs.locator("button").count(),4,"four horizontal subtabs for "+id);
+   const positions=await subs.locator("button").evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top));
+   assert.ok(positions.every(p=>Math.abs(p-positions[0])<3),"subtabs share one horizontal line");
+   assert.equal(await subs.locator("button:not(:disabled)").count(),id===0?2:0,
+    "isolated PG pilot exposes only two cashier actions");
+ }
+ await nav.locator("button[data-module-id='0']").click();
+ await subs.locator("button[data-sub-icon='barcode-scan']").click();
  assert.equal(await page.locator("[data-v57-screen=cashier]").count(),1);
- await page.screenshot({path:"artifacts/v57/02-local-cashier-login.png",fullPage:false});
+ assert.equal(await subs.locator(".system-subnav-link.selected").count(),1);
+ assert.equal(await subs.locator(".system-subnav-check").count(),1,"active local subtab has clear check");
+ assert.equal(await subs.locator(".system-subnav-link.selected").getAttribute("aria-current"),"page");
+ await page.screenshot({path:"artifacts/v57/03-offline-selected-submodule.png",fullPage:false});
+ await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
  assert.equal(await page.getByRole("textbox",{name:"UUID ـی فرۆشگا"}).count(),1);
+ await page.screenshot({path:"artifacts/v57/02-local-cashier-login.png",fullPage:false});
  await page.keyboard.press("Escape");
  assert.equal(await page.locator("[data-v57-screen=home]").count(),1);
  await page.keyboard.press("F1");
  assert.equal(await page.locator("[data-v57-screen=cashier]").count(),1);
  await nav.getByRole("button",{name:"سەرەتا"}).click();
  assert.equal(await page.locator("[data-v57-screen=home]").count(),1);
+ assert.equal(await subs.locator("button").count(),0);
  assert.deepEqual(errors,[]);
- assert.deepEqual(external,[],"offline pilot cannot call public cloud");
- console.log("PASS V57: single ribbon Home, disabled unsupported routes and isolated PostgreSQL pilot");
+ assert.deepEqual(external,[],"offline pilot cannot contact public cloud");
+ console.log("PASS V57: horizontal subnav and fail-closed local cashier; no cards or side columns");
 }finally{await browser.close();}
