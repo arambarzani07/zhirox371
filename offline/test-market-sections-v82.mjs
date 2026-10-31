@@ -8,8 +8,9 @@ const customers=new Set(["single-customer","debt-book"]);
 const debtEntries=new Set(["customer-repayment"]);
 const settings=new Set(["manage-users","access-key"]);
 const verifySale=new Set(["transaction-check"]);
-const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell"]);
-const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale]);
+const suppliers=new Set(["supplier-building","purchase-order","receive-goods","supplier-accounts"]);
+const managerOnly=new Set(["single-customer","debt-book","customer-repayment","manage-users","access-key","transaction-check","alert-bell",...suppliers]);
+const knownKinds=new Set([...products,...barcodes,...receipts,...stockChanges,...customers,...debtEntries,...settings,...verifySale,...suppliers]);
 const column=(key,label,format)=>({key,label,...(format?{format}:{})});
 const productColumns=[
  column("name","ناوی کاڵا"),column("barcode","بارکۆد"),
@@ -22,6 +23,15 @@ const customerColumns=[column("display_name","کڕیار"),column("balance_minor
 const debtColumns=[column("display_name","ناوی کڕیار"),column("entry_type","جۆری مامەڵە","debt_kind"),column("amount_minor","بڕ","money"),column("created_at","بەروار","date")];
 const userColumns=[column("username","ناوی بەکارهێنەر"),column("role","ڕۆڵ"),column("enabled","چالاک","bool")];
 const auditColumns=[column("receipt_no","پسووڵە"),column("line_count","ژمارەی ڕیزەکان","number"),column("lines_total","کۆی ڕیزەکان","money"),column("total_minor","کۆی پسووڵە","money")];
+const supplierColumns=[column("display_name","دابینکەر"),column("phone","ژمارەی پەیوەندی"),column("active","چالاک","bool")];
+const orderColumns=[column("display_name","دابینکەر"),column("order_id","ناسنامەی داواکاری"),
+  column("status","دۆخی وەرگرتن"),column("line_count","ژمارەی کاڵا","number"),
+  column("ordered_cost_minor","کۆی تێچووی داواکاری","money")];
+const receivingColumns=[column("display_name","دابینکەر"),column("product_name","کاڵا"),
+  column("quantity_base_units","بڕی وەرگیراو","number"),
+  column("unit_cost_minor","نرخی کڕینی یەکە","money"),column("received_at","بەروار","date")];
+const commitmentColumns=[column("display_name","دابینکەر"),column("purchase_orders","ژمارەی داواکاری","number"),
+ column("total_ordered_cost_minor","کۆی نرخە تۆمارکراوەکانی داواکاری","money")];
 const noopColumns=[column("status","دۆخ")];
 const sqlProducts=`SELECT p.id,p.name,p.price_minor,p.stock_base_units,
  b.code AS barcode FROM zhirox_local.products p
@@ -96,6 +106,44 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
   result=await pool.query(`SELECT username,role,enabled FROM zhirox_local.local_users
    WHERE store_id=$1::uuid ORDER BY username LIMIT 100`,[store]);
   columns=userColumns;note="هەژمارەکان لە PostgreSQL نیشان دەدرێن؛ گۆڕینی دەسەڵات لێرە ناچالاکە.";
+ }else if(suppliers.has(sectionId)){
+  if(sectionId==="supplier-building"){
+   result=await pool.query(`SELECT display_name,phone,active FROM zhirox_local.suppliers_v83
+   WHERE store_id=$1::uuid ORDER BY display_name,supplier_id LIMIT 100`,[store]);
+   columns=supplierColumns;
+  }else if(sectionId==="purchase-order"){
+   result=await pool.query(`SELECT s.display_name,o.order_id,o.status,
+    count(l.line_no)::integer AS line_count,
+    coalesce(sum(l.quantity_base_units::numeric*l.unit_cost_minor),0)::bigint AS ordered_cost_minor
+    FROM zhirox_local.purchase_orders_v83 o
+    JOIN zhirox_local.suppliers_v83 s ON s.store_id=o.store_id AND s.supplier_id=o.supplier_id
+    JOIN zhirox_local.purchase_order_lines_v83 l ON l.store_id=o.store_id AND l.order_id=o.order_id
+    WHERE o.store_id=$1::uuid GROUP BY o.store_id,o.order_id,o.status,s.display_name,o.ordered_at
+    ORDER BY o.ordered_at DESC,o.order_id DESC LIMIT 100`,[store]);
+   columns=orderColumns;note="داواکارییەکی تۆمارکراوی کڕین؛ بەڵگەی پارەدانی دابینکەر نییە.";
+  }else if(sectionId==="receive-goods"){
+   result=await pool.query(`SELECT s.display_name,p.name AS product_name,l.quantity_base_units,
+    l.unit_cost_minor,g.received_at
+    FROM zhirox_local.goods_receipts_v83 g
+    JOIN zhirox_local.purchase_orders_v83 o ON o.store_id=g.store_id AND o.order_id=g.order_id
+    JOIN zhirox_local.suppliers_v83 s ON s.store_id=o.store_id AND s.supplier_id=o.supplier_id
+    JOIN zhirox_local.goods_receipt_lines_v83 l ON l.store_id=g.store_id AND l.receipt_id=g.receipt_id
+    JOIN zhirox_local.products p ON p.store_id=l.store_id AND p.id=l.product_id
+    WHERE g.store_id=$1::uuid ORDER BY g.received_at DESC,g.receipt_id DESC,l.line_no LIMIT 100`,[store]);
+   columns=receivingColumns;note="وەرگرتنی کاڵا لە PostgreSQL تۆمار کراوە و کۆگا زیاد کراوە؛ ئەم پەڕەیە تەنها بۆ خوێندنەوەیە.";
+  }else{
+   result=await pool.query(`SELECT s.display_name,count(o.order_id)::integer AS purchase_orders,
+    coalesce(sum(l.quantity_base_units::numeric*l.unit_cost_minor),0)::bigint AS total_ordered_cost_minor
+    FROM zhirox_local.suppliers_v83 s
+    LEFT JOIN zhirox_local.purchase_orders_v83 o
+      ON o.store_id=s.store_id AND o.supplier_id=s.supplier_id
+    LEFT JOIN zhirox_local.purchase_order_lines_v83 l
+      ON l.store_id=o.store_id AND l.order_id=o.order_id
+    WHERE s.store_id=$1::uuid GROUP BY s.store_id,s.supplier_id,s.display_name
+    ORDER BY s.display_name LIMIT 100`,[store]);
+   columns=commitmentColumns;
+   note="ئەم بڕانە تێچووی داواکاریی کڕینن؛ قەرز، وەرگرتنی نەختینە یان پارەدانی ڕاستەقینەی دابینکەر نین.";
+  }
  }else if(verifySale.has(sectionId)){
   result=await pool.query(`SELECT s.receipt_no,count(l.line_no)::integer AS line_count,
     coalesce(sum(l.line_total_minor),0)::bigint AS lines_total,s.total_minor
