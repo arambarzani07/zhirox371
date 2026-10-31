@@ -56,8 +56,8 @@ try{
   }
  }
  assert.equal(visited.size,48,"every submodule needs own section endpoint");
- assert.equal(maturity.read_only,27,"27 real PostgreSQL-backed read-only subsection screens");
- assert.equal(maturity.planned,21,"21 explicitly unimplemented subsection screens");
+ assert.equal(maturity.read_only,31,"31 real PostgreSQL-backed read-only subsection screens");
+ assert.equal(maturity.planned,17,"17 explicitly unimplemented subsection screens");
  // Real PostgreSQL financial view is within reports, not Home.
  await moduleButton(6).click();
  await section("sales-trend").waitFor();
@@ -134,6 +134,29 @@ try{
  await section("stock-transfer").waitFor();
  assert.match(await section("stock-transfer").innerText(),/گەڕاندنەوەی کاڵای سالم/);
  await page.screenshot({path:"artifacts/v81/12-v84-restocked-stock-movement.png",fullPage:false});
+ // V85: real SQL simulated cash movements, distinct from historic V80 sales.
+ await moduleButton(5).click();
+ await subButton("cash-drawer").click();
+ await section("cash-drawer").waitFor();
+ assert.match(await section("cash-drawer").innerText(),/53,000 IQD/);
+ assert.match(await section("cash-drawer").innerText(),/-500 IQD/);
+ assert.match(await section("cash-drawer").innerText(),/فرۆشتنی کۆن/);
+ await page.screenshot({path:"artifacts/v81/13-v85-test-cash-drawer-53000.png",fullPage:false});
+ await subButton("expense-fall").click();
+ await section("expense-fall").waitFor();
+ assert.match(await section("expense-fall").innerText(),/3,000 IQD/);
+ await subButton("cash-movements").click();
+ await section("cash-movements").waitFor();
+ assert.match(await section("cash-movements").innerText(),/10,000 IQD/);
+ assert.match(await section("cash-movements").innerText(),/4,000 IQD/);
+ assert.match(await section("cash-movements").innerText(),/3,000 IQD/);
+ await page.screenshot({path:"artifacts/v81/14-v85-test-cash-movements.png",fullPage:false});
+ await moduleButton(10).click();
+ await subButton("shift-clock").click();
+ await section("shift-clock").waitFor();
+ assert.match(await section("shift-clock").innerText(),/52,500 IQD/);
+ assert.match(await section("shift-clock").innerText(),/-500 IQD/);
+ await page.screenshot({path:"artifacts/v81/15-v85-closed-shift-variance.png",fullPage:false});
  await moduleButton(8).click();
  await subButton("coupon-ticket").click();
  await section("coupon-ticket").waitFor();
@@ -152,6 +175,11 @@ try{
  assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
  await moduleButton(0).click();
  await subButton("return-arrow").click();
+ await page.getByRole("alert").waitFor();
+ assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
+ assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
+ await moduleButton(5).click();
+ await subButton("cash-drawer").click();
  await page.getByRole("alert").waitFor();
  assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
  assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
