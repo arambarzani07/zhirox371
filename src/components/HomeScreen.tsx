@@ -16,7 +16,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div className="locked-home" style={{ maxWidth: '1500px', margin: '0 auto' }}>
+    <div className="home-screen" style={{ maxWidth: '1500px', margin: '0 auto' }}>
       <h1
         style={{
           fontSize: '23px',
