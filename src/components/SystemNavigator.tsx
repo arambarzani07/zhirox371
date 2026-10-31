@@ -23,7 +23,9 @@ export const SystemNavigator:React.FC<{localPilot?:boolean}>=({localPilot=false}
    const sub=match.submodules.find(s=>s.targetView===currentView&&s.targetSubtab===subtab)
      ??match.submodules.find(s=>s.targetView===currentView);
    if(sub)setPickedSub(sub.iconName);
- },[currentView,subtab,moduleId]);
+ // Changing the first-column browse selection must not bounce back to a
+ // previously opened route. Sync only for actual route/subtab changes.
+ },[currentView,subtab]);
 
  const module=MODULE_SPECS.find(m=>m.id===moduleId)??MODULE_SPECS[0];
  const changeModule=(id:number)=>{setModuleId(id);setPickedSub(null);};
