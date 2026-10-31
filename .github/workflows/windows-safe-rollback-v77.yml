@@ -1,0 +1,23 @@
+name: V77 isolated Windows rollback safety tests NO-GO
+on:
+  push:
+    branches: [feature/v77-safe-update-rollback-foundation-20261031]
+    paths:
+      - 'windows/safe-update-v77.mjs'
+      - 'windows/tests/safe-update-v77.test.mjs'
+      - '.github/workflows/windows-safe-rollback-v77.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-safety:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fail-closed candidate staging and one-step rollback
+        run: node --test windows/tests/safe-update-v77.test.mjs
+      - name: Commercial sales and unattended updates remain blocked
+        run: echo "V77 is lab-only update staging. Commercial release, automatic Windows updates, production checkout and signature verification remain NO-GO."
