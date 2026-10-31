@@ -33,14 +33,14 @@ async function bodyJson(req){
   return body && typeof body==="object" && !Array.isArray(body)?body:null;
  }catch{return null}
 }
-async function validateAuthDatabase(authPool){
+async function validateAuthDatabase(authPool,expectedAuthRole="v80test"){
  const result=await authPool.query(`
  SELECT current_database() AS db,current_user AS actor,
  (SELECT count(*) FROM zhirox_local.stores) AS stores,
  (SELECT name FROM zhirox_local.stores WHERE id=$1::uuid) AS market
  `,[TEST_MARKET.store]);
  const row=result.rows?.[0];
- if(row?.db!==TEST_DB || row?.actor!=="v80test" || Number(row?.stores)!==1 ||
+ if(row?.db!==TEST_DB || row?.actor!==expectedAuthRole || Number(row?.stores)!==1 ||
     row.market!==TEST_MARKET.name)throw Error("V93_isolated_auth_database_required");
 }
 async function validateReadDatabase(readPool){
@@ -56,26 +56,30 @@ async function validateReadDatabase(readPool){
     x.base_update!==false || x.base_sale_insert!==false || x.can_view!==true)
    throw Error("V93_restricted_reader_postgres_role_required");
 }
-export function createV93TestMarketHandler({authPool,readPool,secret,clock}){
+export function createV93TestMarketHandler({authPool,readPool,secret,clock,
+ expectedAuthRole="v80test",routePrefix="/api/local/v93/"}){
  if(typeof authPool?.query!=="function" || typeof authPool?.connect!=="function"||
     typeof readPool?.query!=="function" || !secret || Buffer.byteLength(secret)<32)
    throw Error("V93_separate_database_pools_and_secret_required");
  if(authPool===readPool)throw Error("V93_auth_and_reader_must_be_separate_pools");
+ if(!((expectedAuthRole==="v80test" && routePrefix==="/api/local/v93/") ||
+      (expectedAuthRole==="zhirox_v94_auth" && routePrefix==="/api/local/v94/")))
+  throw Error("V94_auth_route_role_pair_required");
  const auth=createLocalAuthV3({pool:authPool,secret,clock});
  return async (req,res)=>{
   let url;
   try{url=new URL(req.url||"/","http://127.0.0.1");}
   catch{return reply(res,400,{error:"invalid_url"})}
-  if(!url.pathname.startsWith("/api/local/v93/"))
+  if(!url.pathname.startsWith(routePrefix))
    return reply(res,404,{error:"not_found"});
-  const route=url.pathname.slice("/api/local/v93/".length);
+  const route=url.pathname.slice(routePrefix.length);
   if(!ROUTES.has(route))return reply(res,404,{error:"not_found"});
   if(req.method!==(route==="login"?"POST":"GET"))
    return reply(res,405,{error:"method_not_allowed"});
   if(url.search)return reply(res,400,{error:"unexpected_query"});
   try{
    // Fail closed before any login/data read if a test store is replaced.
-   await validateAuthDatabase(authPool);
+   await validateAuthDatabase(authPool,expectedAuthRole);
    if(route==="login"){
     const data=await bodyJson(req);
     if(!data || typeof data.username!=="string" || typeof data.password!=="string" ||
