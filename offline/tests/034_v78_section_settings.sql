@@ -65,7 +65,9 @@ BEGIN
   DELETE FROM zhirox_local.section_settings_audit_v78 WHERE store_id=store_a;
  EXCEPTION WHEN SQLSTATE 'P7804' THEN blocked:=true; END;
  IF NOT blocked THEN RAISE EXCEPTION 'audited history can be deleted'; END IF;
- IF has_table_privilege('public','zhirox_local.section_settings_v78','SELECT')
+ IF EXISTS(SELECT 1 FROM information_schema.role_table_grants
+ WHERE grantee='PUBLIC' AND table_schema='zhirox_local'
+ AND table_name='section_settings_v78')
  THEN RAISE EXCEPTION 'public has access to section settings'; END IF;
 END $test$;
 ROLLBACK;
