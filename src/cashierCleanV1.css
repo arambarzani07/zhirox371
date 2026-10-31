@@ -1,15 +1,14 @@
 /* Only the isolated V32 route gets this compact app header.
    The regular Demo header and every Home module remain untouched. */
 #root > .viewport > .desktop > header.pos-local-appbar {
-  height:65px;min-height:65px;flex:0 0 65px;background:#fff;
+  height:43px;min-height:43px;flex:0 0 43px;background:#fff;
   border-bottom:1px solid #e4eaf1;padding:0 32px;
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:flex-end;
   color:#192c44;font-family:Tahoma,"Segoe UI",sans-serif;
 }
-.pos-local-appbar strong {font-size:16px;font-weight:900;}
-.pos-local-appbar button {font-size:12px;font-weight:800;background:#f2f5f9;
+.pos-local-appbar button {font-size:22px;line-height:1;font-weight:800;background:#f2f5f9;
   border:1px solid #dce5ef;border-radius:8px;color:#254c77;
-  padding:8px 14px;cursor:pointer;}
+  width:35px;height:32px;padding:0;cursor:pointer;}
 .pos-local-appbar button:focus-visible {outline:3px solid #98b6da;outline-offset:2px;}
 
 /* ZHIROX cashier V1: clean-slate presentation, fully redesignable.
@@ -28,11 +27,6 @@
   background:#fff8e8;color:#8a601d;border:1px solid #f2dfb6;
   border-radius:999px;padding:6px 12px;font-size:12px;font-weight:800;}
 .pos-clean__trial:before {content:"";width:7px;height:7px;border-radius:50%;background:#d5a03b;}
-.pos-clean__notes {margin:0 0 19px;font-size:12px;color:var(--pc-muted);}
-.pos-clean__notes summary {display:inline-flex;cursor:pointer;align-items:center;gap:4px;}
-.pos-clean__notes summary:focus-visible {outline:2px solid var(--pc-blue);outline-offset:4px;}
-.pos-clean__notes p {max-width:760px;line-height:1.95;background:#fff;border:1px solid var(--pc-edge);
-  border-radius:8px;padding:11px 15px;}
 .pos-clean__pilot {background:transparent;border:0;box-shadow:none;margin:0;padding:0;}
 .pos-clean__body {margin:0;}
 .pos-clean button {font:inherit;font-size:13px;font-weight:800;border-radius:9px;
@@ -50,7 +44,10 @@
 .pos-clean__login input {width:100%!important;margin:0!important;}
 .pos-clean__login button {min-height:47px;width:100%;background:var(--pc-blue);color:#fff;border-color:var(--pc-blue);}
 .pos-clean__login button:hover:not(:disabled) {background:#1b3e65;color:#fff;}
-.pos-clean__connect {font-size:12px;color:#388363;font-weight:800;margin-bottom:13px;}
+.pos-clean__online {
+  display:block;width:8px;height:8px;background:#308b61;
+  border-radius:50%;margin:0 0 12px;box-shadow:0 0 0 3px #e4f4eb;
+}
 .pos-clean__workspace {display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start;}
 .pos-clean__transaction {background:#fff;border:1px solid var(--pc-edge);border-radius:15px;
   padding:17px;min-width:0;min-height:440px;}
@@ -75,19 +72,24 @@
   position:sticky;top:10px;min-width:0;}
 .pos-clean__total {margin:0!important;padding:0 0 19px;border-bottom:1px solid var(--pc-edge);}
 .pos-clean__total span {display:block;color:var(--pc-muted);font-size:13px;margin-bottom:11px;font-weight:800;}
-.pos-clean__total strong {display:block;font-size:30px;color:var(--pc-blue);font-weight:950;
+.pos-clean__total strong {display:block;font-size:32px;color:var(--pc-blue);font-weight:950;
   direction:ltr;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
 .pos-clean__payment {background:#eaf5ee;color:#287c54;font-size:12px;font-weight:900;
   padding:10px;border-radius:8px;text-align:center;}
 .pos-clean__checkout {display:block;}
-.pos-clean__checkout button {width:100%;min-height:53px;background:var(--pc-blue);color:#fff;border-color:var(--pc-blue);font-size:14px;}
+.pos-clean__checkout button {width:100%;min-height:53px;background:var(--pc-blue);
+  color:#fff;border-color:var(--pc-blue);font-size:16px;letter-spacing:.1px;}
 .pos-clean__checkout button:hover:not(:disabled) {background:#1b3e65;color:#fff;}
 .pos-clean__pending {color:#985a18;background:#fff7eb;border:1px solid #f3ddb5;
   border-radius:8px;padding:10px;line-height:1.8;font-size:12px;}
 .pos-clean__history {margin-top:18px;background:#fff;border:1px solid var(--pc-edge);border-radius:15px;padding:17px;}
 .pos-clean__history table {border-collapse:collapse;width:100%;font-size:12px;}
 .pos-clean__history th,.pos-clean__history td {border:0!important;border-bottom:1px solid var(--pc-edge)!important;padding:11px!important;}
-.pos-clean__history strong {font-size:14px;}
+.pos-clean__history summary {cursor:pointer;display:list-item;list-style:inside;
+  padding:0 2px;font-weight:900;font-size:13px;color:#354d6d;}
+.pos-clean__history[open] summary {padding-bottom:14px;border-bottom:1px solid var(--pc-edge);margin-bottom:12px;}
+.pos-clean__history-heading {display:none;}
+.pos-clean__history summary:focus-visible {outline:3px solid #98b6da;outline-offset:2px;}
 .pos-clean__logout {background:transparent!important;border:0!important;color:#71829a!important;margin-top:13px;font-size:12px!important;padding-right:0!important;}
 .pos-clean__error {border:1px solid #efc9c9;background:#fff4f4;color:#a22626;border-radius:9px;
   padding:12px 15px;font-weight:800;font-size:12px;margin-top:12px;}
