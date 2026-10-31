@@ -19,7 +19,8 @@ export const CashierPos: React.FC = () => {
     customers,
     completeCheckout,
     receipts,
-    setActiveReceiptForModal
+    setActiveReceiptForModal,
+    subtab
   } = useApp();
 
   const [barcodeInput, setBarcodeInput] = useState('');
@@ -28,7 +29,7 @@ export const CashierPos: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [tenderedCash, setTenderedCash] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts'>('checkout');
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts'>(subtab === 'receipts' ? 'receipts' : 'checkout');
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
