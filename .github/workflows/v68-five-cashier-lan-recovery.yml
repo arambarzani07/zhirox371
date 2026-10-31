@@ -1,8 +1,8 @@
-name: V70 five Docker PC load + isolated bridge outage (NO-GO)
+name: V71 PostgreSQL SIGKILL crash recovery and ambiguous print fencing (NO-GO)
 on:
   push:
     branches:
-      - feature/v70-market-five-pc-soak-chaos-20261031
+      - feature/v71-market-postgres-crash-print-fence-20261031
     paths:
       - 'offline/tests/v59_real_postgres_https_cashier.mjs'
       - 'offline/tests/027_v60_restricted_api_ci_role.sql'
@@ -15,6 +15,7 @@ on:
       - 'offline/tests/v67_twin_wan_reconnect_sync.mjs'
       - 'offline/tests/v68_five_cashiers_lan_recovery.mjs'
       - 'offline/tests/v70_docker_cashier_soak_client.mjs'
+      - 'offline/tests/v71_postgres_sigkill_printer_fence.mjs'
       - 'offline/tests/v70_five_pc_load_final_audit.mjs'
       - 'offline/tests/033_v70_five_pc_soak_fixture_ci.sql'
       - 'offline/tests/v69_docker_internal_lan_acceptance.sh'
@@ -42,6 +43,7 @@ on:
       - 'offline/tests/v67_twin_wan_reconnect_sync.mjs'
       - 'offline/tests/v68_five_cashiers_lan_recovery.mjs'
       - 'offline/tests/v70_docker_cashier_soak_client.mjs'
+      - 'offline/tests/v71_postgres_sigkill_printer_fence.mjs'
       - 'offline/tests/v70_five_pc_load_final_audit.mjs'
       - 'offline/tests/033_v70_five_pc_soak_fixture_ci.sql'
       - 'offline/tests/v69_docker_internal_lan_acceptance.sh'
@@ -95,6 +97,8 @@ jobs:
       ZHIROX_V68_FIVE_CASHIER_LAB: 'true'
       ZHIROX_V69_ISOLATED_BRIDGE: 'true'
       ZHIROX_V70_SOAK_ENABLED: 'true'
+      ZHIROX_V71_CRASH_TEST: 'true'
+      ZHIROX_V71_EVIDENCE_DIR: 'market-lab-evidence'
       ZHIROX_V68_EVIDENCE_DIR: 'market-lab-evidence'
       ZHIROX_V67_RECEIVER_DB: 'zhirox_v67_receiver_ci_test'
       ZHIROX_V67_EVIDENCE_DIR: 'market-lab-evidence'
@@ -214,11 +218,15 @@ jobs:
         env:
           ZHIROX_V69_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: bash offline/tests/v69_docker_internal_lan_acceptance.sh
+      - name: V71 ACTUAL PostgreSQL docker SIGKILL, WAL recovery, pending checkout and one-shot print fence
+        env:
+          ZHIROX_V71_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' node offline/tests/v71_postgres_sigkill_printer_fence.mjs
       - name: Upload authentic lab receipts and transaction audit (not hardware proof)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zhirox-v70-five-pc-load-100-sales-evidence
+          name: zhirox-v71-db-crash-print-fence-evidence
           path: market-lab-evidence/
           if-no-files-found: warn
           retention-days: 14
