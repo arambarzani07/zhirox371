@@ -32,12 +32,12 @@ const orderColumns=[column("display_name","دابینکەر"),column("order_id",
   column("ordered_cost_minor","کۆی تێچووی داواکاری","money")];
 const receivingColumns=[column("display_name","دابینکەر"),column("product_name","کاڵا"),
   column("quantity_base_units","بڕی وەرگیراو","number"),
-  column("unit_cost_minor","نرخی کڕینی یەکە","money"),column("received_at","بەروار","date")];
+  column("unit_cost_minor","نرخی کڕینی یەکە","money"),column("lot_code","کۆدی LOT"),column("expires_on","بەسەرچوون","date_only"),column("received_at","بەروار","date")];
 const commitmentColumns=[column("display_name","دابینکەر"),column("purchase_orders","ژمارەی داواکاری","number"),
  column("total_ordered_cost_minor","کۆی نرخە تۆمارکراوەکانی داواکاری","money")];
 const returnColumns=[column("receipt_no","ژمارەی پسووڵە"),column("name_snapshot","ناوی کاڵا"),
  column("quantity_base_units","بڕی گەڕاوە","number"),column("amount_minor","نرخی گەڕاندنەوە (تۆماری ژمێریاری)","money"),
- column("restocked","گەڕایەوە بۆ کۆگا","bool"),column("reason","هۆکار"),
+ column("restocked","گەڕایەوە بۆ کۆگا","bool"),column("reason","هۆکار"),column("lot_code","کۆدی LOT"),
  column("created_at","بەروار","date")];
 const shiftColumns=[column("username","کاشێر"),column("status","دۆخی شێفت"),
  column("opening_minor","پارەی سەرەتایی تاقیکردنەوە","money"),
@@ -64,8 +64,8 @@ const expiryColumns=[
  column("expiry_state","دۆخی بەروار","expiry_state")
 ];
 const openingColumns=[
- column("product_name","ناوی کاڵا"),column("lot_code","کۆدی LOT"),
- column("counted_qty","بڕی ژمێردراوی سەرەتا","number"),
+ column("product_name","ناوی کاڵا"),column("lot_code","کۆدی LOT"),column("lot_origin","سەرچاوەی LOT"),
+ column("counted_qty","بڕی سەرەتایی یان وەرگیراو","number"),
  column("allocated_v88","فرۆشراوی تخصیصکراوی V88","number"),
  column("tracked_remaining","ماوەی تۆمارکراوی V88","number"),
  column("expires_on","بەرواری بەسەرچوون","date_only"),
@@ -108,24 +108,34 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
      SELECT 1 FROM zhirox_local.lot_cutovers_v88 WHERE store_id=$1::uuid
    ) AS enabled`,[store]);
   if(cutover.rows?.[0]?.enabled){
-   result=await pool.query(`SELECT p.name AS product_name,b.lot_code,b.counted_qty,
-     COALESCE(a.allocated_units,0)::bigint AS allocated_v88,
-     (b.counted_qty-COALESCE(a.allocated_units,0))::bigint AS tracked_remaining,
-     b.expires_on,
-     CASE WHEN b.expires_on<current_date THEN 'expired'
-      WHEN b.expires_on<=current_date+30 THEN 'near_expiry'
-      ELSE 'later' END AS expiry_state
+   result=await pool.query(`SELECT x.product_name,x.lot_code,x.lot_origin,
+   x.counted_qty,x.allocated_v88,x.tracked_remaining,x.expires_on,
+   CASE WHEN x.expires_on<current_date THEN 'expired'
+    WHEN x.expires_on<=current_date+30 THEN 'near_expiry'
+    ELSE 'later' END AS expiry_state
+   FROM (
+    SELECT p.name AS product_name,b.lot_code,'opening'::text AS lot_origin,
+      b.counted_qty,COALESCE(a.used_qty,0)::bigint AS allocated_v88,
+      (b.counted_qty-COALESCE(a.used_qty,0)+COALESCE(r.returned_qty,0))::bigint AS tracked_remaining,
+      b.expires_on
     FROM zhirox_local.opening_lot_counts_v88 b
     JOIN zhirox_local.products p ON p.store_id=b.store_id AND p.id=b.product_id
-    LEFT JOIN LATERAL (
-      SELECT SUM(a.quantity_base_units) AS allocated_units
-      FROM zhirox_local.lot_sale_allocations_v88 a
-      WHERE a.store_id=b.store_id AND a.opening_id=b.opening_id
-    ) a ON true
+    LEFT JOIN LATERAL (SELECT sum(quantity_base_units) AS used_qty
+      FROM zhirox_local.lot_sale_allocations_v88
+      WHERE store_id=b.store_id AND opening_id=b.opening_id) a ON true
+    LEFT JOIN LATERAL (SELECT sum(quantity_base_units) AS returned_qty
+      FROM zhirox_local.lot_returns_v89
+      WHERE store_id=b.store_id AND opening_id=b.opening_id AND restocked) r ON true
     WHERE b.store_id=$1::uuid
-    ORDER BY b.expires_on ASC,b.opening_id ASC LIMIT 100`,[store]);
+    UNION ALL
+    SELECT p.name, n.lot_code,'received'::text,n.received_qty_base_units,
+      0::bigint,n.received_qty_base_units,n.expires_on
+    FROM zhirox_local.lot_receipt_lines_v89 n
+    JOIN zhirox_local.products p ON p.store_id=n.store_id AND p.id=n.product_id
+    WHERE n.store_id=$1::uuid
+   ) x ORDER BY x.expires_on,x.lot_code LIMIT 100`,[store]);
    columns=openingColumns;
-   note="V88: بڕی ژمێردراوی سەرەتا بە پێی تۆماری تاقیکردنەوەی بەڕێوەبەرە. ماوەی V88 لە دوای فرۆشتنی LOT ـدار هەژمار کراوە؛ ئەمە بەڵگەی ژماردنەوەی فیزیکیی مارکێتی ڕاستەقینە نییە. مۆدی کۆنی فرۆشتن و گەڕاندنەوە لە تاقیکردنەوە ڕاگیراوە.";
+   note="V89: ماوەی تۆمارکراو = بڕی سەرەتا یان وەرگیراو کەم فرۆشتنی LOT ـدار، لەگەڵ گەڕاندنەوەی کاڵای سالم. LOT ـی تازە وەرگیراو هێشتا لە ڕێگای فرۆشتنی V88 بەکارناهێنرێت؛ ئەمە ژماردنەوەی فیزیکیی پشتڕاستکراوی مارکێتی ڕاستەقینە نییە.";
   }else{
    result=await pool.query(`SELECT p.name AS product_name,b.lot_code,b.received_qty_base_units,
    coalesce(a.allocated_units,0)::bigint AS allocated_v87,
@@ -244,11 +254,15 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
   }
  }else if(returns.has(sectionId)){
   result=await pool.query(`SELECT s.receipt_no,l.name_snapshot,r.quantity_base_units,
-    r.amount_minor,r.restocked,r.reason,r.created_at
+    r.amount_minor,r.restocked,r.reason,r.created_at,COALESCE(b.lot_code,'—') AS lot_code
    FROM zhirox_local.sale_returns_v84 r
    JOIN zhirox_local.sales s ON s.store_id=r.store_id AND s.id=r.sale_id
    JOIN zhirox_local.sale_lines l ON l.store_id=r.store_id
       AND l.sale_id=r.sale_id AND l.line_no=r.line_no
+   LEFT JOIN zhirox_local.lot_returns_v89 lr
+     ON lr.store_id=r.store_id AND lr.return_id=r.return_id
+   LEFT JOIN zhirox_local.opening_lot_counts_v88 b
+     ON b.store_id=lr.store_id AND b.opening_id=lr.opening_id
    WHERE r.store_id=$1::uuid
    ORDER BY r.created_at DESC,r.return_id DESC LIMIT 100`,[store]);
   columns=returnColumns;
@@ -270,12 +284,14 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
    columns=orderColumns;note="داواکارییەکی تۆمارکراوی کڕین؛ بەڵگەی پارەدانی دابینکەر نییە.";
   }else if(sectionId==="receive-goods"){
    result=await pool.query(`SELECT s.display_name,p.name AS product_name,l.quantity_base_units,
-    l.unit_cost_minor,g.received_at
+    l.unit_cost_minor,g.received_at,COALESCE(n.lot_code,'—') AS lot_code,n.expires_on
     FROM zhirox_local.goods_receipts_v83 g
     JOIN zhirox_local.purchase_orders_v83 o ON o.store_id=g.store_id AND o.order_id=g.order_id
     JOIN zhirox_local.suppliers_v83 s ON s.store_id=o.store_id AND s.supplier_id=o.supplier_id
     JOIN zhirox_local.goods_receipt_lines_v83 l ON l.store_id=g.store_id AND l.receipt_id=g.receipt_id
     JOIN zhirox_local.products p ON p.store_id=l.store_id AND p.id=l.product_id
+    LEFT JOIN zhirox_local.lot_receipt_lines_v89 n
+      ON n.store_id=l.store_id AND n.receipt_id=l.receipt_id AND n.line_no=l.line_no
     WHERE g.store_id=$1::uuid ORDER BY g.received_at DESC,g.receipt_id DESC,l.line_no LIMIT 100`,[store]);
    columns=receivingColumns;note="وەرگرتنی کاڵا لە PostgreSQL تۆمار کراوە و کۆگا زیاد کراوە؛ ئەم پەڕەیە تەنها بۆ خوێندنەوەیە.";
   }else{
