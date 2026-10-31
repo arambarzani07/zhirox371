@@ -479,3 +479,69 @@
  }
  /* Only the on-screen app gets these columns. Print/receipt styles remain untouched. */
 }
+
+
+/* Apply the same three-column screen to the isolated V57 offline PC shell.
+   All unsupported module destination buttons retain disabled state. */
+@media screen {
+ .v57-app .v57-content.v57-three-columns {
+   display:grid!important;direction:rtl;
+   grid-template-columns:202px 222px minmax(0,1fr)!important;
+   grid-template-rows:minmax(0,1fr)!important;
+   gap:0!important;align-items:stretch!important;
+   width:100%!important;min-height:0!important;padding:0!important;
+   margin:0!important;overflow:hidden!important;
+ }
+ .v57-three-columns > .system-module-column,
+ .v57-three-columns > .system-submodule-column {
+   box-sizing:border-box;min-width:0;min-height:0;height:100%;
+   overflow-y:auto;overflow-x:hidden;
+   padding:14px 10px;scrollbar-width:thin;
+ }
+ .v57-three-columns > .system-module-column {
+   background:#fff;border-inline-end:1px solid #dde7f0;
+ }
+ .v57-three-columns > .system-submodule-column {
+   background:#f8fafd;border-inline-end:1px solid #dae5ef;
+ }
+ .v57-app .v57-three-columns .system-module-link,
+ .v57-app .v57-three-columns .system-submodule-link {
+   text-align:right!important;border-radius:9px!important;
+   padding:9px 10px!important;min-height:43px!important;
+   width:100%!important;font-size:12px!important;
+   display:flex!important;align-items:center!important;gap:9px!important;
+ }
+ .v57-app .v57-three-columns .system-module-link.selected {
+   background:#eaf1f9!important;border-color:#c4d6e8!important;color:#1f466e!important;
+ }
+ .v57-app .v57-three-columns .system-submodule-link.selected {
+   background:#24486e!important;border-color:#24486e!important;color:#fff!important;
+ }
+ .v57-app .v57-three-columns .system-submodule-link:disabled {
+   opacity:.58!important;cursor:not-allowed!important;background:#f5f7fa!important;
+   color:#9aa8b6!important;
+ }
+ .v57-three-columns > .v57-workspace-column {
+   width:100%!important;max-width:none!important;height:100%!important;
+   min-width:0!important;min-height:0!important;box-sizing:border-box;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   background:var(--system-bg);
+ }
+ .v57-workspace-column > .v57-home-empty {
+   width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:0!important;
+ }
+ .v57-workspace-column > [data-v57-screen="cashier"] .pos-clean {
+   width:100%!important;max-width:none!important;
+   min-height:100%!important;margin:0!important;padding:17px 20px!important;
+ }
+ .v57-workspace-column .pos-clean__workspace {
+   grid-template-columns:minmax(0,1fr) minmax(240px,290px)!important;
+   min-height:calc(100dvh - 250px);
+ }
+ @media (max-width:1220px) {
+  .v57-app .v57-content.v57-three-columns {
+    grid-template-columns:176px 197px minmax(0,1fr)!important;
+  }
+ }
+}
