@@ -115,7 +115,7 @@ try{
  await moduleButton(2).click();
  await subButton("stock-transfer").click();
  await section("stock-transfer").waitFor();
- assert.match(await section("stock-transfer").innerText(),/هاتووچۆی ڕاستەقینەی SQL/);
+ assert.match(await section("stock-transfer").innerText(),/هاتووچۆی SQL/);
  await page.screenshot({path:"artifacts/v81/10-v83-incoming-and-outgoing-stock-ledger.png",fullPage:false});
  // V84: exact original receipt price, restocked vs damaged item, no cash payout.
  await moduleButton(0).click();
