@@ -1,4 +1,4 @@
-name: V57 locked offline PC Home and cashier shell (NO-GO)
+name: V57 editable offline navigation and safe cashier (NO-GO)
 on:
   push:
     branches:
@@ -28,11 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify unchanged inherited React Home, archived source-faithful Home and safe routes
+      - name: Verify Demo isolation and local pilot safety without visual design locks
         run: |
-          # The historical legacy test expects a pre-React index.html and was
-          # ALREADY incompatible with main. Do not rebaseline it silently.
-          # V57 explicitly pins current index + archived original HTML source.
           node --test tests/v23_preview_mode_guard.test.mjs
           node --test tests/v57_offline_home_contract.test.mjs
       - name: Install frontend dependencies
@@ -63,15 +60,15 @@ jobs:
           done
           cat /tmp/zhirox-v57-preview.log
           exit 1
-      - name: Verify 12 Home cards, all 48 subcard routes and local cashier
+      - name: Verify editable Home navigation and fail-closed cashier routing
         run: node tests/browser/v57_offline_home_shell.mjs
-      - name: Upload actual Chromium PC screenshots for owner visual sign-off
+      - name: Upload optional current Chromium UI evidence (not a frozen baseline)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ZHIROX371-V57-LOCKED-HOME-CHROMIUM-EVIDENCE
+          name: ZHIROX371-V57-EDITABLE-UI-EVIDENCE
           path: artifacts/v57/*.png
           if-no-files-found: warn
           retention-days: 14
       - name: Release classification
-        run: echo "V57 is isolated desktop UI acceptance only. No official offline Windows deployment or cloud connectivity. NO_GO."
+        run: echo "V57 verifies local POS safety only; layout is freely editable. Official Windows POS remains NO_GO."
