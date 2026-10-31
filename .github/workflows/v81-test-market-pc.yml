@@ -8,6 +8,10 @@ on:
       - 'offline/migrations/030_sale_returns_v84.sql'
       - 'offline/migrations/031_test_cashbook_v85.sql'
       - 'offline/migrations/032_expiry_lots_v86.sql'
+      - 'offline/migrations/033_fefo_checkout_v87.sql'
+      - 'offline/tests/045_v87_fefo_fixture.sql'
+      - 'offline/tests/046_v87_fefo_acceptance.sql'
+      - 'offline/tests/fefo-v87-contract.test.mjs'
       - 'offline/tests/043_v86_expiry_lot_fixture.sql'
       - 'offline/tests/044_v86_expiry_acceptance.sql'
       - 'offline/tests/expiry-v86-contract.test.mjs'
@@ -39,6 +43,10 @@ on:
       - 'offline/migrations/030_sale_returns_v84.sql'
       - 'offline/migrations/031_test_cashbook_v85.sql'
       - 'offline/migrations/032_expiry_lots_v86.sql'
+      - 'offline/migrations/033_fefo_checkout_v87.sql'
+      - 'offline/tests/045_v87_fefo_fixture.sql'
+      - 'offline/tests/046_v87_fefo_acceptance.sql'
+      - 'offline/tests/fefo-v87-contract.test.mjs'
       - 'offline/tests/043_v86_expiry_lot_fixture.sql'
       - 'offline/tests/044_v86_expiry_acceptance.sql'
       - 'offline/tests/expiry-v86-contract.test.mjs'
@@ -96,7 +104,7 @@ jobs:
         with:
           node-version: '24'
       - name: Check authenticated read-only V81 API security
-        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs
+        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs
       - name: Install app, disposable SQL driver and pinned Chromium
         run: |
           npm install --no-save --no-package-lock pg playwright@1.56.1
@@ -124,6 +132,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/migrations/030_sale_returns_v84.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/031_test_cashbook_v85.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/032_expiry_lots_v86.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/033_fefo_checkout_v87.sql
           node offline/test-market-v80.mjs
           node offline/tests/verify-test-market-login-v80.mjs
           psql -v ON_ERROR_STOP=1 -f offline/tests/036_v80_test_market_persisted.sql
@@ -135,6 +144,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/tests/042_v85_cashbook_acceptance.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/043_v86_expiry_lot_fixture.sql
           psql -v ON_ERROR_STOP=1 -f offline/tests/044_v86_expiry_acceptance.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/045_v87_fefo_fixture.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/046_v87_fefo_acceptance.sql
       - name: Start loopback-only read-only API on 3311 and Vite PC preview on 3000
         shell: bash
         run: |
@@ -160,22 +171,22 @@ jobs:
             echo "Uncertified official build must remain blocked"
             exit 1
           fi
-      - name: Preserve a restorable REAL PostgreSQL V86 test-market fixture snapshot
+      - name: Preserve a restorable REAL PostgreSQL V87 test-market fixture snapshot
         shell: bash
         run: |
           set -euo pipefail
           test "$PGDATABASE" = "zhirox_v80_disposable"
-          mkdir -p artifacts/v86
+          mkdir -p artifacts/v87
           umask 077
-          pg_dump -Fc --schema=zhirox_local -f artifacts/v86/ZHIROX-V86-TEST-MARKET.dump
-          test -s artifacts/v86/ZHIROX-V86-TEST-MARKET.dump
-          printf 'Isolated synthetic business records; actual SQL transactions. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v86/README.txt
+          pg_dump -Fc --schema=zhirox_local -f artifacts/v87/ZHIROX-V87-TEST-MARKET.dump
+          test -s artifacts/v87/ZHIROX-V87-TEST-MARKET.dump
+          printf 'Isolated synthetic business records; actual SQL transactions. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v87/README.txt
       - name: Save the current isolated sale returns, purchasing and inventory test archive
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ZHIROX-V86-TEST-MARKET-POSTGRESQL-SNAPSHOT
-          path: artifacts/v86/
+          name: ZHIROX-V87-TEST-MARKET-POSTGRESQL-SNAPSHOT
+          path: artifacts/v87/
           retention-days: 30
       - name: Save unaltered Chromium screenshots of actual V81 PC
         uses: actions/upload-artifact@v4
