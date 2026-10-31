@@ -1,0 +1,69 @@
+name: V79 isolated PostgreSQL customer debt ledger
+on:
+  pull_request:
+    paths:
+      - 'offline/migrations/028_customer_debt_ledger_v79.sql'
+      - 'offline/tests/035_v79_customer_debt.sql'
+      - 'offline/tests/customer-debt-contract-v79.test.mjs'
+      - 'offline/local-customer-debt-v79.mjs'
+      - 'offline/tests/local-customer-debt-v79.test.mjs'
+      - '.github/workflows/v79-local-customer-debt.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/migrations/028_customer_debt_ledger_v79.sql'
+      - 'offline/tests/035_v79_customer_debt.sql'
+      - 'offline/tests/customer-debt-contract-v79.test.mjs'
+      - 'offline/local-customer-debt-v79.mjs'
+      - 'offline/tests/local-customer-debt-v79.test.mjs'
+      - '.github/workflows/v79-local-customer-debt.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-debt-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: zhirox_v79_disposable
+          POSTGRES_USER: v79test
+          POSTGRES_PASSWORD: disposable_v79_not_production
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U v79test -d zhirox_v79_disposable"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: v79test
+      PGPASSWORD: disposable_v79_not_production
+      PGDATABASE: zhirox_v79_disposable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify no direct financial API or production migration
+        run: node --test offline/tests/customer-debt-contract-v79.test.mjs offline/tests/local-customer-debt-v79.test.mjs
+      - name: PostgreSQL disposable fixture safety
+        run: |
+          test "$PGDATABASE" = "zhirox_v79_disposable"
+          test "$PGUSER" = "v79test"
+          test "$PGHOST" = "127.0.0.1"
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Apply typed customer/debt schema to disposable database only
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/001_core.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/003_local_users.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/028_customer_debt_ledger_v79.sql
+      - name: Prove tenant segregation, repayment ceiling, no mutation, no cashier writes
+        run: psql -v ON_ERROR_STOP=1 -f offline/tests/035_v79_customer_debt.sql
+      - name: Verify synthetic test data rolled back
+        run: |
+          test "$(psql -Atc "SELECT count(*) FROM zhirox_local.stores WHERE name LIKE 'V79 disposable %'")" = "0"
