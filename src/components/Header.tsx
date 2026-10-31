@@ -42,7 +42,7 @@ export const Header:React.FC<{localPilot?:boolean}>=({localPilot=false})=>{
    setPickedSub(sub.iconName);
    navigateTo(sub.targetView as NavView,sub.targetSubtab);
  };
- return <header className={`system-header system-strip-only system-double-strip ${localPilot?"system-local-only":""}`}>
+ return <header className={`system-header system-strip-only system-double-strip ${chosen?"has-subnav":""} ${localPilot?"system-local-only":""}`}>
    <nav className="system-nav system-primary-nav" aria-label="بەشە سەرەکییەکان">
      <button type="button" className={`ws-link ${currentView==="home"&&moduleId===null?"active":""}`}
        aria-current={currentView==="home"&&moduleId===null?"page":undefined}
@@ -66,7 +66,7 @@ export const Header:React.FC<{localPilot?:boolean}>=({localPilot=false})=>{
          className={`system-subnav-link ${selected?"selected":""}`}
          aria-current={selected?"page":undefined}
          disabled={!enabled} aria-disabled={!enabled}
-         onClick={()=>selectSub(sub)}>{sub.label}</button>;
+         onClick={()=>selectSub(sub)}>{sub.label}{selected&&<span className="system-subnav-check" aria-hidden="true">✓</span>}</button>;
      })}
    </nav>
  </header>;
