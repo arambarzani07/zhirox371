@@ -94,7 +94,7 @@ internal static class ZhiroxCashierV75 {
         Text="تەنها PostgreSQL ـی تاقیکردنەوە؛ فرۆشتنی بازاڕ ڕێگەپێنەدراوە",
         ForeColor=Color.DarkRed,Font=new Font("Tahoma",10),TextAlign=ContentAlignment.MiddleCenter};
       Controls.Add(status);
-      try{Endpoint=Validate();status.Text="HTTPS LAN ـی تاقیکردنەوە: "+Endpoint;}
+      try{Endpoint=ZhiroxCashierV75.Validate();status.Text="HTTPS LAN ـی تاقیکردنەوە: "+Endpoint;}
       catch{status.Text="V75 ڕەتکرایەوە: پێویستی بە ڕێکخستنی تاقیکردنەوەی پارێزراوە";}
       SafeButtons();
     }
