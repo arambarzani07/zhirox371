@@ -14,47 +14,42 @@ const names=[
  ["دابینکەران","07-suppliers.png"],
  ["دارایی","08-finance.png"],
  ["ڕاپۆرت","09-reports.png"],
- ["لیبڵ","10-labels.png"],
- ["ڕێکخستن","11-settings.png"]
+ ["ڕێکخستن","10-settings.png"],
+ ["ئافەر","11-offers.png"],
+ ["لیبڵ","12-labels.png"],
+ ["شێفت","13-shifts.png"],
+ ["چاودێری","14-audit.png"]
 ];
-try {
+try{
  await mkdir("artifacts/system-v2",{recursive:true});
  await page.goto(origin,{waitUntil:"networkidle"});
  assert.equal(await page.locator("html").getAttribute("dir"),"rtl");
- await page.locator(".home-screen").waitFor();
- assert.equal(await page.locator(".system-header").count(),1);
- assert.equal(await page.locator(".system-header .ws-link").count(),9);
- assert.equal(await page.locator(".module").count(),12);
- const icons=await page.locator(".module .icon svg").evaluateAll(nodes=>nodes.map(node=>{
-  const rect=node.getBoundingClientRect();
-  const stroke=getComputedStyle(node).stroke;
-  return {width:rect.width,height:rect.height,stroke};
- }));
- assert.equal(icons.length,12,"each Home module has a local SVG");
- assert.ok(icons.every(icon=>icon.width>=24&&icon.height>=24&&icon.stroke!=="none"&&icon.stroke!==""),
-  "all twelve Home SVG icons must have visible semantic strokes");
+ await page.locator(".home-strip-only").waitFor();
+ const nav=page.locator("header.system-strip-only .system-nav");
+ assert.equal(await nav.count(),1);
+ assert.equal(await nav.locator("button").count(),13);
+ assert.equal(await page.locator(".module,.sub,.drawer,.subgrid").count(),0,"all Home cards and subcards removed");
  const tokens=await page.evaluate(()=>({
   banner:getComputedStyle(document.documentElement).getPropertyValue("--market-banner-height").trim(),
-  background:getComputedStyle(document.querySelector("#app")).backgroundColor
+  header:document.querySelector(".system-strip-only").getBoundingClientRect(),
+  market:document.querySelector(".market-banner").getBoundingClientRect()
  }));
- assert.equal(tokens.banner,"56px","all system pages share one banner height");
+ assert.equal(tokens.banner,"56px");
+ assert.ok(Math.abs(tokens.header.top-tokens.market.bottom)<2,"only ribbon sits directly beneath market name");
  await page.screenshot({path:"artifacts/system-v2/01-home.png",fullPage:false});
- await page.locator(".module").first().click();
- assert.equal(await page.locator(".drawer .sub").count(),4);
- await page.screenshot({path:"artifacts/system-v2/02-home-submodules.png",fullPage:false});
- await page.locator(".drawer .sub").first().click();
- await page.locator(".system-header .ws-link.active").waitFor();
+ assert.equal(await page.locator(".home-strip-only").innerText(),"","Home has no unnecessary text");
  for(const [label,file] of names){
-  const button=page.locator(".system-header .ws-link").filter({hasText:label}).first();
+  const button=nav.getByRole("button",{name:label,exact:true});
   await button.click();
-  await page.waitForTimeout(70);
-  assert.equal(await page.locator(".system-header .ws-link.active").count(),1,"single active nav in "+label);
-  const main=page.locator("#app");
-  assert.ok((await main.innerText()).length>20,"route has content "+label);
+  assert.equal(await nav.locator("button.active").count(),1,"only one active module");
+  const content=page.locator("#app");
+  assert.ok((await content.innerText()).length>12,"feature view is reachable: "+label);
+  assert.equal(await page.locator(".module,.drawer,.sub").count(),0,"feature never resurrects cards");
   await page.screenshot({path:"artifacts/system-v2/"+file,fullPage:false});
  }
- await page.locator(".system-header .home").click();
- assert.equal(await page.locator(".home-screen .module").count(),12);
- assert.deepEqual(errors,[],"UI navigation should not throw any client errors");
- console.log("PASS V2: unified Sorani design Home + all nine React module routes; no visual freeze or database requests");
+ await nav.getByRole("button",{name:"سەرەتا",exact:true}).click();
+ assert.equal(await page.locator(".home-strip-only").count(),1);
+ assert.equal(await page.locator(".module").count(),0);
+ assert.deepEqual(errors,[],"no client error while navigating horizontal strip");
+ console.log("PASS V2: 13-button horizontal ribbon and 12 module routes, without Home cards");
 }finally{await browser.close();}
