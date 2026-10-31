@@ -32,22 +32,22 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_DB: zhirox_v80_disposable
-          POSTGRES_USER: v81test
+          POSTGRES_USER: v80test
           POSTGRES_PASSWORD: disposable_v81_ci_only
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U v81test -d zhirox_v80_disposable"
+          --health-cmd "pg_isready -U v80test -d zhirox_v80_disposable"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
       PGHOST: 127.0.0.1
       PGPORT: '5432'
-      PGUSER: v81test
+      PGUSER: v80test
       PGPASSWORD: disposable_v81_ci_only
       PGDATABASE: zhirox_v80_disposable
-      ZHIROX_LOCAL_DB_URL: postgresql://v81test:disposable_v81_ci_only@127.0.0.1:5432/zhirox_v80_disposable
+      ZHIROX_LOCAL_DB_URL: postgresql://v80test:disposable_v81_ci_only@127.0.0.1:5432/zhirox_v80_disposable
       ZHIROX_V80_CREATE_MARKET: YES_CREATE_TEST_MARKET
       ZHIROX_V81_TEST_MARKET: YES_LOCAL_TEST_READ_ONLY
       VITE_ENABLE_LOCAL_PILOT: 'true'
