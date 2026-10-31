@@ -7,8 +7,6 @@ import vm from "node:vm";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const source=readFileSync(resolve(root,"operations.js"),"utf8");
-const home=readFileSync(resolve(root,"index.html"),"utf8");
-const lock=readFileSync(resolve(root,"tests/owner_locked_home_sha.test.mjs"),"utf8");
 const start=source.indexOf("async function saveOpsCatalogProduct(e){");
 const end=source.indexOf("async function refreshLowStockView(){",start);
 assert.ok(start>=0&&end>start,"inline catalog form must exist");
@@ -42,11 +40,8 @@ function fixture(values={},opts={}){
  vm.runInContext(code,ctx);
  return {ctx,calls,messages,fields,run:()=>ctx.saveOpsCatalogProduct({preventDefault(){}})};
 }
-test("Owner lock restores approved 12-by-4 Home SHA",()=>{
- assert.match(lock,/c364336a84b2c92cf121d7682671b309eccd4b05/);
- assert.doesNotMatch(lock,/a342d2e3a89453e2f97fc188fb422cdeecff6390/);
- assert.match(home,/s\[4\]\.forEach/);
-});
+// The owner removed the visual Home freeze. Only transactional catalog safety
+// assertions continue below; no historical visual baseline is required.
 test("Product creation is one atomic V14 RPC, never partial table writes",async()=>{
  const f=fixture();
  await f.run();
