@@ -57,6 +57,8 @@ const movementColumns=[column("username","کاشێر"),column("kind","جۆر"),
 const expiryColumns=[
  column("product_name","ناوی کاڵا"),column("lot_code","کۆدی بەچ"),
  column("received_qty_base_units","بڕی وەرگیراو (نەک ماوەی ئێستا)","number"),
+ column("allocated_v87","فرۆشراوی تۆمارکراوی V87","number"),
+ column("tracked_remaining","ماوەی تخصیصی V87 (نەک ستۆکی فیزیکی)","number"),
  column("expires_on","بەرواری بەسەرچوون","date_only"),
  column("days_to_expiry","ڕۆژی ماوە","number"),
  column("expiry_state","دۆخی بەروار","expiry_state")
@@ -95,16 +97,23 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
  let result,columns,note="";
  if(expiryLots.has(sectionId)){
   result=await pool.query(`SELECT p.name AS product_name,b.lot_code,b.received_qty_base_units,
+   coalesce(a.allocated_units,0)::bigint AS allocated_v87,
+   (b.received_qty_base_units-coalesce(a.allocated_units,0))::bigint AS tracked_remaining,
    b.expires_on,(b.expires_on-current_date)::integer AS days_to_expiry,
    CASE WHEN b.expires_on<current_date THEN 'expired'
     WHEN b.expires_on<=current_date+30 THEN 'near_expiry'
     ELSE 'later' END AS expiry_state
    FROM zhirox_local.expiry_lots_v86 b
    JOIN zhirox_local.products p ON p.store_id=b.store_id AND p.id=b.product_id
+   LEFT JOIN LATERAL (
+    SELECT sum(a.quantity_base_units) AS allocated_units
+    FROM zhirox_local.lot_sale_allocations_v87 a
+    WHERE a.store_id=b.store_id AND a.batch_id=b.batch_id
+   ) a ON true
    WHERE b.store_id=$1::uuid
    ORDER BY b.expires_on ASC,b.batch_id ASC LIMIT 100`,[store]);
   columns=expiryColumns;
-  note="بڕەکان تەنها بڕی تۆمارکراوی وەرگرتنن؛ کۆگای ماوەی هەر بەچ نازانرێت چونکە فرۆشتن بە LOT نەبەستراوە. ئەمە تەنها ئاگاداریی بەروارە و بەڵگەی کێشەی ستۆکی ئێستا نییە.";
+  note="ماوەی V87 = بڕی وەرگیراو کەم فرۆشتنی LOT ـدار لە V87. فرۆشتن و گەڕاندنەوە کۆنەکان بە LOT نەبەستراونەتەوە؛ ئەم ژمارەیە کۆگای فیزیکی و پاراستنی تەواوی فرۆشتن نییە. LOT ـی بەسەرچوو لە فرۆشتنی تاقیکردنەوەی V87 هەڵنابژێردرێت.";
  }else if(products.has(sectionId)){
   result=await pool.query(sqlProducts,[store]);columns=productColumns;
   if(sectionId==="low-stock"||sectionId==="alert-bell"){
