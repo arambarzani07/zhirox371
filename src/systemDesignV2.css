@@ -545,3 +545,25 @@
   }
  }
 }
+
+
+/* Higher specificity than the historical full-screen adapter's
+ * #root > .viewport > .desktop > main > div:not(.home-strip-only) rule.
+ * Without this, that legacy rule adds a 26px inset on all four sides
+ * of the entire third column and breaks true PC edge-to-edge geometry. */
+@media screen {
+ #root > .viewport > .desktop > main#app.system-three-columns > div.system-content-column {
+  box-sizing:border-box!important;min-width:0!important;
+  width:100%!important;height:100%!important;min-height:0!important;
+  max-width:none!important;max-height:none!important;
+  margin:0!important;padding:0!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  border:none!important;border-radius:0!important;
+  background:var(--system-bg)!important;
+ }
+ #root > .viewport > .desktop > main#app.system-three-columns > div.system-content-column > div.home-strip-only {
+  width:100%!important;min-height:100%!important;
+  max-width:none!important;margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;
+ }
+}
