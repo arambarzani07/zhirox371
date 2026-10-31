@@ -1,0 +1,67 @@
+name: V73 REAL Windows EXE compile and native self-test - PREVIEW ONLY
+on:
+  pull_request:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows-offline-trial-v73.yml'
+  push:
+    branches: [feature/v73-real-windows-exe-build-20261031]
+    paths:
+      - 'windows/**'
+      - '.github/workflows/windows-offline-trial-v73.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-package:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify V46 NO-GO and isolated source bundle
+        shell: pwsh
+        run: |
+          npm install --no-package-lock
+          if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
+          $env:VITE_V36_ISOLATED_LAN_PILOT = 'true'
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'V36 build failed' }
+          node scripts/package-lan-pilot-v36.mjs dist
+          if ($LASTEXITCODE -ne 0) { throw 'Manifest failed' }
+          node --test offline/tests/standalone-preview-v55.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'V55 local read-only UI preview tests failed' }
+          node --test offline/tests/windows-print-dispatch-v54.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'V54 print-dispatch test failure' }
+          node --test offline/tests/release-candidate-v53.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'V53 integrity unit tests failed' }
+          node --test scripts/release-readiness-v46.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'V46 gate failed' }
+      - name: Build unsigned Windows EXE with NO real data
+        shell: pwsh
+        run: |
+          npm install --omit=dev --no-save --no-package-lock --ignore-scripts pg@8.16.3
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime dependencies failed' }
+          & ./windows/Build-ZHIROX-TestInstaller.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Offline trial installer build failed' }
+          Push-Location ZHIROX371-Windows-OFFLINE-TRIAL
+          try {
+            & ./ZHIROX371.exe --self-test
+          if ($LASTEXITCODE -ne 0) { throw 'V55 native Windows EXE did not start verified offline preview safely' }
+          & ./node.exe offline/release-candidate-preflight-v53.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'V53 packaged integrity check failed' }
+          } finally { Pop-Location }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZHIROX371-V73-REAL-WINDOWS-EXE-UNSIGNED-PREVIEW
+          path: |
+            artifacts/ZHIROX371-V55-Offline-App-Setup.exe
+            ZHIROX371-V55-Offline-App-Setup.sha256.txt
+            ZHIROX371-Windows-OFFLINE-TRIAL.zip
+            ZHIROX371-Windows-OFFLINE-TRIAL.sha256.txt
+          if-no-files-found: error
+          retention-days: 14
