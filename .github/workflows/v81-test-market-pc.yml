@@ -4,6 +4,10 @@ on:
     paths:
       - 'offline/local-test-market-v81.mjs'
       - 'offline/test-market-sections-v82.mjs'
+      - 'offline/migrations/029_supplier_receiving_v83.sql'
+      - 'offline/tests/037_v83_supplier_test_fixture.sql'
+      - 'offline/tests/038_v83_supplier_acceptance.sql'
+      - 'offline/tests/supplier-v83-contract.test.mjs'
       - 'offline/tests/test-market-sections-v82.test.mjs'
       - 'offline/tests/test-market-v81-api.test.mjs'
       - 'src/components/TestMarketDesktopV81.tsx'
@@ -19,6 +23,10 @@ on:
     paths:
       - 'offline/local-test-market-v81.mjs'
       - 'offline/test-market-sections-v82.mjs'
+      - 'offline/migrations/029_supplier_receiving_v83.sql'
+      - 'offline/tests/037_v83_supplier_test_fixture.sql'
+      - 'offline/tests/038_v83_supplier_acceptance.sql'
+      - 'offline/tests/supplier-v83-contract.test.mjs'
       - 'offline/tests/test-market-sections-v82.test.mjs'
       - 'offline/tests/test-market-v81-api.test.mjs'
       - 'src/components/TestMarketDesktopV81.tsx'
@@ -64,7 +72,7 @@ jobs:
         with:
           node-version: '24'
       - name: Check authenticated read-only V81 API security
-        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs
+        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs
       - name: Install app, disposable SQL driver and pinned Chromium
         run: |
           npm install --no-save --no-package-lock pg playwright@1.56.1
@@ -88,9 +96,12 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f offline/migrations/003_local_users.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/028_customer_debt_ledger_v79.sql
           psql -v ON_ERROR_STOP=1 -f offline/migrations/027_section_settings_v78.sql
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/029_supplier_receiving_v83.sql
           node offline/test-market-v80.mjs
           node offline/tests/verify-test-market-login-v80.mjs
           psql -v ON_ERROR_STOP=1 -f offline/tests/036_v80_test_market_persisted.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/037_v83_supplier_test_fixture.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/038_v83_supplier_acceptance.sql
       - name: Start loopback-only read-only API on 3311 and Vite PC preview on 3000
         shell: bash
         run: |
@@ -116,6 +127,23 @@ jobs:
             echo "Uncertified official build must remain blocked"
             exit 1
           fi
+      - name: Preserve a restorable REAL PostgreSQL V83 test-market fixture snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PGDATABASE" = "zhirox_v80_disposable"
+          mkdir -p artifacts/v83
+          umask 077
+          pg_dump -Fc --schema=zhirox_local -f artifacts/v83/ZHIROX-V83-TEST-MARKET.dump
+          test -s artifacts/v83/ZHIROX-V83-TEST-MARKET.dump
+          printf 'Isolated synthetic business records; actual SQL transactions. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v83/README.txt
+      - name: Save the current isolated supplier/purchase PostgreSQL archive
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ZHIROX-V83-TEST-MARKET-POSTGRESQL-SNAPSHOT
+          path: artifacts/v83/
+          retention-days: 30
       - name: Save unaltered Chromium screenshots of actual V81 PC
         uses: actions/upload-artifact@v4
         if: always()
