@@ -1,7 +1,6 @@
 @import "../ui-global.css";
 @import "../ui-fixed-pc.css";
 @import "../card-icons.css";
-@import "../ui-contrast-lock.css";
 
 /* Base Resets & Layout */
 * {
@@ -37,9 +36,8 @@ button {
 }
 
 
-/* React root adapter for the owner-approved, locked 1020px PC shell.
-   The original locked rules target body > .viewport, but React wraps
-   the viewport inside #root. Do not alter the locked stylesheets. */
+/* Temporary React adapter while the interface is rebuilt from scratch.
+   Every layout parameter below is freely editable. This is NOT a design lock. */
 @media screen {
   #root > .viewport {
     width: 100%;
@@ -73,18 +71,16 @@ button {
     padding: 0;
     overscroll-behavior-y: contain;
   }
-  /* The approved 39/44px Home spacing must NOT override cashier or other routes. */
-  #root > .viewport > .desktop > main > .locked-home {
-    padding: 39px 44px 60px !important;
+  /* Current Home spacing is provisional and can be redesigned freely. */
+  #root > .viewport > .desktop > main > .home-screen {
+    padding: 39px 44px 60px;
   }
-  /* Keep the approved fixed PC 3x4 grid only on Home, never on POS tables. */
-  #root > .viewport > .desktop > main > .locked-home .row {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  /* Existing Home grid is provisional, not a mandatory 3x4 design. */
+  #root > .viewport > .desktop > main > .home-screen .row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  /* Original 75px PC header styles were embedded in the old index.html.
-     They were lost when the React root replaced that document. Restore only
-     the approved header geometry, without touching locked CSS or assets. */
+  /* Temporary header defaults. New design can replace them entirely. */
   #root > .viewport > .desktop > header {
     background: #fff;
     padding: 0 42px;
