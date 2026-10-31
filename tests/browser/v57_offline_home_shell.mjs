@@ -25,6 +25,7 @@ try{
  const cashier=tabs.filter({hasText:"کاشێر"}).first();
  assert.equal(await cashier.isDisabled(),false,"only connected PG cashier may be entered");
  assert.equal(await nav.locator("button[data-module-id]:not(:disabled)").count(),1,"unfinished modules must fail closed");
+ await mkdir("artifacts/v57",{recursive:true});
  assert.equal(await page.locator(".system-module-column .system-module-link").count(),12);
  assert.equal(await page.locator(".system-submodule-column .system-submodule-link").count(),4);
  await page.locator(".system-module-column .system-module-link[data-module-id='1']").click();
@@ -37,7 +38,6 @@ try{
  assert.equal(await page.locator(".system-selected-check").count(),1);
  await page.screenshot({path:"artifacts/v57/03-offline-selected-submodule.png",fullPage:false});
  await page.keyboard.press("Escape");
- await mkdir("artifacts/v57",{recursive:true});
  await page.screenshot({path:"artifacts/v57/01-navigation-only.png",fullPage:false});
  await cashier.click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
