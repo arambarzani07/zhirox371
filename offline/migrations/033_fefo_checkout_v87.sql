@@ -91,9 +91,9 @@ BEGIN
  IF FOUND THEN
   IF existing.cashier_id IS DISTINCT FROM p_actor
    OR existing.request_payload IS DISTINCT FROM v_payload
-   OR NOT EXISTS(SELECT 1 FROM zhirox_local.lot_checkouts_v87
-    WHERE store_id=p_store AND sale_id=existing.id AND request_id=p_request
-      AND actor_id=p_actor)
+   OR NOT EXISTS(SELECT 1 FROM zhirox_local.lot_checkouts_v87 lc
+    WHERE lc.store_id=p_store AND lc.sale_id=existing.id
+      AND lc.request_id=p_request AND lc.actor_id=p_actor)
   THEN RAISE EXCEPTION 'request conflicts with existing sale' USING ERRCODE='P8703'; END IF;
   RETURN QUERY SELECT existing.id,existing.receipt_no,existing.total_minor,true;
   RETURN;
