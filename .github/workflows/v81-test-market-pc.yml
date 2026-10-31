@@ -93,7 +93,7 @@ jobs:
             if curl -s http://127.0.0.1:3311/api/local/v81/overview | grep -q 'invalid_session'; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:3311/api/local/v81/overview | grep -q 'invalid_session'
+          curl -sS http://127.0.0.1:3311/api/local/v81/overview | grep -q 'invalid_session'
           (npm run dev -- --host 127.0.0.1 >/tmp/zv81-vite.log 2>&1 &)
           for attempt in $(seq 1 35); do
             if curl -fsS http://127.0.0.1:3000/ >/dev/null; then break; fi
