@@ -56,8 +56,8 @@ try{
   }
  }
  assert.equal(visited.size,48,"every submodule needs own section endpoint");
- assert.equal(maturity.read_only,26,"26 real PostgreSQL-backed read-only subsection screens");
- assert.equal(maturity.planned,22,"22 explicitly unimplemented subsection screens");
+ assert.equal(maturity.read_only,27,"27 real PostgreSQL-backed read-only subsection screens");
+ assert.equal(maturity.planned,21,"21 explicitly unimplemented subsection screens");
  // Real PostgreSQL financial view is within reports, not Home.
  await moduleButton(6).click();
  await section("sales-trend").waitFor();
@@ -117,6 +117,23 @@ try{
  await section("stock-transfer").waitFor();
  assert.match(await section("stock-transfer").innerText(),/هاتووچۆی ڕاستەقینەی SQL/);
  await page.screenshot({path:"artifacts/v81/10-v83-incoming-and-outgoing-stock-ledger.png",fullPage:false});
+ // V84: exact original receipt price, restocked vs damaged item, no cash payout.
+ await moduleButton(0).click();
+ await subButton("return-arrow").click();
+ await section("return-arrow").waitFor();
+ assert.match(await section("return-arrow").innerText(),/2,500 IQD/);
+ assert.match(await section("return-arrow").innerText(),/3,000 IQD/);
+ assert.match(await section("return-arrow").innerText(),/هیچ نەختینە/);
+ await page.screenshot({path:"artifacts/v81/11-v84-real-return-journal.png",fullPage:false});
+ await moduleButton(1).click();
+ await subButton("product-list").click();
+ await section("product-list").waitFor();
+ assert.match(await section("product-list").innerText(),/29/);
+ await moduleButton(2).click();
+ await subButton("stock-transfer").click();
+ await section("stock-transfer").waitFor();
+ assert.match(await section("stock-transfer").innerText(),/گەڕاندنەوەی کاڵای سالم/);
+ await page.screenshot({path:"artifacts/v81/12-v84-restocked-stock-movement.png",fullPage:false});
  await moduleButton(8).click();
  await subButton("coupon-ticket").click();
  await section("coupon-ticket").waitFor();
@@ -130,6 +147,11 @@ try{
  await page.locator(".v81-first-row nav").waitFor();
  assert.equal(await page.locator(".v81-first-row nav button").count(),13);
  await moduleButton(3).click();
+ await page.getByRole("alert").waitFor();
+ assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
+ assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
+ await moduleButton(0).click();
+ await subButton("return-arrow").click();
  await page.getByRole("alert").waitFor();
  assert.match(await page.getByRole("alert").innerText(),/تەنها بۆ خاوەن مارکێت/);
  assert.equal(await page.locator("[data-testid=v82-section]").count(),0);
