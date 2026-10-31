@@ -32,6 +32,10 @@ on:
       - 'offline/tests/v94_restricted_auth_real_pg.mjs'
       - 'offline/tests/v94-auth-boundary-contract.test.mjs'
       - 'docs/V94_ISOLATED_AUTH_PRIVILEGES.md'
+      - 'offline/migrations/040_v95_checkout_preflight_audit.sql'
+      - 'offline/tests/v95_real_pg_preflight_gate.mjs'
+      - 'offline/tests/v95-preflight-contract.test.mjs'
+      - 'docs/V95_CHECKOUT_PREFLIGHT_AUDIT.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -96,6 +100,10 @@ on:
       - 'offline/tests/v94_restricted_auth_real_pg.mjs'
       - 'offline/tests/v94-auth-boundary-contract.test.mjs'
       - 'docs/V94_ISOLATED_AUTH_PRIVILEGES.md'
+      - 'offline/migrations/040_v95_checkout_preflight_audit.sql'
+      - 'offline/tests/v95_real_pg_preflight_gate.mjs'
+      - 'offline/tests/v95-preflight-contract.test.mjs'
+      - 'docs/V95_CHECKOUT_PREFLIGHT_AUDIT.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -162,7 +170,7 @@ jobs:
         with:
           node-version: '24'
       - name: Check authenticated read-only V81 API security
-        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs offline/tests/v92-viewer-boundary-contract.test.mjs offline/tests/v93-dual-pool-contract.test.mjs offline/tests/v94-auth-boundary-contract.test.mjs
+        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs offline/tests/v92-viewer-boundary-contract.test.mjs offline/tests/v93-dual-pool-contract.test.mjs offline/tests/v94-auth-boundary-contract.test.mjs offline/tests/v95-preflight-contract.test.mjs
       - name: Install app, disposable SQL driver and pinned Chromium
         run: |
           npm install --no-save --no-package-lock pg playwright@1.56.1
@@ -252,22 +260,26 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f offline/migrations/039_v94_restricted_auth_role.sql
       - name: V94 real restricted authentication, denial of financial SQL and signed read-only HTTP
         run: node offline/tests/v94_restricted_auth_real_pg.mjs
-      - name: Preserve a restorable REAL PostgreSQL V94 least-privilege auth and restricted API test-market snapshot
+      - name: V95 create isolated preflight-only SQL gate and durable decision audit
+        run: psql -v ON_ERROR_STOP=1 -f offline/migrations/040_v95_checkout_preflight_audit.sql
+      - name: V95 real constrained PostgreSQL preflight allow deny and no checkout
+        run: node offline/tests/v95_real_pg_preflight_gate.mjs
+      - name: Preserve a restorable REAL PostgreSQL V95 isolated checkout preflight audit test-market snapshot
         shell: bash
         run: |
           set -euo pipefail
           test "$PGDATABASE" = "zhirox_v80_disposable"
-          mkdir -p artifacts/v94
+          mkdir -p artifacts/v95
           umask 077
-          pg_dump -Fc --schema=zhirox_local -f artifacts/v94/ZHIROX-V94-TEST-MARKET.dump
-          test -s artifacts/v94/ZHIROX-V94-TEST-MARKET.dump
-          printf 'V94 test-only fully restricted auth and data SQL identities, with synthetic V91/V92/V93 transactions with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v94/README.txt
+          pg_dump -Fc --schema=zhirox_local -f artifacts/v95/ZHIROX-V95-TEST-MARKET.dump
+          test -s artifacts/v95/ZHIROX-V95-TEST-MARKET.dump
+          printf 'V95 test-only restricted actor checkout intent decisions and durable audit, after V94 restricted auth and synthetic V91/V92/V93 transactions with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v95/README.txt
       - name: Save the current isolated sale returns, purchasing and inventory test archive
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ZHIROX-V94-RESTRICTED-AUTH-POSTGRESQL-SNAPSHOT
-          path: artifacts/v94/
+          name: ZHIROX-V95-PREFLIGHT-AUDIT-POSTGRESQL-SNAPSHOT
+          path: artifacts/v95/
           retention-days: 30
       - name: Save unaltered Chromium screenshots of actual V81 PC
         uses: actions/upload-artifact@v4
