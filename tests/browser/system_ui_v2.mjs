@@ -90,6 +90,36 @@ try{
    await fullscreen(1440,900);
    await page.screenshot({path:"artifacts/system-v2/"+file,fullPage:false});
  }
+ // Every submodule has a stable, distinct full-width workspace identity.
+ const visited=new Set();
+ const sample=new Map([
+  ["debt-book","17-debt-own-page.png"],
+  ["supplier-accounts","18-supplier-accounts-own-page.png"],
+  ["low-stock","19-low-stock-own-page.png"],
+  ["change-history","20-audit-own-page.png"],
+  ["coupon-ticket","21-coupon-own-page.png"]
+ ]);
+ for(let i=0;i<12;i++){
+   await nav.locator("button[data-module-id='"+i+"']").click();
+   const items=await subnav.locator("button[data-sub-icon]").evaluateAll(nodes=>
+     nodes.map(n=>({icon:n.getAttribute("data-sub-icon"),label:n.textContent.replace("✓","").trim()})));
+   assert.equal(items.length,4,"exactly four unique submodule destinations per category");
+   for(const item of items){
+     await subnav.locator("button[data-sub-icon='"+item.icon+"']").click();
+     const panel=page.locator("section.section-workspace[data-section-id='"+item.icon+"']");
+     await panel.waitFor();
+     assert.equal(await panel.getAttribute("data-section-title"),item.label,"dedicated page title matches selected tab");
+     assert.equal(await panel.locator("h1").first().innerText(),item.label,"no unrelated generic submodule page");
+     assert.equal(await subnav.locator(".system-subnav-link.selected").getAttribute("data-sub-icon"),item.icon);
+     assert.ok(!visited.has(item.icon),"no two submodules share the same page identity: "+item.icon);
+     visited.add(item.icon);
+     if(sample.has(item.icon)){
+       await fullscreen(1440,900);
+       await page.screenshot({path:"artifacts/system-v2/"+sample.get(item.icon),fullPage:false});
+     }
+   }
+ }
+ assert.equal(visited.size,48,"all 48 independent section pages rendered and navigated");
  await nav.locator("button[data-module-id='1']").click();
  await subnav.locator("button[data-sub-icon='add-box']").click();
  assert.equal(await subnav.locator(".system-subnav-link.selected").getAttribute("data-sub-icon"),"add-box",
