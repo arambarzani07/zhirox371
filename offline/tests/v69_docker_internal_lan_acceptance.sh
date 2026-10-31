@@ -102,3 +102,58 @@ done
 NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' \
  node offline/tests/v69_docker_lan_final_audit.mjs "$recovery_client"
 echo "V69 DOCKER INTERNAL PRIVATE LAN PASS: five clients, NIC detach/reattach, no external WAN"
+
+# V70 only: reuse exact 5 running cashier containers and still-internal LAN.
+if [ "${ZHIROX_V70_SOAK_ENABLED:-}" = "true" ]; then
+ psql -v ON_ERROR_STOP=1 -f offline/tests/033_v70_five_pc_soak_fixture_ci.sql >/dev/null
+ start_v70="$(date +%s)"
+ for i in 1 2 3 4 5; do
+   docker exec -e ZHIROX_V70_SOAK_ENABLED=true "v69-pc$i" \
+     node offline/tests/v70_docker_cashier_soak_client.mjs login "$i" > "$evidence/v70-pc$i-login.json"
+ done
+
+ for round in $(seq 1 20); do
+   pids=()
+   for i in 1 2 3 4 5; do
+     if [ "$round" = 10 ] && [ "$i" = 3 ]; then
+       # A 750 IQD checkout intent prepared, saved to REAL PostgreSQL,
+       # but NOT committed while this PC loses its bridge link.
+       docker exec -e ZHIROX_V70_SOAK_ENABLED=true v69-pc3 \
+         node offline/tests/v70_docker_cashier_soak_client.mjs hold 3 \
+         > "$evidence/v70-hold-pc3.json"
+       docker network disconnect "$net" v69-pc3
+       docker exec -e ZHIROX_V70_SOAK_ENABLED=true v69-pc3 \
+         node offline/tests/v70_docker_cashier_soak_client.mjs outage 3 \
+         > "$evidence/v70-outage-pc3.json"
+       test "$(psql -At -c "SELECT count(*) FROM zhirox_local.checkout_intents_v31 WHERE request_id='50000000-0000-0000-0000-000700003010' AND state='prepared'")" = 1
+       continue
+     fi
+     docker exec -e ZHIROX_V70_SOAK_ENABLED=true "v69-pc$i" \
+       node offline/tests/v70_docker_cashier_soak_client.mjs round "$i" "$round" \
+       > "$evidence/v70-pc$i-round$round.json" &
+     pids+=("$!")
+   done
+   for pid in "${pids[@]}"; do wait "$pid"; done
+   if [ "$round" = 10 ]; then
+     # Real bridge disconnection for station 3, but station 1 stays available.
+     docker exec -e ZHIROX_V70_SOAK_ENABLED=true v69-pc1 \
+       node offline/tests/v70_docker_cashier_soak_client.mjs health 1 \
+       > "$evidence/v70-others-online-during-disconnect.json"
+     docker network connect --ip 172.28.69.13 "$net" v69-pc3
+     docker exec -e ZHIROX_V70_SOAK_ENABLED=true v69-pc3 \
+       node offline/tests/v70_docker_cashier_soak_client.mjs resume 3 \
+       > "$evidence/v70-pc3-round10.json"
+   fi
+ done
+ for i in 1 2 3 4 5; do
+   docker exec -e ZHIROX_V70_SOAK_ENABLED=true "v69-pc$i" \
+     node offline/tests/v70_docker_cashier_soak_client.mjs close "$i" \
+     > "$evidence/v70-pc$i-shift-close.json"
+ done
+ elapsed=$(( $(date +%s) - start_v70 ))
+ printf '%s\n' "$elapsed" > "$evidence/v70-elapsed-seconds.txt"
+ NODE_OPTIONS='--require=./offline/tests/v65_wan_egress_guard.cjs' \
+   node offline/tests/v70_five_pc_load_final_audit.mjs
+ echo "V70 PASS: five independent Linux cashier PCs, 100 live SQL checkouts, real bridge disconnect/recovery"
+fi
+
