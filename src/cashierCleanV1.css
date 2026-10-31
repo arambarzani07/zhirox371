@@ -82,7 +82,13 @@
 .pos-clean__checkout button:hover:not(:disabled) {background:#1b3e65;color:#fff;}
 .pos-clean__pending {color:#985a18;background:#fff7eb;border:1px solid #f3ddb5;
   border-radius:8px;padding:10px;line-height:1.8;font-size:12px;}
-.pos-clean__history {margin-top:18px;background:#fff;border:1px solid var(--pc-edge);border-radius:15px;padding:17px;}
+.pos-clean__history {margin-top:14px;background:transparent;border:0;border-radius:12px;padding:0;}
+.pos-clean__history[open] {background:#fff;border:1px solid var(--pc-edge);padding:16px;}
+.pos-clean__history:not([open]) summary {display:inline-flex;align-items:center;gap:5px;
+  background:#fff;border:1px solid var(--pc-edge);border-radius:9px;
+  padding:10px 14px;color:#4d6682;min-height:39px;list-style:none;}
+.pos-clean__history:not([open]) summary::-webkit-details-marker {display:none;}
+.pos-clean__history:not([open]) summary:before {content:"▤";font-size:15px;line-height:1;}
 .pos-clean__history table {border-collapse:collapse;width:100%;font-size:12px;}
 .pos-clean__history th,.pos-clean__history td {border:0!important;border-bottom:1px solid var(--pc-edge)!important;padding:11px!important;}
 .pos-clean__history summary {cursor:pointer;display:list-item;list-style:inside;
