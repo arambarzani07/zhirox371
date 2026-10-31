@@ -12,8 +12,25 @@ try {
  assert.equal(await page.locator("html").getAttribute("dir"),"rtl");
  assert.equal(await page.locator(".module").count(),12,"React Home must have twelve main cards");
  assert.equal(await page.locator(".module").first().getAttribute("data-module"),"0");
+ assert.equal(await page.locator(".row").count(),3,"locked PC Home must retain three fixed rows");
+ const originalCards=await page.locator(".module").evaluateAll(els=>els.map(el=>{
+   const r=el.getBoundingClientRect();
+   return [r.x,r.y,r.width,r.height].map(n=>Math.round(n));
+ }));
  await page.locator(".module").first().click();
  assert.equal(await page.locator(".drawer .sub").count(),4,"each selected main card has four subcards");
+ const openedCards=await page.locator(".module").evaluateAll(els=>els.map(el=>{
+   const r=el.getBoundingClientRect();
+   return [r.x,r.y,r.width,r.height].map(n=>Math.round(n));
+ }));
+ assert.deepEqual(openedCards,originalCards,"opening drawer must not displace or resize ANY of the 12 cards");
+ const anchor=await page.evaluate(()=>{
+   const row=document.querySelector(".row").getBoundingClientRect();
+   const drawer=document.querySelector(".drawer").getBoundingClientRect();
+   return {offset:drawer.top-row.bottom,widthError:Math.abs(drawer.width-row.width)};
+ });
+ assert.ok(Math.abs(anchor.offset-2)<2,"drawer must be anchored directly below its own row");
+ assert.ok(anchor.widthError<2,"drawer must match its own row width");
  // Locked Home has no cashier shortcut in its header; navigate through the real subcard.
  await page.locator(".drawer .sub").first().click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});

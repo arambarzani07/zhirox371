@@ -16,11 +16,11 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '24px 20px 40px' }}>
+    <div className="locked-home" style={{ maxWidth: '1500px', margin: '0 auto' }}>
       <h1
         style={{
           fontSize: '23px',
-          margin: '0 0 25px',
+          margin: '0 0 27px',
           fontWeight: 900,
           color: '#172b45'
         }}
@@ -28,22 +28,24 @@ export const HomeScreen: React.FC = () => {
         بەشە سەرەکییەکان
       </h1>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
+      <div style={{ display: 'grid', gap: '15px' }}>
         {[0, 1, 2].map(rowIndex => {
           const rowSpecs = MODULE_SPECS.slice(rowIndex * 4, rowIndex * 4 + 4);
           const isRowOpen = openModuleIndex >= rowIndex * 4 && openModuleIndex < rowIndex * 4 + 4;
           const activeModule = isRowOpen ? MODULE_SPECS[openModuleIndex] : null;
 
           return (
-            <React.Fragment key={rowIndex}>
-              <div
-                className="row"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                  gap: '15px'
-                }}
-              >
+            <div
+              key={rowIndex}
+              className="row"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gap: '15px',
+                position: 'relative',
+                zIndex: isRowOpen ? 20 : 1
+              }}
+            >
                 {rowSpecs.map((spec, colIndex) => {
                   const moduleIndex = rowIndex * 4 + colIndex;
                   const isOpen = openModuleIndex === moduleIndex;
@@ -61,7 +63,7 @@ export const HomeScreen: React.FC = () => {
                           '--color': spec.color,
                           '--light': spec.lightBg,
                           minHeight: '153px',
-                          border: isOpen ? `2px solid ${spec.color}` : '1px solid #e2e8ef',
+                          border: isOpen ? `1px solid ${spec.color}` : '1px solid #e2e8ef',
                           background: '#fff',
                           borderRadius: '16px',
                           padding: '19px',
@@ -71,9 +73,9 @@ export const HomeScreen: React.FC = () => {
                           justifyContent: 'space-between',
                           alignItems: 'start',
                           color: '#26374e',
-                          boxShadow: isOpen ? '0 7px 19px rgba(32,65,91,0.12)' : '0 5px 17px rgba(27,56,80,0.04)',
+                          boxShadow: isOpen ? '0 7px 19px #20415b12' : '0 5px 17px #1b385008',
                           cursor: 'pointer',
-                          transition: 'all 0.15s ease'
+                          transition: 'none'
                         } as React.CSSProperties
                       }
                     >
@@ -128,9 +130,8 @@ export const HomeScreen: React.FC = () => {
                     </button>
                   );
                 })}
-              </div>
 
-              {/* Subcard Drawer immediately beneath the selected card's row */}
+              {/* Anchored to this row: opening subcards must never move the other cards. */}
               {isRowOpen && activeModule && (
                 <div
                   className="drawer"
@@ -142,7 +143,16 @@ export const HomeScreen: React.FC = () => {
                     borderRadius: '15px',
                     padding: '19px',
                     boxShadow: '0 8px 24px rgba(32,57,84,0.08)',
-                    margin: '2px 0 10px'
+                    margin: 0,
+                    position: 'absolute',
+                    top: 'calc(100% + 2px)',
+                    insetInline: 0,
+                    width: '100%',
+                    zIndex: 12,
+                    maxHeight: 'min(265px, 52dvh)',
+                    overflowY: 'auto',
+                    animation: 'none',
+                    transition: 'none'
                   }}
                 >
                   <div
@@ -264,7 +274,7 @@ export const HomeScreen: React.FC = () => {
                   </div>
                 </div>
               )}
-            </React.Fragment>
+            </div>
           );
         })}
       </div>

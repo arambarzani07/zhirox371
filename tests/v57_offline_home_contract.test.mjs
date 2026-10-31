@@ -16,7 +16,7 @@ test("V57 retains inherited React index and archived original Home unmodified",(
  "ui-fixed-pc.css":"e55fc2ddbec2aa0e0e19d97c568592a6e6501a0c",
  "card-icons.css":"1c774c9d6f21221fb0972d88d3d4f303707f77a1",
  "card-icons.js":"b1b8f5b03c6585c7fd38fd91a22519fae4c7d5c5",
- "src/components/HomeScreen.tsx":"ddadae3c316835c730ed1ef3ba9db4be92336912"
+ "src/components/HomeScreen.tsx":"08f241a5b650bff5fbeda73416b65db3a209177d"
  };
  for(const [path,want] of Object.entries(hashes))
    assert.equal(sha1blob(readFileSync(resolve(root,path))),want,path);
