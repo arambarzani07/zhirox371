@@ -82,7 +82,7 @@ export async function getTestSectionV82({pool,store,actor,role,sectionId}){
    WHERE l.store_id=$1::uuid ORDER BY l.created_at DESC,l.id DESC LIMIT 100`,[store]);
   columns=stockColumns;note="تۆماری هاتووچۆی کۆگا؛ لە داتای تاقیکردنەوەدا تەنها کەمبوونەوە لە فرۆشتن تۆمار کراوە.";
  }else if(customers.has(sectionId)){
-  result=await pool.query(`SELECT display_name,balance_minor
+  result=await pool.query(`SELECT customer_id,display_name,balance_minor
   FROM zhirox_local.customer_debt_balances_v79
   WHERE store_id=$1::uuid ORDER BY display_name,customer_id LIMIT 100`,[store]);
   columns=customerColumns;
