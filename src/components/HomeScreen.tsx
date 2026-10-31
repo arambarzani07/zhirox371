@@ -16,11 +16,11 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '24px 20px 40px' }}>
+    <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '39px 44px 60px' }}>
       <h1
         style={{
           fontSize: '23px',
-          margin: '0 0 25px',
+          margin: '0 0 27px',
           fontWeight: 900,
           color: '#172b45'
         }}
@@ -28,7 +28,7 @@ export const HomeScreen: React.FC = () => {
         بەشە سەرەکییەکان
       </h1>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
+      <div style={{ display: 'grid', gap: '15px' }}>
         {[0, 1, 2].map(rowIndex => {
           const rowSpecs = MODULE_SPECS.slice(rowIndex * 4, rowIndex * 4 + 4);
           const isRowOpen = openModuleIndex >= rowIndex * 4 && openModuleIndex < rowIndex * 4 + 4;
@@ -61,7 +61,7 @@ export const HomeScreen: React.FC = () => {
                           '--color': spec.color,
                           '--light': spec.lightBg,
                           minHeight: '153px',
-                          border: isOpen ? `2px solid ${spec.color}` : '1px solid #e2e8ef',
+                          border: isOpen ? `1px solid ${spec.color}` : '1px solid #e2e8ef',
                           background: '#fff',
                           borderRadius: '16px',
                           padding: '19px',
@@ -116,7 +116,7 @@ export const HomeScreen: React.FC = () => {
                           className="chev"
                           style={{
                             color: isOpen ? spec.color : '#8798ad',
-                            fontSize: '18px',
+                            fontSize: '20px',
                             fontWeight: 900,
                             transform: isOpen ? 'rotate(180deg)' : 'none',
                             transition: 'transform 0.15s'
@@ -138,11 +138,11 @@ export const HomeScreen: React.FC = () => {
                   aria-label={activeModule.title}
                   style={{
                     background: '#ffffff',
-                    border: '1.5px solid #dce4ef',
+                    border: '1px solid #e3e8ef',
                     borderRadius: '15px',
                     padding: '19px',
                     boxShadow: '0 8px 24px rgba(32,57,84,0.08)',
-                    margin: '2px 0 10px'
+                    margin: '0 0 16px'
                   }}
                 >
                   <div
@@ -151,7 +151,7 @@ export const HomeScreen: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      marginBottom: '16px'
+                      marginBottom: '17px'
                     }}
                   >
                     <strong style={{ fontSize: '16px', fontWeight: 900, color: '#172b45' }}>
@@ -196,10 +196,10 @@ export const HomeScreen: React.FC = () => {
                           {
                             '--color': activeModule.color,
                             '--light': activeModule.lightBg,
-                            minHeight: '112px',
-                            border: '1.5px solid #e2e8f0',
-                            borderRadius: '12px',
-                            background: '#f8fafc',
+                            minHeight: '90px',
+                            border: '1px solid #e5eaf1',
+                            borderRadius: '11px',
+                            background: '#f9fafc',
                             padding: '14px',
                             textAlign: 'right',
                             display: 'flex',
