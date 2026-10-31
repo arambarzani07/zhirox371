@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {chromium} from "playwright";
+import {mkdir} from "node:fs/promises";
 
 const store="10000000-0000-0000-0000-000000000032";
 const product="20000000-0000-0000-0000-000000000032";
@@ -72,11 +73,27 @@ try{
  await page.locator(".module").first().click();
  await page.locator(".drawer .sub").first().click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
+ assert.equal(await page.locator(".pos-clean__trial").count(),1,"local PG trial marker remains visible");
+ assert.equal(await page.locator(".pos-clean__login").count(),1,"compact cashier sign-in");
+ assert.equal(await page.locator(".pos-clean__notes[open]").count(),0,"technical notes are collapsed");
+ await mkdir("artifacts/cashier-v1",{recursive:true});
+ await page.screenshot({path:"artifacts/cashier-v1/01-sign-in.png",fullPage:false});
  assert.equal(await page.locator("#finish-sale").count(),0);
  assert.equal(await page.getByRole("button",{name:/کردنەوەی V31/}).count(),0,
   "V32 must render its own primary local page, not demo plus a collapsible panel");
  assert.equal(await page.locator("text=تاقیکردنەوە — داتای ئەم کاشێرە لە وێبگەڕ").count(),0);
  await login();
+ assert.equal(await page.locator(".pos-clean__login").count(),0,"login panel closes after local auth");
+ assert.equal(await page.locator(".pos-clean__workspace").count(),1,"cashier grid is active");
+ assert.equal(await page.locator(".pos-clean__basket thead th").count(),6,"table has Sorani 6-column basket");
+ assert.equal(await page.locator(".pos-clean__side").count(),1,"total and checkout panel exists");
+ const geometry=await page.evaluate(()=>{
+   const basket=document.querySelector(".pos-clean__transaction").getBoundingClientRect();
+   const total=document.querySelector(".pos-clean__side").getBoundingClientRect();
+   return basket.width>400 && total.width>200 && total.right<=basket.left+4;
+ });
+ assert.equal(geometry,true,"PC cashier total is beside the basket without overlap");
+ await page.screenshot({path:"artifacts/cashier-v1/02-empty-basket.png",fullPage:false});
  const input=page.getByPlaceholder("بارکۆدی دانە، کارتۆن یان تەرازوو بسکانە");
  await input.fill(barcode);
  await page.getByRole("button",{name:"سکان",exact:true}).click();
@@ -86,6 +103,7 @@ try{
  await input.fill(barcode);
  await page.getByRole("button",{name:"سکان",exact:true}).click();
  await page.getByText(/2,500 IQD/).first().waitFor();
+ await page.screenshot({path:"artifacts/cashier-v1/03-verified-scan.png",fullPage:false});
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #7/).waitFor();
  await page.getByRole("region",{name:"مێژووی پسووڵەی ناوخۆیی"}).getByText("2,500 IQD").waitFor();
