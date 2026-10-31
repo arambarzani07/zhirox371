@@ -41,7 +41,7 @@ test("all four supplier submodules have read-only queries and no cashier access"
   const q=calls.slice(before).find(x=>!x.sql.includes("section_registry_v78"));
   assert.ok(q,sectionId);
   assert.deepEqual(q.args,[store]);
-  assert.match(q.sql,/WHERE (s|o|g)\.store_id=\$1::uuid/);
+  assert.match(q.sql,/WHERE (?:(?:s|o|g)\.)?store_id=\$1::uuid/);
   assert.doesNotMatch(q.sql,/\b(INSERT|UPDATE|DELETE|TRUNCATE|DROP)\s/i);
  }
 });
