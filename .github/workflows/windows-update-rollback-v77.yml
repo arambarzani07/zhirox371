@@ -1,0 +1,17 @@
+name: V77 Windows safe staged update and rollback laboratory
+on:
+  push:
+    branches:
+      - feature/v77-windows-safe-update-rollback-20261031
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-staged-only:
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify staging, candidate rollback, tamper fail-closed
+        shell: pwsh
+        run: ./windows/Test-ZHIROX-Update-V77.ps1
