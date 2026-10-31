@@ -51,3 +51,24 @@
  .v81-login button[type=submit]{background:#24486e;color:white;border-color:#24486e;padding:13px;font-size:14px}
  .v81-login small{color:#8395a9;text-align:center;font-size:11px}
 }
+
+
+/* V82: 48 standalone PC submodule workspaces in the isolated test store only. */
+@media screen {
+ .v81-first-row nav{flex:1;min-width:0}
+ .v81-first-row nav button{flex:0 0 auto;white-space:nowrap}
+ .v81-second-row:empty{display:none}
+ .v82-section{width:100%;min-height:280px;box-sizing:border-box}
+ .v82-section-meta{display:flex;align-items:center;gap:14px;margin:0 0 12px;min-height:35px}
+ .v82-section-meta span{font-size:12px;font-weight:900;border-radius:7px;padding:9px 12px}
+ .v82-live{background:#e6f2ea;color:#236244;border:1px solid #c4e6d2}
+ .v82-planned{background:#fff7e9;color:#8b5c17;border:1px solid #f4d5a1}
+ .v82-note{font-size:12px;color:#5f7184;margin:0 0 13px;line-height:1.8}
+ .v82-unavailable{border:1px solid #dce6f0;background:#fff;color:#60748a;
+  padding:75px 24px;text-align:center;border-radius:11px;font-weight:800;font-size:13px;
+  min-height:290px;display:flex;align-items:center;justify-content:center}
+ .v82-section .v81-table{width:100%;max-width:none;min-height:285px}
+ .v82-section .v81-table td,.v82-section .v81-table th{white-space:nowrap;text-align:right}
+ .v82-section .v81-table button{background:#edf4fb}
+ .v81-first-row nav button.selected{background:#24486e;color:#fff}
+}
