@@ -136,7 +136,7 @@ BEGIN
  SELECT version INTO v_current FROM zhirox_local.section_settings_v78
    WHERE store_id=p_store AND section_id=p_section AND setting_key=p_key FOR UPDATE;
  IF v_current IS NULL THEN
-  IF p_expected_version<>0 THEN
+  IF p_expected_version IS DISTINCT FROM 0 THEN
    RAISE EXCEPTION 'stale setting version' USING ERRCODE='P7803';
   END IF;
   INSERT INTO zhirox_local.section_settings_v78
