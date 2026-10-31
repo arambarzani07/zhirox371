@@ -24,7 +24,7 @@ try{
  const tabs=nav.locator("button[data-module-id]");
  const cashier=tabs.filter({hasText:"کاشێر"}).first();
  assert.equal(await cashier.isDisabled(),false,"only connected PG cashier may be entered");
- assert.equal(await tabs.locator(":not(:disabled)").count(),1,"unfinished modules must fail closed");
+ assert.equal(await nav.locator("button[data-module-id]:not(:disabled)").count(),1,"unfinished modules must fail closed");
  await mkdir("artifacts/v57",{recursive:true});
  await page.screenshot({path:"artifacts/v57/01-navigation-only.png",fullPage:false});
  await cashier.click();
