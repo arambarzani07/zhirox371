@@ -89,8 +89,8 @@ try{
  assert.equal((await q("SELECT count(*)::integer AS n FROM zhirox_local.print_requests_v35 WHERE store_id=$1 AND state='queued'"))[0].n,111);
  assert.equal((await q("SELECT count(*)::integer AS n FROM zhirox_local.cash_shifts_v37 WHERE store_id=$1 AND state='open'"))[0].n,0);
  assert.equal((await q("SELECT stock_base_units::text AS n FROM zhirox_local.products WHERE store_id=$1 AND id='30000000-0000-0000-0000-000000000070'"))[0].n,"50");
- assert.equal(docker("inspect","--format","{{.Name}}",containerId),"/"+process.env.ZHIROX_V71_EXPECTED_PG_NAME);
- assert.equal(process.env.ZHIROX_V71_EXPECTED_PG_NAME,""+process.env.ZHIROX_V71_EXPECTED_PG_NAME);
+ assert.equal(docker("inspect","--format","{{.Config.Image}}",containerId),"postgres:16",
+  "only the disposable postgres:16 image may be interrupted");
  // Genuine HTTPS gateway held open for the entire PostgreSQL kill/restart.
  const certPath=join(dir,"cert.pem"),keyPath=join(dir,"key.pem");
  execFileSync("openssl",["req","-x509","-nodes","-newkey","rsa:2048",
@@ -160,8 +160,8 @@ try{
   try{
    const status=execFileSync("pg_isready",["-h","127.0.0.1","-p","5432",
     "-U","localtest","-d","zhirox_v59_ci_test"],
-    {timeout:1500,stdio:"ignore"});
-   if(status){ready=true;break;}
+    {timeout:1500,encoding:"utf8"});
+   if(status.includes("accepting connections")){ready=true;break;}
   }catch{}
   await new Promise(res=>setTimeout(res,700));
  }
