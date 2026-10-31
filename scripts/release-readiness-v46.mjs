@@ -8,7 +8,7 @@ export const labRequirements=Object.freeze([
  ["two_cashiers_cash_only","offline/tests/023_v46_airgap_cash_only_acceptance.sql"],
  ["current_schema_disposable_backup","offline/tests/024_v46_disposable_restore_seed.sql"],
  ["restored_cash_receipts_stock","offline/tests/025_v46_disposable_restore_verify.sql"],
- ["byte_locked_owner_home","tests/owner_locked_home_sha.test.mjs"],
+ ["historical_home_source_audit","tests/main_consolidation_archive.test.mjs"],
  ["offline_postgres_ci",".github/workflows/offline-foundation.yml"],
  ["explicit_official_build_block","vite.config.ts"],
  ["bank_integrity_audit","offline/migrations/022_financial_integrity_audit_v45.sql"]
