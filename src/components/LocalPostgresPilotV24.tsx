@@ -225,9 +225,10 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        <input style={inputStyle} value={username} onChange={e=>setUsername(e.target.value)} placeholder="ناوی بەکارهێنەر" required/>
        <input style={inputStyle} value={password} onChange={e=>setPassword(e.target.value)} type="password"
           placeholder="وشەی نهێنی ناوخۆیی" required autoComplete="off"/>
-       <button disabled={busy||!uuid.test(store)} type="submit">چوونەژوورەوەی تاقیکردنەوە</button>
+       <button aria-label={standalone?"چوونەژوورەوەی تاقیکردنەوە":undefined} disabled={busy||!uuid.test(store)} type="submit">{standalone?"چوونەژوورەوە":"چوونەژوورەوەی تاقیکردنەوە"}</button>
      </form>:<>
-       <div className={standalone?"pos-clean__connect":undefined} style={standalone?undefined:{marginTop:10}}>● پەیوەندی ناوخۆیی چالاکە</div>
+       {standalone?<span className="pos-clean__online" role="status" aria-label="پەیوەندی ناوخۆیی چالاکە" title="پەیوەندی ناوخۆیی چالاکە" />:
+         <div style={{marginTop:10}}>پەیوەندی ناوخۆیی چالاکە</div>}
        {v37Shifts&&<LocalV37ShiftControls token={token} store={store} onShiftOpen={setV37ShiftOpen}/>}
        {isolatedLanPilotV36&&import.meta.env.VITE_V44_RECONCILIATION_LAB==="true"&&<LocalV44ManagerReview store={store}/>}
        <div className={standalone?"pos-clean__workspace":undefined}>
@@ -276,8 +277,11 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        {v41Tender&&pending&&<button type="button" disabled={busy}
          onClick={()=>void cancelV41Draft()}>هەڵوەشاندنەوەی پلانی چاوەڕوان</button>}
        <form className={standalone?"pos-clean__checkout":undefined} onSubmit={submitCheckout}>
-         <button type="submit" disabled={busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length)||(v41Tender&&!!pending&&!v41CashAllowed)} style={{fontWeight:850}}>
-           {pending?"دووبارە ناردنی هەمان داواکاری":"تاقیکردنەوەی فرۆشتنی Atomic"}
+         <button type="submit"
+           aria-label={standalone?(pending?"دووبارە ناردنی هەمان داواکاری":"تاقیکردنەوەی فرۆشتنی Atomic"):undefined}
+           disabled={busy||(v37Shifts&&!v37ShiftOpen)||(!pending&&!cart.length)||(v41Tender&&!!pending&&!v41CashAllowed)}
+           style={{fontWeight:850}}>
+           {standalone?(pending?"دووبارە ناردنەوە":"فرۆشتن"):(pending?"دووبارە ناردنی هەمان داواکاری":"تاقیکردنەوەی فرۆشتنی Atomic")}
          </button>
        </form>
        {pending&&<div className={standalone?"pos-clean__pending":undefined} role="alert" style={standalone?undefined:{color:"#9a3412",marginTop:8}}>
@@ -290,9 +294,11 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        {isolatedLanPilotV36&&standalone&&last&&available&&<LocalV36ReceiptTools key={last.sale_id} token={token} saleId={last.sale_id}/>}
        </aside>
        </div>
-       {standalone&&<section className="pos-clean__history" aria-label="مێژووی پسووڵەی ناوخۆیی">
+       {standalone&&<details className="pos-clean__history" open={Boolean(last)}>
+         <summary>پسووڵەکان</summary>
+         <section aria-label="مێژووی پسووڵەی ناوخۆیی">
          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
-           <strong>پسووڵەکانی PostgreSQL ـی ناوخۆیی</strong>
+           <strong className="pos-clean__history-heading">پسووڵەکان</strong>
            <button disabled={busy} type="button" onClick={async()=>{
              try{setHistory(await getLocalReceiptsV32(token));setHistoryError("");}
              catch{setHistory([]);setHistoryError("مێژووی پسووڵەکان نەتوانرا بخوێندرێتەوە");}
@@ -309,9 +315,10 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
            </tr>)}</tbody>
          </table>
          {!history.length&&!historyError&&<div>هیچ پسووڵەیەکی PostgreSQL ـی تاقیکردنەوە نەدۆزرایەوە</div>}
-       </section>}
+         </section>
+       </details>}
        <button className={standalone?"pos-clean__logout":undefined} type="button" style={standalone?undefined:{marginTop:10}} onClick={()=>{setV37ShiftOpen(false);setToken("");setExpiresAt(0);setCart([]);setLast(null);setHistory([]);setHistoryError("");}}>
-         دەرچوون لە تاقیکردنەوە
+         {standalone?"دەرچوون":"دەرچوون لە تاقیکردنەوە"}
        </button>
      </>}
      {error&&<div className={standalone?"pos-clean__error":undefined} role="alert" style={standalone?undefined:{color:"#a21d1d",fontWeight:800,padding:8}}>{error}</div>}
