@@ -173,7 +173,7 @@ try{
  assert.match(expiryText,/ماوەی تۆمارکراوی V88/);
  assert.match(expiryText,/TEST-FUTURE-004/);
  assert.match(expiryText,/بڕی ژمێردراوی سەرەتا/);
- assert.match(expiryText,/فرۆشراوی تۆمارکراوی V87/);
+ assert.match(expiryText,/فرۆشراوی تخصیصکراوی V88/);
  await page.screenshot({path:"artifacts/v81/16-v86-real-expiry-lots.png",fullPage:false});
  await page.screenshot({path:"artifacts/v81/17-v88-isolated-reconciled-lot-opening.png",fullPage:false});
  await moduleButton(8).click();
