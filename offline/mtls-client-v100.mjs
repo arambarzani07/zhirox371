@@ -3,12 +3,15 @@
 // falls back to HTTP/WAN. Request UUID & immutable cart retry from V99.
 import https from "node:https";
 import {createV99TrialClient} from "./device-client-v99.mjs";
+import {isPrivateV101IPv4} from "./private-nic-v101.mjs";
 
 export function createV100MTLSTestClient({
- origin,deviceId,secretHex,ca,cert,key
+ origin,deviceId,secretHex,ca,cert,key,routePrefix="/api/local/v100/"
 }){
  const target=new URL(origin);
- if(target.protocol!=="https:"||target.hostname!=="127.0.0.1"||
+ if(target.protocol!=="https:"||
+   !((routePrefix==="/api/local/v100/"&&target.hostname==="127.0.0.1")||
+     (routePrefix==="/api/local/v101/"&&isPrivateV101IPv4(target.hostname)))||
    !/^\d+$/.test(target.port)||target.pathname!=="/"||
    target.search||target.hash||!ca||!cert||!key)
   throw Error("V100_private_loopback_https_mtls_required");
@@ -19,7 +22,7 @@ export function createV100MTLSTestClient({
  const transport=async(url,options)=>{
   const u=new URL(url);
   if(u.origin!==target.origin||u.protocol!=="https:"||
-     !u.pathname.startsWith("/api/local/v100/"))
+     !u.pathname.startsWith(routePrefix))
    throw Error("V100_transport_must_stay_pinned_loopback_TLS");
   const bytes=Buffer.from(options.body||"","utf8");
   const response=await new Promise((resolve,reject)=>{
@@ -46,6 +49,6 @@ export function createV100MTLSTestClient({
   return {status:response.status,json:async()=>JSON.parse(response.body)};
  };
  return createV99TrialClient({
-  origin,deviceId,secretHex,transport,routePrefix:"/api/local/v100/"
+  origin,deviceId,secretHex,transport,routePrefix
  });
 }
