@@ -16,6 +16,7 @@ export default defineConfig(({mode})=>{
   const localCashier=pilot&&env.VITE_V32_LOCAL_CASHIER==='true'&&mode!=='production';
   const testMarket=pilot&&env.VITE_V81_TEST_MARKET==='true'&&mode!=='production';
   const readOnlyCatalog=pilot&&env.VITE_V102_READONLY_CATALOG==='true'&&mode!=='production';
+  const refreshCatalog=pilot&&env.VITE_V103_READONLY_CATALOG==='true'&&mode!=='production';
   return {
     plugins:[react()],
     server:{
@@ -26,6 +27,7 @@ export default defineConfig(({mode})=>{
         target:localCashier?'http://127.0.0.1:3308':'http://127.0.0.1:3307',
         ...(testMarket?{target:'http://127.0.0.1:3311'}:{}),
         ...(readOnlyCatalog?{target:'http://127.0.0.1:3320'}:{}),
+        ...(refreshCatalog?{target:'http://127.0.0.1:3321'}:{}),
         changeOrigin:false,
         secure:false
       }}}:{})
