@@ -56,12 +56,16 @@ export async function assertV98GatePrivileges(pool){
 // afterCommittedForTest may destroy the connection to simulate lost ACK after
 // real COMMIT. Only integration tests should supply it; no runtime entry uses it.
 export function createV98TestCheckoutHandler({
- authPool,gatePool,sessionSecret,proofKeyHex,afterCommittedForTest
+ authPool,gatePool,sessionSecret,proofKeyHex,afterCommittedForTest,
+ routePrefix=API,deviceGuard=null
 }){
  if(!authPool?.query||!authPool?.connect||!gatePool?.query||
   authPool===gatePool||typeof sessionSecret!=="string"||
   Buffer.byteLength(sessionSecret)<32||!/^[0-9a-f]{64}$/.test(proofKeyHex||""))
   throw Error("V98_dedicated_isolated_pg_pools_and_secrets_required");
+ if(!((routePrefix===API&&deviceGuard===null)||
+      (routePrefix==="/api/local/v99/"&&typeof deviceGuard==="function")))
+  throw Error("V99_device_guard_route_pair_required");
  const auth=createLocalAuthV3({pool:authPool,secret:sessionSecret});
  const checkout=createV97TestCheckoutAdapter({
   authPool,gatePool,sessionSecret,proofKeyHex
@@ -76,13 +80,18 @@ export function createV98TestCheckoutHandler({
   let url;
   try{url=new URL(req.url||"/","http://127.0.0.1");}
   catch{return respond(res,400,{error:"invalid_url"})}
-  if(!url.pathname.startsWith(API))return respond(res,404,{error:"not_found"});
-  const route=url.pathname.slice(API.length);
+  if(!url.pathname.startsWith(routePrefix))return respond(res,404,{error:"not_found"});
+  const route=url.pathname.slice(routePrefix.length);
   if(!["login","checkout"].includes(route))return respond(res,404,{error:"not_found"});
   if(req.method!=="POST")return respond(res,405,{error:"method_not_allowed"});
   if(url.search)return respond(res,400,{error:"unexpected_query"});
   const body=await parseBody(req);
   if(!body)return respond(res,400,{error:"invalid_json_body"});
+  let deviceId=null;
+  if(deviceGuard){
+   deviceId=await deviceGuard({headers:req.headers,method:req.method,path:url.pathname,body});
+   if(!deviceId)return respond(res,403,{error:"device_authentication_required"});
+  }
   try{
    await assertV94AuthPrivilegeBoundary(authPool);
    if(route==="login"){
@@ -95,7 +104,8 @@ export function createV98TestCheckoutHandler({
       username:body.username,password:body.password});
     if(!session)return respond(res,401,{error:"invalid_credentials"});
     return respond(res,200,{ok:true,scope:"ISOLATED_TEST_ONLY",
-      token:session.token,role:session.role,expires_in_seconds:session.expires_in_seconds});
+      token:session.token,role:session.role,expires_in_seconds:session.expires_in_seconds,
+      ...(deviceId?{device_id:deviceId}:{})});
    }
    const authHeader=req.headers.authorization||"";
    const match=/^Bearer (\S+)$/.exec(authHeader);
@@ -117,7 +127,7 @@ export function createV98TestCheckoutHandler({
     audit_id:result.audit_id,
     ...(result.approved?{sale_id:result.sale_id,receipt_no:result.receipt_no,
       total_minor:result.total_minor,replayed:result.replayed}:{}),
-    physical_payment_received:false};
+    physical_payment_received:false,...(deviceId?{device_id:deviceId}:{})};
    if(afterCommittedForTest && result.approved && !result.replayed){
     await afterCommittedForTest({result,req,res});
     if(res.destroyed)return;
