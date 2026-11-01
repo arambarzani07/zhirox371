@@ -5,6 +5,7 @@ on:
       - 'config.js'
       - 'src/**'
       - 'tests/v23_preview_mode_guard.test.mjs'
+      - 'tests/home_locked_cards_20261101.test.mjs'
       - 'tests/browser/v23_react_preview.mjs'
       - 'tests/browser/v24_react_local_pilot.mjs'
       - 'tests/browser/v29_owner_mobile.mjs'
@@ -26,6 +27,7 @@ on:
       - 'config.js'
       - 'src/**'
       - 'tests/v23_preview_mode_guard.test.mjs'
+      - 'tests/home_locked_cards_20261101.test.mjs'
       - '.github/workflows/v23-react-preview-safety.yml'
 permissions:
   contents: read
@@ -38,7 +40,7 @@ jobs:
         with:
           node-version: '24'
       - name: Fail-closed offline mock and DEMO-only receipt checks
-        run: node --test tests/v23_preview_mode_guard.test.mjs
+        run: node --test tests/v23_preview_mode_guard.test.mjs tests/home_locked_cards_20261101.test.mjs
       - name: Verify V24 loopback auth, idempotency and cashier isolation
         run: node --test tests/v24_local_pilot_contract.test.mjs
       - name: Install React preview dependencies (no deploy or database)
