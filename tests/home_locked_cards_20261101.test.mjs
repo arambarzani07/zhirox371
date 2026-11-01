@@ -14,7 +14,7 @@ test("Owner-locked React Home contains 12 main Sorani cards and 4 subcards each"
  assert.match(home,/MODULE_SPECS\.slice\(start, start \+ 4\)/);
  assert.match(home,/activeModule\.submodules\.map/);
  assert.match(home,/className="subgrid"/);
- assert.match(home,/navigateTo\(targetView as NavView, targetSubtab\)/);
+ assert.match(home,/navigateTo\(targetView as NavView, targetSubtab, sectionId\)/);
  assert.match(icons,/export const MODULE_SPECS/);
  for(let n=0;n<12;n++)assert.ok(icons.includes("id: "+n+","),"missing main card "+n);
  assert.match(app, /currentView === 'home' && <HomeScreen \/>/);
