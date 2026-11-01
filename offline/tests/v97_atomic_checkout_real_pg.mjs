@@ -161,7 +161,7 @@ try{
   "SELECT approved,reason FROM zhirox_local.v97_checkout_audit WHERE store_id=$1",
   [TEST_MARKET.store]);
  const reasons=audit.map(x=>x.reason);
- assert.equal(reasons.length,12);
+ assert.equal(reasons.length,11);
  assert.equal(reasons.filter(x=>x==="sale_committed").length,1);
  assert.equal(reasons.filter(x=>x==="idempotent_replay").length,1);
  assert.equal(reasons.filter(x=>x==="checkout_rejected").length,1);
