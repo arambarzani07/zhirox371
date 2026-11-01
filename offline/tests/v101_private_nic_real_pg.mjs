@@ -136,10 +136,17 @@ try{
  }
  await assertV94AuthPrivilegeBoundary(authPool);
  await assertV98GatePrivileges(gatePool);
- await admin.query(`
-  INSERT INTO zhirox_local.v100_trial_devices(store_id,device_id,tls_fingerprint)
-  VALUES($1,'trial-pc-01',$2),($1,'trial-pc-02',$3)`,
+ // V100 leaves both fixed device IDs enrolled (PC2 revoked, PC1 rotated).
+ // Re-enroll only those already-known synthetic identities for V101.
+ const enrollment=await admin.query(`
+  UPDATE zhirox_local.v100_trial_devices
+  SET tls_fingerprint=CASE device_id
+   WHEN 'trial-pc-01' THEN $2
+   WHEN 'trial-pc-02' THEN $3 END,
+   enabled=true,revoked_at=NULL
+  WHERE store_id=$1 AND device_id IN ('trial-pc-01','trial-pc-02')`,
   [store,fingerprint("pc1"),fingerprint("pc2")]);
+ assert.equal(enrollment.rowCount,2,"V100 must have exactly two known synthetic device IDs");
  server=newGateway(proof.secret);await listen(server);
  const origin="https://"+nic+":3318";
  const ca=mat("ca.crt");
