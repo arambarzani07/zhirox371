@@ -1,0 +1,105 @@
+# Alternative to Vercel Hobby deployment-rate cap. Static DEMO UI only.
+# This does NOT enable financial POS, local PostgreSQL gateway, or cloud sync.
+# GitHub Pages must first be enabled in repository Settings > Pages
+# with Source: GitHub Actions. Domain DNS stays at Vercel until tested.
+name: Alternate static preview — GitHub Pages (NO-GO POS)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'config.js'
+      - 'vite.config.ts'
+      - 'package.json'
+      - '.github/workflows/preview-github-pages.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/preview-github-pages.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zhirox371-github-pages
+  cancel-in-progress: true
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact tested source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify owner-locked Home and NO-GO financial safety
+        run: |
+          node --test tests/home_locked_cards_20261101.test.mjs tests/v23_preview_mode_guard.test.mjs tests/v24_local_pilot_contract.test.mjs
+      - name: Install preview frontend packages
+        run: npm install --no-package-lock
+      - name: Build client-only Vite DEMO for both GitHub Pages project and custom domain
+        env:
+          VITE_ENABLE_LOCAL_PILOT: 'false'
+          VITE_V36_ISOLATED_LAN_PILOT: 'false'
+          VITE_V57_ISOLATED_DESKTOP_SHELL: 'false'
+          VITE_ZHIROX_RELEASE_MODE: 'demo'
+          ZHIROX_RELEASE_MODE: 'demo'
+        run: |
+          npm run build -- --base=./
+          test -s dist/index.html
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const html=readFileSync("dist/index.html","utf8");
+            if(!html.includes("lang=\"ckb\"")||!html.includes("dir=\"rtl\"")||!html.includes("./assets/"))
+              throw Error("Static preview must be Sorani RTL, with relative assets for project and custom domain");
+          '
+      - name: Ensure no server-side credentials or local PG listener are included
+        run: |
+          node --input-type=module -e '
+            import {readdirSync,readFileSync} from "node:fs";
+            import {join} from "node:path";
+            function walk(dir){
+              for(const ent of readdirSync(dir,{withFileTypes:true})){
+                const path=join(dir,ent.name);
+                if(ent.isDirectory())walk(path);
+                else if(/\.(js|html|css|json)$/.test(ent.name)){
+                  const c=readFileSync(path,"utf8");
+                  if(/PGPASSWORD|ZHIROX_LOCAL_SESSION_SECRET|ZHIROX_V100_PC01_KEY|postgres:\/\//.test(c))
+                    throw Error("Server-only secret/PG content in generated public preview");
+                }
+              }
+            }
+            walk("dist");
+          '
+      - name: Prepare static routes fallback
+        run: cp dist/index.html dist/404.html
+      - name: Upload GitHub Pages artifact only on main
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  publish-preview:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build-preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Verify GitHub Pages is enabled
+        uses: actions/configure-pages@v5
+      - name: Publish tested static preview (never finance/backend)
+        uses: actions/deploy-pages@v4
+        id: deploy
