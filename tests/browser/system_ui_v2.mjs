@@ -44,15 +44,19 @@ try{
  await mkdir("artifacts/system-v2",{recursive:true});
  await page.goto(origin,{waitUntil:"networkidle"});
  assert.equal(await page.locator("html").getAttribute("dir"),"rtl");
- await page.locator(".home-strip-only").waitFor();
+ await page.locator(".home-screen.locked-home").waitFor();
  const nav=page.locator(".system-primary-nav");
  const subnav=page.locator(".system-subnav");
  assert.equal(await nav.count(),1);
  assert.equal(await nav.locator("button").count(),13,"Home + 12 main tabs");
  assert.equal(await subnav.count(),1,"single secondary line");
  assert.equal(await subnav.locator("button").count(),0,"no subtab shown until module selection");
- assert.equal(await page.locator(".module,.drawer,.subgrid,.system-module-column,.system-submodule-column").count(),0,
-  "no Home cards or vertical navigation columns");
+ assert.equal(await page.locator(".home-screen .module").count(),12,"three rows of four owner-locked cards");
+ assert.equal(await page.locator(".home-screen .drawer").count(),0,"subcards closed until selected");
+ await page.locator(".home-screen .module").first().click();
+ assert.equal(await page.locator(".home-screen .subgrid .sub").count(),4,"exactly four owner-locked subcards in selected row");
+ await page.locator(".home-screen .module").first().click();
+ assert.equal(await page.locator(".home-screen .drawer").count(),0,"closing card preserves Home");
  const adjacency=await page.evaluate(()=>{
    const a=document.querySelector(".market-banner").getBoundingClientRect();
    const b=document.querySelector(".system-primary-nav").getBoundingClientRect();
@@ -132,7 +136,7 @@ try{
  await fullscreen(1920,1080);
  await page.screenshot({path:"artifacts/system-v2/15-products-full-pc-1920.png",fullPage:false});
  await nav.getByRole("button",{name:"سەرەتا",exact:true}).click();
- assert.equal(await page.locator(".home-strip-only").count(),1);
+ assert.equal(await page.locator(".home-screen.locked-home .module").count(),12);
  assert.equal(await subnav.locator("button").count(),0);
  assert.deepEqual(errors,[],"no React errors while switching both horizontal ribbons");
  console.log("PASS PC two-ribbon Sorani navigation: 12 main, 48 sub-tabs, RTL selected state and native fullscreen");

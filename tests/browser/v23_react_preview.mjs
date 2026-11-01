@@ -10,9 +10,12 @@ page.on("pageerror",error=>errors.push(error.message));
 try {
  await page.goto(origin,{waitUntil:"networkidle"});
  assert.equal(await page.locator("html").getAttribute("dir"),"rtl");
- // No frozen Home dimensions, row counts, icon choices or subcard count.
- // This browser smoke test only verifies that the cashier remains reachable.
- assert.equal(await page.locator(".home-screen .module").count(),0);
+ // Owner-locked 12 main modules. Each expands to four Sorani subcards.
+ assert.equal(await page.locator(".home-screen .module").count(),12);
+ await page.locator(".home-screen .module").first().click();
+ assert.equal(await page.locator(".home-screen .subgrid .sub").count(),4);
+ await page.locator(".home-screen .module").first().click();
+ assert.equal(await page.locator(".home-screen .drawer").count(),0);
  await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
