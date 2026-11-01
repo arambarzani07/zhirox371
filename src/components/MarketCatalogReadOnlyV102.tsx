@@ -4,10 +4,12 @@ import "../cashierCleanV1.css";
 // V102 operator-only, DEV-only viewport. No production SQL, inventory writes,
 // public GitHub Pages data or fake receipts. Cashier sales stay DISABLED.
 type CatalogItem={item_name_id:string;barcode:string;name:string;price_minor:number};
+// V103 operator-only refresh shares the same read-only screen, never the public build.
+const catalogApiBase=import.meta.env.VITE_V103_READONLY_CATALOG==="true"?"/api/local/v103/":"/api/local/v102/";
 type Status={valid_rows:number;invalid_rows:number;ambiguous_barcodes:number;
  source_modified_at:string|null;source_sha256:string;stale:boolean};
 const api=async<T,>(path:string,token:string):Promise<T>=>{
- if(!path.startsWith("/api/local/v102/")||path.includes("//"))throw Error("invalid_path");
+ if(!path.startsWith(catalogApiBase)||path.includes("//"))throw Error("invalid_path");
  const response=await fetch(path,{
   method:"GET",credentials:"omit",cache:"no-store",redirect:"error",
   headers:{Accept:"application/json",Authorization:"Bearer "+token}
@@ -27,19 +29,19 @@ export const MarketCatalogReadOnlyV102:React.FC=()=>{
  const load=async(e:React.FormEvent)=>{
   e.preventDefault();setBusy(true);setError("");
   try{
-   const s=await api<Status>("/api/local/v102/status",token);
+   const s=await api<Status>(catalogApiBase+"status",token);
    setStatus(s);
    const typed=query.trim();
    if(typed.length<2){setItems([]);setSearched(false);}
    else{
     const result=/^[0-9A-Za-z._-]{3,40}$/.test(typed)?
      await api<{ok:boolean;item?:CatalogItem;error?:string}>(
-       "/api/local/v102/scan?code="+encodeURIComponent(typed),token)
+       catalogApiBase+"scan?code="+encodeURIComponent(typed),token)
        .then(r=>({items:r.item?[r.item]:[]}))
        .catch(async()=>api<{items:CatalogItem[]}>(
-        "/api/local/v102/products?q="+encodeURIComponent(typed),token)):
+        catalogApiBase+"products?q="+encodeURIComponent(typed),token)):
      await api<{items:CatalogItem[]}>(
-      "/api/local/v102/products?q="+encodeURIComponent(typed),token);
+      catalogApiBase+"products?q="+encodeURIComponent(typed),token);
     setItems(result.items);setSearched(true);
    }
   }catch(err){setError((err as Error).message);setItems([]);setStatus(null);}
