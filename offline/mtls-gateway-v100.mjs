@@ -11,13 +11,14 @@ import {TEST_MARKET} from "./test-market-v80.mjs";
 
 const allowed=new Set(["trial-pc-01","trial-pc-02"]);
 export function createV100MutualTLSHandler({
- authPool,gatePool,sessionSecret,proofKeyHex,deviceKeys,afterCommittedForTest
+ authPool,gatePool,sessionSecret,proofKeyHex,deviceKeys,afterCommittedForTest,
+ routePrefix="/api/local/v100/",networkPolicy=null
 }){
  if(!gatePool?.query||gatePool===authPool)
   throw Error("V100_restricted_gate_pool_required");
  const underlying=createV99DualDeviceHandler({
   authPool,gatePool,sessionSecret,proofKeyHex,deviceKeys,
-  afterCommittedForTest,routePrefix:"/api/local/v100/"
+  afterCommittedForTest,routePrefix,networkPolicy
  });
  return async(req,res)=>{
   const certificate=req.socket.getPeerCertificate?.();
