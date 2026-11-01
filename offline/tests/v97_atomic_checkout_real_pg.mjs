@@ -149,9 +149,12 @@ try{
  assert.equal(Number(alloc.qty),1);
  // Retried request gets a *new* HMAC/nonce and V90 returns the same receipt,
  // without repeating any committed stock, inventory or outbox mutation.
- const retry=await issue({token:signedIn.token,
+ const adapter=createV97TestCheckoutAdapter({
+  authPool,gatePool,sessionSecret:process.env.ZHIROX_LOCAL_SESSION_SECRET,
+  proofKeyHex:keyRow.hmac_key});
+ assert.equal((await adapter({token:"forged",request_id:request(7),lines:cart(1)})).approved,false);
+ const replay=await adapter({token:signedIn.token,
   request_id:pair.indexOf(winner)===0?request(2):request(3),lines:cart(1)});
- const replay=await call(retry);
  assert.equal(replay.approved,true);
  assert.equal(replay.reason,"idempotent_replay");
  assert.equal(replay.replayed,true);
