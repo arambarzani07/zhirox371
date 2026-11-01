@@ -5,6 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {readFileSync} from "node:fs";
 import {once} from "node:events";
+import http from "node:http";
 import {parseMarketCSVV102,openMarketCSVV102} from "../market-catalog-v102.mjs";
 import {createV102CatalogServer,startV102CatalogLocalOnly} from "../market-catalog-http-v102.mjs";
 
@@ -100,8 +101,14 @@ test("V102 real HTTP loopback GET-only and bearer token, no CORS/finance endpoin
   r=await fetch(origin+"/api/local/v102/status",{
    headers:{...headers,Origin:"https://zhirox.com"}});
   assert.equal(r.status,403);
-  r=await fetch(origin+"/api/local/v102/status",{headers:{...headers,Host:"attacker.local"}});
-  assert.equal(r.status,403);
+  // Undici fetch always supplies its own Host; use raw Node HTTP to forge it.
+  const forgedHost=await new Promise((resolve,reject)=>{
+   const req=http.request(origin+"/api/local/v102/status",{
+    method:"GET",headers:{...headers,Host:"attacker.local"}
+   },res=>{res.resume();res.on("end",()=>resolve(res.statusCode));});
+   req.on("error",reject);req.end();
+  });
+  assert.equal(forgedHost,403);
  }finally{await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
 });
 test("V102 React reader DEV-only; locked public Home and cashier cannot read market CSV",()=>{
