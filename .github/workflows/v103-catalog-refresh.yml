@@ -1,0 +1,49 @@
+name: V103 verified local market price refresh, NO-GO checkout
+on:
+  pull_request:
+    paths:
+      - 'offline/market-catalog-watch-v103.mjs'
+      - 'offline/market-catalog-http-v103.mjs'
+      - 'offline/tests/v103_market_catalog_atomic_refresh.test.mjs'
+      - 'src/components/MarketCatalogReadOnlyV102.tsx'
+      - 'src/main.tsx'
+      - 'vite.config.ts'
+      - 'docs/V103_ATOMIC_CSV_REFRESH_READONLY.md'
+      - '.github/workflows/v103-catalog-refresh.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'offline/market-catalog-watch-v103.mjs'
+      - 'offline/market-catalog-http-v103.mjs'
+      - 'offline/tests/v103_market_catalog_atomic_refresh.test.mjs'
+      - 'src/components/MarketCatalogReadOnlyV102.tsx'
+      - 'src/main.tsx'
+      - 'vite.config.ts'
+      - '.github/workflows/v103-catalog-refresh.yml'
+permissions:
+  contents: read
+jobs:
+  private-csv-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run old and new real CSV HTTP contract and safety tests
+        run: node --test offline/tests/v102_market_catalog_readonly.test.mjs offline/tests/v103_market_catalog_atomic_refresh.test.mjs
+      - name: Install frontend dependencies
+        run: npm install --no-package-lock
+      - name: TypeScript checks and safe public DEMO build
+        run: npm run build
+      - name: Official cashier remains blocked despite private price reader
+        shell: bash
+        run: |
+          if VITE_ENABLE_LOCAL_PILOT=true VITE_V103_READONLY_CATALOG=true VITE_ZHIROX_RELEASE_MODE=official npm run build; then
+            echo "::error::Official POS release is not certified and must fail"
+            exit 1
+          fi
+          echo "V103 PASS: price watcher only, not production POS or live inventory."
