@@ -7,7 +7,7 @@ import './index.css';
 // Normal preview continues unchanged; official builds remain blocked by Vite.
 const root=ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 if(import.meta.env.DEV&&import.meta.env.VITE_ENABLE_LOCAL_PILOT==="true"&&
-   import.meta.env.VITE_V102_READONLY_CATALOG==="true"){
+   (import.meta.env.VITE_V103_READONLY_CATALOG==="true"||import.meta.env.VITE_V102_READONLY_CATALOG==="true")){
  import('./components/MarketCatalogReadOnlyV102').then(({MarketCatalogReadOnlyV102})=>{
   root.render(<React.StrictMode><MarketCatalogReadOnlyV102/></React.StrictMode>);
  }).catch(()=>{
