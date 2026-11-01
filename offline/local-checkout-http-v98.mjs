@@ -16,8 +16,7 @@ function respond(res,status,body){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
   "Cache-Control":"no-store, private","X-Frame-Options":"DENY",
   "X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer",
-  "Content-Security-Policy":"default-src 'none'",
-  "Access-Control-Allow-Origin":"null"}); // no browser cross-origin permissions
+  "Content-Security-Policy":"default-src 'none'"}); // No CORS opt-in
  res.end(JSON.stringify(body));
 }
 async function parseBody(req){
