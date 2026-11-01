@@ -17,7 +17,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <section className="locked-home" aria-label="بەشە سەرەکییەکان" style={{ maxWidth: 1500, margin: '0 auto', position: 'relative' }}>
+    <section className="home-screen locked-home" aria-label="بەشە سەرەکییەکان" style={{ maxWidth: 1500, margin: '0 auto', position: 'relative' }}>
       <h1 style={{ fontSize: 23, margin: '0 0 27px', fontWeight: 900, color: '#172b45' }}>بەشە سەرەکییەکان</h1>
       {[0, 1, 2].map(rowIndex => {
         const start = rowIndex * 4;
