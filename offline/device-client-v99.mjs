@@ -1,3 +1,4 @@
+import {isPrivateV101IPv4} from "./private-nic-v101.mjs";
 // V99 synthetic cashier client. Preserves the original checkout request ID
 // and lines across lost-ACK retries; refuses a mutated request with same ID.
 // No Internet, DNS or cloud endpoint is needed in this test-only client.
@@ -8,8 +9,10 @@ export function createV99TrialClient({origin,deviceId,secretHex,transport=fetch,
  routePrefix="/api/local/v99/"}){
  const url=new URL(origin);
  if(!((url.protocol==="http:"&&routePrefix==="/api/local/v99/")||
-   (url.protocol==="https:"&&routePrefix==="/api/local/v100/"&&transport!==fetch))||
-  !["localhost","127.0.0.1"].includes(url.hostname)||
+   (url.protocol==="https:"&&routePrefix==="/api/local/v100/"&&transport!==fetch)||
+   (url.protocol==="https:"&&routePrefix==="/api/local/v101/"&&transport!==fetch))||
+  !(routePrefix==="/api/local/v101/"?isPrivateV101IPv4(url.hostname):
+    ["localhost","127.0.0.1"].includes(url.hostname))||
   !/^\d+$/.test(url.port)||url.pathname!=="/"||
   url.search||url.hash||typeof transport!=="function")
   throw Error("V99_test_client_loopback_only");
