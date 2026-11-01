@@ -65,8 +65,13 @@ on:
       - 'offline/private-nic-v101.mjs'
       - 'offline/private-lan-gateway-v101.mjs'
       - 'offline/tests/v101_private_nic_real_pg.mjs'
-      - 'offline/tests/v101-private-nic-contract.test.mjs'
+      - 'offline/tests/v101-private-nic-contract.test.mjs offline/tests/v104-catalog-parity.test.mjs'
       - 'docs/V101_PRIVATE_NIC_TLS_LAN_TEST.md'
+      - 'offline/catalog-parity-v104.mjs'
+      - 'offline/market-catalog-v102.mjs'
+      - 'offline/tests/v104-catalog-parity.test.mjs'
+      - 'offline/tests/v104_catalog_parity_real_pg.mjs'
+      - 'docs/V104_ISOLATED_CATALOG_PRICE_PARITY.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -166,6 +171,11 @@ on:
       - 'offline/tests/v101_private_nic_real_pg.mjs'
       - 'offline/tests/v101-private-nic-contract.test.mjs'
       - 'docs/V101_PRIVATE_NIC_TLS_LAN_TEST.md'
+      - 'offline/catalog-parity-v104.mjs'
+      - 'offline/market-catalog-v102.mjs'
+      - 'offline/tests/v104-catalog-parity.test.mjs'
+      - 'offline/tests/v104_catalog_parity_real_pg.mjs'
+      - 'docs/V104_ISOLATED_CATALOG_PRICE_PARITY.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -344,6 +354,14 @@ jobs:
         run: node offline/tests/v100_mtls_revocation_real_pg.mjs
       - name: V101 real private-NIC TLS1.3 mTLS and PostgreSQL checkout recovery after stopped listener
         run: node offline/tests/v101_private_nic_real_pg.mjs
+      - name: V104 reconcile disposable PostgreSQL synthetic product and barcode prices against independently parsed private CSV; SELECT ONLY
+        run: node offline/tests/v104_catalog_parity_real_pg.mjs
+      - name: Upload read-only V104 catalog parity CI audit without product data
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZHIROX-V104-DISPOSABLE-CATALOG-PRICE-PARITY
+          path: artifacts/v104/ZHIROX-V104-DISPOSABLE-PRICE-PARITY.json
+          retention-days: 30
       - name: Preserve a restorable REAL PostgreSQL V101 RFC1918 NIC TLS1.3 and PG checkout recovery test-market snapshot
         shell: bash
         run: |
