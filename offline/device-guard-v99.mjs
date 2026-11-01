@@ -60,7 +60,7 @@ export function createV99DeviceGuard({deviceKeys,now=Date.now,ttlSeconds=30}){
   if(seen.size>=2048)return null;
   const key=id+":"+nonce;
   if(seen.has(key))return null;
-  seen.set(key,second+ttlSeconds+1);
+  seen.set(key,Math.max(second,issued)+ttlSeconds+1);
   return id;
  };
 }
