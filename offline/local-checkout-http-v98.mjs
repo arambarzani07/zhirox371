@@ -57,14 +57,15 @@ export async function assertV98GatePrivileges(pool){
 // real COMMIT. Only integration tests should supply it; no runtime entry uses it.
 export function createV98TestCheckoutHandler({
  authPool,gatePool,sessionSecret,proofKeyHex,afterCommittedForTest,
- routePrefix=API,deviceGuard=null
+ routePrefix=API,deviceGuard=null,networkPolicy=null
 }){
  if(!authPool?.query||!authPool?.connect||!gatePool?.query||
   authPool===gatePool||typeof sessionSecret!=="string"||
   Buffer.byteLength(sessionSecret)<32||!/^[0-9a-f]{64}$/.test(proofKeyHex||""))
   throw Error("V98_dedicated_isolated_pg_pools_and_secrets_required");
  if(!((routePrefix===API&&deviceGuard===null)||
-      ((routePrefix==="/api/local/v99/"||routePrefix==="/api/local/v100/")&&typeof deviceGuard==="function")))
+      ((routePrefix==="/api/local/v99/"||routePrefix==="/api/local/v100/")&&typeof deviceGuard==="function"&&networkPolicy===null)||
+      (routePrefix==="/api/local/v101/"&&typeof deviceGuard==="function"&&typeof networkPolicy==="function")))
   throw Error("V99_device_guard_route_pair_required");
  const auth=createLocalAuthV3({pool:authPool,secret:sessionSecret});
  const checkout=createV97TestCheckoutAdapter({
@@ -74,8 +75,9 @@ export function createV98TestCheckoutHandler({
   // Reject non-loopback peers AND Host-header mismatches (DNS rebinding).
   const addr=req.socket.remoteAddress;
   const host=req.headers.host||"";
-  if(!["127.0.0.1","::1","::ffff:127.0.0.1"].includes(addr)||
-    !/^(?:127\.0\.0\.1|localhost):[0-9]{2,5}$/.test(host))
+  if(networkPolicy?!networkPolicy(req):
+    (!["127.0.0.1","::1","::ffff:127.0.0.1"].includes(addr)||
+    !/^(?:127\.0\.0\.1|localhost):[0-9]{2,5}$/.test(host)))
    return respond(res,403,{error:"loopback_only"});
   let url;
   try{url=new URL(req.url||"/","http://127.0.0.1");}

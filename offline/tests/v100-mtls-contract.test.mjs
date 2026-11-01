@@ -22,7 +22,7 @@ test("V100 only enables real TLS 1.3 mutual auth on loopback test gateway",()=>{
   "getPeerCertificate",
   "tls_fingerprint",
   "v100_trial_devices",
-  'routePrefix:"/api/local/v100/"'
+  'routePrefix="/api/local/v100/"'
  ])assert.ok(server.includes(s),s);
  assert.doesNotMatch(server,/server.listen\([^\n]*"0\.0\.0\.0"/);
  assert.doesNotMatch(server,/rejectUnauthorized:false/);
@@ -46,7 +46,7 @@ test("V100 cashier uses pinned CA and client cert and preserves immutable reques
   "new https.Agent", "ca,cert,key", "rejectUnauthorized:true",
   "V100_private_loopback_https_mtls_required",
   "u.origin!==target.origin",
-  'routePrefix:"/api/local/v100/"',
+  'routePrefix="/api/local/v100/"',
   "createV99TrialClient"
  ])assert.ok(client.includes(s),s);
  assert.ok(oldClient.includes('url.protocol==="https:"'));

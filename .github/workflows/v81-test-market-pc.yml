@@ -62,6 +62,11 @@ on:
       - 'offline/tests/v100_mtls_revocation_real_pg.mjs'
       - 'offline/tests/v100-mtls-contract.test.mjs'
       - 'docs/V100_MTLS_OFFLINE_LAN_TEST.md'
+      - 'offline/private-nic-v101.mjs'
+      - 'offline/private-lan-gateway-v101.mjs'
+      - 'offline/tests/v101_private_nic_real_pg.mjs'
+      - 'offline/tests/v101-private-nic-contract.test.mjs'
+      - 'docs/V101_PRIVATE_NIC_TLS_LAN_TEST.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -156,6 +161,11 @@ on:
       - 'offline/tests/v100_mtls_revocation_real_pg.mjs'
       - 'offline/tests/v100-mtls-contract.test.mjs'
       - 'docs/V100_MTLS_OFFLINE_LAN_TEST.md'
+      - 'offline/private-nic-v101.mjs'
+      - 'offline/private-lan-gateway-v101.mjs'
+      - 'offline/tests/v101_private_nic_real_pg.mjs'
+      - 'offline/tests/v101-private-nic-contract.test.mjs'
+      - 'docs/V101_PRIVATE_NIC_TLS_LAN_TEST.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -222,7 +232,7 @@ jobs:
         with:
           node-version: '24'
       - name: Check authenticated read-only V81 API security
-        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs offline/tests/v92-viewer-boundary-contract.test.mjs offline/tests/v93-dual-pool-contract.test.mjs offline/tests/v94-auth-boundary-contract.test.mjs offline/tests/v95-preflight-contract.test.mjs offline/tests/v96-actor-proof-contract.test.mjs offline/tests/v97-atomic-checkout-contract.test.mjs offline/tests/v98-local-http-contract.test.mjs offline/tests/v99-device-offline-contract.test.mjs offline/tests/v100-mtls-contract.test.mjs
+        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs offline/tests/v92-viewer-boundary-contract.test.mjs offline/tests/v93-dual-pool-contract.test.mjs offline/tests/v94-auth-boundary-contract.test.mjs offline/tests/v95-preflight-contract.test.mjs offline/tests/v96-actor-proof-contract.test.mjs offline/tests/v97-atomic-checkout-contract.test.mjs offline/tests/v98-local-http-contract.test.mjs offline/tests/v99-device-offline-contract.test.mjs offline/tests/v100-mtls-contract.test.mjs offline/tests/v101-private-nic-contract.test.mjs
       - name: Install app, disposable SQL driver and pinned Chromium
         run: |
           npm install --no-save --no-package-lock pg playwright@1.56.1
@@ -332,22 +342,24 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f offline/migrations/043_v100_mtls_device_registry.sql
       - name: V100 real TLS 1.3 mutual certificates, device revocation/rotation and idempotent HTTPS checkout
         run: node offline/tests/v100_mtls_revocation_real_pg.mjs
-      - name: Preserve a restorable REAL PostgreSQL V100 genuine TLS 1.3 mutual-cert isolated PostgreSQL test-market snapshot
+      - name: V101 real private-NIC TLS1.3 mTLS and PostgreSQL checkout recovery after stopped listener
+        run: node offline/tests/v101_private_nic_real_pg.mjs
+      - name: Preserve a restorable REAL PostgreSQL V101 RFC1918 NIC TLS1.3 and PG checkout recovery test-market snapshot
         shell: bash
         run: |
           set -euo pipefail
           test "$PGDATABASE" = "zhirox_v80_disposable"
-          mkdir -p artifacts/v100
+          mkdir -p artifacts/v101
           umask 077
-          pg_dump -Fc --schema=zhirox_local -f artifacts/v100/ZHIROX-V100-TEST-MARKET.dump
-          test -s artifacts/v100/ZHIROX-V100-TEST-MARKET.dump
-          printf 'V100 genuine TLS1.3 mTLS device revocation and certificate rotation with restricted SQL roles, 3 atomic HTTPS test sales and lost-ack retry with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v100/README.txt
+          pg_dump -Fc --schema=zhirox_local -f artifacts/v101/ZHIROX-V101-TEST-MARKET.dump
+          test -s artifacts/v101/ZHIROX-V101-TEST-MARKET.dump
+          printf 'V101 genuine private RFC1918 NIC TLS1.3 mTLS with 3 atomic sales and real listener outage/restart plus lost ACK idempotent retry with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v101/README.txt
       - name: Save the current isolated sale returns, purchasing and inventory test archive
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ZHIROX-V100-MTLS-POSTGRESQL-SNAPSHOT
-          path: artifacts/v100/
+          name: ZHIROX-V101-PRIVATE-NIC-POSTGRESQL-SNAPSHOT
+          path: artifacts/v101/
           retention-days: 30
       - name: Save unaltered Chromium screenshots of actual V81 PC
         uses: actions/upload-artifact@v4
