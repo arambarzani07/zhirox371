@@ -46,6 +46,10 @@ on:
       - 'offline/tests/v97_atomic_checkout_real_pg.mjs'
       - 'offline/tests/v97-atomic-checkout-contract.test.mjs'
       - 'docs/V97_ATOMIC_PROVEN_CHECKOUT.md'
+      - 'offline/local-checkout-http-v98.mjs'
+      - 'offline/tests/v98_http_atomic_real_pg.mjs'
+      - 'offline/tests/v98-local-http-contract.test.mjs'
+      - 'docs/V98_LOOPBACK_ATOMIC_HTTP_CHECKOUT.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -124,6 +128,10 @@ on:
       - 'offline/tests/v97_atomic_checkout_real_pg.mjs'
       - 'offline/tests/v97-atomic-checkout-contract.test.mjs'
       - 'docs/V97_ATOMIC_PROVEN_CHECKOUT.md'
+      - 'offline/local-checkout-http-v98.mjs'
+      - 'offline/tests/v98_http_atomic_real_pg.mjs'
+      - 'offline/tests/v98-local-http-contract.test.mjs'
+      - 'docs/V98_LOOPBACK_ATOMIC_HTTP_CHECKOUT.md'
       - 'offline/tests/049_v89_lot_receiving_return_fixture.sql'
       - 'offline/tests/050_v89_lot_receiving_returns_acceptance.sql'
       - 'offline/tests/lot-receiving-returns-v89-contract.test.mjs'
@@ -190,7 +198,7 @@ jobs:
         with:
           node-version: '24'
       - name: Check authenticated read-only V81 API security
-        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs offline/tests/v92-viewer-boundary-contract.test.mjs offline/tests/v93-dual-pool-contract.test.mjs offline/tests/v94-auth-boundary-contract.test.mjs offline/tests/v95-preflight-contract.test.mjs offline/tests/v96-actor-proof-contract.test.mjs offline/tests/v97-atomic-checkout-contract.test.mjs
+        run: node --test offline/tests/test-market-v81-api.test.mjs offline/tests/test-market-sections-v82.test.mjs offline/tests/supplier-v83-contract.test.mjs offline/tests/returns-v84-contract.test.mjs offline/tests/cashbook-v85-contract.test.mjs offline/tests/expiry-v86-contract.test.mjs offline/tests/fefo-v87-contract.test.mjs offline/tests/lot-cutover-v88-contract.test.mjs offline/tests/lot-receiving-returns-v89-contract.test.mjs offline/tests/unified-lot-v90-contract.test.mjs offline/tests/v91-concurrency-contract.test.mjs offline/tests/v92-viewer-boundary-contract.test.mjs offline/tests/v93-dual-pool-contract.test.mjs offline/tests/v94-auth-boundary-contract.test.mjs offline/tests/v95-preflight-contract.test.mjs offline/tests/v96-actor-proof-contract.test.mjs offline/tests/v97-atomic-checkout-contract.test.mjs offline/tests/v98-local-http-contract.test.mjs
       - name: Install app, disposable SQL driver and pinned Chromium
         run: |
           npm install --no-save --no-package-lock pg playwright@1.56.1
@@ -292,22 +300,24 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f offline/migrations/042_v97_proven_atomic_checkout.sql
       - name: V97 real two-cashier final LOT race, idempotent receipt and revoked session test
         run: node offline/tests/v97_atomic_checkout_real_pg.mjs
-      - name: Preserve a restorable REAL PostgreSQL V97 isolated authenticated atomic checkout test-market snapshot
+      - name: V98 actual loopback HTTP two-cashier atomic checkout and lost acknowledgment test
+        run: node offline/tests/v98_http_atomic_real_pg.mjs
+      - name: Preserve a restorable REAL PostgreSQL V98 isolated authenticated localhost HTTP checkout test-market snapshot
         shell: bash
         run: |
           set -euo pipefail
           test "$PGDATABASE" = "zhirox_v80_disposable"
-          mkdir -p artifacts/v97
+          mkdir -p artifacts/v98
           umask 077
-          pg_dump -Fc --schema=zhirox_local -f artifacts/v97/ZHIROX-V97-TEST-MARKET.dump
-          test -s artifacts/v97/ZHIROX-V97-TEST-MARKET.dump
-          printf 'V97 test-only one HMAC-proven atomic FEFO transaction and idempotent retry with checked multi-cashier stock concurrency after V96 with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v97/README.txt
+          pg_dump -Fc --schema=zhirox_local -f artifacts/v98/ZHIROX-V98-TEST-MARKET.dump
+          test -s artifacts/v98/ZHIROX-V98-TEST-MARKET.dump
+          printf 'V98 isolated localhost HTTP two-cashier signed atomic FEFO sales, exact-receipt recovery after lost response, restricted SQL identities after V97 with synthetic business values; not physical cashier acceptance. Do not restore to production. Reset ephemeral login passwords after restoring. CI artifact retention is limited. No deletion authorized.\n' > artifacts/v98/README.txt
       - name: Save the current isolated sale returns, purchasing and inventory test archive
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ZHIROX-V97-ATOMIC-CHECKOUT-POSTGRESQL-SNAPSHOT
-          path: artifacts/v97/
+          name: ZHIROX-V98-HTTP-CHECKOUT-POSTGRESQL-SNAPSHOT
+          path: artifacts/v98/
           retention-days: 30
       - name: Save unaltered Chromium screenshots of actual V81 PC
         uses: actions/upload-artifact@v4
