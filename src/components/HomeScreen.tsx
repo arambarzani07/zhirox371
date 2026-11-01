@@ -12,8 +12,8 @@ export const HomeScreen: React.FC = () => {
   const { navigateTo } = useApp();
   const [openModuleIndex, setOpenModuleIndex] = useState(-1);
 
-  const handleSubcardClick = (targetView: string, targetSubtab?: string) => {
-    navigateTo(targetView as NavView, targetSubtab);
+  const handleSubcardClick = (targetView: string, targetSubtab: string | undefined, sectionId: string) => {
+    navigateTo(targetView as NavView, targetSubtab, sectionId);
   };
 
   return (
@@ -69,7 +69,7 @@ export const HomeScreen: React.FC = () => {
                 <div className="subgrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12 }}>
                   {activeModule.submodules.map((sub, index) => (
                     <button className="sub" key={index} type="button"
-                      onClick={() => handleSubcardClick(sub.targetView, sub.targetSubtab)}
+                      onClick={() => handleSubcardClick(sub.targetView, sub.targetSubtab, sub.iconName)}
                       style={{ minHeight: 112, border: '1px solid #e5eaf1', borderRadius: 11,
                         background: '#f9fafc', color: '#273a54', padding: 14, textAlign: 'right',
                         display: 'flex', flexDirection: 'column', alignItems: 'stretch',
