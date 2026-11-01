@@ -64,7 +64,7 @@ export function createV98TestCheckoutHandler({
   Buffer.byteLength(sessionSecret)<32||!/^[0-9a-f]{64}$/.test(proofKeyHex||""))
   throw Error("V98_dedicated_isolated_pg_pools_and_secrets_required");
  if(!((routePrefix===API&&deviceGuard===null)||
-      (routePrefix==="/api/local/v99/"&&typeof deviceGuard==="function")))
+      ((routePrefix==="/api/local/v99/"||routePrefix==="/api/local/v100/")&&typeof deviceGuard==="function")))
   throw Error("V99_device_guard_route_pair_required");
  const auth=createLocalAuthV3({pool:authPool,secret:sessionSecret});
  const checkout=createV97TestCheckoutAdapter({

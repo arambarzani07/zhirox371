@@ -30,7 +30,7 @@ test("V99 remains loopback-only and never exposes raw DB role credentials",()=>{
   'server.listen(3316,"127.0.0.1",resolve)',
   'zhirox_v80_disposable',
   'createV98TestCheckoutHandler',
-  'routePrefix:"/api/local/v99/"',
+  'routePrefix="/api/local/v99/"',
   "createV99DeviceGuard"
  ])assert.ok(gateway.includes(x),x);
  for(const x of [

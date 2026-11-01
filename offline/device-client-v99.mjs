@@ -4,9 +4,11 @@
 import {signV99DeviceRequest} from "./device-guard-v99.mjs";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export function createV99TrialClient({origin,deviceId,secretHex,transport=fetch}){
+export function createV99TrialClient({origin,deviceId,secretHex,transport=fetch,
+ routePrefix="/api/local/v99/"}){
  const url=new URL(origin);
- if(url.protocol!=="http:"||
+ if(!((url.protocol==="http:"&&routePrefix==="/api/local/v99/")||
+   (url.protocol==="https:"&&routePrefix==="/api/local/v100/"&&transport!==fetch))||
   !["localhost","127.0.0.1"].includes(url.hostname)||
   !/^\d+$/.test(url.port)||url.pathname!=="/"||
   url.search||url.hash||typeof transport!=="function")
@@ -14,7 +16,7 @@ export function createV99TrialClient({origin,deviceId,secretHex,transport=fetch}
  const sent=new Map();
  let token=null;
  async function call(route,body){
-  const path="/api/local/v99/"+route;
+  const path=routePrefix+route;
   const signed=signV99DeviceRequest({
    deviceId,secretHex,method:"POST",path,body
   });

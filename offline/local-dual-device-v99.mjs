@@ -7,12 +7,13 @@ import {assertV94AuthPrivilegeBoundary} from "./local-test-market-v94.mjs";
 import {createV99DeviceGuard} from "./device-guard-v99.mjs";
 
 export function createV99DualDeviceHandler({
- authPool,gatePool,sessionSecret,proofKeyHex,deviceKeys,afterCommittedForTest
+ authPool,gatePool,sessionSecret,proofKeyHex,deviceKeys,afterCommittedForTest,
+ routePrefix="/api/local/v99/"
 }){
  const deviceGuard=createV99DeviceGuard({deviceKeys});
  return createV98TestCheckoutHandler({
   authPool,gatePool,sessionSecret,proofKeyHex,afterCommittedForTest,
-  routePrefix:"/api/local/v99/",deviceGuard
+  routePrefix,deviceGuard
  });
 }
 function restrictedDbUrl(raw,actor){
