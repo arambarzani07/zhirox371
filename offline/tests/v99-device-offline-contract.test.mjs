@@ -18,7 +18,7 @@ test("V99 distinct device HMACs bind exact path, body and single-use nonces",()=
   "trial-pc-02",
   'seen.has(key)',
   "ttlSeconds=30",
-  'signingText({deviceId,timestamp:issued,nonce,method,path,body})',
+  'signingText({deviceId:id,timestamp:issued,nonce,method,path,body})',
   "if(seen.size>=2048)"
  ])assert.ok(guard.includes(x),x);
  assert.doesNotMatch(guard,/UPDATE zhirox_local|INSERT INTO zhirox_local|\bfetch\(/);
