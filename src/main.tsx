@@ -7,6 +7,13 @@ import './index.css';
 // Normal preview continues unchanged; official builds remain blocked by Vite.
 const root=ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 if(import.meta.env.DEV&&import.meta.env.VITE_ENABLE_LOCAL_PILOT==="true"&&
+   import.meta.env.VITE_V102_READONLY_CATALOG==="true"){
+ import('./components/MarketCatalogReadOnlyV102').then(({MarketCatalogReadOnlyV102})=>{
+  root.render(<React.StrictMode><MarketCatalogReadOnlyV102/></React.StrictMode>);
+ }).catch(()=>{
+  root.render(<div role="alert" dir="rtl">پشکنەری تەنها-خوێندنەوەی کاڵا بەردەست نییە.</div>);
+ });
+}else if(import.meta.env.DEV&&import.meta.env.VITE_ENABLE_LOCAL_PILOT==="true"&&
    import.meta.env.VITE_V81_TEST_MARKET==="true"){
  import('./components/TestMarketDesktopV81').then(({TestMarketDesktopV81})=>{
   root.render(<React.StrictMode><TestMarketDesktopV81/></React.StrictMode>);
