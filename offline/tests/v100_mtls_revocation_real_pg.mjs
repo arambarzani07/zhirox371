@@ -194,12 +194,9 @@ try{
   UPDATE zhirox_local.v100_trial_devices
    SET tls_fingerprint=$2 WHERE store_id=$1 AND device_id='trial-pc-01'`,
   [store,fingerprint("pc1rotated")]);
- await assert.rejects(()=>pc1.checkout({request_id:request(5),lines:cart(1)}),
-  /request_id_cannot_change_basket|V100/).catch(async()=>{
-   // The client reports HTTP 403 rather than throwing on normal rejection.
-   const rejection=await pc1.checkout({request_id:request(5),lines:cart(1)});
-   assert.equal(rejection.status,403);
-  });
+ const oldCertificate=await pc1.checkout({request_id:request(5),lines:cart(1)});
+ assert.equal(oldCertificate.status,403);
+ assert.equal(oldCertificate.body.error,"device_certificate_not_enrolled");
  const rotated=createV100MTLSTestClient({origin,deviceId:"trial-pc-01",
   secretHex:keys["trial-pc-01"],ca,cert:material("pc1rotated.crt"),
   key:material("pc1rotated.key")});
