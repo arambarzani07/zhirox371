@@ -8,12 +8,12 @@ import {createV99DeviceGuard} from "./device-guard-v99.mjs";
 
 export function createV99DualDeviceHandler({
  authPool,gatePool,sessionSecret,proofKeyHex,deviceKeys,afterCommittedForTest,
- routePrefix="/api/local/v99/"
+ routePrefix="/api/local/v99/",networkPolicy=null
 }){
  const deviceGuard=createV99DeviceGuard({deviceKeys});
  return createV98TestCheckoutHandler({
   authPool,gatePool,sessionSecret,proofKeyHex,afterCommittedForTest,
-  routePrefix,deviceGuard
+  routePrefix,deviceGuard,networkPolicy
  });
 }
 function restrictedDbUrl(raw,actor){
