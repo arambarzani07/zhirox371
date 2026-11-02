@@ -322,6 +322,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     openNewShift,
     setActiveReceiptForModal,
     recordSaleReturn,
+    demoRefunds,
     receiveStock,
     updateProduct,
     addAuditLog
@@ -346,7 +347,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
   // Form states
   const [selectedProductId, setSelectedProductId] = useState<string>(products[0]?.id || '');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(suppliers[0]?.id || '');
-  const [returnReceiptNo, setReturnReceiptNo] = useState<string>(receipts[0]?.receiptNumber || 'DEMO-RCP-1001');
+  const [returnReceiptNo, setReturnReceiptNo] = useState<string>(receipts[0]?.receiptNumber || '');
   const [returnQty, setReturnQty] = useState<string>('1');
   const [returnRestock, setReturnRestock] = useState<boolean>(true);
   const [returnRefundMethod, setReturnRefundMethod] = useState<'cash' | 'debt'>('cash');
@@ -393,32 +394,30 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
 
     const handleReturnSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      const prod = products.find(p => p.id === selectedProductId) || products[0];
-      const qtyNum = Math.max(1, parseInt(returnQty, 10) || 1);
-      if (!prod) return;
-
-      const receiptLine = matchedReceipt?.items.find(i => i.productId === prod.id);
-      if (receiptLine && qtyNum > receiptLine.qty) {
-        setReturnMsg({
-          text: `لە پسووڵەی ${returnReceiptNo}دا تەنها ${receiptLine.qty} دانە لەم کاڵایە فرۆشراوە!`,
-          error: true
-        });
+      const prod = products.find(p => p.id === selectedProductId);
+      const qtyNum = Number(returnQty);
+      if (!matchedReceipt || !prod || !Number.isFinite(qtyNum) || qtyNum <= 0) {
+        setReturnMsg({ text: 'پسووڵە، کاڵا یان بڕی گەڕاندنەوە نادروستە', error: true });
         return;
       }
-
-      const unitPrice = receiptLine ? receiptLine.price : prod.unit_sale_price_iqd;
-      const lineMode = receiptLine?.mode || 'unit';
+      const receiptLine = matchedReceipt.items.find(i => i.productId === prod.id);
+      if (!receiptLine) {
+        setReturnMsg({ text: 'ئەم کاڵایە لە پسووڵەی هەڵبژێردراو نییە', error: true });
+        return;
+      }
+      const unitPrice = receiptLine.price;
+      const lineMode = receiptLine.mode;
       const refundAmount = unitPrice * qtyNum;
 
       const res = recordSaleReturn({
-        receiptNo: returnReceiptNo.trim() || 'DEMO-RCP-1001',
+        receiptNo: returnReceiptNo.trim(),
         productId: prod.id,
         qty: qtyNum,
         mode: lineMode,
         refundAmount,
         restock: returnRestock,
         refundMethod: returnRefundMethod,
-        customerId: matchedReceipt?.customerId || customers[0]?.id || null,
+        customerId: matchedReceipt.customerId,
         reason: returnReason.trim() || 'گەڕاندنەوەی کاڵا'
       });
 
@@ -427,18 +426,6 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
         return;
       }
 
-      const next: ReturnRecord = {
-        id: `ret-${Date.now()}`,
-        receiptNo: returnReceiptNo.trim() || 'DEMO-RCP-1001',
-        productId: prod.id,
-        productName: prod.name,
-        qty: qtyNum,
-        refundAmount,
-        restocked: returnRestock,
-        reason: returnReason.trim() || 'گەڕاندنەوەی کاڵا',
-        createdAt: new Date().toISOString()
-      };
-      setStoreState(prev => ({ ...prev, returns: [next, ...prev.returns] }));
       setReturnQty('1');
       setReturnMsg({
         text: `گەڕاندنەوەی ${qtyNum} × ${prod.name} بە بڕی ${money(refundAmount)} بە سەرکەوتوویی تۆمارکرا`,
@@ -446,8 +433,8 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
       });
     };
 
-    const totalReturnedIqd = storeState.returns.reduce((s, r) => s + r.refundAmount, 0);
-    const totalRestockedUnits = storeState.returns.filter(r => r.restocked).reduce((s, r) => s + r.qty, 0);
+    const totalReturnedIqd = demoRefunds.reduce((s, r) => s + r.refundAmount, 0);
+    const totalRestockedUnits = demoRefunds.filter(r => r.restocked).reduce((s, r) => s + r.qty, 0);
 
     return (
       <div className="ws-stack">
@@ -455,7 +442,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی پارەی گەڕێندراوە</span>
             <span className="ws-kpi-value negative">{money(totalReturnedIqd)}</span>
-            <span className="ws-kpi-sub">لە کۆی {storeState.returns.length} مامەڵەی گەڕاندنەوە</span>
+            <span className="ws-kpi-sub">لە کۆی {demoRefunds.length} مامەڵەی گەڕاندنەوە</span>
           </div>
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">یەکەی گەڕاوە بۆ کۆگا (سالم)</span>
@@ -528,7 +515,8 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
               بڕی گەڕاوە
               <input
                 type="number"
-                min="1"
+                min="0.001"
+                step="0.001"
                 value={returnQty}
                 onChange={e => setReturnQty(e.target.value)}
                 required
@@ -574,7 +562,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
 
         <div className="section-workspace__table">
           <strong className="section-workspace__metric">
-            مێژووی گەڕاندنەوەی کاڵاکان ({storeState.returns.length} مامەڵە · کۆ: {money(totalReturnedIqd)})
+            مێژووی گەڕاندنەوەی کاڵاکان ({demoRefunds.length} مامەڵە · کۆ: {money(totalReturnedIqd)})
           </strong>
           <table>
             <thead>
@@ -589,7 +577,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
               </tr>
             </thead>
             <tbody>
-              {storeState.returns.map(r => (
+              {demoRefunds.map(r => (
                 <tr key={r.id}>
                   <td style={{ direction: 'ltr', fontWeight: 900 }}>{r.receiptNo}</td>
                   <td>

@@ -5,6 +5,8 @@ on:
       - 'config.js'
       - 'src/**'
       - 'tests/v23_preview_mode_guard.test.mjs'
+      - 'tests/v107_demo_refund_integrity.test.mjs'
+      - 'tests/browser/v107_demo_refund_integrity.mjs'
       - 'tests/home_locked_cards_20261101.test.mjs'
       - 'tests/browser/v23_react_preview.mjs'
       - 'tests/browser/v24_react_local_pilot.mjs'
@@ -41,6 +43,8 @@ jobs:
           node-version: '24'
       - name: Fail-closed offline mock and DEMO-only receipt checks
         run: node --test tests/v23_preview_mode_guard.test.mjs tests/home_locked_cards_20261101.test.mjs
+      - name: V107 DEMO refund integrity, over-refund and repeated-return guard
+        run: node --test tests/v107_demo_refund_integrity.test.mjs
       - name: Verify V24 loopback auth, idempotency and cashier isolation
         run: node --test tests/v24_local_pilot_contract.test.mjs
       - name: Install React preview dependencies (no deploy or database)
@@ -64,6 +68,8 @@ jobs:
         run: node tests/browser/v23_react_preview.mjs
       - name: Verify full-system navigation and capture every major React module in Chromium
         run: node tests/browser/system_ui_v2.mjs
+      - name: V107 real Chromium reject double DEMO refunds and preserve stock/cash across reload
+        run: node tests/browser/v107_demo_refund_integrity.mjs
       - name: Upload actual all-module Chromium PC screenshots
         if: always()
         uses: actions/upload-artifact@v4
