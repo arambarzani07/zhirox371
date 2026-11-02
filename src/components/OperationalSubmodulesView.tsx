@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { money } from '../utils/retailHelpers';
+import { demoCostCoverageV109 } from '../utils/demoCostCoverageV109';
 import { KurdishVoiceAssistantModal } from './KurdishVoiceAssistantModal';
 
 const SUBMODULE_STORAGE_KEY = 'kanichnar_retail_pos_v18_submodules';
@@ -355,7 +356,8 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
   const [returnMsg, setReturnMsg] = useState<{ text: string; error: boolean } | null>(null);
 
   const [poQty, setPoQty] = useState<string>('10');
-  const [poUnitCost, setPoUnitCost] = useState<string>('1000');
+  const [poUnitCost, setPoUnitCost] = useState<string>('');
+  const [poError,setPoError] = useState<string | null>(null);
 
   const [offerTitle, setOfferTitle] = useState<string>('');
   const [offerBundleQty, setOfferBundleQty] = useState<string>('2');
@@ -603,21 +605,12 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
 
   // 2. PROFIT CHART (قازانج)
   if (sectionId === 'profit-chart') {
-    const productMap = new Map(products.map(p => [p.id, p]));
-    let realizedRevenue = 0;
-    let realizedCost = 0;
-    receipts.forEach(r => {
-      realizedRevenue += r.total;
-      r.items.forEach(item => {
-        const prod = productMap.get(item.productId);
-        const unitCost = prod?.unit_purchase_price_iqd ?? Math.round(item.price * 0.8);
-        const multiplier = item.mode === 'carton' && prod?.carton ? prod.carton.units_per_carton : 1;
-        realizedCost += unitCost * multiplier * item.qty;
-      });
-    });
-    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const grossProfit = realizedRevenue - realizedCost;
-    const netProfit = grossProfit - totalExpenses;
+    const realizedRevenue=receipts.reduce((sum,r)=>sum+r.total,0);
+    const salesCosts=demoCostCoverageV109(products,receipts);
+    const realizedCost=salesCosts.complete?salesCosts.knownCost:null;
+    const totalExpenses=expenses.reduce((s,e)=>s+e.amount,0);
+    const grossProfit=realizedCost===null?null:realizedRevenue-realizedCost;
+    const netProfit=grossProfit===null?null:grossProfit-totalExpenses;
 
     return (
       <div className="ws-stack">
@@ -629,20 +622,20 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
           </div>
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">تێچووی کڕینی کاڵای فرۆشراو (COGS)</span>
-            <span className="ws-kpi-value">{money(realizedCost)}</span>
+            <span className="ws-kpi-value">{realizedCost===null?'نادیار':money(realizedCost)}</span>
             <span className="ws-kpi-sub">لەسەر بنەمای نرخی کڕینی یەکە</span>
           </div>
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">قازانجی گشتی (پێش خەرجی)</span>
-            <span className={`ws-kpi-value ${grossProfit >= 0 ? 'positive' : 'negative'}`}>
-              {money(grossProfit)}
+            <span className={`ws-kpi-value ${grossProfit!==null&&grossProfit >= 0 ? 'positive' : 'negative'}`}>
+              {grossProfit===null?'نادیار':money(grossProfit)}
             </span>
             <span className="ws-kpi-sub">فرۆشتن − تێچووی کاڵا</span>
           </div>
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">قازانجی پوخت (دوای خەرجییەکان)</span>
-            <span className={`ws-kpi-value ${netProfit >= 0 ? 'positive' : 'negative'}`}>
-              {money(netProfit)}
+            <span className={`ws-kpi-value ${netProfit!==null&&netProfit >= 0 ? 'positive' : 'negative'}`}>
+              {netProfit===null?'نادیار':money(netProfit)}
             </span>
             <span className="ws-kpi-sub">دوای دەرکردنی سەرجەم خەرجییەکان</span>
           </div>
@@ -666,18 +659,21 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
             </thead>
             <tbody>
               {products.map(p => {
-                const cost = p.unit_purchase_price_iqd || 0;
-                const margin = p.unit_sale_price_iqd - cost;
-                const pct = p.unit_sale_price_iqd > 0 ? Math.round((margin / p.unit_sale_price_iqd) * 100) : 0;
+                const rawCost=p.unit_purchase_price_iqd;
+                const cost=typeof rawCost==='number'&&Number.isSafeInteger(rawCost)&&rawCost>0?
+                  rawCost:null;
+                const margin=cost===null?null:p.unit_sale_price_iqd-cost;
+                const pct=margin!==null&&p.unit_sale_price_iqd>0?
+                  Math.round((margin/p.unit_sale_price_iqd)*100):null;
                 return (
                   <tr key={p.id}>
                     <td><strong>{p.name}</strong></td>
-                    <td style={{ direction: 'ltr' }}>{money(cost)}</td>
+                    <td style={{ direction: 'ltr' }}>{cost===null?'نادیار':money(cost)}</td>
                     <td style={{ direction: 'ltr' }}>{money(p.unit_sale_price_iqd)}</td>
-                    <td style={{ direction: 'ltr', color: '#15803d', fontWeight: 900 }}>{money(margin)}</td>
-                    <td>{pct}%</td>
+                    <td style={{ direction: 'ltr', color: '#15803d', fontWeight: 900 }}>{margin===null?'نادیار':money(margin)}</td>
+                    <td>{pct===null?'نادیار':pct+'%'}</td>
                     <td>{p.stock}</td>
-                    <td style={{ direction: 'ltr', fontWeight: 900 }}>{money(margin * p.stock)}</td>
+                    <td style={{ direction: 'ltr', fontWeight: 900 }}>{margin===null?'نادیار':money(margin*p.stock)}</td>
                   </tr>
                 );
               })}
@@ -691,12 +687,16 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
   // 3. AI INSIGHTS / DETERMINISTIC RETAIL ANALYTICS (شیکاریی زیرەک)
   if (sectionId === 'ai-insights') {
     const insights = products.map(p => {
-      const cost = p.unit_purchase_price_iqd || 0;
-      const unitMargin = p.unit_sale_price_iqd - cost;
+      const rawCost=p.unit_purchase_price_iqd;
+      const cost=typeof rawCost==='number'&&Number.isSafeInteger(rawCost)&&rawCost>0?
+        rawCost:null;
+      const unitMargin=cost===null?null:p.unit_sale_price_iqd-cost;
       const minStock = p.min_stock ?? 10;
       const isLow = p.stock <= minStock;
       const statusText = isLow
         ? `پێویستی بە داواکردنەوەی خێرایە (کۆگا: ${p.stock} ≤ کەمترین: ${minStock})`
+        : unitMargin===null
+        ? 'نرخی کڕین نادیارە — قازانج هەژمار ناکرێت'
         : unitMargin >= 1000
         ? 'کاڵای پڕقازانج — بڕی کۆگا جێگیرە'
         : 'جوڵەی ئاسایی لە ڕەفەدا';
@@ -712,7 +712,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     });
 
     const highPriorityCount = insights.filter(i => i.priority.startsWith('بەرز')).length;
-    const highMarginCount = insights.filter(i => i.unitMargin >= 1000).length;
+    const highMarginCount = insights.filter(i => i.unitMargin!==null&&i.unitMargin >= 1000).length;
 
     return (
       <div className="ws-stack">
@@ -757,7 +757,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
                   <td><strong>{item.name}</strong></td>
                   <td>{item.category}</td>
                   <td>{item.stock}</td>
-                  <td style={{ direction: 'ltr' }}>{money(item.unitMargin)}</td>
+                  <td style={{ direction: 'ltr' }}>{item.unitMargin===null?'نادیار':money(item.unitMargin)}</td>
                   <td style={{ color: item.priority.startsWith('بەرز') ? '#b91c1c' : '#15803d', fontWeight: 900 }}>
                     {item.priority}
                   </td>
@@ -779,7 +779,12 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
       const prod = products.find(p => p.id === selectedProductId) || products[0];
       if (!sup || !prod) return;
       const qtyNum = Math.max(1, parseInt(poQty, 10) || 1);
-      const costNum = Math.max(0, parseInt(poUnitCost, 10) || prod.unit_purchase_price_iqd || 1000);
+      const costNum=Number(poUnitCost);
+      if(!Number.isSafeInteger(costNum)||costNum<=0){
+        setPoError('نرخی کڕین نادیارە؛ پێویستە بە شێوەی ڕاستەقینە بینووسیت');
+        return;
+      }
+      setPoError(null);
       const next: PurchaseOrderRecord = {
         id: `po-${Date.now()}`,
         orderNo: `PO-${new Date().getFullYear()}-${String(storeState.purchaseOrders.length + 1).padStart(2, '0')}`,
@@ -834,6 +839,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
 
         <div className="ws-panel">
           <h2 className="ws-panel-title">دروستکردنی داواکاریی کڕین بۆ دابینکەر</h2>
+          {poError&&<p role="alert" style={{color:'#991b1b',fontWeight:800}}>{poError}</p>}
           <form onSubmit={handleCreatePo} className="ws-form-grid">
             <label className="form-col">
               دابینکەر

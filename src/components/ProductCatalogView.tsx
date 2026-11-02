@@ -326,6 +326,18 @@ export const ProductCatalogView: React.FC = () => {
   const handleImportSubmit = () => {
     if (!importText.trim()) return;
     const parsed = parseCsvRows(importText);
+    const dataRows=importText.split(/\r?\n/).map(line=>line.trim()).filter(line=>
+      line&&!line.startsWith('#')&&!line.startsWith('نام')&&
+      !line.toLowerCase().startsWith('name'));
+    const barcodes=parsed.map(item=>item.barcode);
+    if(!parsed.length||parsed.length!==dataRows.length||
+       new Set(barcodes).size!==barcodes.length){
+      setMessage({
+        text:'CSV ـەکە نرخێکی ون، بارکۆدی دووبارە یان ڕیزی نادروستی تێدایە؛ هیچ کاڵایەک نەگۆڕدرا',
+        error:true
+      });
+      return;
+    }
     let addedCount = 0;
     let updatedCount = 0;
     parsed.forEach(item => {
@@ -344,11 +356,11 @@ export const ProductCatalogView: React.FC = () => {
           sale_mode: 'unit',
           base_unit: 'unit',
           unit_barcode: item.barcode,
-          unit_purchase_price_iqd: Math.round(item.price * 0.8),
+          unit_purchase_price_iqd: 0, // UNKNOWN until entered and verified by operator
           unit_sale_price_iqd: item.price,
           unit_alias_barcodes: [],
           carton: null,
-          stock: 50,
+          stock: 0, // UNKNOWN; never invent 50 units of available stock
           min_stock: 10,
           category: 'هاوردەکراو'
         });
@@ -358,7 +370,7 @@ export const ProductCatalogView: React.FC = () => {
     setImportText('');
     setShowImport(false);
     setMessage({
-      text: `هاوردەکردنی CSV تەواو بوو: ${addedCount} کاڵای نوێ زیادکرا و ${updatedCount} کاڵای پێشوو نوێکرایەوە`,
+      text: `CSV ـی Demo: ${addedCount} کاڵای نوێ و ${updatedCount} نوێکردنەوە؛ بڕی کۆگا و نرخی کڕینی کاڵای نوێ نادیارن (0 تا پشتڕاستکردنەوە)`,
       error: false
     });
   };

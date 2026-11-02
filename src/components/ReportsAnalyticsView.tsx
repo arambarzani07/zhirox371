@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { money } from '../utils/retailHelpers';
+import { demoCostCoverageV109,demoInventoryCostCoverageV109 } from '../utils/demoCostCoverageV109';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 
 export const ReportsAnalyticsView: React.FC = () => {
@@ -11,22 +12,18 @@ export const ReportsAnalyticsView: React.FC = () => {
   const cashSalesTotal = receipts.filter(r => r.paymentMethod === 'cash').reduce((sum, r) => sum + r.total, 0);
   const debtSalesTotal = receipts.filter(r => r.paymentMethod === 'debt').reduce((sum, r) => sum + r.total, 0);
 
-  // Realized Gross Profit
-  let totalCostOfGoodsSold = 0;
-  receipts.forEach(r => {
-    r.items.forEach(it => {
-      const prod = products.find(p => p.id === it.productId);
-      const unitCost = prod?.unit_purchase_price_iqd || Math.round(it.price * 0.75);
-      totalCostOfGoodsSold += unitCost * it.qty;
-    });
-  });
-  const grossProfit = Math.max(0, totalRevenue - totalCostOfGoodsSold);
-  const grossMarginPct = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '0.0';
+  // Browser DEMO cost coverage; never invent a cost as 75% of sale price.
+  const salesCosts=demoCostCoverageV109(products,receipts);
+  const grossProfit=salesCosts.complete?totalRevenue-salesCosts.knownCost:null;
+  const grossMarginPct=grossProfit===null?null:
+    (totalRevenue>0?((grossProfit/totalRevenue)*100).toFixed(1):'0.0');
 
-  // Inventory valuation
-  const inventoryRetailValuation = products.reduce((sum, p) => sum + p.stock * p.unit_sale_price_iqd, 0);
-  const inventoryCostValuation = products.reduce((sum, p) => sum + p.stock * (p.unit_purchase_price_iqd || 0), 0);
-  const expectedInventoryProfit = inventoryRetailValuation - inventoryCostValuation;
+  // Inventory with unknown acquisition cost cannot yield a valid profit.
+  const inventoryRetailValuation=products.reduce((sum,p)=>sum+p.stock*p.unit_sale_price_iqd,0);
+  const inventoryCosts=demoInventoryCostCoverageV109(products);
+  const inventoryCostValuation=inventoryCosts.complete?inventoryCosts.knownCost:null;
+  const expectedInventoryProfit=inventoryCostValuation===null?null:
+    inventoryRetailValuation-inventoryCostValuation;
 
   // Top products sold
   const productSalesMap: Record<string, { name: string; qty: number; revenue: number }> = {};
@@ -99,11 +96,11 @@ export const ReportsAnalyticsView: React.FC = () => {
         </div>
 
         <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '14px', padding: '18px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534' }}>قازانجی خاوێنی فرۆشتن</div>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534' }}>قازانجی خاوێنی Demo (تەنها بە نرخی کڕینی پشتڕاستکراو)</div>
           <div style={{ fontSize: '28px', fontWeight: 950, color: '#15803d', direction: 'ltr', margin: '4px 0' }}>
-            {money(grossProfit)}
+            {grossProfit===null?'نادیار':money(grossProfit)}
           </div>
-          <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 800 }}>ڕێژەی قازانج: {grossMarginPct}%</div>
+          <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 800 }}>ڕێژەی قازانج: {grossMarginPct===null?'نادیار':grossMarginPct+'%'}</div>
         </div>
 
         <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '14px', padding: '18px' }}>
@@ -131,7 +128,7 @@ export const ReportsAnalyticsView: React.FC = () => {
           <div style={{ fontSize: '28px', fontWeight: 950, color: '#b45309', direction: 'ltr', margin: '4px 0' }}>
             {money(inventoryRetailValuation)}
           </div>
-          <div style={{ fontSize: '11px', color: '#d97706' }}>تێچووی کڕین: {money(inventoryCostValuation)}</div>
+          <div style={{ fontSize: '11px', color: '#d97706' }}>تێچووی کڕین: {inventoryCostValuation===null?'نادیار':money(inventoryCostValuation)}</div>
         </div>
       </div>
 
@@ -179,16 +176,16 @@ export const ReportsAnalyticsView: React.FC = () => {
 
           <div style={{ display: 'grid', gap: '12px' }}>
             <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
-              <div style={{ fontSize: '12px', color: '#166534', fontWeight: 800 }}>قازانجی خاوێنی دەستکەوتوو (ڕێژەی قازانج {grossMarginPct}%):</div>
+              <div style={{ fontSize: '12px', color: '#166534', fontWeight: 800 }}>قازانجی خاوێنی دەستکەوتوو (ڕێژەی قازانج {grossMarginPct===null?'نادیار':grossMarginPct+'%'}):</div>
               <strong style={{ fontSize: '20px', color: '#15803d', direction: 'ltr', display: 'block', marginTop: '2px' }}>
-                +{money(grossProfit)}
+                {grossProfit===null?'نادیار':money(grossProfit)}
               </strong>
             </div>
 
             <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: '12px', color: '#64748b' }}>تێچووی کڕینی کاڵای فرۆشراو (COGS):</div>
               <strong style={{ fontSize: '16px', color: '#475569', direction: 'ltr', display: 'block' }}>
-                {money(totalCostOfGoodsSold)}
+                {salesCosts.complete?money(salesCosts.knownCost):'نادیار'}
               </strong>
             </div>
 
