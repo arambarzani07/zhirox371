@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import {
   Product,
   CartLine,
@@ -22,6 +22,7 @@ import {
   INITIAL_STOCK_MOVEMENTS
 } from '../data/initialData';
 import { parseScaleBarcode } from '../utils/retailHelpers';
+import { validateDemoRefundV107, type DemoReturnV107 } from '../utils/demoRefundGuardV107';
 
 const STORAGE_KEY = 'kanichnar_retail_pos_v18';
 
@@ -73,6 +74,7 @@ interface AppContextType {
   openNewShift: (cashierName: string, openingFloat: number) => Shift;
 
   receipts: Receipt[];
+  demoRefunds: DemoReturnV107[];
   completeCheckout: (options: {
     paymentMethod: PaymentMethod;
     customerId?: string | null;
@@ -180,6 +182,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (_e) {}
     return INITIAL_RECEIPTS;
   });
+
+  // V107 separate DEMO-only refund ledger. Recover legacy submodule refunds.
+  const [demoRefunds, setDemoRefunds] = useState<DemoReturnV107[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY+'_refunds');
+      if(saved){const parsed=JSON.parse(saved);if(Array.isArray(parsed))return parsed;}
+      const legacy=localStorage.getItem(STORAGE_KEY+'_submodules');
+      if(legacy){const parsed=JSON.parse(legacy)?.returns;if(Array.isArray(parsed))return parsed;}
+    }catch(_e){}
+    return [];
+  });
+  const demoRefundsRef = useRef(demoRefunds);
 
   const [stockMovements, setStockMovements] = useState<StockMovement[]>(() => {
     try {
@@ -942,59 +956,61 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     customerId?: string | null;
     reason: string;
   }): { success: boolean; message?: string } => {
-    const p = products.find(x => x.id === options.productId);
-    if (!p) {
-      return { success: false, message: 'کاڵای دیاریکراو نەدۆزرایەوە' };
+    // NON-FISCAL browser DEMO. SQL financial refunds require a separate,
+    // authenticated atomic receipt/return journal.
+    const receipt=receipts.find(r=>r.receiptNumber===options.receiptNo);
+    const mode=options.mode||'unit';
+    const check=validateDemoRefundV107({
+      receipt,productId:options.productId,qty:options.qty,mode,
+      refundAmount:options.refundAmount,refundMethod:options.refundMethod,
+      customerId:options.customerId,customers,currentShift,
+      priorReturns:demoRefundsRef.current
+    });
+    if(!check.ok)return {success:false,message:check.message};
+    const p=products.find(x=>x.id===options.productId);
+    if(!p)return {success:false,message:'کاڵای پسووڵە لە کەتەلۆگ نەدۆزرایەوە'};
+    const next:DemoReturnV107={
+      id:'demo-ret-'+crypto.randomUUID(),receiptNo:options.receiptNo,
+      productId:p.id,productName:check.productName,qty:options.qty,mode,
+      refundAmount:options.refundAmount,refundMethod:options.refundMethod,
+      restocked:options.restock,reason:options.reason.trim()||'گەڕاندنەوەی Demo',
+      createdAt:new Date().toISOString()
+    };
+    // Persist a same-tab audit record BEFORE any DEMO stock or cash effects.
+    // A browser cannot provide cross-device atomic financial guarantees.
+    const nextLedger=[next,...demoRefundsRef.current];
+    try{
+      localStorage.setItem(STORAGE_KEY+'_refunds',JSON.stringify(nextLedger));
+    }catch(_e){
+      return {success:false,message:'ناتوانرێت مێژووی گەڕاندنەوە بپارێزرێت'};
     }
-    if (options.qty <= 0 || options.refundAmount <= 0) {
-      return { success: false, message: 'بڕی کاڵا و پارەی گەڕاوە دەبێت لە سفر گەورەتر بێت' };
-    }
-
-    const mode = options.mode || 'unit';
-    const baseUnitsDelta = mode === 'carton' && p.carton ? options.qty * p.carton.units_per_carton : options.qty;
-
-    if (options.restock) {
-      const prevStock = p.stock;
-      const nextStock = prevStock + baseUnitsDelta;
-      updateProduct(p.id, { stock: nextStock });
-
-      const mov: StockMovement = {
-        id: `mov-ret-${Date.now()}`,
-        productId: p.id,
-        productName: p.name,
-        type: 'return',
-        quantityDelta: baseUnitsDelta,
-        mode,
-        previousStock: prevStock,
-        newStock: nextStock,
-        reference: `گەڕاندنەوەی پسووڵەی ${options.receiptNo} (${options.reason})`,
-        createdAt: new Date().toISOString()
+    demoRefundsRef.current=nextLedger;
+    setDemoRefunds(nextLedger);
+    const baseUnitsDelta=options.qty*check.units;
+    if(options.restock){
+      setProducts(prev=>prev.map(item=>item.id===p.id?
+       {...item,stock:item.stock+baseUnitsDelta}:item));
+      const movement:StockMovement={
+        id:'mov-ret-'+crypto.randomUUID(),productId:p.id,productName:p.name,
+        type:'return',quantityDelta:baseUnitsDelta,mode,
+        previousStock:p.stock,newStock:p.stock+baseUnitsDelta,
+        reference:'گەڕاندنەوەی Demo: '+options.receiptNo,
+        createdAt:next.createdAt
       };
-      setStockMovements(prev => [mov, ...prev]);
+      setStockMovements(prev=>[movement,...prev]);
     }
-
-    if (options.refundMethod === 'cash') {
-      setCurrentShift(prev => ({
-        ...prev,
-        cashReturns: (prev.cashReturns || 0) + options.refundAmount,
-        expectedCash: Math.max(0, prev.expectedCash - options.refundAmount)
+    if(options.refundMethod==='cash'){
+      setCurrentShift(prev=>({
+        ...prev,cashReturns:(prev.cashReturns||0)+options.refundAmount,
+        expectedCash:prev.expectedCash-options.refundAmount
       }));
-    } else if (options.refundMethod === 'debt' && options.customerId) {
-      setCustomers(prev =>
-        prev.map(c =>
-          c.id === options.customerId
-            ? { ...c, balanceDebt: Math.max(0, c.balanceDebt - options.refundAmount) }
-            : c
-        )
-      );
+    }else{
+      setCustomers(prev=>prev.map(c=>c.id===options.customerId?
+       {...c,balanceDebt:c.balanceDebt-options.refundAmount}:c));
     }
-
-    addAuditLog(
-      'گەڕاندنەوەی کاڵا',
-      `گەڕاندنەوەی ${options.qty} × ${p.name} لە پسووڵەی ${options.receiptNo} بە بڕی ${options.refundAmount.toLocaleString('en-US')} IQD (${options.refundMethod === 'cash' ? 'نەختینە لە سندووق' : 'کەمکردنەوەی قەرز'})`
-    );
-
-    return { success: true };
+    addAuditLog('گەڕاندنەوەی Demo',
+      options.qty+' × '+p.name+' — '+options.receiptNo+' — '+options.refundAmount+' IQD');
+    return {success:true};
   };
 
   const exportBackupJson = (): string => {
@@ -1078,6 +1094,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         closeShift,
         openNewShift,
         receipts,
+        demoRefunds,
         completeCheckout,
         recordSaleReturn,
         lastReceipt,
