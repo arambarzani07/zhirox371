@@ -659,15 +659,16 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
             </thead>
             <tbody>
               {products.map(p => {
-                const cost = p.unit_purchase_price_iqd;
-                const known=Number.isSafeInteger(cost)&&cost>0;
-                const margin=known?p.unit_sale_price_iqd-cost:null;
+                const rawCost=p.unit_purchase_price_iqd;
+                const cost=typeof rawCost==='number'&&Number.isSafeInteger(rawCost)&&rawCost>0?
+                  rawCost:null;
+                const margin=cost===null?null:p.unit_sale_price_iqd-cost;
                 const pct=margin!==null&&p.unit_sale_price_iqd>0?
                   Math.round((margin/p.unit_sale_price_iqd)*100):null;
                 return (
                   <tr key={p.id}>
                     <td><strong>{p.name}</strong></td>
-                    <td style={{ direction: 'ltr' }}>{known?money(cost):'نادیار'}</td>
+                    <td style={{ direction: 'ltr' }}>{cost===null?'نادیار':money(cost)}</td>
                     <td style={{ direction: 'ltr' }}>{money(p.unit_sale_price_iqd)}</td>
                     <td style={{ direction: 'ltr', color: '#15803d', fontWeight: 900 }}>{margin===null?'نادیار':money(margin)}</td>
                     <td>{pct===null?'نادیار':pct+'%'}</td>
@@ -686,9 +687,10 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
   // 3. AI INSIGHTS / DETERMINISTIC RETAIL ANALYTICS (شیکاریی زیرەک)
   if (sectionId === 'ai-insights') {
     const insights = products.map(p => {
-      const cost=p.unit_purchase_price_iqd;
-      const unitMargin=Number.isSafeInteger(cost)&&cost>0?
-        p.unit_sale_price_iqd-cost:null;
+      const rawCost=p.unit_purchase_price_iqd;
+      const cost=typeof rawCost==='number'&&Number.isSafeInteger(rawCost)&&rawCost>0?
+        rawCost:null;
+      const unitMargin=cost===null?null:p.unit_sale_price_iqd-cost;
       const minStock = p.min_stock ?? 10;
       const isLow = p.stock <= minStock;
       const statusText = isLow
