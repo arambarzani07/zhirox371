@@ -322,6 +322,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     openNewShift,
     setActiveReceiptForModal,
     recordSaleReturn,
+    returnJournal,
     receiveStock,
     updateProduct,
     addAuditLog
@@ -427,18 +428,6 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
         return;
       }
 
-      const next: ReturnRecord = {
-        id: `ret-${Date.now()}`,
-        receiptNo: returnReceiptNo.trim() || 'DEMO-RCP-1001',
-        productId: prod.id,
-        productName: prod.name,
-        qty: qtyNum,
-        refundAmount,
-        restocked: returnRestock,
-        reason: returnReason.trim() || 'گەڕاندنەوەی کاڵا',
-        createdAt: new Date().toISOString()
-      };
-      setStoreState(prev => ({ ...prev, returns: [next, ...prev.returns] }));
       setReturnQty('1');
       setReturnMsg({
         text: `گەڕاندنەوەی ${qtyNum} × ${prod.name} بە بڕی ${money(refundAmount)} بە سەرکەوتوویی تۆمارکرا`,
@@ -446,8 +435,8 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
       });
     };
 
-    const totalReturnedIqd = storeState.returns.reduce((s, r) => s + r.refundAmount, 0);
-    const totalRestockedUnits = storeState.returns.filter(r => r.restocked).reduce((s, r) => s + r.qty, 0);
+    const totalReturnedIqd = returnJournal.reduce((s, r) => s + r.refundAmount, 0);
+    const totalRestockedUnits = returnJournal.filter(r => r.restocked).reduce((s, r) => s + r.qty, 0);
 
     return (
       <div className="ws-stack">
@@ -455,7 +444,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی پارەی گەڕێندراوە</span>
             <span className="ws-kpi-value negative">{money(totalReturnedIqd)}</span>
-            <span className="ws-kpi-sub">لە کۆی {storeState.returns.length} مامەڵەی گەڕاندنەوە</span>
+            <span className="ws-kpi-sub">لە کۆی {returnJournal.length} مامەڵەی گەڕاندنەوە</span>
           </div>
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">یەکەی گەڕاوە بۆ کۆگا (سالم)</span>
@@ -574,7 +563,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
 
         <div className="section-workspace__table">
           <strong className="section-workspace__metric">
-            مێژووی گەڕاندنەوەی کاڵاکان ({storeState.returns.length} مامەڵە · کۆ: {money(totalReturnedIqd)})
+            مێژووی گەڕاندنەوەی کاڵاکان ({returnJournal.length} مامەڵە · کۆ: {money(totalReturnedIqd)})
           </strong>
           <table>
             <thead>
@@ -589,7 +578,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
               </tr>
             </thead>
             <tbody>
-              {storeState.returns.map(r => (
+              {returnJournal.map(r => (
                 <tr key={r.id}>
                   <td style={{ direction: 'ltr', fontWeight: 900 }}>{r.receiptNo}</td>
                   <td>
