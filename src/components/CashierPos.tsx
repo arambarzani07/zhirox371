@@ -836,6 +836,7 @@ export const CashierPos: React.FC = () => {
                     <input
                       ref={barcodeInputRef}
                       type="text"
+                      aria-label="بارکۆدی کاشێر"
                       value={barcodeInput}
                       onChange={handleBarcodeInputChange}
                       onKeyDown={handleScanKeyDown}
