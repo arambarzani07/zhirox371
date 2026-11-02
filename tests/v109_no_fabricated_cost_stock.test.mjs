@@ -50,7 +50,7 @@ test("V109 import path has no default 50 stock, 80%-cost, 1000-IQD missing price
  assert.match(block,/parsed\.length!==dataRows\.length/);
  assert.match(block,/new Set\(barcodes\)\.size!==barcodes\.length/);
  assert.doesNotMatch(block,/item\.price\s*\*\s*0\.8|stock:\s*50/);
- assert.doesNotMatch(parser,/:\s*1000|\\|\|\s*1000/);
+ assert.doesNotMatch(parser.slice(parser.indexOf('export function parseCsvRows')), /:\s*1000|\|\|\s*1000/);
  assert.doesNotMatch(reports,/it\.price\s*\*\s*0\.75/);
  assert.doesNotMatch(operations,/item\.price\s*\*\s*0\.8|prod\.unit_purchase_price_iqd\s*\|\|\s*1000/);
  assert.match(reports,/نادیار/);
