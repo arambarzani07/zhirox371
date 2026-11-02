@@ -28,7 +28,7 @@ export function parseDemoBackupV108(raw:string):Result{
   return {ok:false,error:"قەبارەی فایلی Backup نادروستە"};
  let data:unknown;
  try{data=JSON.parse(raw);}catch{return {ok:false,error:"JSON ـی Backup تێکچووە"};}
- if(!record(data)||![1,2].includes(Number(data.backup_version))||
+ if(!record(data)||(data.backup_version!==1&&data.backup_version!==2)||
   !record(data.snapshot)||!record(data.store)||
   data.store.name!=="سوپەرمارکێتی کانی چنار"||
   (data.backup_version===2&&data.source!=="ZHIROX371_BROWSER_DEMO"))
