@@ -7,6 +7,7 @@ on:
       - 'tests/v23_preview_mode_guard.test.mjs'
       - 'tests/v107_demo_refund_integrity.test.mjs'
       - 'tests/v108_demo_backup_restore.test.mjs'
+      - 'tests/v109_no_fabricated_cost_stock.test.mjs'
       - 'tests/browser/v107_demo_refund_integrity.mjs'
       - 'tests/home_locked_cards_20261101.test.mjs'
       - 'tests/browser/v23_react_preview.mjs'
@@ -48,6 +49,8 @@ jobs:
         run: node --test tests/v107_demo_refund_integrity.test.mjs
       - name: V108 fail-closed all-collections DEMO JSON backup restore validation
         run: node --test tests/v108_demo_backup_restore.test.mjs
+      - name: V109 prohibit fabricated inventory, CSV price and estimated product profits
+        run: node --test tests/v109_no_fabricated_cost_stock.test.mjs
       - name: Verify V24 loopback auth, idempotency and cashier isolation
         run: node --test tests/v24_local_pilot_contract.test.mjs
       - name: Install React preview dependencies (no deploy or database)
