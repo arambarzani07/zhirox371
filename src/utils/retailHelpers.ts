@@ -91,21 +91,41 @@ export function formatDateTime(isoString?: string): string {
   });
 }
 
+// Strict 3-column DEMO import: name, barcode, positive integer selling price.
+// Never fabricate missing prices or parse arbitrary text as currency.
 export function parseCsvRows(csvText: string): Array<{ name: string; barcode: string; price: number }> {
-  const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const result: Array<{ name: string; barcode: string; price: number }> = [];
-
-  for (const line of lines) {
-    if (line.startsWith('#') || line.startsWith('نام') || line.toLowerCase().startsWith('name')) continue;
-    const parts = line.split(/[,;\t]/).map(p => p.trim());
-    if (parts.length >= 2) {
-      const name = parts[0];
-      const barcode = parts[1];
-      const price = parts[2] ? Number(parts[2].replace(/[^0-9]/g, '')) : 1000;
-      if (name && barcode) {
-        result.push({ name, barcode, price: Number.isSafeInteger(price) ? price : 1000 });
-      }
+  const lines = csvText.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const rows: Array<{name:string;barcode:string;price:number}>=[];
+  const fields=(line:string,separator:string):string[]|null=>{
+    const parts:string[]=[];
+    let value="",quoted=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){
+        if(quoted&&line[i+1]==='"'){value+='"';i++;}else quoted=!quoted;
+      }else if(ch===separator&&!quoted){parts.push(value.trim());value="";}
+      else value+=ch;
     }
+    if(quoted)return null;
+    parts.push(value.trim());
+    return parts;
+  };
+  for(const line of lines){
+    if(line.startsWith('#')||line.startsWith('نام')||
+       line.toLowerCase().startsWith('name'))continue;
+    let parsed:null|{name:string;barcode:string;price:number}=null;
+    for(const separator of ["\t",";",","]){
+      const parts=fields(line,separator);
+      if(!parts||parts.length!==3)continue;
+      const [name,barcode,rawPrice]=parts;
+      if(!name||!/^[0-9A-Za-z._-]{3,40}$/.test(barcode))continue;
+      if(!/^(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(rawPrice))continue;
+      const price=Number(rawPrice.replaceAll(",",""));
+      if(!Number.isSafeInteger(price)||price<=0)continue;
+      parsed={name,barcode,price};
+      break;
+    }
+    if(parsed)rows.push(parsed);
   }
-  return result;
+  return rows;
 }
