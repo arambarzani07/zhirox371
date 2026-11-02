@@ -100,6 +100,16 @@ await page.route("**/api/local/**",async route=>{
 });
 try {
  await page.goto("http://127.0.0.1:3000/",{waitUntil:"networkidle"});
+ // A real local PostgreSQL checkout must never create or alter a DEMO receipt.
+ // Compare the persisted receipt ledger itself; a hardcoded button label/count
+ // is unreliable because current preview fixtures already have DEMO receipts.
+ const demoReceiptsBefore=await page.evaluate(()=>{
+   const raw=localStorage.getItem("kanichnar_retail_pos_v18_receipts");
+   if(!raw)throw Error("Missing persisted DEMO receipts baseline");
+   const receipts=JSON.parse(raw);
+   if(!Array.isArray(receipts))throw Error("Invalid DEMO receipts baseline");
+   return receipts.map(r=>({id:r.id,receiptNumber:r.receiptNumber,total:r.total}));
+ });
  await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  await page.getByRole("button",{name:/کردنەوەی V31/}).click();
  assert.match(await page.getByText(/تەنها تاقیکردنەوە لەسەر هەمان PC/).innerText(),/Production/);
@@ -155,8 +165,13 @@ try {
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #2 — 13,475 IQD/).waitFor();
  assert.equal(attempts,4);
- assert.equal(await page.getByRole("button",{name:/پسووڵەکانی ئەمڕۆ \(0\)/}).count(),1,
-   "isolated local checkout must not mutate React DEMO receipt list");
+ const demoReceiptsAfter=await page.evaluate(()=>{
+   const receipts=JSON.parse(localStorage.getItem("kanichnar_retail_pos_v18_receipts")||"null");
+   if(!Array.isArray(receipts))throw Error("Missing persisted DEMO receipts after checkout");
+   return receipts.map(r=>({id:r.id,receiptNumber:r.receiptNumber,total:r.total}));
+ });
+ assert.deepEqual(demoReceiptsAfter,demoReceiptsBefore,
+   "isolated PostgreSQL checkout must not add, remove or alter React DEMO receipts");
  assert.deepEqual(errors,[]);
  console.log("PASS V24: same-origin test login, server barcode, retry same UUID, no local demo receipt pollution");
 }finally{await browser.close();}
