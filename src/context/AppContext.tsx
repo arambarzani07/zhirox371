@@ -23,6 +23,7 @@ import {
 } from '../data/initialData';
 import { parseScaleBarcode } from '../utils/retailHelpers';
 import { validateDemoRefundV107, type DemoReturnV107 } from '../utils/demoRefundGuardV107';
+import { parseDemoBackupV108 } from '../utils/demoBackupGuardV108';
 
 const STORAGE_KEY = 'kanichnar_retail_pos_v18';
 
@@ -1014,48 +1015,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const exportBackupJson = (): string => {
+    // Downloadable DEMO snapshot, not a copy of the PostgreSQL database and
+    // not a physical drive D: backup.
     const backup = {
-      backup_version: 1,
-      preferred_disk: 'D:',
-      disk_path: 'D:\\SupermarketPOS_Data\\backups',
-      saved_at: new Date().toISOString(),
-      store: {
-        name: 'سوپەرمارکێتی کانی چنار',
-        address: 'هەولێر — کانی چنار',
-        phone: '0750 000 0000'
-      },
-      snapshot: {
-        products,
-        customers,
-        suppliers,
-        shift: currentShift,
-        receipts,
-        expenses,
-        stockMovements,
-        auditLogs
+      backup_version: 2,
+      source:'ZHIROX371_BROWSER_DEMO',
+      storage:'browser_download_only',
+      saved_at:new Date().toISOString(),
+      store:{name:'سوپەرمارکێتی کانی چنار',address:'هەولێر — کانی چنار'},
+      snapshot:{
+        products,customers,suppliers,shift:currentShift,receipts,expenses,
+        stockMovements,auditLogs,demoRefunds
       }
     };
-    return JSON.stringify(backup, null, 2);
+    return JSON.stringify(backup,null,2);
   };
 
   const importBackupJson = (jsonString: string): { success: boolean; error?: string } => {
-    try {
-      const parsed = JSON.parse(jsonString);
-      const snapshot = parsed.snapshot || parsed;
-      if (Array.isArray(snapshot.products)) setProducts(snapshot.products);
-      if (Array.isArray(snapshot.customers)) setCustomers(snapshot.customers);
-      if (Array.isArray(snapshot.suppliers)) setSuppliers(snapshot.suppliers);
-      if (snapshot.shift) setCurrentShift(snapshot.shift);
-      if (Array.isArray(snapshot.receipts)) setReceipts(snapshot.receipts);
-      if (Array.isArray(snapshot.expenses)) setExpenses(snapshot.expenses);
-      if (Array.isArray(snapshot.stockMovements)) setStockMovements(snapshot.stockMovements);
-      if (Array.isArray(snapshot.auditLogs)) setAuditLogs(snapshot.auditLogs);
-
-      addAuditLog('هێنانەوەی پاڵپشت', 'داتابەیسی سیستەم لە فایلی دیسک هێنرایەوە');
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'فایلی داتا نادروستە' };
+    const validation=parseDemoBackupV108(jsonString);
+    if(!validation.ok)return {success:false,error:validation.error};
+    const snap=validation.snapshot;
+    // No setState takes place before ALL collections pass preflight validation.
+    // This still is a browser-only restore, not a PostgreSQL transaction.
+    try{
+      localStorage.setItem(STORAGE_KEY+'_refunds',JSON.stringify(snap.demoRefunds));
+    }catch(_e){
+      return {success:false,error:'شوێنی هەڵگرتنی Demo پڕە؛ هیچ گەڕاندنەوەیەک ئەنجام نەدرا'};
     }
+    demoRefundsRef.current=snap.demoRefunds;
+    setProducts(snap.products);
+    setCustomers(snap.customers);
+    setSuppliers(snap.suppliers);
+    setCurrentShift(snap.shift);
+    setReceipts(snap.receipts);
+    setExpenses(snap.expenses);
+    setStockMovements(snap.stockMovements);
+    setAuditLogs(snap.auditLogs);
+    setDemoRefunds(snap.demoRefunds);
+    return {success:true};
   };
 
   return (
