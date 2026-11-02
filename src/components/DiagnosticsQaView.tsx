@@ -76,7 +76,7 @@ export const DiagnosticsQaView: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     setBackupMsg({
-      text: 'فایلی پاڵپشت داگیرا (D:\\SupermarketPOS_Data\\backups)',
+      text: 'فایلی Backup ـی Demo لە Download ـەکانی وێبگەڕ دابەزی؛ بە شێوەی خۆکار لە D: پاشەکەوت نەکراوە',
       error: false
     });
   };
@@ -87,9 +87,10 @@ export const DiagnosticsQaView: React.FC = () => {
     const reader = new FileReader();
     reader.onload = evt => {
       const content = evt.target?.result as string;
+      if (!window.confirm('ئەمە تەنها داتای Demo ـی ئەم وێبگەڕە دەگۆڕێت؛ داتابەیسی ڕاستەقینە نییە. بەردەوام بیت؟')) return;
       const res = importBackupJson(content);
       if (res.success) {
-        setBackupMsg({ text: 'داتابەیس بە سەرکەوتوویی لە فایلەوە هێنرایەوە', error: false });
+        setBackupMsg({ text: 'داتای Demo لە Backup ـەوە هێنرایەوە؛ نە داتابەیسی PostgreSQL', error: false });
       } else {
         setBackupMsg({ text: res.error || 'هەڵە لە هێنانەوەی فایلدا', error: true });
       }
