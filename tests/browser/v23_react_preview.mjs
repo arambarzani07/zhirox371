@@ -20,7 +20,11 @@ try {
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
  assert.match(await banner.innerText(),/فرۆشتنی ڕاستەقینە نییە/);
- const barcode=page.getByPlaceholder("بارکۆد بسکێنە یان کۆدی کاڵا لێبدە...");
+ // Locate the scanner by its stable accessible name, not its instructional
+ // placeholder: Sorani help text can evolve without silently disabling CI.
+ const barcode=page.getByRole("textbox",{name:"بارکۆدی کاشێر",exact:true});
+ await barcode.waitFor({state:"visible"});
+ assert.equal(await barcode.count(),1,"Exactly one accessible cashier barcode scanner is required");
  await context.setOffline(true);
  await barcode.fill("2000000000018");
  await barcode.press("Enter");
