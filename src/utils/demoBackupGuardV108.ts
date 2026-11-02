@@ -82,7 +82,7 @@ export function parseDemoBackupV108(raw:string):Result{
   return {ok:false,error:"پسووڵە یان بارکۆدی دووبارە لە Backup دۆزرایەوە"};
  return {ok:true,snapshot:{
   products:s.products as Product[],customers:s.customers as Customer[],
-  suppliers:s.suppliers as Supplier[],shift:shift as Shift,
+  suppliers:s.suppliers as Supplier[],shift:shift as unknown as Shift,
   receipts:s.receipts as Receipt[],expenses:s.expenses as Expense[],
   stockMovements:s.stockMovements as StockMovement[],
   auditLogs:s.auditLogs as AuditLogEntry[],demoRefunds:refunds as DemoReturnV107[]
