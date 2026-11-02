@@ -1,14 +1,27 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { money } from '../utils/retailHelpers';
+import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 
 export const ReportsAnalyticsView: React.FC = () => {
-  const { receipts, products, currentShift } = useApp();
+  const { receipts, products, currentShift, exportBackupJson } = useApp();
 
   const totalRevenue = receipts.reduce((sum, r) => sum + r.total, 0);
   const totalDiscount = receipts.reduce((sum, r) => sum + r.discount, 0);
   const cashSalesTotal = receipts.filter(r => r.paymentMethod === 'cash').reduce((sum, r) => sum + r.total, 0);
   const debtSalesTotal = receipts.filter(r => r.paymentMethod === 'debt').reduce((sum, r) => sum + r.total, 0);
+
+  // Realized Gross Profit
+  let totalCostOfGoodsSold = 0;
+  receipts.forEach(r => {
+    r.items.forEach(it => {
+      const prod = products.find(p => p.id === it.productId);
+      const unitCost = prod?.unit_purchase_price_iqd || Math.round(it.price * 0.75);
+      totalCostOfGoodsSold += unitCost * it.qty;
+    });
+  });
+  const grossProfit = Math.max(0, totalRevenue - totalCostOfGoodsSold);
+  const grossMarginPct = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '0.0';
 
   // Inventory valuation
   const inventoryRetailValuation = products.reduce((sum, p) => sum + p.stock * p.unit_sale_price_iqd, 0);
@@ -29,17 +42,50 @@ export const ReportsAnalyticsView: React.FC = () => {
 
   const topProducts = Object.values(productSalesMap).sort((a, b) => b.qty - a.qty);
 
+  const handleDownloadBackup = () => {
+    const jsonStr = exportBackupJson();
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `kanichnar-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    KurdishVoiceAnnouncer.announceBackupSuccess();
+  };
+
   return (
     <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '16px 24px 32px' }}>
-      <h1 style={{ fontSize: '22px', fontWeight: 900, margin: '0 0 16px', color: '#0f172a' }}>
-        ڕاپۆرتە داراییەکان و شیکاری فرۆشتن
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', margin: '0 0 16px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 900, margin: 0, color: '#0f172a' }}>
+          ڕاپۆرتە داراییەکان و شیکاری فرۆشتن
+        </h1>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={handleDownloadBackup}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 800 }}
+          >
+            💾 داگرتنی یەدەگ (Backup JSON)
+          </button>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => window.print()}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 800 }}
+          >
+            🖨️ چاپی ڕاپۆرت
+          </button>
+        </div>
+      </div>
 
       {/* Top Cards Grid */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
           gap: '14px',
           marginBottom: '20px'
         }}
@@ -50,6 +96,14 @@ export const ReportsAnalyticsView: React.FC = () => {
             {money(totalRevenue)}
           </div>
           <div style={{ fontSize: '11px', color: '#3b82f6' }}>{receipts.length} پسووڵەی تەواوکراو</div>
+        </div>
+
+        <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '14px', padding: '18px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534' }}>قازانجی خاوێنی فرۆشتن</div>
+          <div style={{ fontSize: '28px', fontWeight: 950, color: '#15803d', direction: 'ltr', margin: '4px 0' }}>
+            {money(grossProfit)}
+          </div>
+          <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 800 }}>ڕێژەی قازانج: {grossMarginPct}%</div>
         </div>
 
         <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '14px', padding: '18px' }}>
@@ -100,9 +154,11 @@ export const ReportsAnalyticsView: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {topProducts.slice(0, 8).map((tp, idx) => (
+                {topProducts.slice(0, 10).map((tp, idx) => (
                   <tr key={idx}>
-                    <td>{idx + 1}</td>
+                    <td>
+                      {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : idx + 1}
+                    </td>
                     <td>
                       <strong>{tp.name}</strong>
                     </td>
@@ -122,22 +178,29 @@ export const ReportsAnalyticsView: React.FC = () => {
           </h2>
 
           <div style={{ display: 'grid', gap: '12px' }}>
-            <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>داشکاندنی بەخشراو:</div>
-              <strong style={{ fontSize: '16px', color: '#b91c1c', direction: 'ltr', display: 'block' }}>
-                {money(totalDiscount)}
-              </strong>
-            </div>
-
             <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
-              <div style={{ fontSize: '12px', color: '#166534' }}>قازانجی خەمڵێنراوی کۆگا لەسەر هەموو کاڵاکان:</div>
-              <strong style={{ fontSize: '18px', color: '#15803d', direction: 'ltr', display: 'block' }}>
-                {money(expectedInventoryProfit)}
+              <div style={{ fontSize: '12px', color: '#166534', fontWeight: 800 }}>قازانجی خاوێنی دەستکەوتوو (ڕێژەی قازانج {grossMarginPct}%):</div>
+              <strong style={{ fontSize: '20px', color: '#15803d', direction: 'ltr', display: 'block', marginTop: '2px' }}>
+                +{money(grossProfit)}
               </strong>
             </div>
 
             <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>تێکڕای نرخی هەر پسووڵەیەک:</div>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>تێچووی کڕینی کاڵای فرۆشراو (COGS):</div>
+              <strong style={{ fontSize: '16px', color: '#475569', direction: 'ltr', display: 'block' }}>
+                {money(totalCostOfGoodsSold)}
+              </strong>
+            </div>
+
+            <div style={{ background: '#fef2f2', padding: '12px', borderRadius: '10px', border: '1px solid #fecaca' }}>
+              <div style={{ fontSize: '12px', color: '#991b1b' }}>داشکاندنی بەخشراو:</div>
+              <strong style={{ fontSize: '16px', color: '#b91c1c', direction: 'ltr', display: 'block' }}>
+                −{money(totalDiscount)}
+              </strong>
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>تێکڕای پسووڵە (Average Basket):</div>
               <strong style={{ fontSize: '16px', color: '#1e3a8a', direction: 'ltr', display: 'block' }}>
                 {receipts.length > 0 ? money(Math.round(totalRevenue / receipts.length)) : '0 IQD'}
               </strong>

@@ -9,8 +9,11 @@ interface Props {
 
 export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
   const [paperWidth, setPaperWidth] = useState<'58' | '80'>('80');
-  const [storeAddress, setStoreAddress] = useState('هەولێر — کانی چنار');
-  const [storePhone, setStorePhone] = useState('0750 000 0000');
+  const [storeName, setStoreName] = useState('سوپەرمارکێتی کانی چنار');
+  const [storeAddress, setStoreAddress] = useState('سلێمانی — شەقامی کانی چنار');
+  const [storePhone, setStorePhone] = useState('0750 123 4567');
+  const [policyNote, setPolicyNote] = useState('کاڵای فرۆشراو لەماوەی 24 کاتژمێردا دەگۆڕدرێتەوە بە هەبوونی پسووڵە');
+  const [showSettings, setShowSettings] = useState(false);
 
   const handlePrint = () => {
     window.print();
@@ -18,6 +21,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
 
   return (
     <div
+      className="thermal-receipt-backdrop"
       style={{
         position: 'fixed',
         inset: 0,
@@ -31,6 +35,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
       }}
     >
       <div
+        className="thermal-receipt-modal-box"
         style={{
           background: '#ffffff',
           borderRadius: '16px',
@@ -74,9 +79,26 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="thermal-receipt-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowSettings(!showSettings)}
+              style={{
+                background: showSettings ? '#e0e7ff' : '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 800,
+                color: showSettings ? '#3730a3' : '#475569',
+                cursor: 'pointer'
+              }}
+            >
+              ⚙️ {showSettings ? 'داخستنی ڕێکخستن' : 'زانیارییەکانی پسووڵە'}
+            </button>
+
             <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155' }}>
-              پانی کاغەز:
+              پانی:
               <select
                 value={paperWidth}
                 onChange={e => setPaperWidth(e.target.value as '58' | '80')}
@@ -89,8 +111,8 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
                   fontWeight: 800
                 }}
               >
-                <option value="58">58mm</option>
-                <option value="80">80mm</option>
+                <option value="80">80mm (ستاندارد)</option>
+                <option value="58">58mm (بچووک)</option>
               </select>
             </label>
 
@@ -131,6 +153,59 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
           </div>
         </div>
 
+        {/* Collapsible Receipt Store Settings */}
+        {showSettings && (
+          <div
+            className="thermal-receipt-controls"
+            style={{
+              padding: '12px 18px',
+              background: '#f1f5f9',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '10px',
+              fontSize: '12px'
+            }}
+          >
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontWeight: 800, color: '#334155' }}>
+              ناوی مارکێت:
+              <input
+                type="text"
+                value={storeName}
+                onChange={e => setStoreName(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontWeight: 800, color: '#334155' }}>
+              ناونیشان و لقی مارکێت:
+              <input
+                type="text"
+                value={storeAddress}
+                onChange={e => setStoreAddress(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontWeight: 800, color: '#334155' }}>
+              ژمارەی تەلەفۆن:
+              <input
+                type="text"
+                value={storePhone}
+                onChange={e => setStorePhone(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', direction: 'ltr' }}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontWeight: 800, color: '#334155' }}>
+              مەرجی گەڕاندنەوە لە خوارەوە:
+              <input
+                type="text"
+                value={policyNote}
+                onChange={e => setPolicyNote(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+              />
+            </label>
+          </div>
+        )}
+
         {/* Printable Receipt Paper Container */}
         <div
           style={{
@@ -166,7 +241,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
                   margin: '0 0 4px'
                 }}
               >
-                سوپەرمارکێتی کانی چنار
+                {storeName}
               </h2>
               <div style={{ fontSize: '10px', fontWeight: 800, margin: '2px 0' }}>
                 پسووڵەی تاقیکردنەوە
@@ -301,9 +376,15 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
 
             {/* Receipt Footer */}
             <div style={{ textAlign: 'center', fontSize: '9px', marginTop: '6px' }}>
-              <div>سوپاس بۆ سەردانەکەتان</div>
+              <div style={{ fontWeight: 800 }}>سوپاس بۆ سەردانەکەتان</div>
               <div style={{ fontSize: '8px', color: '#555', marginTop: '2px' }}>
-                کاڵای فرۆشراو لەماوەی 24 کاتژمێردا دەگۆڕدرێتەوە بە هەبوونی پسووڵە
+                {policyNote}
+              </div>
+              {/* Simulated Thermal Barcode */}
+              <div style={{ margin: '8px auto 4px', display: 'flex', justifyContent: 'center', gap: '2px', height: '26px', alignItems: 'flex-end' }}>
+                {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 1, 2, 4, 1, 3, 2, 1, 3, 4, 2, 1, 3, 2, 1, 2].map((w, i) => (
+                  <span key={i} style={{ display: 'inline-block', width: `${w}px`, height: '100%', background: '#000' }} />
+                ))}
               </div>
               <div
                 style={{
@@ -311,7 +392,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
                   letterSpacing: '2px',
                   fontWeight: 900,
                   fontSize: '11px',
-                  marginTop: '8px'
+                  marginTop: '4px'
                 }}
               >
                 * {receipt.receiptNumber} *

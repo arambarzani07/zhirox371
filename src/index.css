@@ -14,14 +14,61 @@ body {
   color: #213149;
   font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
   direction: rtl;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-x: none !important;
+  overscroll-behavior-y: none !important;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button, input, select, textarea {
   font: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button {
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Absolute Screen Stability & Anti-Jitter Guards */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+/* Stable vertical scrollbar - prevents 15px layout shift between views */
+#root > .viewport > .desktop > main,
+#root > .viewport > .desktop > main#app,
+#app {
+  overflow-y: auto !important;
+  scrollbar-gutter: stable !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+  overscroll-behavior-x: none !important;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent accidental drag/select & card wiggle */
+.market-banner {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.module, .sub, .card, .ws-link, .system-subnav-link {
+  transform: none !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ws-link.active {
@@ -30,9 +77,58 @@ button {
   border-color: #1e3a8a !important;
 }
 
+/* Polished Cashier Hotkey Badges */
+.ws-hotkey-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #334155;
+  user-select: none;
+}
+.ws-hotkey-badge kbd {
+  background: #1e3a8a;
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 900;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
 @media print {
-  .market-banner, header, .tabs, .toolbar, .footer-actions, .catalog-buttons, button {
+  body {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .market-banner, header, nav, .system-double-strip, .viewport, main#app, .thermal-receipt-controls, .tabs, .toolbar, .footer-actions, .catalog-buttons, button {
     display: none !important;
+  }
+  .thermal-receipt-backdrop {
+    position: static !important;
+    background: none !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+  .thermal-receipt-modal-box {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    background: none !important;
+  }
+  #thermal-receipt-ticket {
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    padding: 2mm !important;
+    page-break-inside: avoid;
   }
 }
 
@@ -115,5 +211,30 @@ button {
     border: 1px solid #e5eaf0;
     background: #f7f9fc;
     color: #556a84;
+  }
+}
+
+@media screen {
+  /* Lock outer scroll when inside any submodule workspace so only inner tables scroll */
+  #root > .viewport > .desktop > main#app.system-two-rows {
+    overflow: hidden !important;
+  }
+
+  /* Inner Scrollable Tables across all submodules */
+  #app .section-workspace__table {
+    flex: 1 1 0% !important;
+    min-height: 95px !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+  }
+
+  #app .section-workspace__table th,
+  #app .section-workspace table.table th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: #f5f8fb !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 }

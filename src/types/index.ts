@@ -81,6 +81,7 @@ export interface Customer {
   name: string;
   phone: string;
   balanceDebt: number; // IQD owed to supermarket
+  creditLimit?: number;
   note?: string;
   createdAt: string;
 }

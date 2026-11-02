@@ -93,11 +93,6 @@ export function parseMarketCSVV102(csv,{modifiedAt,sha256,filename="selected-fil
  });
  return Object.freeze({
   status,
-  // Local-only V104 reconciliation; this accessor is NOT exposed by the V102
-  // HTTP handler. Never includes wholesale cost, stock or customer records.
-  auditRows(){
-   return Object.freeze(items.slice());
-  },
   scan(code){
    const value=norm(code);
    if(!BARCODE.test(value))return {ok:false,error:"invalid_barcode"};

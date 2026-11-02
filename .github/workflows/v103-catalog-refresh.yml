@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: '24'
       - name: Run old and new real CSV HTTP contract and safety tests
-        run: node --test offline/tests/v102_market_catalog_readonly.test.mjs offline/tests/v103_market_catalog_atomic_refresh.test.mjs
+        run: node --test offline/tests/v102_market_catalog_readonly.test.mjs offline/tests/v103_market_catalog_atomic_refresh.test.mjs offline/tests/v104-lan-catalog-mtls.test.mjs
       - name: Install frontend dependencies
         run: npm install --no-package-lock
       - name: TypeScript checks and safe public DEMO build

@@ -38,7 +38,7 @@ export interface ScaleBarcodeInfo {
 
 export function parseScaleBarcode(code: string): ScaleBarcodeInfo {
   const trimmed = String(code || '').trim();
-  if (/^27[0-9]{11}$/.test(trimmed)) {
+  if (/^(27|28)[0-9]{11}$/.test(trimmed)) {
     const valid = isValidEan13(trimmed);
     const itemCode = trimmed.slice(2, 7);
     const rawGrams = Number(trimmed.slice(7, 12));

@@ -1,35 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { inspectBarcode, formatDateTime, money } from '../utils/retailHelpers';
 
 export const DiagnosticsQaView: React.FC = () => {
-  const { auditLogs, exportBackupJson, importBackupJson, cart, lastReceipt, subtab } = useApp();
+  const {
+    products,
+    customers,
+    suppliers,
+    receipts,
+    currentShift,
+    adjustStock,
+    auditLogs,
+    exportBackupJson,
+    importBackupJson,
+    cart,
+    lastReceipt,
+    navigateTo,
+    subtab,
+    activeSectionId
+  } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'hardware' | 'backup' | 'customer_display' | 'audit'>(subtab === 'diagnostics' ? 'audit' : 'hardware');
+  const resolveMode = (): 'hardware' | 'alerts' | 'audit' | 'history' => {
+    if (activeSectionId === 'alert-bell') return 'alerts';
+    if (activeSectionId === 'change-history') return 'history';
+    if (activeSectionId === 'transaction-check' || subtab === 'diagnostics') return 'audit';
+    return 'hardware';
+  };
 
-  // Barcode diagnostic test input
+  const [activeTab, setActiveTab] = useState<'hardware' | 'alerts' | 'audit' | 'history'>(resolveMode);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    setActiveTab(resolveMode());
+  }, [subtab, activeSectionId]);
+
   const [testBarcodeInput, setTestBarcodeInput] = useState('8690504100234');
   const barcodeInspection = inspectBarcode(testBarcodeInput);
 
-  // Printer test status
   const [printerStatus, setPrinterStatus] = useState<string | null>(null);
-
-  // Drawer kick status
   const [drawerStatus, setDrawerStatus] = useState<string | null>(null);
-
-  // Backup message
   const [backupMsg, setBackupMsg] = useState<{ text: string; error: boolean } | null>(null);
 
   const handleTestPrint = () => {
-    setPrinterStatus('خەریکی ناردنی فەرمانی چاپکردنی تاقیکاری بۆ پرینتەری ثێرمەڵ...');
+    setPrinterStatus('ناردنی فەرمانی چاپکردنی تاقیکاری بۆ پرینتەری گەرمی...');
     setTimeout(() => {
       window.print();
-      setPrinterStatus('پرینتەری ثێرمەڵ (58mm/80mm) بە سەرکەوتوویی ئامادەیە.');
-    }, 400);
+      setPrinterStatus('پرینتەری گەرمی (58mm/80mm) ئامادەیە.');
+    }, 300);
   };
 
   const handleKickDrawer = () => {
-    setDrawerStatus('فەرمانی کردنەوەی سندووق (ESC/p pulse) نێردرا!');
+    setDrawerStatus('فەرمانی کردنەوەی سندووق (ESC/POS pulse) نێردرا.');
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const osc = audioCtx.createOscillator();
@@ -41,7 +62,7 @@ export const DiagnosticsQaView: React.FC = () => {
     } catch (_e) {}
     setTimeout(() => {
       setDrawerStatus('سندووقی نەختینە بە سەرکەوتوویی کرایەوە.');
-    }, 600);
+    }, 500);
   };
 
   const handleDownloadBackup = () => {
@@ -54,7 +75,10 @@ export const DiagnosticsQaView: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setBackupMsg({ text: 'فایلی پاڵپشت لە فۆڵدەری داگرتن پاشەکەوتکرا (D:\\SupermarketPOS_Data\\backups)', error: false });
+    setBackupMsg({
+      text: 'فایلی پاڵپشت داگیرا (D:\\SupermarketPOS_Data\\backups)',
+      error: false
+    });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +89,7 @@ export const DiagnosticsQaView: React.FC = () => {
       const content = evt.target?.result as string;
       const res = importBackupJson(content);
       if (res.success) {
-        setBackupMsg({ text: 'داتابەیس بە سەرکەوتوویی لە فایلەوە هێنرایەوە!', error: false });
+        setBackupMsg({ text: 'داتابەیس بە سەرکەوتوویی لە فایلەوە هێنرایەوە', error: false });
       } else {
         setBackupMsg({ text: res.error || 'هەڵە لە هێنانەوەی فایلدا', error: true });
       }
@@ -73,326 +97,494 @@ export const DiagnosticsQaView: React.FC = () => {
     reader.readAsText(file);
   };
 
-  // Grand total in current cart for customer display
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const lowStockProducts = products.filter(p => p.stock <= (p.min_stock ?? 10));
+  const nearExpiryProducts = products.filter(p => {
+    if (!p.expiry_date) return false;
+    const days = Math.ceil((new Date(p.expiry_date).getTime() - Date.now()) / (1000 * 3600 * 24));
+    return days <= 45;
+  });
+  const debtors = customers.filter(c => c.balanceDebt > 0);
+  const expectedDrawerCalc =
+    currentShift.openingFloat +
+    currentShift.cashSales -
+    currentShift.expenses -
+    (currentShift.cashReturns || 0);
+  const isShiftReconciled = expectedDrawerCalc === currentShift.expectedCash;
+
+  const filteredLogs = auditLogs.filter(
+    l =>
+      search === '' ||
+      l.action.toLowerCase().includes(search.toLowerCase()) ||
+      l.details.toLowerCase().includes(search.toLowerCase()) ||
+      l.user.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '16px 24px 32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 900, margin: 0, color: '#0f172a' }}>
-          ئامێرەکان، پشکنینی سیستەم و پاڵپشت
-        </h1>
-        <div className="tabs" style={{ margin: 0 }}>
-          <button
-            type="button"
-            className={`tab ${activeTab === 'hardware' ? 'active' : ''}`}
-            onClick={() => setActiveTab('hardware')}
-          >
-            پشکنینی ئامێرەکان (Hardware)
-          </button>
-          <button
-            type="button"
-            className={`tab ${activeTab === 'customer_display' ? 'active' : ''}`}
-            onClick={() => setActiveTab('customer_display')}
-          >
-            شاشەی کڕیار (Customer Display)
-          </button>
-          <button
-            type="button"
-            className={`tab ${activeTab === 'backup' ? 'active' : ''}`}
-            onClick={() => setActiveTab('backup')}
-          >
-            پاڵپشتی دیسک (D:\ Backup)
-          </button>
-          <button
-            type="button"
-            className={`tab ${activeTab === 'audit' ? 'active' : ''}`}
-            onClick={() => setActiveTab('audit')}
-          >
-            چاودێری و تۆماری سیستەم ({auditLogs.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Tab: Hardware Diagnostics */}
+    <div className="ws-stack">
+      {/* 1. CONNECTED DEVICES SUBMODULE (ئامێرەکان) */}
       {activeTab === 'hardware' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(320px, 1fr)', gap: '18px' }}>
-          {/* Barcode Scanner Diagnostic */}
-          <div className="surface" style={{ background: '#fff', padding: '20px', borderRadius: '16px' }}>
-            <h2 style={{ fontSize: '17px', fontWeight: 900, color: '#172b45', margin: '0 0 12px' }}>
-              پشکنەری بارکۆد سکانەر و کۆدی EAN-13
-            </h2>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
-              بارکۆدێک لێبدە یان بسکێنە بۆ دڵنیابوونەوە لە دروستی ژمارەی Checksum و کێشی تەرازوو:
-            </p>
+        <>
+          <div className="ws-kpi-grid">
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">بارکۆد سکانەری USB / HID</span>
+              <span className="ws-kpi-value positive">پەیوەستە</span>
+              <span className="ws-kpi-sub">پشتگیری لە EAN-13 و تەرازووی (27...)</span>
+            </div>
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">پرینتەری پسووڵە (Thermal ESC/POS)</span>
+              <span className="ws-kpi-value positive">80mm / 58mm</span>
+              <span className="ws-kpi-sub">دەرگای سندووق RJ11 چالاکە</span>
+            </div>
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">شاشەی دووەمی کڕیار</span>
+              <span className="ws-kpi-value">{money(cartTotal)}</span>
+              <span className="ws-kpi-sub">
+                {lastReceipt ? `دواین پسووڵە: ${lastReceipt.receiptNumber}` : `${cart.length} کاڵا لە سەبەتەدایە`}
+              </span>
+            </div>
+          </div>
 
-            <input
-              type="text"
-              value={testBarcodeInput}
-              onChange={e => setTestBarcodeInput(e.target.value)}
-              placeholder="بارکۆد بنووسە..."
-              style={{
-                width: '100%',
-                height: '42px',
-                padding: '0 12px',
-                borderRadius: '8px',
-                border: '1.5px solid #2563eb',
-                fontSize: '15px',
-                fontWeight: 900,
-                direction: 'ltr',
-                marginBottom: '14px'
-              }}
-            />
+          <div className="ws-panel">
+            <h2 className="ws-panel-title">تاقیکردنەوەی ڕاستەوخۆی سکانەر، پرینتەر و دەرگای سندووق</h2>
+            <div className="ws-form-grid">
+              <label className="form-col">
+                کۆدی بارکۆد بۆ پشکنینی EAN-13 یان تەرازوو
+                <input
+                  type="text"
+                  value={testBarcodeInput}
+                  onChange={e => setTestBarcodeInput(e.target.value)}
+                  dir="ltr"
+                  placeholder="8690504100234"
+                />
+              </label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button type="button" className="primary" onClick={handleTestPrint}>
+                  چاپی پسووڵەی تاقیکاری
+                </button>
+                <button type="button" className="secondary" onClick={handleKickDrawer}>
+                  کردنەوەی سندووق (Drawer Kick)
+                </button>
+              </div>
+            </div>
+            {(printerStatus || drawerStatus) && (
+              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 800, color: '#15803d' }}>
+                {printerStatus || drawerStatus}
+              </div>
+            )}
+          </div>
 
-            <table className="table" style={{ margin: 0 }}>
+          <div className="section-workspace__table">
+            <strong className="section-workspace__metric">
+              ئەنجامی شیکردنەوەی بارکۆدی سکانکراو ({testBarcodeInput || '—'})
+            </strong>
+            <table>
+              <thead>
+                <tr>
+                  <th>تایبەتمەندیی بارکۆد</th>
+                  <th>بەهای خوێندراوە</th>
+                  <th>دۆخی پشکنین</th>
+                </tr>
+              </thead>
               <tbody>
                 <tr>
-                  <td>درێژی نووسین:</td>
-                  <td>{barcodeInspection.length} پیت/ژمارە</td>
+                  <td>
+                    <strong>درێژیی زنجیرەی بارکۆد</strong>
+                  </td>
+                  <td style={{ direction: 'ltr' }}>{barcodeInspection.length} ژمارە</td>
+                  <td>ستاندارد</td>
                 </tr>
                 <tr>
-                  <td>جۆری کۆد:</td>
                   <td>
-                    <span className="stock-badge ok">{barcodeInspection.type}</span>
+                    <strong>جۆری کۆد و فۆرمات</strong>
+                  </td>
+                  <td>{barcodeInspection.type}</td>
+                  <td>ناسراوە</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>ژمارەی پشکنینی کۆتایی (EAN-13 Checksum)</strong>
+                  </td>
+                  <td>{barcodeInspection.checksum}</td>
+                  <td
+                    style={{
+                      fontWeight: 900,
+                      color: barcodeInspection.validEan13 === false ? '#b91c1c' : '#15803d'
+                    }}
+                  >
+                    {barcodeInspection.validEan13 === false ? 'نادروست' : 'دروست'}
                   </td>
                 </tr>
                 <tr>
-                  <td>ژمارەی پشکنینی کۆتایی (Checksum):</td>
                   <td>
-                    <span
-                      className={`stock-badge ${
-                        barcodeInspection.validEan13 === true
-                          ? 'ok'
-                          : barcodeInspection.validEan13 === false
-                          ? 'danger'
-                          : 'info'
-                      }`}
-                    >
-                      {barcodeInspection.checksum}
-                    </span>
+                    <strong>شیکردنەوەی بارکۆدی تەرازوو (پێشگری 27)</strong>
                   </td>
-                </tr>
-                <tr>
-                  <td>کۆدی تەرازووی سەوزە و میوە (27...):</td>
                   <td>
-                    {barcodeInspection.possibleScaleBarcode ? (
-                      <span className="stock-badge warn">
-                        کۆدی کاڵا: {barcodeInspection.scaleItemCode} | کێش: {barcodeInspection.scaleGrams} گرام
-                      </span>
-                    ) : (
-                      'بارکۆدی ئاساییە'
-                    )}
+                    {barcodeInspection.possibleScaleBarcode
+                      ? `کۆدی کاڵا: ${barcodeInspection.scaleItemCode} · کێش: ${barcodeInspection.scaleGrams} گرام`
+                      : 'بارکۆدی یەکەی ئاسایی'}
                   </td>
+                  <td>ئامادە</td>
                 </tr>
               </tbody>
             </table>
           </div>
-
-          {/* Printer & Cash Drawer Diagnostics */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div className="surface" style={{ background: '#fff', padding: '20px', borderRadius: '16px' }}>
-              <h2 style={{ fontSize: '17px', fontWeight: 900, color: '#172b45', margin: '0 0 10px' }}>
-                تاقیکردنەوەی پرینتەری پسووڵە
-              </h2>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
-                تاقیکردنەوەی دەرچوونی پسووڵە لە پرینتەری ثێرمەڵ (ESC/POS 80mm/58mm)
-              </p>
-              <button
-                type="button"
-                className="primary"
-                onClick={handleTestPrint}
-                style={{ height: '40px', fontSize: '13px' }}
-              >
-                🖨️ چاپی پسووڵەی تاقیکاری
-              </button>
-              {printerStatus && (
-                <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 800, color: '#15803d' }}>
-                  {printerStatus}
-                </div>
-              )}
-            </div>
-
-            <div className="surface" style={{ background: '#fff', padding: '20px', borderRadius: '16px' }}>
-              <h2 style={{ fontSize: '17px', fontWeight: 900, color: '#172b45', margin: '0 0 10px' }}>
-                تاقیکردنەوەی کردنەوەی سندووق (Drawer Kick)
-              </h2>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
-                ناردنی فەرمانی لێدانی پلەتەی کارەبایی سندووق لەڕێگەی کێبڵی پرینتەر RJ11
-              </p>
-              <button
-                type="button"
-                className="secondary"
-                onClick={handleKickDrawer}
-                style={{ height: '40px', fontSize: '13px', background: '#eff6ff', borderColor: '#93c5fd' }}
-              >
-                ⚡ تاقیکردنەوەی سندووق (Kick Drawer)
-              </button>
-              {drawerStatus && (
-                <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 800, color: '#1d4ed8' }}>
-                  {drawerStatus}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        </>
       )}
 
-      {/* Tab: Customer Secondary Display Live Mirror */}
-      {activeTab === 'customer_display' && (
-        <div className="surface" style={{ background: '#0f172a', padding: '24px', borderRadius: '16px', color: '#f8fafc' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1.5px solid #334155', paddingBottom: '14px', marginBottom: '18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '24px' }}>◈</span>
-              <strong style={{ fontSize: '20px', color: '#fff' }}>سوپەرمارکێتی کانی چنار — شاشەی کڕیار</strong>
+      {/* 2. ALERTS SUBMODULE (ئاگادارکردنەوەکان) */}
+      {activeTab === 'alerts' && (
+        <>
+          <div className="ws-kpi-grid">
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">کاڵا کەمبووەکانی کۆگا</span>
+              <span className={`ws-kpi-value ${lowStockProducts.length > 0 ? 'negative' : 'positive'}`}>
+                {lowStockProducts.length}
+              </span>
+              <span className="ws-kpi-sub">کەمتر یان یەکسان بە سنووری ئاگادارکردنەوە</span>
             </div>
-            <div style={{ color: '#38bdf8', fontSize: '14px', direction: 'ltr', fontWeight: 900 }}>
-              {new Date().toLocaleTimeString()}
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">کاڵای نزیک لە بەسەرچوون (≤ 45 ڕۆژ)</span>
+              <span className={`ws-kpi-value ${nearExpiryProducts.length > 0 ? 'negative' : 'positive'}`}>
+                {nearExpiryProducts.length}
+              </span>
+              <span className="ws-kpi-sub">پێویستی بە پێشخستنی فرۆشتنە (FEFO)</span>
+            </div>
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">کڕیارانی خاوەن قەرزی کراوە</span>
+              <span className="ws-kpi-value">{debtors.length}</span>
+              <span className="ws-kpi-sub">
+                کۆی قەرز: {money(debtors.reduce((s, c) => s + c.balanceDebt, 0))}
+              </span>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(280px, 1fr)', gap: '20px' }}>
-            <div>
-              <h3 style={{ fontSize: '15px', color: '#94a3b8', margin: '0 0 10px' }}>
-                کاڵاکانی ئێستای سەبەتە ({cart.length})
-              </h3>
-              {cart.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', border: '1px dashed #334155', borderRadius: '12px', color: '#94a3b8' }}>
-                  بەخێربێن بۆ سوپەرمارکێتی کانی چنار — کڕینێکی شاد
-                </div>
-              ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f8fafc' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                      <th style={{ textAlign: 'right', padding: '8px' }}>کاڵا</th>
-                      <th style={{ textAlign: 'center', padding: '8px' }}>بڕ</th>
-                      <th style={{ textAlign: 'left', padding: '8px', direction: 'ltr' }}>کۆ</th>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)',
+              gap: '10px',
+              alignItems: 'start',
+              flex: '0 1 auto',
+              minHeight: 0,
+              overflow: 'hidden'
+            }}
+          >
+            <div className="section-workspace__table" style={{ height: 'auto', maxHeight: '100%' }}>
+              <strong className="section-workspace__metric">
+                ئاگادارکردنەوەی کەمبوونی کۆگا ({lowStockProducts.length} کاڵا)
+              </strong>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ناوی کاڵا و بارکۆد</th>
+                    <th>کۆگای ئێستا</th>
+                    <th>کەمترین بڕ</th>
+                    <th>ئاستی هۆشداری</th>
+                    <th>کرداری خێرا</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lowStockProducts.length === 0 ? (
+                    <tr>
+                      <td className="section-workspace__empty" colSpan={5}>
+                        هیچ کاڵایەک لە کۆگادا کەم نەبووەتەوە — دۆخی کۆگا نایابە
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {cart.map((c, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #1e293b' }}>
-                        <td style={{ padding: '10px 8px', fontWeight: 800 }}>{c.name}</td>
-                        <td style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', fontWeight: 900 }}>{c.qty}</td>
-                        <td style={{ padding: '10px 8px', textAlign: 'left', direction: 'ltr', color: '#4ade80', fontWeight: 900 }}>
-                          {(c.price * c.qty).toLocaleString()} IQD
+                  ) : (
+                    lowStockProducts.map(p => (
+                      <tr key={p.id}>
+                        <td>
+                          <strong>{p.name}</strong>
+                          <div style={{ fontSize: '10.5px', color: '#536c85', direction: 'ltr', textAlign: 'right' }}>
+                            {p.unit_barcode}
+                          </div>
+                        </td>
+                        <td style={{ fontWeight: 900, color: '#b91c1c' }}>
+                          {p.stock} {p.base_unit === 'kg' ? 'kg' : 'دانە'}
+                        </td>
+                        <td>{p.min_stock ?? 10}</td>
+                        <td>
+                          <span className="ws-badge danger">کەمبووە</span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="primary"
+                            style={{ padding: '0 10px', fontSize: '11.5px' }}
+                            onClick={() => adjustStock(p.id, 20, 'unit', 'پڕکردنەوەی خێرا لە بەشی ئاگادارکردنەوەکان')}
+                          >
+                            + پڕکردنەوە (20)
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="section-workspace__table" style={{ height: 'auto', maxHeight: '100%' }}>
+              <strong className="section-workspace__metric">
+                هۆشداریی دارایی و بەرواری بەسەرچوون
+              </strong>
+              <table>
+                <thead>
+                  <tr>
+                    <th>جۆری ئاگادارکردنەوە</th>
+                    <th>بابەت / لایەن</th>
+                    <th>بڕ یان بەروار</th>
+                    <th>کردار</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nearExpiryProducts.map(p => (
+                    <tr key={`exp-${p.id}`}>
+                      <td>
+                        <span className="ws-badge warning">نزیکبوونەوەی بەسەرچوون</span>
+                      </td>
+                      <td>
+                        <strong>{p.name}</strong>
+                      </td>
+                      <td style={{ direction: 'ltr', fontWeight: 900 }}>{p.expiry_date}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => navigateTo('stock', 'expiry', 'expiry')}
+                        >
+                          بینین لە بەسەرچوون
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {debtors.map(c => (
+                    <tr key={`debt-${c.id}`}>
+                      <td>
+                        <span className="ws-badge danger">قەرزی کڕیار</span>
+                      </td>
+                      <td>
+                        <strong>{c.name}</strong> ({c.phone})
+                      </td>
+                      <td style={{ direction: 'ltr', fontWeight: 900, color: '#b91c1c' }}>
+                        {money(c.balanceDebt)}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => navigateTo('customers', 'debts', 'customer-repayment')}
+                        >
+                          وەرگرتنەوەی قەرز
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {suppliers
+                    .filter(s => s.balanceDebt > 0)
+                    .map(s => (
+                      <tr key={`sup-${s.id}`}>
+                        <td>
+                          <span className="ws-badge warning">شایستەی دابینکەر</span>
+                        </td>
+                        <td>
+                          <strong>{s.name}</strong>
+                        </td>
+                        <td style={{ direction: 'ltr', fontWeight: 900 }}>{money(s.balanceDebt)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="secondary"
+                            onClick={() => navigateTo('suppliers', '', 'supplier-accounts')}
+                          >
+                            حیساباتی دابینکەر
+                          </button>
                         </td>
                       </tr>
                     ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            <div style={{ background: '#1e293b', padding: '24px', borderRadius: '16px', border: '1.5px solid #334155', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontSize: '16px', color: '#bfdbfe', fontWeight: 800, marginBottom: '8px' }}>
-                کۆی گشتی بۆ پارەدان:
-              </div>
-              <div style={{ fontSize: '42px', fontWeight: 950, color: '#ffffff', direction: 'ltr' }}>
-                {money(cartTotal)}
-              </div>
-              {lastReceipt && (
-                <div style={{ marginTop: '20px', padding: '10px', background: '#064e3b', borderRadius: '10px', color: '#a7f3d0', fontSize: '12px', fontWeight: 800 }}>
-                  دواین پسووڵە: {lastReceipt.receiptNumber} ({money(lastReceipt.total)})
-                </div>
-              )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Tab: Disk Backup & Restore */}
-      {activeTab === 'backup' && (
-        <div className="surface" style={{ background: '#fff', padding: '24px', borderRadius: '16px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#172b45', margin: '0 0 12px' }}>
-            پاڵپشتی خۆکار لەسەر دیسکی PC (D:\ Drive Backup)
-          </h2>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px', lineHeight: 1.6 }}>
-            سیستەمی کاشێر پشتگیری لە هەڵگرتنی تەواوی داتابەیس دەکات (کاڵاکان، کۆگا، حساباتی کڕیاران و شێفتەکان). دەتوانیت لە هەر کاتێکدا فایلی پاڵپشت داگریت یان لە فایلی دیسکەوە بیهێنیتەوە.
-          </p>
-
-          {backupMsg && (
-            <div
-              style={{
-                padding: '12px 16px',
-                borderRadius: '10px',
-                marginBottom: '18px',
-                background: backupMsg.error ? '#fef2f2' : '#f0fdf4',
-                border: `1.5px solid ${backupMsg.error ? '#fca5a5' : '#bbf7d0'}`,
-                color: backupMsg.error ? '#991b1b' : '#166534',
-                fontWeight: 800,
-                fontSize: '13.5px'
-              }}
-            >
-              {backupMsg.text}
-            </div>
-          )}
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '14px', padding: '20px', background: '#f8fafc' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 900, margin: '0 0 8px' }}>
-                1. داگرتنی فایلی پاڵپشت (Export Backup JSON)
-              </h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 14px' }}>
-                پاشەکەوتکردنی هەموو داتاکان لە فۆرماتی `backup-latest.json`
-              </p>
-              <button
-                type="button"
-                className="primary"
-                onClick={handleDownloadBackup}
-              >
-                💾 داگرتنی پاڵپشتی ئێستا
-              </button>
-            </div>
-
-            <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '14px', padding: '20px', background: '#f8fafc' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 900, margin: '0 0 8px' }}>
-                2. هێنانەوە لە فایلی دیسک (Restore Backup JSON)
-              </h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 14px' }}>
-                هەڵبژاردنی فایلی داتا بۆ گەڕاندنەوەی سەرجەم کاڵا و حساباتەکان
-              </p>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleFileUpload}
-                style={{ fontSize: '13px' }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab: System Audit Trail */}
+      {/* 3. TRANSACTION CHECK & BACKUP SUBMODULE (پشکنینی مامەڵە) */}
       {activeTab === 'audit' && (
-        <div className="surface" style={{ background: '#fff', padding: '20px', borderRadius: '16px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#172b45', marginBottom: '16px' }}>
-            تۆماری چاودێری و ڕووداوەکانی سیستەم (Audit Trail)
-          </h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>بەروار و کات</th>
-                <th>بەکارهێنەر</th>
-                <th>کردار</th>
-                <th>وردەکاری</th>
-              </tr>
-            </thead>
-            <tbody>
-              {auditLogs.map(log => (
-                <tr key={log.id}>
-                  <td style={{ direction: 'ltr' }}>{formatDateTime(log.timestamp)}</td>
-                  <td>
-                    <span className="stock-badge info">{log.user}</span>
-                  </td>
-                  <td>
-                    <strong>{log.action}</strong>
-                  </td>
-                  <td>{log.details}</td>
+        <>
+          <div className="ws-kpi-grid">
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">هاوتابوونی ژمێریاریی شەفت</span>
+              <span className={`ws-kpi-value ${isShiftReconciled ? 'positive' : 'negative'}`}>
+                {isShiftReconciled ? '100% هاوتایە' : 'جیاوازی هەیە'}
+              </span>
+              <span className="ws-kpi-sub">سندووقی چاوەڕوانکراو: {money(currentShift.expectedCash)}</span>
+            </div>
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">کۆی پسووڵە تۆمارکراوەکان</span>
+              <span className="ws-kpi-value">{receipts.length}</span>
+              <span className="ws-kpi-sub">
+                کۆی گشتیی فرۆش: {money(receipts.reduce((s, r) => s + r.total, 0))}
+              </span>
+            </div>
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">تۆماری چاودێری (Audit Log)</span>
+              <span className="ws-kpi-value positive">{auditLogs.length}</span>
+              <span className="ws-kpi-sub">تۆماری پارێزراو لە دەستکاریکردن</span>
+            </div>
+          </div>
+
+          <div className="ws-panel">
+            <div className="ws-toolbar" style={{ marginBottom: 0 }}>
+              <div>
+                <h2 className="ws-panel-title" style={{ margin: 0 }}>
+                  پاڵپشتیی داتابەیس و پشکنینی مامەڵەکان (JSON Backup & Audit)
+                </h2>
+                <div style={{ fontSize: '12px', color: '#536c85', marginTop: '4px', fontWeight: 700 }}>
+                  پاشەکەوتکردن و هێنانەوەی سەرجەم کاڵاکان، پسووڵەکان، کۆگا و حساباتی قەرز
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className="primary" onClick={handleDownloadBackup}>
+                  داگرتنی پاڵپشتی ئێستا (JSON)
+                </button>
+                <label className="secondary" style={{ cursor: 'pointer', margin: 0 }}>
+                  هێنانەوە لە فایلەوە
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {backupMsg && (
+              <div
+                style={{
+                  marginTop: '10px',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  background: backupMsg.error ? '#fef2f2' : '#f0fdf4',
+                  border: `1px solid ${backupMsg.error ? '#fca5a5' : '#bbf7d0'}`,
+                  color: backupMsg.error ? '#991b1b' : '#166534',
+                  fontSize: '12px',
+                  fontWeight: 800
+                }}
+              >
+                {backupMsg.text}
+              </div>
+            )}
+          </div>
+
+          <div className="section-workspace__table">
+            <strong className="section-workspace__metric">
+              تۆماری پشکنینی مامەڵە و چالاکییەکانی سیستەم ({auditLogs.length})
+            </strong>
+            <table>
+              <thead>
+                <tr>
+                  <th>بەروار و کات</th>
+                  <th>بەکارهێنەر</th>
+                  <th>جۆری مامەڵە / کردار</th>
+                  <th>وردەکاری</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {auditLogs.map(log => (
+                  <tr key={log.id}>
+                    <td style={{ direction: 'ltr' }}>{formatDateTime(log.timestamp)}</td>
+                    <td>{log.user}</td>
+                    <td>
+                      <strong>{log.action}</strong>
+                    </td>
+                    <td>{log.details}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* 4. CHANGE HISTORY SUBMODULE (مێژووی گۆڕانکاری) */}
+      {activeTab === 'history' && (
+        <>
+          <div className="ws-kpi-grid">
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">کۆی گۆڕانکارییە تۆمارکراوەکان</span>
+              <span className="ws-kpi-value">{auditLogs.length}</span>
+              <span className="ws-kpi-sub">تۆماری نەگۆڕی سەرجەم کردارەکان</span>
+            </div>
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">ئەنجامی گەڕان و فلتەری ئێستا</span>
+              <span className="ws-kpi-value positive">{filteredLogs.length}</span>
+              <span className="ws-kpi-sub">گۆڕانکاریی پیشاندراو لە خشتەدا</span>
+            </div>
+            <div className="ws-kpi-card">
+              <span className="ws-kpi-label">بەکارهێنەرانی تۆمارکراو لە چالاکی</span>
+              <span className="ws-kpi-value">{new Set(auditLogs.map(l => l.user)).size}</span>
+              <span className="ws-kpi-sub">کاشێر و بەڕێوەبەرە چالاکەکان</span>
+            </div>
+          </div>
+
+          <div className="ws-panel">
+            <div className="ws-toolbar" style={{ marginBottom: 0 }}>
+              <input
+                type="text"
+                className="input-search"
+                placeholder="گەڕان لە مێژووی گۆڕانکارییەکان بەپێی کردار، بەکارهێنەر، یان وردەکاری..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <span style={{ fontSize: '12px', fontWeight: 800, color: '#536c85' }}>
+                کۆی گۆڕانکارییە تۆمارکراوەکان: {filteredLogs.length}
+              </span>
+            </div>
+          </div>
+
+          <div className="section-workspace__table">
+            <strong className="section-workspace__metric">
+              تۆماری تەواوی مێژووی گۆڕانکارییەکان ({filteredLogs.length} تۆمار)
+            </strong>
+            <table>
+              <thead>
+                <tr>
+                  <th>ژمارە</th>
+                  <th>بەروار و کات</th>
+                  <th>بەکارهێنەر</th>
+                  <th>کردار</th>
+                  <th>وردەکاریی گۆڕانکاری</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLogs.length === 0 ? (
+                  <tr>
+                    <td className="section-workspace__empty" colSpan={5}>
+                      هیچ گۆڕانکارییەک بەپێی ئەم گەڕانە نەدۆزرایەوە
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLogs.map((log, idx) => (
+                    <tr key={log.id}>
+                      <td>{filteredLogs.length - idx}</td>
+                      <td style={{ direction: 'ltr' }}>{formatDateTime(log.timestamp)}</td>
+                      <td>
+                        <span className="ws-badge">{log.user}</span>
+                      </td>
+                      <td>
+                        <strong>{log.action}</strong>
+                      </td>
+                      <td>{log.details}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

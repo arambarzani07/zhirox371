@@ -17,11 +17,21 @@ import {
   INITIAL_PRODUCTS,
   INITIAL_CUSTOMERS,
   INITIAL_SUPPLIERS,
-  INITIAL_SHIFT
+  INITIAL_SHIFT,
+  INITIAL_RECEIPTS,
+  INITIAL_STOCK_MOVEMENTS
 } from '../data/initialData';
 import { parseScaleBarcode } from '../utils/retailHelpers';
 
 const STORAGE_KEY = 'kanichnar_retail_pos_v18';
+
+export interface ParkedCartEntry {
+  id: string;
+  label: string;
+  createdAt: string;
+  items: CartLine[];
+  totalIqd: number;
+}
 
 interface AppContextType {
   currentView: NavView;
@@ -37,13 +47,16 @@ interface AppContextType {
   receiveStock: (productId: string, quantity: number, mode: 'unit' | 'carton', supplierId?: string, invoiceNo?: string) => void;
 
   cart: CartLine[];
-  addToCart: (input: string | Product, mode?: 'unit' | 'carton') => { success: boolean; message?: string };
+  addToCart: (input: string | Product, mode?: 'unit' | 'carton', requestedQty?: number) => { success: boolean; message?: string };
   updateCartQty: (index: number, nextQty: number) => { success: boolean; message?: string };
+  toggleCartLineMode: (index: number) => { success: boolean; message?: string };
   removeFromCart: (index: number) => void;
   clearCart: () => void;
   parkedCart: CartLine[] | null;
-  parkCart: () => boolean;
-  restoreParkedCart: () => void;
+  parkedCarts: ParkedCartEntry[];
+  parkCart: (customLabel?: string) => boolean;
+  restoreParkedCart: (parkedId?: string) => void;
+  removeParkedCart: (parkedId: string) => void;
 
   customers: Customer[];
   addCustomer: (c: Omit<Customer, 'id' | 'createdAt'>) => Customer;
@@ -51,6 +64,7 @@ interface AppContextType {
 
   suppliers: Supplier[];
   addSupplier: (s: Omit<Supplier, 'id'>) => Supplier;
+  recordSupplierPayment: (supplierId: string, amount: number, fromCashDrawer?: boolean, note?: string) => void;
 
   currentShift: Shift;
   expenses: Expense[];
@@ -68,6 +82,17 @@ interface AppContextType {
     discountAmount?: number;
     notes?: string;
   }) => { success: boolean; receipt?: Receipt; error?: string };
+  recordSaleReturn: (options: {
+    receiptNo: string;
+    productId: string;
+    qty: number;
+    mode?: 'unit' | 'carton';
+    refundAmount: number;
+    restock: boolean;
+    refundMethod: 'cash' | 'debt';
+    customerId?: string | null;
+    reason: string;
+  }) => { success: boolean; message?: string };
 
   lastReceipt: Receipt | null;
   activeReceiptForModal: Receipt | null;
@@ -148,17 +173,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [receipts, setReceipts] = useState<Receipt[]>(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEY}_receipts`);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (_e) {}
-    return [];
+    return INITIAL_RECEIPTS;
   });
 
   const [stockMovements, setStockMovements] = useState<StockMovement[]>(() => {
     try {
       const saved = localStorage.getItem(`${STORAGE_KEY}_movements`);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (_e) {}
-    return [];
+    return INITIAL_STOCK_MOVEMENTS;
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
@@ -178,9 +209,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [parkedCart, setParkedCart] = useState<CartLine[] | null>(null);
+  const [parkedCarts, setParkedCarts] = useState<ParkedCartEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_parked_carts`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (_e) {}
+    return [];
+  });
+  const parkedCart = parkedCarts.length > 0 ? parkedCarts[0].items : null;
   const [lastReceipt, setLastReceipt] = useState<Receipt | null>(null);
   const [activeReceiptForModal, setActiveReceiptForModal] = useState<Receipt | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_parked_carts`, JSON.stringify(parkedCarts));
+    } catch (_e) {}
+  }, [parkedCarts]);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -347,16 +394,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const trimmed = barcode.trim();
     if (!trimmed) return null;
 
-    // Check Scale Barcode (starts with 27)
-    if (/^27[0-9]{11}$/.test(trimmed)) {
+    // Check Scale Barcode (starts with 27 or 28)
+    if (/^(27|28)[0-9]{11}$/.test(trimmed)) {
       const scaleInfo = parseScaleBarcode(trimmed);
       if (scaleInfo.isScale && scaleInfo.itemCode) {
+        const numericCode = parseInt(scaleInfo.itemCode, 10).toString();
         // Look up by scale product or plu or barcode prefix
         const p = products.find(
           x =>
-            (x.is_scale_product && x.plu === scaleInfo.itemCode) ||
-            (x.base_unit === 'kg' && x.unit_barcode.includes(scaleInfo.itemCode!)) ||
+            (x.is_scale_product && (x.plu === scaleInfo.itemCode || x.plu === numericCode)) ||
+            (x.base_unit === 'kg' && (x.unit_barcode.includes(scaleInfo.itemCode!) || x.unit_barcode.endsWith(numericCode))) ||
             x.unit_barcode === trimmed.slice(0, 7) ||
+            x.unit_barcode === trimmed ||
             x.unit_alias_barcodes.includes(trimmed)
         );
         if (p) {
@@ -385,18 +434,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     matched = products.find(x => x.sku?.toLowerCase() === trimmed.toLowerCase() || x.plu === trimmed);
     if (matched) return { product: matched, mode: 'unit' };
 
+    // Fallback: Kurdish/Latin product name match for fast cashier lookup
+    matched = products.find(x => x.name.toLowerCase().includes(trimmed.toLowerCase()));
+    if (matched) return { product: matched, mode: 'unit' };
+
     return null;
   };
 
-  const addToCart = (input: string | Product, requestedMode?: 'unit' | 'carton'): { success: boolean; message?: string } => {
+  const addToCart = (
+    input: string | Product,
+    requestedMode?: 'unit' | 'carton',
+    requestedQty?: number
+  ): { success: boolean; message?: string } => {
     let p: Product;
     let mode: 'unit' | 'carton' = requestedMode || 'unit';
     let isScale = false;
     let scaleGrams = 1000;
     let scanBarcode = '';
+    let effectiveQty = Math.max(1, Math.floor(requestedQty || 1));
 
     if (typeof input === 'string') {
-      const match = findProductByCode(input);
+      let queryStr = input.trim();
+      const multMatch = queryStr.match(/^(\d{1,3})\*(.+)$/);
+      if (multMatch) {
+        const parsedMult = parseInt(multMatch[1], 10);
+        if (parsedMult > 0) {
+          effectiveQty = requestedQty ? Math.max(1, Math.floor(requestedQty)) : parsedMult;
+        }
+        queryStr = multMatch[2].trim();
+      }
+
+      const match = findProductByCode(queryStr);
       if (!match) {
         return { success: false, message: 'ئەم بارکۆدە نەدۆزرایەوە!' };
       }
@@ -404,11 +472,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       mode = requestedMode || match.mode;
       isScale = match.isScale || false;
       scaleGrams = match.scaleGrams || 1000;
-      scanBarcode = input.trim();
+      scanBarcode = queryStr;
     } else {
       p = input;
       mode = requestedMode || (p.sale_mode === 'carton' ? 'carton' : 'unit');
       scanBarcode = mode === 'carton' && p.carton ? p.carton.barcode : p.unit_barcode;
+    }
+
+    if (isScale) {
+      effectiveQty = 1;
     }
 
     if (mode === 'carton' && !p.carton) {
@@ -437,7 +509,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return line.productId === p.id ? sum + line.qty * line.units : sum;
     }, 0);
 
-    if (alreadyUsedBaseUnits + unitsPerPackage > p.stock + 0.001) {
+    if (alreadyUsedBaseUnits + unitsPerPackage * effectiveQty > p.stock + 0.001) {
       return { success: false, message: `بڕی بەردەست لە کۆگا تەواوبووە! (بەردەست: ${p.stock})` };
     }
 
@@ -448,7 +520,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (existingIndex >= 0) {
       const nextCart = [...cart];
-      nextCart[existingIndex].qty += 1;
+      nextCart[existingIndex].qty += effectiveQty;
       setCart(nextCart);
     } else {
       const newLine: CartLine = {
@@ -458,7 +530,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         barcode: scanBarcode,
         mode,
         price: pricePerUnit,
-        qty: 1,
+        qty: effectiveQty,
         units: unitsPerPackage,
         isScale,
         scaleGrams: isScale ? scaleGrams : undefined,
@@ -500,6 +572,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true };
   };
 
+  const toggleCartLineMode = (index: number): { success: boolean; message?: string } => {
+    if (index < 0 || index >= cart.length) return { success: false };
+    const line = cart[index];
+    if (line.isScale) {
+      return { success: false, message: 'کاڵای تەرازوو ناکرێتە کارتۆن' };
+    }
+    const p = products.find(x => x.id === line.productId);
+    if (!p || !p.carton) {
+      return { success: false, message: 'ئەم کاڵایە زانیاریی کارتۆنی نییە' };
+    }
+
+    const nextMode: 'unit' | 'carton' = line.mode === 'unit' ? 'carton' : 'unit';
+    const nextUnits = nextMode === 'carton' ? p.carton.units_per_carton : 1;
+    const nextPrice = nextMode === 'carton' ? p.carton.sale_price_iqd : p.unit_sale_price_iqd;
+    const nextName = nextMode === 'carton' ? (p.carton.name || `کارتۆنی ${p.name}`) : p.name;
+    const nextBarcode = nextMode === 'carton' ? p.carton.barcode : p.unit_barcode;
+
+    const otherUsed = cart.reduce((sum, l, i) => {
+      return i !== index && l.productId === p.id ? sum + l.qty * l.units : sum;
+    }, 0);
+
+    if (otherUsed + line.qty * nextUnits > p.stock + 0.001) {
+      return {
+        success: false,
+        message: `بڕی کۆگا بەشی ${line.qty} کارتۆن ناکات! (بەردەست: ${p.stock} یەکە)`
+      };
+    }
+
+    const next = [...cart];
+    next[index] = {
+      ...line,
+      mode: nextMode,
+      units: nextUnits,
+      price: nextPrice,
+      name: nextName,
+      barcode: nextBarcode
+    };
+    setCart(next);
+    return { success: true };
+  };
+
   const removeFromCart = (index: number) => {
     setCart(prev => prev.filter((_, i) => i !== index));
   };
@@ -508,19 +621,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCart([]);
   };
 
-  const parkCart = (): boolean => {
+  const parkCart = (customLabel?: string): boolean => {
     if (cart.length === 0) return false;
-    setParkedCart([...cart]);
+    const totalIqd = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const entry: ParkedCartEntry = {
+      id: `park-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      label: customLabel || `سەبەتە #${parkedCarts.length + 1}`,
+      createdAt: new Date().toISOString(),
+      items: [...cart],
+      totalIqd
+    };
+    setParkedCarts(prev => [entry, ...prev]);
     setCart([]);
-    addAuditLog('پاراستنی سەبەتە', 'سەبەتەی کاشێر هەڵگیرا بۆ کڕیاری داهاتوو');
+    addAuditLog('پاراستنی سەبەتە', `سەبەتەی کاشێر هەڵگیرا (${entry.label})`);
     return true;
   };
 
-  const restoreParkedCart = () => {
-    if (!parkedCart) return;
-    setCart([...parkedCart]);
-    setParkedCart(null);
-    addAuditLog('گەڕاندنەوەی سەبەتە', 'سەبەتەی پارێزراو هێنرایەوە');
+  const restoreParkedCart = (parkedId?: string) => {
+    if (parkedCarts.length === 0) return;
+    const target = parkedId ? parkedCarts.find(x => x.id === parkedId) || parkedCarts[0] : parkedCarts[0];
+    if (!target) return;
+
+    const currentActiveItems = [...cart];
+    setCart([...target.items]);
+    setParkedCarts(prev => {
+      const remaining = prev.filter(x => x.id !== target.id);
+      if (currentActiveItems.length > 0) {
+        const swappedEntry: ParkedCartEntry = {
+          id: `park-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          label: `سەبەتەی گۆڕدراو`,
+          createdAt: new Date().toISOString(),
+          items: currentActiveItems,
+          totalIqd: currentActiveItems.reduce((s, i) => s + i.price * i.qty, 0)
+        };
+        return [swappedEntry, ...remaining];
+      }
+      return remaining;
+    });
+    addAuditLog('گەڕاندنەوەی سەبەتە', `سەبەتەی پارێزراو هێنرایەوە (${target.label})`);
+  };
+
+  const removeParkedCart = (parkedId: string) => {
+    setParkedCarts(prev => prev.filter(x => x.id !== parkedId));
   };
 
   const addCustomer = (c: Omit<Customer, 'id' | 'createdAt'>): Customer => {
@@ -536,6 +678,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const recordDebtRepayment = (customerId: string, amount: number) => {
     if (amount <= 0) return;
+    const custName = customers.find(c => c.id === customerId)?.name || customerId;
     setCustomers(prev =>
       prev.map(c => {
         if (c.id === customerId) {
@@ -553,7 +696,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       expectedCash: prev.expectedCash + amount
     }));
 
-    addAuditLog('دانەوەی قەرز', `بڕی ${amount.toLocaleString()} IQD قەرز لەلایەن کڕیارەوە گەڕێنرایەوە`);
+    addAuditLog('دانەوەی قەرز', `بڕی ${amount.toLocaleString('en-US')} IQD قەرز لەلایەن کڕیار (${custName}) گەڕێنرایەوە`);
   };
 
   const addSupplier = (s: Omit<Supplier, 'id'>): Supplier => {
@@ -564,6 +707,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSuppliers(prev => [sup, ...prev]);
     addAuditLog('دابینکەری نوێ', `دابینکەری نوێ تۆمارکرا: ${sup.name}`);
     return sup;
+  };
+
+  const recordSupplierPayment = (
+    supplierId: string,
+    amount: number,
+    fromCashDrawer: boolean = true,
+    note?: string
+  ) => {
+    if (amount <= 0) return;
+    const sup = suppliers.find(s => s.id === supplierId);
+    setSuppliers(prev =>
+      prev.map(s => (s.id === supplierId ? { ...s, balanceDebt: Math.max(0, s.balanceDebt - amount) } : s))
+    );
+
+    if (fromCashDrawer) {
+      const newExp: Expense = {
+        id: `exp-sup-${Date.now()}`,
+        shiftId: currentShift.id,
+        title: `پارەدان بە دابینکەر: ${sup?.name || supplierId}`,
+        amount,
+        category: 'حیساباتی دابینکەران',
+        note: note || 'پاکتاوکردنی قەرزی دابینکەر لە سندووق',
+        createdAt: new Date().toISOString()
+      };
+      setExpenses(prev => [newExp, ...prev]);
+      setCurrentShift(prev => ({
+        ...prev,
+        expenses: prev.expenses + amount,
+        expectedCash: Math.max(0, prev.expectedCash - amount)
+      }));
+    }
+
+    addAuditLog(
+      'پارەدان بە دابینکەر',
+      `بڕی ${amount.toLocaleString('en-US')} IQD درا بە دابینکەر (${sup?.name || supplierId})${fromCashDrawer ? ' لە سندووقی کاشێر' : ' لە قاسەی گشتی'}`
+    );
   };
 
   const recordExpense = (title: string, amount: number, category: string, note?: string) => {
@@ -637,11 +816,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: false, error: 'سەبەتە بەتاڵە!' };
     }
 
+    if (currentShift.status !== 'open') {
+      return { success: false, error: 'شێفتی کاشێر داخراوە! تکایە سەرەتا شێفتێکی نوێ بکەرەوە.' };
+    }
+
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
     const discount = options.discountAmount || (options.discountPercent ? Math.round((subtotal * options.discountPercent) / 100) : 0);
     const grandTotal = Math.max(0, subtotal - discount);
 
     const paid = options.paidAmount !== undefined ? options.paidAmount : (options.paymentMethod === 'cash' ? grandTotal : 0);
+    if (options.paymentMethod === 'cash' && paid < grandTotal) {
+      return {
+        success: false,
+        error: `بڕی پارەی وەرگیراو (${paid.toLocaleString('en-US')} IQD) کەمترە لە کۆی گشتیی پسووڵە (${grandTotal.toLocaleString('en-US')} IQD)!`
+      };
+    }
     const change = options.paymentMethod === 'cash' && paid >= grandTotal ? paid - grandTotal : 0;
 
     // This React-only checkout persists to LocalStorage, not a trusted local PostgreSQL POS.
@@ -742,6 +931,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true, receipt: newReceipt };
   };
 
+  const recordSaleReturn = (options: {
+    receiptNo: string;
+    productId: string;
+    qty: number;
+    mode?: 'unit' | 'carton';
+    refundAmount: number;
+    restock: boolean;
+    refundMethod: 'cash' | 'debt';
+    customerId?: string | null;
+    reason: string;
+  }): { success: boolean; message?: string } => {
+    const p = products.find(x => x.id === options.productId);
+    if (!p) {
+      return { success: false, message: 'کاڵای دیاریکراو نەدۆزرایەوە' };
+    }
+    if (options.qty <= 0 || options.refundAmount <= 0) {
+      return { success: false, message: 'بڕی کاڵا و پارەی گەڕاوە دەبێت لە سفر گەورەتر بێت' };
+    }
+
+    const mode = options.mode || 'unit';
+    const baseUnitsDelta = mode === 'carton' && p.carton ? options.qty * p.carton.units_per_carton : options.qty;
+
+    if (options.restock) {
+      const prevStock = p.stock;
+      const nextStock = prevStock + baseUnitsDelta;
+      updateProduct(p.id, { stock: nextStock });
+
+      const mov: StockMovement = {
+        id: `mov-ret-${Date.now()}`,
+        productId: p.id,
+        productName: p.name,
+        type: 'return',
+        quantityDelta: baseUnitsDelta,
+        mode,
+        previousStock: prevStock,
+        newStock: nextStock,
+        reference: `گەڕاندنەوەی پسووڵەی ${options.receiptNo} (${options.reason})`,
+        createdAt: new Date().toISOString()
+      };
+      setStockMovements(prev => [mov, ...prev]);
+    }
+
+    if (options.refundMethod === 'cash') {
+      setCurrentShift(prev => ({
+        ...prev,
+        cashReturns: (prev.cashReturns || 0) + options.refundAmount,
+        expectedCash: Math.max(0, prev.expectedCash - options.refundAmount)
+      }));
+    } else if (options.refundMethod === 'debt' && options.customerId) {
+      setCustomers(prev =>
+        prev.map(c =>
+          c.id === options.customerId
+            ? { ...c, balanceDebt: Math.max(0, c.balanceDebt - options.refundAmount) }
+            : c
+        )
+      );
+    }
+
+    addAuditLog(
+      'گەڕاندنەوەی کاڵا',
+      `گەڕاندنەوەی ${options.qty} × ${p.name} لە پسووڵەی ${options.receiptNo} بە بڕی ${options.refundAmount.toLocaleString('en-US')} IQD (${options.refundMethod === 'cash' ? 'نەختینە لە سندووق' : 'کەمکردنەوەی قەرز'})`
+    );
+
+    return { success: true };
+  };
+
   const exportBackupJson = (): string => {
     const backup = {
       backup_version: 1,
@@ -803,16 +1058,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         cart,
         addToCart,
         updateCartQty,
+        toggleCartLineMode,
         removeFromCart,
         clearCart,
         parkedCart,
+        parkedCarts,
         parkCart,
         restoreParkedCart,
+        removeParkedCart,
         customers,
         addCustomer,
         recordDebtRepayment,
         suppliers,
         addSupplier,
+        recordSupplierPayment,
         currentShift,
         expenses,
         recordExpense,
@@ -820,6 +1079,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         openNewShift,
         receipts,
         completeCheckout,
+        recordSaleReturn,
         lastReceipt,
         activeReceiptForModal,
         setActiveReceiptForModal,
