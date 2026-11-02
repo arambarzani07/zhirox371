@@ -20,7 +20,10 @@ try {
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
  assert.match(await banner.innerText(),/فرۆشتنی ڕاستەقینە نییە/);
- const barcode=page.getByPlaceholder("بارکۆد بسکێنە یان کۆدی کاڵا لێبدە...");
+ // Stable semantic input ID: visible Sorani guidance may evolve independently.
+ const barcode=page.getByTestId("pos-barcode-input");
+ assert.equal(await barcode.getAttribute("aria-label"),"بارکۆدی کاڵا");
+ await barcode.waitFor({state:"visible"});
  await context.setOffline(true);
  await barcode.fill("2000000000018");
  await barcode.press("Enter");
