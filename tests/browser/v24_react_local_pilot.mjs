@@ -100,6 +100,12 @@ await page.route("**/api/local/**",async route=>{
 });
 try {
  await page.goto("http://127.0.0.1:3000/",{waitUntil:"networkidle"});
+ await page.waitForFunction(() => localStorage.getItem("kanichnar_retail_pos_v18_receipts") !== null);
+ const demoBefore=await page.evaluate(() => ({
+   receipts:localStorage.getItem("kanichnar_retail_pos_v18_receipts"),
+   products:localStorage.getItem("kanichnar_retail_pos_v18_products"),
+   shift:localStorage.getItem("kanichnar_retail_pos_v18_shift")
+ }));
  await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  await page.getByRole("button",{name:/کردنەوەی V31/}).click();
  assert.match(await page.getByText(/تەنها تاقیکردنەوە لەسەر هەمان PC/).innerText(),/Production/);
@@ -155,8 +161,13 @@ try {
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #2 — 13,475 IQD/).waitFor();
  assert.equal(attempts,4);
- assert.equal(await page.getByRole("button",{name:/پسووڵەکانی ئەمڕۆ \(0\)/}).count(),1,
-   "isolated local checkout must not mutate React DEMO receipt list");
+ const demoAfter=await page.evaluate(() => ({
+   receipts:localStorage.getItem("kanichnar_retail_pos_v18_receipts"),
+   products:localStorage.getItem("kanichnar_retail_pos_v18_products"),
+   shift:localStorage.getItem("kanichnar_retail_pos_v18_shift")
+ }));
+ assert.deepEqual(demoAfter,demoBefore,
+   "isolated PostgreSQL checkout must not mutate React DEMO receipts, stock or shift");
  assert.deepEqual(errors,[]);
  console.log("PASS V24: same-origin test login, server barcode, retry same UUID, no local demo receipt pollution");
 }finally{await browser.close();}
