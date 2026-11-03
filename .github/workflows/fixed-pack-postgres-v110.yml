@@ -8,6 +8,9 @@ on:
       - 'offline/migrations/044_fixed_packs_v110_disposable.sql'
       - 'offline/local-packs-scale-server-v26.mjs'
       - 'offline/tests/053_v110_fixed_packs_checkout.sql'
+      - 'offline/tests/054_v110_durable_packs.sql'
+      - 'offline/tests/055_v110_pack_concurrency_seed.sql'
+      - 'offline/tests/056_v110_pack_concurrency_verify.sql'
       - 'offline/tests/local-packs-scale-v26.test.mjs'
       - '.github/workflows/fixed-pack-postgres-v110.yml'
 permissions:
@@ -52,7 +55,30 @@ jobs:
       - name: Apply guarded V110 migration and test atomic sale, stock and replay
         run: |
           psql -X -v ON_ERROR_STOP=1 -f offline/migrations/044_fixed_packs_v110_disposable.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/migrations/009_durable_checkout_intents.sql
           psql -X -v ON_ERROR_STOP=1 -f offline/tests/053_v110_fixed_packs_checkout.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/054_v110_durable_packs.sql
+      - name: Two real concurrent cashier connections cannot sell the same fixed-pack stock
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/055_v110_pack_concurrency_seed.sql
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          psql -X -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.commit_checkout_v31('11000000-0000-4000-8000-000000000310','11000000-0000-4000-8000-000000000312','11000000-0000-4000-8000-000000000314')" > "$tmp/bundle.log" 2>&1 &
+          bundle=$!
+          psql -X -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.commit_checkout_v31('11000000-0000-4000-8000-000000000310','11000000-0000-4000-8000-000000000313','11000000-0000-4000-8000-000000000315')" > "$tmp/set.log" 2>&1 &
+          setpid=$!
+          set +e
+          wait "$bundle"; a=$?
+          wait "$setpid"; b=$?
+          set -e
+          if ! { { [ "$a" -eq 0 ] && [ "$b" -ne 0 ]; } || { [ "$a" -ne 0 ] && [ "$b" -eq 0 ]; }; }; then
+            cat "$tmp/bundle.log" "$tmp/set.log"
+            echo "V110 concurrency error: exactly one checkout must commit"
+            exit 1
+          fi
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/056_v110_pack_concurrency_verify.sql
       - name: Verify migrations never attempt actual supermarket database
         run: |
           grep -q "current_database() <> 'zhirox_v110_packs_disposable'" offline/migrations/044_fixed_packs_v110_disposable.sql
