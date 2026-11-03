@@ -44,6 +44,16 @@ export function resolveFixedPackBarcode(products, code) {
       found = {product, pack, mode: pack.kind};
     }
   }
+  if (found) {
+    // Persisted browser data can be modified outside the catalog form. A pack
+    // barcode must never also resolve to another product or sale unit.
+    for (const product of products) {
+      if (product.unit_barcode === code ||
+          product.unit_alias_barcodes?.includes(code) ||
+          product.carton?.barcode === code ||
+          product.carton?.alias_barcodes?.includes(code)) return {conflict:true};
+    }
+  }
   return found;
 }
 // Snapshot preflight is for the browser DEMO ONLY, not an atomic server transaction.
