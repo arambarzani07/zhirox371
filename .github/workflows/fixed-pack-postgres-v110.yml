@@ -10,6 +10,7 @@ on:
       - 'offline/fixed-pack-catalog-server-v110.mjs'
       - 'offline/tests/fixed-pack-catalog-v110.test.mjs'
       - 'offline/tests/057_v110_catalog_registration.sql'
+      - 'offline/tests/058_v110_fixed_pack_cash_refunds.sql'
       - 'offline/local-packs-scale-server-v26.mjs'
       - 'offline/tests/053_v110_fixed_packs_checkout.sql'
       - 'offline/tests/054_v110_durable_packs.sql'
@@ -66,6 +67,13 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f offline/tests/053_v110_fixed_packs_checkout.sql
           psql -X -v ON_ERROR_STOP=1 -f offline/tests/054_v110_durable_packs.sql
           psql -X -v ON_ERROR_STOP=1 -f offline/tests/057_v110_catalog_registration.sql
+      - name: Verify manager-only bundle/set cash refunds and exact returned stock
+        run: |
+          set -euo pipefail
+          for f in 011_immutable_receipts_v34.sql 012_print_queue_v35.sql 013_cash_shifts_v37.sql 014_cash_movements_v38.sql 015_manager_cash_refunds_v39.sql 017_partial_cash_refunds_v40.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "offline/migrations/$f"
+          done
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/058_v110_fixed_pack_cash_refunds.sql
       - name: Two real concurrent cashier connections cannot sell the same fixed-pack stock
         shell: bash
         run: |
