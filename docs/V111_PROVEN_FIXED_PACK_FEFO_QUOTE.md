@@ -15,6 +15,15 @@ The guarded `offline/migrations/046_v111_pack_fefo_signed_quote.sql` adds a sepa
 
 The synthetic `V111-BUNDLE`, alias and `V111-SET` barcodes are added only in the exact disposable CI store by `offline/tests/059_v111_pack_quote_fixture.sql`. They are not imported into the live market, Supabase, Windows database or deployment.
 
+## Server-only quote adapter
+`offline/proven-pack-quote-v111.mjs` exposes
+`createV111SignedPackQuoteAdapter({authPool,gatePool,sessionSecret,proofKeyHex})`.
+This callable requires two **distinct, server-side PostgreSQL pools**, uses
+V97's authenticated proof issuer, rejects non-integer/malformed pack lines,
+and returns `checkout_authorized:false` even for a positive quote. There is
+**no** exposed cashier HTTP write endpoint and no stock hold. Alias barcodes
+are the same SKU/pack price as their primary barcode.
+
 ## Acceptance and safety boundary
 `offline/tests/v111_signed_fefo_pack_quote_real_pg.mjs` exercises: valid signed price from server, alias ownership (fixture), aggregate 6+3-unit conversion, stale account refusal, MAC/actor/request/cart tampering, expiration, bad input keys, insufficient LOT stock, rejected unit barcode and changed server price. It calls V97 **with a pack-form cart** and explicitly verifies refusal with no sales, stock, ledger, LOT allocation, or money changes.
 
