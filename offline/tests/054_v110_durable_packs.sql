@@ -14,7 +14,7 @@ DECLARE
    jsonb_build_object('barcode','BUNDLE-A-210','qty',2),
    jsonb_build_object('barcode','SET-A-210','qty',1));
  q2 jsonb:=jsonb_build_array(jsonb_build_object('barcode','SET-A-210','qty',1));
- id uuid; again uuid; no bigint; total bigint; replay boolean;
+ sale_uuid uuid; again uuid; no bigint; total bigint; replay boolean;
 BEGIN
  IF current_database()<>'zhirox_v110_packs_disposable'
  THEN RAISE EXCEPTION 'V110 disposable DB required'; END IF;
@@ -37,18 +37,18 @@ BEGIN
    PERFORM * FROM zhirox_local.commit_checkout_v31(s,other,req);
    RAISE EXCEPTION 'foreign cashier committed other intent';
  EXCEPTION WHEN SQLSTATE 'P3101' THEN NULL; END;
- SELECT x.sale_id,x.receipt_no,x.total_minor,x.replayed INTO id,no,total,replay
+ SELECT x.sale_id,x.receipt_no,x.total_minor,x.replayed INTO sale_uuid,no,total,replay
  FROM zhirox_local.commit_checkout_v31(s,cashier,req) x;
  IF no<>1 OR total<>6800 OR replay
    OR (SELECT state FROM zhirox_local.checkout_intents_v31 WHERE store_id=s AND request_id=req)<>'committed'
    OR (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=s AND id=p)<>5
-   OR (SELECT count(*) FROM zhirox_local.sale_lines WHERE store_id=s AND sale_id=id)<>2
-   OR (SELECT count(*) FROM zhirox_local.stock_ledger WHERE store_id=s AND sale_id=id)<>1
+   OR (SELECT count(*) FROM zhirox_local.sale_lines WHERE store_id=s AND sale_id=sale_uuid)<>2
+   OR (SELECT count(*) FROM zhirox_local.stock_ledger WHERE store_id=s AND sale_id=sale_uuid)<>1
    OR (SELECT count(*) FROM zhirox_local.event_outbox WHERE store_id=s AND aggregate_id=id)<>1
  THEN RAISE EXCEPTION 'V110 durable pack transaction not atomic'; END IF;
  SELECT x.sale_id,x.replayed INTO again,replay
  FROM zhirox_local.commit_checkout_v31(s,cashier,req) x;
- IF id<>again OR NOT replay
+ IF sale_uuid<>again OR NOT replay
    OR (SELECT count(*) FROM zhirox_local.sales WHERE store_id=s)<>1
  THEN RAISE EXCEPTION 'replayed durable intent duplicated sale'; END IF;
  IF zhirox_local.cancel_checkout_v31(s,cashier,req)<>'committed'
