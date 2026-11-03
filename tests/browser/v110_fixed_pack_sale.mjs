@@ -72,6 +72,39 @@ try {
  assert.equal(latest.total,8200);
  assert.deepEqual(latest.items.map(i=>[i.mode,i.qty,i.units,i.price]),
    [["bundle",2,6,2700],["set",2,3,1400]]);
- assert.deepEqual(errors,[],"no React runtime errors from bundle/set checkout");
+
+ // The returns screen must select the EXACT receipt pack line, not just product.
+ await paper.getByRole("button",{name:"داخستن"}).click();
+ await page.locator(".system-primary-nav button[data-module-id='0']").click();
+ await page.locator(".system-subnav button[data-sub-icon='return-arrow']").click();
+ const returns=page.locator("section.section-workspace[data-section-id='return-arrow']");
+ await returns.waitFor();
+ const form=returns.locator("form.ws-form-grid").first();
+ await form.locator("select").nth(0).selectOption(latest.receiptNumber);
+ const options=await form.locator("select").nth(1).locator("option").allTextContents();
+ assert.equal(options.length,2);
+ assert.match(options[0],/دەستە/);
+ assert.match(options[1],/سێت/);
+ await form.locator("select").nth(1).selectOption("1");
+ await form.getByRole("button",{name:"تۆمارکردنی گەڕاندنەوە"}).click();
+ await returns.getByText(/بە سەرکەوتوویی تۆمارکرا/).first().waitFor();
+ const refunded=await page.evaluate(key=>({
+   products:JSON.parse(localStorage.getItem(key+"_products")||"[]"),
+   refunds:JSON.parse(localStorage.getItem(key+"_refunds")||"[]")
+ }),key);
+ assert.equal(refunded.products[0].stock,6,"one 3-piece set restocks three pieces");
+ assert.equal(refunded.refunds[0].mode,"set","refund must not silently use first bundle receipt line");
+ assert.equal(refunded.refunds[0].refundAmount,1400);
+
+ // There were only two sets sold. After one returned, three further sets
+ // must fail without mutating stock or the local refund journal.
+ await form.locator('input[type="number"]').first().fill("3");
+ await form.getByRole("button",{name:"تۆمارکردنی گەڕاندنەوە"}).click();
+ const after=await page.evaluate(key=>({
+   products:JSON.parse(localStorage.getItem(key+"_products")||"[]"),
+   refunds:JSON.parse(localStorage.getItem(key+"_refunds")||"[]")
+ }),key);
+ assert.deepEqual(after,refunded,"excessive return must leave refund journal and stock unchanged");
+ assert.deepEqual(errors,[],"no React runtime errors from bundle/set checkout and refund");
  console.log("PASS: chromium fixed-pack scan, aliases, stock, receipt and locked Home");
 } finally {await browser.close();}
