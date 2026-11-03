@@ -1,14 +1,14 @@
 // V107 browser DEMO ONLY. No financial authorization or database transaction.
 // This guard is not a substitute for PostgreSQL's atomic refund function.
-import type {Receipt,Shift,Customer} from "../types";
+import type {Receipt,Shift,Customer,SaleUnitMode} from "../types";
 
 export interface DemoReturnV107 {
  id:string;receiptNo:string;productId:string;productName:string;
- qty:number;mode?:"unit"|"carton";refundAmount:number;refundMethod?:"cash"|"debt";
+ qty:number;mode?:SaleUnitMode;refundAmount:number;refundMethod?:"cash"|"debt";
  restocked:boolean;reason:string;createdAt:string;
 }
 type Request={
- receipt:Receipt|undefined;productId:string;qty:number;mode:"unit"|"carton";
+ receipt:Receipt|undefined;productId:string;qty:number;mode:SaleUnitMode;
  refundAmount:number;refundMethod:"cash"|"debt";customerId?:string|null;
  customers:Customer[];currentShift:Shift;priorReturns:DemoReturnV107[];
 };
@@ -23,7 +23,7 @@ export function validateDemoRefundV107(input:Request):Verdict{
   return fail("داتای گەڕاندنەوە ناتەواوە");
  if(!max3(qty)||!Number.isSafeInteger(refundAmount)||refundAmount<=0)
   return fail("بڕی کاڵا یان پارەی گەڕاوە نادروستە");
- if(mode!=="unit"&&mode!=="carton")return fail("یەکەی گەڕاندنەوە نادروستە");
+ if(!["unit","carton","bundle","set"].includes(mode))return fail("یەکەی گەڕاندنەوە نادروستە");
  const sold=receipt.items.filter(x=>x.productId===productId&&x.mode===mode);
  if(sold.length===0)return fail("ئەم کاڵایە لەم پسووڵەیەدا نەفرۆشراوە");
  const unit=sold[0].price;
@@ -63,6 +63,8 @@ export function validateDemoRefundV107(input:Request):Verdict{
    !Number.isSafeInteger(customer.balanceDebt)||customer.balanceDebt<refundAmount)
    return fail("قەرزی کڕیاری پسووڵە پشتڕاست نەکراوەتەوە");
  }
- const units=sold[0].mode==="carton"?sold[0].units:1;
+ const units=sold[0].units;
+  if(!Number.isFinite(units)||units<=0||sold.some(l=>l.units!==units))
+    return fail("بڕی بنەڕەتیی کاڵا لە پسووڵەدا ناگونجێت");
  return {ok:true,productName:sold[0].name,units};
 }
