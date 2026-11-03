@@ -505,7 +505,7 @@ export const ProductCatalogView: React.FC = () => {
   const cartonProductsCount = products.filter(p => Boolean(p.carton)).length;
   const scaleProductsCount = products.filter(p => p.base_unit === 'kg' || Boolean(p.plu)).length;
   const totalAliasCount = products.reduce(
-    (sum, p) => sum + p.unit_alias_barcodes.length + (p.carton ? 1 + p.carton.alias_barcodes.length : 0),
+    (sum, p) => sum + p.unit_alias_barcodes.length + (p.carton ? 1 + p.carton.alias_barcodes.length : 0) + (p.extra_packs?.reduce((count,pack)=>count+1+pack.alias_barcodes.length,0)??0),
     0
   );
 
@@ -1367,6 +1367,7 @@ export const ProductCatalogView: React.FC = () => {
                   <th>بارکۆدی سەرەکی (EAN / ناوخۆیی)</th>
                   <th>کۆدی تەرازوو (PLU)</th>
                   <th>بارکۆدی کارتۆن</th>
+                  <th>دەستە / سێت</th>
                   <th>فرەبارکۆدە هاوتاکان</th>
                   <th>کردار</th>
                 </tr>
@@ -1380,6 +1381,7 @@ export const ProductCatalogView: React.FC = () => {
                     <td style={{ direction: 'ltr', fontWeight: 900 }}>{p.unit_barcode}</td>
                     <td style={{ direction: 'ltr' }}>{p.plu || '—'}</td>
                     <td style={{ direction: 'ltr' }}>{p.carton ? p.carton.barcode : '—'}</td>
+                    <td>{p.extra_packs?.length ? p.extra_packs.map(pack=>`${pack.kind==='bundle'?'دەستە':'سێت'}: ${pack.barcode} (${pack.units_per_pack} دانە)`).join(' / ') : '—'}</td>
                     <td style={{ direction: 'ltr' }}>
                       {addingAliasId === p.id ? (
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
