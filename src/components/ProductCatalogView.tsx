@@ -6,7 +6,7 @@ import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 
 export const ProductCatalogView: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct, subtab, activeSectionId } = useApp();
+  const { products, addProduct, updateProduct, subtab, activeSectionId } = useApp();
 
   const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' => {
     if (activeSectionId === 'add-box' || subtab === 'new') return 'new';
@@ -25,6 +25,9 @@ export const ProductCatalogView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out' | 'expiry'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [productListPage, setProductListPage] = useState(1);
+  useEffect(() => setProductListPage(1), [searchTerm, stockFilter, categoryFilter]);
+
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -463,6 +466,10 @@ export const ProductCatalogView: React.FC = () => {
     return true;
   });
 
+  const listPageCount = Math.max(1, Math.ceil(filteredProducts.length / 50));
+  const effectiveListPage = Math.min(productListPage, listPageCount);
+  const displayedListProducts = filteredProducts.slice((effectiveListPage - 1) * 50, effectiveListPage * 50);
+  
   const sellNum = parseInt(unitSellPrice, 10) || 0;
   const buyNum = parseInt(unitBuyPrice, 10) || 0;
   const unitProfitIqd = sellNum - buyNum;
@@ -1067,7 +1074,7 @@ export const ProductCatalogView: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map(p => (
+                  displayedListProducts.map(p => (
                     <tr key={p.id}>
                       <td>
                         <strong>{p.name}</strong>
@@ -1125,14 +1132,7 @@ export const ProductCatalogView: React.FC = () => {
                           <button type="button" className="secondary" onClick={() => setSelectedForLabel(p)}>
                             لیبڵ
                           </button>
-                          <button
-                            type="button"
-                            className="secondary"
-                            onClick={() => deleteProduct(p.id)}
-                            style={{ color: '#b91c1c' }}
-                          >
-                            سڕینەوە
-                          </button>
+
                         </div>
                       </td>
                     </tr>
@@ -1140,6 +1140,13 @@ export const ProductCatalogView: React.FC = () => {
                 )}
               </tbody>
             </table>
+            <div className="ws-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span>پەڕەی {effectiveListPage} / {listPageCount} — 50 کاڵا لە هەر پەڕەیەک (پێشبینینی ناوخۆیی)</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" className="secondary" disabled={effectiveListPage <= 1} onClick={() => setProductListPage(p => Math.max(1, p - 1))}>پێشوو</button>
+                <button type="button" className="secondary" disabled={effectiveListPage >= listPageCount} onClick={() => setProductListPage(p => Math.min(listPageCount, p + 1))}>داهاتوو</button>
+              </div>
+            </div>
           </div>
         </>
       )}
