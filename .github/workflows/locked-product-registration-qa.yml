@@ -27,7 +27,7 @@ jobs:
       - name: TypeScript strict typecheck
         run: npx tsc --noEmit
       - name: Barcode and multi-package regression checks
-        run: node scripts/qa-locked-product-registration.mjs
+        run: node --experimental-strip-types scripts/qa-locked-product-registration.mjs
       - name: Assert locked Home is untouched
         run: |
           git diff --exit-code origin/main...HEAD -- src/components/HomeScreen.tsx
