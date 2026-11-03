@@ -479,6 +479,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         queryStr = multMatch[2].trim();
       }
 
+      // Reserved pack barcodes are catalog-visible but cannot enter a checkout
+      // until backend-priced, atomic bundle/set inventory accounting is verified.
+      // Failing closed prevents a bundle barcode from being sold as one unit.
+      if (products.some(x => x.extra_packs?.some(pack =>
+        pack.barcode === queryStr || pack.alias_barcodes.includes(queryStr)))) {
+        return { success:false, message:'دەستە/سێت تۆمارکراوە، بەڵام فرۆشتنی ئەم یەکەیە هێشتا لە سێرڤەر پشتڕاست نەکراوە' };
+      }
       const match = findProductByCode(queryStr);
       if (!match) {
         return { success: false, message: 'ئەم بارکۆدە نەدۆزرایەوە!' };
