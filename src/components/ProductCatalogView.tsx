@@ -210,15 +210,9 @@ export const ProductCatalogView: React.FC = () => {
       return;
     }
 
-    const buyPrice = unitBuyPrice ? parseInt(unitBuyPrice, 10) : null;
-    const aliases = Array.from(
-      new Set(
-        extraBarcodes
-          .split(/[\n,]+/)
-          .map(x => x.trim())
-          .filter(x => Boolean(x) && x !== trimmedUnitBarcode)
-      )
-    );
+    const buyPrice = unitBuyPrice.trim() ? Number(unitBuyPrice) : null;
+    if(buyPrice!==null&&(!Number.isSafeInteger(buyPrice)||buyPrice<0)){setMessage({text:'نرخی کڕینی دانە نادروستە',error:true});return;}
+    const aliases = splitCodes(extraBarcodes);
 
     for (const alias of aliases) {
       const aliasConflict = findBarcodeOwner(alias, editingId);
@@ -250,21 +244,19 @@ export const ProductCatalogView: React.FC = () => {
         });
         return;
       }
-      const cartonAliases = Array.from(
-        new Set(
-          extraCartonBarcodes
-            .split(/[\n,]+/)
-            .map(x => x.trim())
-            .filter(x => Boolean(x) && x !== trimmedCartonBarcode && x !== trimmedUnitBarcode)
-        )
-      );
+      const cartonAliases = splitCodes(extraCartonBarcodes);
+      if(!Number.isSafeInteger(Number(unitsPerCarton))||Number(unitsPerCarton)<2||
+        !Number.isSafeInteger(Number(cartonSellPrice))||Number(cartonSellPrice)<=0||
+        (cartonBuyPrice.trim()!==''&&(!Number.isSafeInteger(Number(cartonBuyPrice))||Number(cartonBuyPrice)<0))){
+        setMessage({text:'ژمارەی دانە یان نرخی کارتۆن نادروستە',error:true});return;
+      }
       cartonObj = {
         name: cartonName.trim() || `کارتۆنی ${name.trim()}`,
         barcode: trimmedCartonBarcode,
         alias_barcodes: cartonAliases,
-        units_per_carton: Math.max(2, parseInt(unitsPerCarton, 10) || 24),
+        units_per_carton: Number(unitsPerCarton),
         purchase_price_iqd: cartonBuyPrice ? parseInt(cartonBuyPrice, 10) : null,
-        sale_price_iqd: Math.max(0, parseInt(cartonSellPrice, 10) || 0)
+        sale_price_iqd: Number(cartonSellPrice)
       };
     }
 
@@ -293,7 +285,7 @@ export const ProductCatalogView: React.FC = () => {
       allCodes.push(draft.barcode.trim(),...codes);
       extraPacks.push({kind:draft.kind,name:draft.name.trim()|| (draft.kind==='bundle'?'دەستە':'سێت'),barcode:draft.barcode.trim(),alias_barcodes:codes,units_per_pack:count,purchase_price_iqd:buy,sale_price_iqd:sale});
     }
-    if(allCodes.some(c=>!c||c.length>60||/[\\s,،;]/u.test(c))||
+    if(allCodes.some(c=>!c||c.length>60||/[\s,،;]/u.test(c))||
        new Set(allCodes).size!==allCodes.length){
       setMessage({text:'بارکۆدەکان دەبێت جیاواز و دروست بن؛ دووبارەبوونەوە قەدەغەیە',error:true});return;
     }
@@ -302,7 +294,8 @@ export const ProductCatalogView: React.FC = () => {
       if(owner){setMessage({text:`بارکۆدی (${code}) پێشتر بۆ «${owner.name}» تۆمارکراوە`,error:true});return;}
     }
 
-    const parsedMinStock = Math.max(0, parseInt(minStock, 10) || 10);
+    const parsedMinStock = Number(minStock);
+    if(!Number.isFinite(parsedMinStock)||parsedMinStock<0){setMessage({text:'کەمترین بڕی کۆگا نادروستە',error:true});return;}
 
     if (editingId) {
       updateProduct(editingId, {
