@@ -243,7 +243,8 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          <thead><tr>{["ژمارە","ناوی کاڵا","یەکە","نرخ","بڕ","کۆ"].map(x=><th key={x} style={{border:"1px solid #555",padding:6}}>{x}</th>)}</tr></thead>
          <tbody>{cart.map((x,i)=><tr key={x.item.barcode}>
            {[i+1,x.item.name,x.item.sale_mode==="scale"?"کیلۆگرام":
-              x.item.sale_mode==="carton"?"کارتۆن":"دانە",
+              x.item.sale_mode==="carton"?"کارتۆن":x.item.sale_mode==="bundle"?"دەستە":
+               x.item.sale_mode==="set"?"سێت":"دانە",
               x.item.sale_mode==="scale"?money(x.item.unit_price_minor):money(x.item.price_minor)
            ].map((v,k)=><td key={k} style={{border:"1px solid #555",padding:7}}>{v}</td>)}
            <td style={{border:"1px solid #555",padding:7}}><div className={standalone?"pos-clean__quantity":undefined}>

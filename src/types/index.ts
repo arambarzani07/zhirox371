@@ -1,5 +1,6 @@
 export type SaleMode = 'unit' | 'carton' | 'both';
 export type BaseUnit = 'unit' | 'kg';
+export type SaleUnitMode = 'unit' | 'carton' | 'bundle' | 'set';
 
 export interface CartonConfig {
   name: string | null;
@@ -33,7 +34,7 @@ export interface Product {
   unit_sale_price_iqd: number;
   unit_alias_barcodes: string[];
   carton: CartonConfig | null;
-  extra_packs?: ExtraPackConfig[]; // QA catalog-only until server checkout implements each mode
+  extra_packs?: ExtraPackConfig[]; // fixed single-SKU packs; browser DEMO only until server parity
   stock: number; // in base units (pieces or kg)
   min_stock?: number;
   category?: string;
@@ -46,7 +47,7 @@ export interface CartLine {
   productId: string;
   name: string;
   barcode: string;
-  mode: 'unit' | 'carton';
+  mode: SaleUnitMode;
   price: number; // IQD per line unit
   qty: number;
   units: number; // base units per package (e.g. 1 for unit, 12 for carton, or 0.750 for scale kg)
@@ -59,7 +60,7 @@ export interface SaleItem {
   productId: string;
   name: string;
   barcode: string;
-  mode: 'unit' | 'carton';
+  mode: SaleUnitMode;
   price: number;
   qty: number;
   units: number;
@@ -138,7 +139,7 @@ export interface StockMovement {
   productName: string;
   type: 'receive' | 'sale' | 'return' | 'adjust' | 'damage';
   quantityDelta: number; // positive or negative
-  mode: 'unit' | 'carton';
+  mode: SaleUnitMode;
   previousStock: number;
   newStock: number;
   reference: string;

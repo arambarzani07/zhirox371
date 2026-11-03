@@ -1,0 +1,101 @@
+name: V110 isolated PostgreSQL fixed-pack acceptance
+on:
+  push:
+    branches:
+      - 'feature/fixed-bundle-set-checkout-safe-20261103'
+  pull_request:
+    paths:
+      - 'offline/migrations/044_fixed_packs_v110_disposable.sql'
+      - 'offline/migrations/045_fixed_pack_catalog_v110_disposable.sql'
+      - 'offline/fixed-pack-catalog-server-v110.mjs'
+      - 'offline/tests/fixed-pack-catalog-v110.test.mjs'
+      - 'offline/tests/057_v110_catalog_registration.sql'
+      - 'offline/tests/058_v110_fixed_pack_cash_refunds.sql'
+      - 'offline/local-packs-scale-server-v26.mjs'
+      - 'offline/tests/053_v110_fixed_packs_checkout.sql'
+      - 'offline/tests/054_v110_durable_packs.sql'
+      - 'offline/tests/055_v110_pack_concurrency_seed.sql'
+      - 'offline/tests/056_v110_pack_concurrency_verify.sql'
+      - 'offline/tests/local-packs-scale-v26.test.mjs'
+      - '.github/workflows/fixed-pack-postgres-v110.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-fixed-packs:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: localtest
+          POSTGRES_PASSWORD: localtest_password
+          POSTGRES_DB: zhirox_v110_packs_disposable
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U localtest -d zhirox_v110_packs_disposable"
+          --health-interval 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: localtest
+      PGPASSWORD: localtest_password
+      PGDATABASE: zhirox_v110_packs_disposable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test server quote contract (unit/carton/scale/bundle/set)
+        run: node --test offline/tests/local-packs-scale-v26.test.mjs
+      - name: Test authenticated owner-only fixed-pack catalog API
+        run: node --test offline/tests/fixed-pack-catalog-v110.test.mjs
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Create isolated baseline
+        run: |
+          set -euo pipefail
+          for f in 001_core.sql 002_atomic_checkout.sql 003_local_users.sql 004_catalog_indexes.sql 005_price_locked_checkout.sql 006_packs_scale_checkout.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "offline/migrations/$f"
+          done
+      - name: Apply guarded V110 migration and test atomic sale, stock and replay
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f offline/migrations/044_fixed_packs_v110_disposable.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/migrations/045_fixed_pack_catalog_v110_disposable.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/migrations/009_durable_checkout_intents.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/053_v110_fixed_packs_checkout.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/054_v110_durable_packs.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/057_v110_catalog_registration.sql
+      - name: Verify manager-only bundle/set cash refunds and exact returned stock
+        run: |
+          set -euo pipefail
+          for f in 011_immutable_receipts_v34.sql 012_print_queue_v35.sql 013_cash_shifts_v37.sql 014_cash_movements_v38.sql 015_manager_cash_refunds_v39.sql 017_partial_cash_refunds_v40.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "offline/migrations/$f"
+          done
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/058_v110_fixed_pack_cash_refunds.sql
+      - name: Two real concurrent cashier connections cannot sell the same fixed-pack stock
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/055_v110_pack_concurrency_seed.sql
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          psql -X -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.commit_checkout_v31('11000000-0000-4000-8000-000000000310','11000000-0000-4000-8000-000000000312','11000000-0000-4000-8000-000000000314')" > "$tmp/bundle.log" 2>&1 &
+          bundle=$!
+          psql -X -v ON_ERROR_STOP=1 -c "SELECT * FROM zhirox_local.commit_checkout_v31('11000000-0000-4000-8000-000000000310','11000000-0000-4000-8000-000000000313','11000000-0000-4000-8000-000000000315')" > "$tmp/set.log" 2>&1 &
+          setpid=$!
+          set +e
+          wait "$bundle"; a=$?
+          wait "$setpid"; b=$?
+          set -e
+          if ! { { [ "$a" -eq 0 ] && [ "$b" -ne 0 ]; } || { [ "$a" -ne 0 ] && [ "$b" -eq 0 ]; }; }; then
+            cat "$tmp/bundle.log" "$tmp/set.log"
+            echo "V110 concurrency error: exactly one checkout must commit"
+            exit 1
+          fi
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/056_v110_pack_concurrency_verify.sql
+      - name: Verify migrations never attempt actual supermarket database
+        run: |
+          grep -q "current_database() <> 'zhirox_v110_packs_disposable'" offline/migrations/044_fixed_packs_v110_disposable.sql
+          grep -q "current_database()<>'zhirox_v110_packs_disposable'" offline/migrations/045_fixed_pack_catalog_v110_disposable.sql

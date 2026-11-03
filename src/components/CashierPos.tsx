@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { money, formatDateTime } from '../utils/retailHelpers';
-import { PaymentMethod, Product } from '../types';
+import { PaymentMethod, Product, SaleUnitMode } from '../types';
 import { LocalPostgresPilotV24 } from './LocalPostgresPilotV24';
 import { pilotEnabled } from '../localPilotV24';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
@@ -202,6 +202,10 @@ export const CashierPos: React.FC = () => {
           (p.category || '').toLowerCase().includes(liveSearchQuery) ||
           p.unit_barcode.toLowerCase().includes(liveSearchQuery) ||
           (p.carton?.barcode || '').toLowerCase().includes(liveSearchQuery) ||
+          (p.extra_packs || []).some(pack =>
+            pack.barcode.toLowerCase().includes(liveSearchQuery) ||
+            pack.name.toLowerCase().includes(liveSearchQuery) ||
+            pack.alias_barcodes.some(code => code.toLowerCase().includes(liveSearchQuery))) ||
           (p.sku || '').toLowerCase().includes(liveSearchQuery) ||
           (p.plu || '').toLowerCase().includes(liveSearchQuery)
         );
@@ -220,7 +224,8 @@ export const CashierPos: React.FC = () => {
         p.unit_barcode === trimmed ||
         p.carton?.barcode === trimmed ||
         p.unit_alias_barcodes?.includes(trimmed) ||
-        p.carton?.alias_barcodes?.includes(trimmed)
+        p.carton?.alias_barcodes?.includes(trimmed) ||
+        p.extra_packs?.some(pack => pack.barcode === trimmed || pack.alias_barcodes.includes(trimmed))
     );
   };
 
@@ -255,7 +260,7 @@ export const CashierPos: React.FC = () => {
     }
   };
 
-  const handleSelectSearchProduct = (p: Product, mode: 'unit' | 'carton' = 'unit') => {
+  const handleSelectSearchProduct = (p: Product, mode: SaleUnitMode = 'unit') => {
     const qtyToAdd = parsedScan.qty;
     const res = addToCart(p, mode, qtyToAdd);
     if (!res.success) {
@@ -264,7 +269,7 @@ export const CashierPos: React.FC = () => {
     } else {
       if (soundEnabled) playPosAudio('beep');
       setFeedbackMsg({
-        text: `${qtyToAdd > 1 ? `${qtyToAdd} × ` : ''}${p.name} (${mode === 'carton' ? 'کارتۆن' : 'دانە'}) زیادکرا بۆ سەبەتە`,
+        text: `${qtyToAdd > 1 ? `${qtyToAdd} × ` : ''}${p.name} (${mode === 'carton' ? 'کارتۆن' : mode === 'bundle' ? 'دەستە' : mode === 'set' ? 'سێت' : 'دانە'}) زیادکرا بۆ سەبەتە`,
         error: false
       });
     }
@@ -1078,7 +1083,28 @@ export const CashierPos: React.FC = () => {
                                 </div>
                               </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
+
+                                {(p.extra_packs || []).map(pack => (
+                                  <button
+                                    key={pack.kind}
+                                    type="button"
+                                    className="secondary"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      handleSelectSearchProduct(p, pack.kind);
+                                    }}
+                                    style={{
+                                      height: '28px', minHeight: '28px',
+                                      padding: '0 8px', fontSize: '11px',
+                                      fontWeight: 850, whiteSpace: 'nowrap'
+                                    }}
+                                    title={`${pack.name} — ${pack.units_per_pack} دانە`}
+                                  >
+                                    + {parsedScan.qty > 1 ? `${parsedScan.qty} ` : ''}
+                                    {pack.kind === 'bundle' ? 'دەستە' : 'سێت'} ({money(pack.sale_price_iqd)})
+                                  </button>
+                                ))}
                                 {p.carton && (
                                   <button
                                     type="button"
@@ -1380,7 +1406,7 @@ export const CashierPos: React.FC = () => {
                       ) : (
                         cart.map((line, idx) => {
                           const prod = products.find(p => p.id === line.productId);
-                          const canToggleCarton = Boolean(prod?.carton) && !line.isScale;
+                          const canToggleCarton = Boolean(prod?.carton) && !line.isScale && (line.mode === 'unit' || line.mode === 'carton');
                           const isLowStockInCart = prod && prod.stock <= (prod.min_stock || 10);
                           return (
                             <tr key={line.id}>
@@ -1421,7 +1447,7 @@ export const CashierPos: React.FC = () => {
                                     {line.mode === 'carton' ? 'کارتۆن ⇄' : 'دانە ⇄'}
                                   </button>
                                 ) : (
-                                  <span>{line.isScale ? 'کێش (kg)' : line.mode === 'carton' ? 'کارتۆن' : 'دانە'}</span>
+                                  <span>{line.isScale ? 'کێش (kg)' : line.mode === 'carton' ? 'کارتۆن' : line.mode === 'bundle' ? 'دەستە' : line.mode === 'set' ? 'سێت' : 'دانە'}</span>
                                 )}
                               </td>
                               <td style={{ direction: 'ltr', fontWeight: 800 }}>

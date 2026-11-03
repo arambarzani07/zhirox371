@@ -54,3 +54,18 @@ test("V107 debt refunds require original receipt customer, balance and exact ten
  assert.equal(validateDemoRefundV107({...base,customers:[{...customer,balanceDebt:90000}]}).ok,false);
  assert.equal(validateDemoRefundV107({...base,receipt:{...debtReceipt,customerId:null}}).ok,false);
 });
+
+test("V110 DEMO bundle/set refunds restore exact base-unit quantities, not one piece",()=>{
+ for(const [mode,units,price] of [["bundle",6,2700],["set",3,1450]]){
+  const packReceipt={...receipt,items:[{...receipt.items[0],mode,units,qty:2,price,total:price*2}],
+   subtotal:price*2,total:price*2};
+  const request={...req,receipt:packReceipt,mode,qty:1,refundAmount:price};
+  const first=validateDemoRefundV107(request);
+  assert.equal(first.ok,true);
+  assert.equal(first.units,units);
+  const returned={...prior,mode,qty:1,refundAmount:price};
+  assert.equal(validateDemoRefundV107({...request,priorReturns:[returned]}).ok,true);
+  assert.equal(validateDemoRefundV107({...request,qty:2,refundAmount:price*2,priorReturns:[returned]}).ok,false);
+  assert.equal(validateDemoRefundV107({...request,mode:mode==="bundle"?"set":"bundle"}).ok,false);
+ }
+});

@@ -47,7 +47,7 @@ export function createLocalPacksScaleHandlerV26({pool,secret,clock}){
      }});
    }
    const {rows}=await pool.query(
-     "SELECT p.id,p.name,p.price_minor AS base_price_minor,p.stock_base_units,b.quantity_base_units,b.sale_mode,b.sale_price_minor FROM zhirox_local.barcodes b JOIN zhirox_local.products p ON p.store_id=b.store_id AND p.id=b.product_id WHERE b.store_id=$1 AND b.code=$2 AND b.active AND p.active AND p.base_unit='unit' LIMIT 1",
+     "SELECT p.id,p.name,p.price_minor AS base_price_minor,p.stock_base_units,b.quantity_base_units,b.sale_mode,b.sale_price_minor,(to_jsonb(b)->>'display_name') AS pack_name FROM zhirox_local.barcodes b JOIN zhirox_local.products p ON p.store_id=b.store_id AND p.id=b.product_id WHERE b.store_id=$1 AND b.code=$2 AND b.active AND p.active AND p.base_unit='unit' LIMIT 1",
      [principal.store_id,code]
    );
    const p=rows[0];
@@ -56,11 +56,14 @@ export function createLocalPacksScaleHandlerV26({pool,secret,clock}){
    const price=Number(p.sale_price_minor??p.base_price_minor),mode=p.sale_mode;
    if(!Number.isSafeInteger(price)||price<0||!Number.isSafeInteger(stock)||stock<0||
      !Number.isSafeInteger(perScan)||perScan<1||
-     !["unit","carton"].includes(mode)||
-     (mode==="unit"&&perScan!==1)||(mode==="carton"&&(perScan<2||p.sale_price_minor==null)))
+     !["unit","carton","bundle","set"].includes(mode)||
+     (mode==="unit"&&perScan!==1)||(mode==="carton"&&(perScan<2||p.sale_price_minor==null))||
+     (["bundle","set"].includes(mode)&&(
+       perScan<2||perScan>100000||!Number.isSafeInteger(price)||price<=0||
+       typeof p.pack_name!=="string"||p.pack_name.trim().length<1||p.pack_name.length>120)))
      return respond(res,409,{error:"invalid_pack_definition"});
    return respond(res,200,{ok:true,product:{
-     id:p.id,name:p.name,barcode:code,base_unit:"unit",sale_mode:mode,
+     id:p.id,name:["bundle","set"].includes(mode)?p.pack_name:p.name,barcode:code,base_unit:"unit",sale_mode:mode,
      quantity_base_units:perScan,weight_grams:null,
      unit_price_minor:String(price),price_minor:String(price),stock_base_units:String(stock)
    }});

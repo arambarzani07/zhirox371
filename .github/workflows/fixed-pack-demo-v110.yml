@@ -1,0 +1,45 @@
+name: V110 fixed bundle and set DEMO safety
+on:
+  push:
+    branches:
+      - 'feature/fixed-bundle-set-checkout-safe-20261103'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/fixed_pack_sales.test.mjs'
+      - 'tests/browser/v110_fixed_pack_sale.mjs'
+      - 'tests/v107_demo_refund_integrity.test.mjs'
+      - '.github/workflows/fixed-pack-demo-v110.yml'
+permissions:
+  contents: read
+jobs:
+  fixed-pack-browser-demo-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Fixed-pack barcode, price, count and aggregate stock contract
+        run: node --test tests/fixed_pack_sales.test.mjs
+      - name: Receipt-based refund and stock conversion safeguards
+        run: node --test tests/v107_demo_refund_integrity.test.mjs
+      - name: Install React dependencies
+        run: npm install --no-package-lock
+      - name: Verify strict TypeScript and Vite PC build
+        run: npm run build
+      - name: Install pinned Chromium for live browser checkout
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start PC-only React DEMO server
+        run: |
+          (npm run dev -- --host 127.0.0.1 > /tmp/v110-vite.log 2>&1 &)
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/v110-vite.log
+          exit 1
+      - name: Live Chromium fixed-pack and receipt acceptance
+        run: node tests/browser/v110_fixed_pack_sale.mjs
