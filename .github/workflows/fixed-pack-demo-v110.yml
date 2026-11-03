@@ -1,0 +1,29 @@
+name: V110 fixed bundle and set DEMO safety
+on:
+  push:
+    branches:
+      - 'feature/fixed-bundle-set-checkout-safe-20261103'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/fixed_pack_sales.test.mjs'
+      - 'tests/v107_demo_refund_integrity.test.mjs'
+      - '.github/workflows/fixed-pack-demo-v110.yml'
+permissions:
+  contents: read
+jobs:
+  fixed-pack-browser-demo-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Fixed-pack barcode, price, count and aggregate stock contract
+        run: node --test tests/fixed_pack_sales.test.mjs
+      - name: Receipt-based refund and stock conversion safeguards
+        run: node --test tests/v107_demo_refund_integrity.test.mjs
+      - name: Install React dependencies
+        run: npm install --no-package-lock
+      - name: Verify strict TypeScript and Vite PC build
+        run: npm run build
