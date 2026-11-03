@@ -28,12 +28,15 @@ try{
  assert.ok(base.shift&&base.products.length>0);
  const item=base.products.find(x=>x.id==="prod-4");
  assert.ok(item,"original DEMO receipt product must exist");
- // A product NOT on the selected receipt must not be returned.
- await form.locator("select").nth(1).selectOption("prod-1");
- await form.getByRole("button",{name:"تۆمارکردنی گەڕاندنەوە"}).click();
+ // The refund selector now exposes ONLY exact original receipt lines, not
+ // arbitrary catalog products. Wrong-product refund is impossible in the UI.
+ const available=await form.locator("select").nth(1).locator("option").evaluateAll(
+  options=>options.map(o=>({value:o.value,text:o.textContent})));
+ assert.deepEqual(available.map(o=>o.value),["0"]);
+ assert.match(available[0].text,/کارتۆن/);
  assert.deepEqual((await read()).refunds,base.refunds);
  // Original receipt contains one carton: refund it exactly once.
- await form.locator("select").nth(1).selectOption("prod-4");
+ await form.locator("select").nth(1).selectOption("0");
  await form.getByRole("button",{name:"تۆمارکردنی گەڕاندنەوە"}).click();
  await page.getByText(/بە سەرکەوتوویی تۆمارکرا/).first().waitFor();
  const one=await read();
@@ -49,7 +52,7 @@ try{
  // Reloaded tab must still refuse replay due to durable DEMO-only return record.
  await page.reload({waitUntil:"networkidle"});
  form=await openRefunds();
- await form.locator("select").nth(1).selectOption("prod-4");
+ await form.locator("select").nth(1).selectOption("0");
  await form.getByRole("button",{name:"تۆمارکردنی گەڕاندنەوە"}).click();
  assert.deepEqual(await read(),one,"reloaded app must still reject repeated refund");
  assert.deepEqual(errors,[]);
