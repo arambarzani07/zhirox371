@@ -10,6 +10,18 @@ export interface CartonConfig {
   sale_price_iqd: number;
 }
 
+/** Additional independently-priced sale packages; legacy Product.carton remains intact. */
+export interface TradePackage {
+  id: string;
+  kind: 'carton' | 'pack' | 'set';
+  name: string;
+  barcode: string;
+  alias_barcodes: string[];
+  units_per_package: number;
+  purchase_price_iqd: number | null;
+  sale_price_iqd: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -22,6 +34,8 @@ export interface Product {
   unit_sale_price_iqd: number;
   unit_alias_barcodes: string[];
   carton: CartonConfig | null;
+  /** Optional for backward compatibility with existing V18 demo products. */
+  packages?: TradePackage[];
   stock: number; // in base units (pieces or kg)
   min_stock?: number;
   category?: string;
@@ -39,6 +53,8 @@ export interface CartLine {
   qty: number;
   units: number; // base units per package (e.g. 1 for unit, 12 for carton, or 0.750 for scale kg)
   isScale: boolean;
+  /** Distinguishes separately priced carton/pack/set lines in the basket. */
+  packageId?: string;
   scaleGrams?: number;
   available: number;
 }
