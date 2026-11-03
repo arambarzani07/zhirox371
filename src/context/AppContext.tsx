@@ -620,10 +620,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     const nextMode: 'unit' | 'carton' = line.mode === 'unit' ? 'carton' : 'unit';
-    const nextUnits = nextMode === 'carton' ? p.carton.units_per_carton : 1;
-    const nextPrice = nextMode === 'carton' ? p.carton.sale_price_iqd : p.unit_sale_price_iqd;
-    const nextName = nextMode === 'carton' ? (p.carton.name || `کارتۆنی ${p.name}`) : p.name;
-    const nextBarcode = nextMode === 'carton' ? p.carton.barcode : p.unit_barcode;
+    const nextUnits = nextMode === 'carton' ? (p.carton?.units_per_carton ?? 1) : 1;
+    const nextPrice = nextMode === 'carton' ? (p.carton?.sale_price_iqd ?? p.unit_sale_price_iqd) : p.unit_sale_price_iqd;
+    const nextName = nextMode === 'carton' ? (p.carton?.name || `کارتۆنی ${p.name}`) : p.name;
+    const nextBarcode = nextMode === 'carton' ? (p.carton?.barcode || p.unit_barcode) : p.unit_barcode;
 
     const otherUsed = cart.reduce((sum, l, i) => {
       return i !== index && l.productId === p.id ? sum + l.qty * l.units : sum;
