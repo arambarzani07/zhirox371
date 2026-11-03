@@ -34,6 +34,14 @@ The existing React ProductCatalogView still uses LocalStorage. **No live React c
 - `offline/tests/055_v110_pack_concurrency_seed.sql` and `056_v110_pack_concurrency_verify.sql`: two separate PostgreSQL connections attempt overlapping fixed-pack stock; exactly one commits.
 - `tests/browser/v110_fixed_pack_sale.mjs`: real Chromium PC browser scans fixed-pack codes and aliases, checks inventory and DEMO receipt without modifying the locked 12-card Home.
 
+## V110 receipt-selected browser refunds and isolated cash return acceptance
+- The browser DEMO refund form lists **only lines of the selected original receipt**, including distinct bundle/set modes for the same product. It no longer permits choosing an arbitrary catalog product and guessing its package type.
+- Verified restock KPIs multiply refunded pack count by the original immutable receipt's base-unit snapshot; unresolvable legacy refund data is shown as unknown rather than inventing a quantity.
+- The browser Chromium V110 test covers selecting a set rather than a bundle from one receipt and prevents refunds above the originally sold amount.
+- `offline/tests/058_v110_fixed_pack_cash_refunds.sql` extends the disposable PostgreSQL trial through existing V34 immutable receipt, V37–V38 shift/cash and V39–V40 manager refund logic. A 6-unit bundle's full refund restores six units at its original price. Three one-unit partial returns of a three-unit, 1,400-IQD set reconcile as 466+467+467 IQD without cash or stock replay.
+
+**Important:** this proves only compatibility with isolated legacy cash/stock journal fixtures. It is not a replacement for the V90 FEFO and V97 actor-proof return authorization needed for official market use.
+
 ## Remaining requirements for *official* multi-cashier release
 1. Integrate the isolated server registration contract into the *production-authorized* catalog workflow with approved migrations, roles, audit and a synchronized React client; React's LocalStorage catalog is **not** the PostgreSQL catalog.
 2. Port and verify bundle/set semantics through the current restricted/actor-proof, V90 FEFO lot and V97 atomic checkout route. V110 pilot extends legacy V26 only; it does not bypass the V63 deprecation gate or enable an official cash write route.
