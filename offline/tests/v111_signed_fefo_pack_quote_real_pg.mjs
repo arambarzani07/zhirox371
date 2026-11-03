@@ -6,6 +6,7 @@ import {randomBytes} from "node:crypto";
 import pg from "pg";
 import {createLocalAuthV3} from "../local-auth-v3.mjs";
 import {createV97CheckoutProofIssuer} from "../proven-checkout-v97.mjs";
+import {createV111SignedPackQuoteAdapter} from "../proven-pack-quote-v111.mjs";
 import {TEST_MARKET} from "../test-market-v80.mjs";
 
 for(const [key,value] of Object.entries({
@@ -82,6 +83,21 @@ try{
   authPool,sessionSecret:process.env.ZHIROX_LOCAL_SESSION_SECRET,proofKeyHex:key.key
  });
  const before=await snapshot();
+ const quoteAdapter=createV111SignedPackQuoteAdapter({
+  authPool,gatePool,sessionSecret:process.env.ZHIROX_LOCAL_SESSION_SECRET,
+  proofKeyHex:key.key
+ });
+ const publicQuote=await quoteAdapter({
+  token:accountLogin.token,request_id:nonceRequest(7),
+  lines:[{barcode:"V111-BUNDLE-ALIAS",qty:1}]
+ });
+ assert.equal(publicQuote.eligible,true);
+ assert.equal(publicQuote.checkout_authorized,false);
+ assert.equal(Number(publicQuote.total_minor),2700);
+ assert.equal(Number(publicQuote.required_base_units),6);
+ assert.equal((await quoteAdapter({token:"bad-session",request_id:nonceRequest(7),lines})).eligible,false);
+ assert.equal((await quoteAdapter({token:accountLogin.token,request_id:nonceRequest(7),
+  lines:[{barcode:"V111-BUNDLE",qty:1,price_minor:1}]})).reason,"invalid_pack_quote");
  const p=await issue({token:accountLogin.token,request_id:nonceRequest(1),lines});
  assert.ok(p,"valid cashier should receive a signed server quote intent");
  const valid=await call(p);
