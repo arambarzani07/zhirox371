@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Product, SaleMode, BaseUnit } from '../types';
+import { Product, SaleMode, BaseUnit, TradePackage } from '../types';
+import { parseAliases, validateLockedProduct, MAX_EXTRA_PACKAGES, MAX_ALIAS_BARCODES } from '../utils/lockedProductRules';
 import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 
@@ -40,16 +41,29 @@ export const ProductCatalogView: React.FC = () => {
   const [unitSellPrice, setUnitSellPrice] = useState<string>('');
   const [extraBarcodes, setExtraBarcodes] = useState('');
 
+  type PackageDraft = { id: string; kind: TradePackage['kind']; name: string; barcode: string;
+    aliases: string; units: string; buy: string; sell: string };
+  const [packagesDraft, setPackagesDraft] = useState<PackageDraft[]>([]);
+  const addPackageCard = (kind: TradePackage['kind']) => {
+    setPackagesDraft(previous => previous.length >= MAX_EXTRA_PACKAGES ? previous : [...previous, {
+      id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID() : `pkg-${Date.now()}-${Math.random()}`,
+      kind, name: '', barcode: '', aliases: '', units: '', buy: '', sell: ''
+    }]);
+  };
+  const changePackage = (id: string, key: keyof PackageDraft, value: string) =>
+    setPackagesDraft(previous => previous.map(p => p.id === id ? { ...p, [key]: value } : p));
+
   // Carton fields
   const [cartonName, setCartonName] = useState('');
   const [cartonBarcode, setCartonBarcode] = useState('');
-  const [unitsPerCarton, setUnitsPerCarton] = useState<string>('24');
+  const [unitsPerCarton, setUnitsPerCarton] = useState<string>('');
   const [cartonBuyPrice, setCartonBuyPrice] = useState<string>('');
   const [cartonSellPrice, setCartonSellPrice] = useState<string>('');
   const [extraCartonBarcodes, setExtraCartonBarcodes] = useState('');
 
   // Stock, min_stock, expiry_date
-  const [initialStock, setInitialStock] = useState<string>('50');
+  const [initialStock, setInitialStock] = useState<string>('');
   const [minStock, setMinStock] = useState<string>('10');
   const [expiryDate, setExpiryDate] = useState<string>('');
 
@@ -111,11 +125,12 @@ export const ProductCatalogView: React.FC = () => {
     setExtraBarcodes('');
     setCartonName('');
     setCartonBarcode('');
-    setUnitsPerCarton('24');
+    setUnitsPerCarton('');
     setCartonBuyPrice('');
     setCartonSellPrice('');
     setExtraCartonBarcodes('');
-    setInitialStock('50');
+    setPackagesDraft([]);
+    setInitialStock('');
     setMinStock('10');
     setExpiryDate('');
     setMessage(null);
@@ -133,6 +148,12 @@ export const ProductCatalogView: React.FC = () => {
     setUnitBuyPrice(p.unit_purchase_price_iqd !== null ? String(p.unit_purchase_price_iqd) : '');
     setUnitSellPrice(String(p.unit_sale_price_iqd));
     setExtraBarcodes(p.unit_alias_barcodes.join(', '));
+    setPackagesDraft((p.packages || []).map(pkg => ({
+      id: pkg.id, kind: pkg.kind, name: pkg.name, barcode: pkg.barcode,
+      aliases: pkg.alias_barcodes.join(', '), units: String(pkg.units_per_package),
+      buy: pkg.purchase_price_iqd === null ? '' : String(pkg.purchase_price_iqd),
+      sell: String(pkg.sale_price_iqd)
+    })));
     setMinStock(String(p.min_stock ?? 10));
     setExpiryDate(p.expiry_date || '');
 
@@ -146,7 +167,7 @@ export const ProductCatalogView: React.FC = () => {
     } else {
       setCartonName('');
       setCartonBarcode('');
-      setUnitsPerCarton('24');
+      setUnitsPerCarton('');
       setCartonBuyPrice('');
       setCartonSellPrice('');
       setExtraCartonBarcodes('');
@@ -166,6 +187,7 @@ export const ProductCatalogView: React.FC = () => {
       if (p.unit_alias_barcodes.includes(clean)) return true;
       if (p.carton && p.carton.barcode === clean) return true;
       if (p.carton && p.carton.alias_barcodes.includes(clean)) return true;
+      if ((p.packages || []).some(pkg => pkg.barcode === clean || pkg.alias_barcodes.includes(clean))) return true;
       return false;
     });
   };
@@ -197,14 +219,7 @@ export const ProductCatalogView: React.FC = () => {
     }
 
     const buyPrice = unitBuyPrice ? parseInt(unitBuyPrice, 10) : null;
-    const aliases = Array.from(
-      new Set(
-        extraBarcodes
-          .split(/[\n,]+/)
-          .map(x => x.trim())
-          .filter(x => Boolean(x) && x !== trimmedUnitBarcode)
-      )
-    );
+    const aliases = parseAliases(extraBarcodes);
 
     for (const alias of aliases) {
       const aliasConflict = findBarcodeOwner(alias, editingId);
@@ -236,63 +251,60 @@ export const ProductCatalogView: React.FC = () => {
         });
         return;
       }
-      const cartonAliases = Array.from(
-        new Set(
-          extraCartonBarcodes
-            .split(/[\n,]+/)
-            .map(x => x.trim())
-            .filter(x => Boolean(x) && x !== trimmedCartonBarcode && x !== trimmedUnitBarcode)
-        )
-      );
+      const cartonAliases = parseAliases(extraCartonBarcodes);
       cartonObj = {
         name: cartonName.trim() || `کارتۆنی ${name.trim()}`,
         barcode: trimmedCartonBarcode,
         alias_barcodes: cartonAliases,
-        units_per_carton: Math.max(2, parseInt(unitsPerCarton, 10) || 24),
+        units_per_carton: Number(unitsPerCarton),
         purchase_price_iqd: cartonBuyPrice ? parseInt(cartonBuyPrice, 10) : null,
-        sale_price_iqd: Math.max(0, parseInt(cartonSellPrice, 10) || 0)
+        sale_price_iqd: Number(cartonSellPrice)
       };
     }
 
-    const parsedMinStock = Math.max(0, parseInt(minStock, 10) || 10);
-
+    const extraPackages: TradePackage[] = packagesDraft.map(pkg => ({
+      id: pkg.id,
+      kind: pkg.kind,
+      name: pkg.name.trim(),
+      barcode: pkg.barcode.trim(),
+      alias_barcodes: parseAliases(pkg.aliases),
+      units_per_package: Number(pkg.units),
+      purchase_price_iqd: pkg.buy.trim() === '' ? null : Number(pkg.buy),
+      sale_price_iqd: Number(pkg.sell)
+    }));
+    const initialQuantity = initialStock.trim() === '' ? 0 : Number(initialStock);
+    const previousProduct = editingId ? products.find(p => p.id === editingId) : undefined;
+    if (editingId && !previousProduct) {
+      setMessage({ text: 'کاڵای دەستکاری کراو نەدۆزرایەوە', error: true });
+      return;
+    }
+    const candidate: Product = {
+      id: editingId || '__new__',
+      name: name.trim(), category: category.trim() || 'گشتی',
+      sku: sku.trim() || null, plu: plu.trim() || null,
+      sale_mode: (cartonObj || extraPackages.length) && saleMode === 'unit' ? 'both' : saleMode,
+      base_unit: baseUnit, unit_barcode: trimmedUnitBarcode,
+      unit_purchase_price_iqd: unitBuyPrice.trim() === '' ? null : Number(unitBuyPrice),
+      unit_sale_price_iqd: sellPrice,
+      unit_alias_barcodes: aliases, carton: cartonObj, packages: extraPackages,
+      stock: previousProduct ? previousProduct.stock : initialQuantity,
+      min_stock: minStock.trim() === '' ? 10 : Number(minStock),
+      expiry_date: expiryDate.trim() || undefined,
+      is_scale_product: baseUnit === 'kg' || Boolean(plu.trim())
+    };
+    const problem = validateLockedProduct(candidate, products, editingId);
+    if (problem) {
+      setMessage({ text: problem, error: true });
+      return;
+    }
     if (editingId) {
-      updateProduct(editingId, {
-        name: name.trim(),
-        category: category.trim() || 'گشتی',
-        sku: sku.trim() || null,
-        plu: plu.trim() || null,
-        sale_mode: saleMode,
-        base_unit: baseUnit,
-        unit_barcode: trimmedUnitBarcode,
-        unit_purchase_price_iqd: buyPrice,
-        unit_sale_price_iqd: sellPrice,
-        unit_alias_barcodes: aliases,
-        carton: cartonObj,
-        min_stock: parsedMinStock,
-        expiry_date: expiryDate.trim() || undefined,
-        is_scale_product: baseUnit === 'kg' || Boolean(plu.trim())
-      });
-      setMessage({ text: `زانیارییەکانی «${name.trim()}» بە سەرکەوتوویی نوێکرایەوە`, error: false });
+      const { id: _id, stock: _stock, ...updates } = candidate;
+      updateProduct(editingId, updates);
+      setMessage({ text: `زانیارییەکانی «${candidate.name}» نوێکرانەوە`, error: false });
     } else {
-      addProduct({
-        name: name.trim(),
-        category: category.trim() || 'گشتی',
-        sku: sku.trim() || null,
-        plu: plu.trim() || null,
-        sale_mode: saleMode,
-        base_unit: baseUnit,
-        unit_barcode: trimmedUnitBarcode,
-        unit_purchase_price_iqd: buyPrice,
-        unit_sale_price_iqd: sellPrice,
-        unit_alias_barcodes: aliases,
-        carton: cartonObj,
-        stock: Math.max(0, parseFloat(initialStock) || 0),
-        min_stock: parsedMinStock,
-        expiry_date: expiryDate.trim() || undefined,
-        is_scale_product: baseUnit === 'kg' || Boolean(plu.trim())
-      });
-      const addedName = name.trim();
+      const { id: _id, ...newProduct } = candidate;
+      addProduct(newProduct);
+      const addedName = candidate.name;
       resetForm();
       KurdishVoiceAnnouncer.announceProductAdded(addedName);
       setMessage({ text: `کاڵای نوێ «${addedName}» بە سەرکەوتوویی تۆمارکرا`, error: false });
@@ -414,6 +426,10 @@ export const ProductCatalogView: React.FC = () => {
         text: `بارکۆدی (${clean}) پێشتر بۆ «${conflict.name}» تۆمار کراوە`,
         error: true
       });
+      return;
+    }
+    if (p.unit_alias_barcodes.length >= MAX_ALIAS_BARCODES) {
+      setMessage({ text: 'زۆرترین ژمارەی بارکۆدی هاوتای دانە 30 ـە', error: true });
       return;
     }
     updateProduct(p.id, {
