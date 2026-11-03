@@ -42,6 +42,10 @@ on:
       - 'offline/tests/v96-actor-proof-contract.test.mjs'
       - 'docs/V96_BOUND_ACTOR_PROOF.md'
       - 'offline/migrations/042_v97_proven_atomic_checkout.sql'
+      - 'offline/migrations/046_v111_pack_fefo_signed_quote.sql'
+      - 'offline/tests/059_v111_pack_quote_fixture.sql'
+      - 'offline/tests/v111_signed_fefo_pack_quote_real_pg.mjs'
+      - 'docs/V111_PROVEN_FIXED_PACK_FEFO_QUOTE.md'
       - 'offline/proven-checkout-v97.mjs'
       - 'offline/tests/v97_atomic_checkout_real_pg.mjs'
       - 'offline/tests/v97-atomic-checkout-contract.test.mjs'
@@ -334,6 +338,12 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f offline/migrations/042_v97_proven_atomic_checkout.sql
       - name: V97 real two-cashier final LOT race, idempotent receipt and revoked session test
         run: node offline/tests/v97_atomic_checkout_real_pg.mjs
+      - name: V111 install isolated signed, read-only bundle/set FEFO price quote
+        run: |
+          psql -v ON_ERROR_STOP=1 -f offline/migrations/046_v111_pack_fefo_signed_quote.sql
+          psql -v ON_ERROR_STOP=1 -f offline/tests/059_v111_pack_quote_fixture.sql
+      - name: V111 real restricted-role signed pack quote and explicit V97 financial denial
+        run: node offline/tests/v111_signed_fefo_pack_quote_real_pg.mjs
       - name: V98 actual loopback HTTP two-cashier atomic checkout and lost acknowledgment test
         run: node offline/tests/v98_http_atomic_real_pg.mjs
       - name: V99 real PostgreSQL dual authenticated devices, WAN-blocked client and dropped-ACK replay
