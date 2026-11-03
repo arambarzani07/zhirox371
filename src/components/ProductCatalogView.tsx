@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Product, SaleMode, BaseUnit } from '../types';
+import { Product, SaleMode, BaseUnit, TradePackage } from '../types';
+import { parseAliases, validateLockedProduct, MAX_EXTRA_PACKAGES, MAX_ALIAS_BARCODES } from '../utils/lockedProductRules';
 import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 
 export const ProductCatalogView: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct, subtab, activeSectionId } = useApp();
+  const { products, addProduct, updateProduct, subtab, activeSectionId } = useApp();
 
   const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' => {
     if (activeSectionId === 'add-box' || subtab === 'new') return 'new';
@@ -24,6 +25,9 @@ export const ProductCatalogView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out' | 'expiry'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [productListPage, setProductListPage] = useState(1);
+  useEffect(() => setProductListPage(1), [searchTerm, stockFilter, categoryFilter]);
+
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,16 +44,29 @@ export const ProductCatalogView: React.FC = () => {
   const [unitSellPrice, setUnitSellPrice] = useState<string>('');
   const [extraBarcodes, setExtraBarcodes] = useState('');
 
+  type PackageDraft = { id: string; kind: TradePackage['kind']; name: string; barcode: string;
+    aliases: string; units: string; buy: string; sell: string };
+  const [packagesDraft, setPackagesDraft] = useState<PackageDraft[]>([]);
+  const addPackageCard = (kind: TradePackage['kind']) => {
+    setPackagesDraft(previous => previous.length >= MAX_EXTRA_PACKAGES ? previous : [...previous, {
+      id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID() : `pkg-${Date.now()}-${Math.random()}`,
+      kind, name: '', barcode: '', aliases: '', units: '', buy: '', sell: ''
+    }]);
+  };
+  const changePackage = (id: string, key: keyof PackageDraft, value: string) =>
+    setPackagesDraft(previous => previous.map(p => p.id === id ? { ...p, [key]: value } : p));
+
   // Carton fields
   const [cartonName, setCartonName] = useState('');
   const [cartonBarcode, setCartonBarcode] = useState('');
-  const [unitsPerCarton, setUnitsPerCarton] = useState<string>('24');
+  const [unitsPerCarton, setUnitsPerCarton] = useState<string>('');
   const [cartonBuyPrice, setCartonBuyPrice] = useState<string>('');
   const [cartonSellPrice, setCartonSellPrice] = useState<string>('');
   const [extraCartonBarcodes, setExtraCartonBarcodes] = useState('');
 
   // Stock, min_stock, expiry_date
-  const [initialStock, setInitialStock] = useState<string>('50');
+  const [initialStock, setInitialStock] = useState<string>('');
   const [minStock, setMinStock] = useState<string>('10');
   const [expiryDate, setExpiryDate] = useState<string>('');
 
@@ -111,11 +128,12 @@ export const ProductCatalogView: React.FC = () => {
     setExtraBarcodes('');
     setCartonName('');
     setCartonBarcode('');
-    setUnitsPerCarton('24');
+    setUnitsPerCarton('');
     setCartonBuyPrice('');
     setCartonSellPrice('');
     setExtraCartonBarcodes('');
-    setInitialStock('50');
+    setPackagesDraft([]);
+    setInitialStock('');
     setMinStock('10');
     setExpiryDate('');
     setMessage(null);
@@ -133,6 +151,12 @@ export const ProductCatalogView: React.FC = () => {
     setUnitBuyPrice(p.unit_purchase_price_iqd !== null ? String(p.unit_purchase_price_iqd) : '');
     setUnitSellPrice(String(p.unit_sale_price_iqd));
     setExtraBarcodes(p.unit_alias_barcodes.join(', '));
+    setPackagesDraft((p.packages || []).map(pkg => ({
+      id: pkg.id, kind: pkg.kind, name: pkg.name, barcode: pkg.barcode,
+      aliases: pkg.alias_barcodes.join(', '), units: String(pkg.units_per_package),
+      buy: pkg.purchase_price_iqd === null ? '' : String(pkg.purchase_price_iqd),
+      sell: String(pkg.sale_price_iqd)
+    })));
     setMinStock(String(p.min_stock ?? 10));
     setExpiryDate(p.expiry_date || '');
 
@@ -146,7 +170,7 @@ export const ProductCatalogView: React.FC = () => {
     } else {
       setCartonName('');
       setCartonBarcode('');
-      setUnitsPerCarton('24');
+      setUnitsPerCarton('');
       setCartonBuyPrice('');
       setCartonSellPrice('');
       setExtraCartonBarcodes('');
@@ -166,6 +190,7 @@ export const ProductCatalogView: React.FC = () => {
       if (p.unit_alias_barcodes.includes(clean)) return true;
       if (p.carton && p.carton.barcode === clean) return true;
       if (p.carton && p.carton.alias_barcodes.includes(clean)) return true;
+      if ((p.packages || []).some(pkg => pkg.barcode === clean || pkg.alias_barcodes.includes(clean))) return true;
       return false;
     });
   };
@@ -176,7 +201,7 @@ export const ProductCatalogView: React.FC = () => {
       setMessage({ text: 'تکایە ناوی کاڵا بنووسە', error: true });
       return;
     }
-    const sellPrice = parseInt(unitSellPrice, 10);
+    const sellPrice = unitSellPrice.trim() === '' ? NaN : Number(unitSellPrice);
     if (!Number.isSafeInteger(sellPrice) || sellPrice <= 0) {
       setMessage({ text: 'نرخی فرۆشتن دەبێت ژمارەیەکی دروستی گەورەتر لە سفر بێت', error: true });
       return;
@@ -196,15 +221,8 @@ export const ProductCatalogView: React.FC = () => {
       return;
     }
 
-    const buyPrice = unitBuyPrice ? parseInt(unitBuyPrice, 10) : null;
-    const aliases = Array.from(
-      new Set(
-        extraBarcodes
-          .split(/[\n,]+/)
-          .map(x => x.trim())
-          .filter(x => Boolean(x) && x !== trimmedUnitBarcode)
-      )
-    );
+    const buyPrice = unitBuyPrice.trim() ? Number(unitBuyPrice) : null;
+    const aliases = parseAliases(extraBarcodes);
 
     for (const alias of aliases) {
       const aliasConflict = findBarcodeOwner(alias, editingId);
@@ -236,63 +254,60 @@ export const ProductCatalogView: React.FC = () => {
         });
         return;
       }
-      const cartonAliases = Array.from(
-        new Set(
-          extraCartonBarcodes
-            .split(/[\n,]+/)
-            .map(x => x.trim())
-            .filter(x => Boolean(x) && x !== trimmedCartonBarcode && x !== trimmedUnitBarcode)
-        )
-      );
+      const cartonAliases = parseAliases(extraCartonBarcodes);
       cartonObj = {
         name: cartonName.trim() || `کارتۆنی ${name.trim()}`,
         barcode: trimmedCartonBarcode,
         alias_barcodes: cartonAliases,
-        units_per_carton: Math.max(2, parseInt(unitsPerCarton, 10) || 24),
-        purchase_price_iqd: cartonBuyPrice ? parseInt(cartonBuyPrice, 10) : null,
-        sale_price_iqd: Math.max(0, parseInt(cartonSellPrice, 10) || 0)
+        units_per_carton: Number(unitsPerCarton),
+        purchase_price_iqd: cartonBuyPrice.trim() ? Number(cartonBuyPrice) : null,
+        sale_price_iqd: Number(cartonSellPrice)
       };
     }
 
-    const parsedMinStock = Math.max(0, parseInt(minStock, 10) || 10);
-
+    const extraPackages: TradePackage[] = packagesDraft.map(pkg => ({
+      id: pkg.id,
+      kind: pkg.kind,
+      name: pkg.name.trim(),
+      barcode: pkg.barcode.trim(),
+      alias_barcodes: parseAliases(pkg.aliases),
+      units_per_package: Number(pkg.units),
+      purchase_price_iqd: pkg.buy.trim() === '' ? null : Number(pkg.buy),
+      sale_price_iqd: Number(pkg.sell)
+    }));
+    const initialQuantity = initialStock.trim() === '' ? 0 : Number(initialStock);
+    const previousProduct = editingId ? products.find(p => p.id === editingId) : undefined;
+    if (editingId && !previousProduct) {
+      setMessage({ text: 'کاڵای دەستکاری کراو نەدۆزرایەوە', error: true });
+      return;
+    }
+    const candidate: Product = {
+      id: editingId || '__new__',
+      name: name.trim(), category: category.trim() || 'گشتی',
+      sku: sku.trim() || null, plu: plu.trim() || null,
+      sale_mode: (cartonObj || extraPackages.length) && saleMode === 'unit' ? 'both' : saleMode,
+      base_unit: baseUnit, unit_barcode: trimmedUnitBarcode,
+      unit_purchase_price_iqd: unitBuyPrice.trim() === '' ? null : Number(unitBuyPrice),
+      unit_sale_price_iqd: sellPrice,
+      unit_alias_barcodes: aliases, carton: cartonObj, packages: extraPackages,
+      stock: previousProduct ? previousProduct.stock : initialQuantity,
+      min_stock: minStock.trim() === '' ? 10 : Number(minStock),
+      expiry_date: expiryDate.trim() || undefined,
+      is_scale_product: baseUnit === 'kg' || Boolean(plu.trim())
+    };
+    const problem = validateLockedProduct(candidate, products, editingId);
+    if (problem) {
+      setMessage({ text: problem, error: true });
+      return;
+    }
     if (editingId) {
-      updateProduct(editingId, {
-        name: name.trim(),
-        category: category.trim() || 'گشتی',
-        sku: sku.trim() || null,
-        plu: plu.trim() || null,
-        sale_mode: saleMode,
-        base_unit: baseUnit,
-        unit_barcode: trimmedUnitBarcode,
-        unit_purchase_price_iqd: buyPrice,
-        unit_sale_price_iqd: sellPrice,
-        unit_alias_barcodes: aliases,
-        carton: cartonObj,
-        min_stock: parsedMinStock,
-        expiry_date: expiryDate.trim() || undefined,
-        is_scale_product: baseUnit === 'kg' || Boolean(plu.trim())
-      });
-      setMessage({ text: `زانیارییەکانی «${name.trim()}» بە سەرکەوتوویی نوێکرایەوە`, error: false });
+      const { id: _id, stock: _stock, ...updates } = candidate;
+      updateProduct(editingId, updates);
+      setMessage({ text: `زانیارییەکانی «${candidate.name}» نوێکرانەوە`, error: false });
     } else {
-      addProduct({
-        name: name.trim(),
-        category: category.trim() || 'گشتی',
-        sku: sku.trim() || null,
-        plu: plu.trim() || null,
-        sale_mode: saleMode,
-        base_unit: baseUnit,
-        unit_barcode: trimmedUnitBarcode,
-        unit_purchase_price_iqd: buyPrice,
-        unit_sale_price_iqd: sellPrice,
-        unit_alias_barcodes: aliases,
-        carton: cartonObj,
-        stock: Math.max(0, parseFloat(initialStock) || 0),
-        min_stock: parsedMinStock,
-        expiry_date: expiryDate.trim() || undefined,
-        is_scale_product: baseUnit === 'kg' || Boolean(plu.trim())
-      });
-      const addedName = name.trim();
+      const { id: _id, ...newProduct } = candidate;
+      addProduct(newProduct);
+      const addedName = candidate.name;
       resetForm();
       KurdishVoiceAnnouncer.announceProductAdded(addedName);
       setMessage({ text: `کاڵای نوێ «${addedName}» بە سەرکەوتوویی تۆمارکرا`, error: false });
@@ -416,6 +431,10 @@ export const ProductCatalogView: React.FC = () => {
       });
       return;
     }
+    if (p.unit_alias_barcodes.length >= MAX_ALIAS_BARCODES) {
+      setMessage({ text: 'زۆرترین ژمارەی بارکۆدی هاوتای دانە 30 ـە', error: true });
+      return;
+    }
     updateProduct(p.id, {
       unit_alias_barcodes: [...p.unit_alias_barcodes, clean]
     });
@@ -447,6 +466,10 @@ export const ProductCatalogView: React.FC = () => {
     return true;
   });
 
+  const listPageCount = Math.max(1, Math.ceil(filteredProducts.length / 50));
+  const effectiveListPage = Math.min(productListPage, listPageCount);
+  const displayedListProducts = filteredProducts.slice((effectiveListPage - 1) * 50, effectiveListPage * 50);
+  
   const sellNum = parseInt(unitSellPrice, 10) || 0;
   const buyNum = parseInt(unitBuyPrice, 10) || 0;
   const unitProfitIqd = sellNum - buyNum;
@@ -685,6 +708,7 @@ export const ProductCatalogView: React.FC = () => {
                       <input
                         type="number"
                         min="0"
+                        step={baseUnit === 'kg' ? '0.001' : '1'}
                         value={initialStock}
                         onChange={e => setInitialStock(e.target.value)}
                       />
@@ -696,6 +720,7 @@ export const ProductCatalogView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
+                      step={baseUnit === 'kg' ? '0.001' : '1'}
                       value={minStock}
                       onChange={e => setMinStock(e.target.value)}
                       placeholder="10"
@@ -803,7 +828,47 @@ export const ProductCatalogView: React.FC = () => {
                   </div>
                 )}
 
-                <div className="ws-toolbar" style={{ marginBottom: 0, paddingTop: '4px' }}>
+                <section className="ws-panel" aria-label="بەستە و دەستە و سێت" style={{ padding: '12px', marginBlock: '8px' }}>
+                  <div className="ws-toolbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <strong className="ws-panel-title">بەستە، دەستە و سێت بۆ هەمان کاڵا</strong>
+                    <button type="button" className="secondary" disabled={packagesDraft.length >= MAX_EXTRA_PACKAGES} onClick={() => addPackageCard('carton')}>+ کارتۆن</button>
+                    <button type="button" className="secondary" disabled={packagesDraft.length >= MAX_EXTRA_PACKAGES} onClick={() => addPackageCard('pack')}>+ دەستە</button>
+                    <button type="button" className="secondary" disabled={packagesDraft.length >= MAX_EXTRA_PACKAGES} onClick={() => addPackageCard('set')}>+ سێت</button>
+                  </div>
+                  {packagesDraft.map((pkg, idx) => (
+                    <div key={pkg.id} className="ws-panel" style={{ border: '1px solid #dce6f0', padding: '10px', marginBlock: '9px' }}>
+                      <div className="ws-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong>{idx + 1}. {pkg.kind === 'carton' ? 'کارتۆن' : pkg.kind === 'pack' ? 'دەستە' : 'سێت'}</strong>
+                        <button type="button" className="secondary" onClick={() => setPackagesDraft(prev => prev.filter(x => x.id !== pkg.id))}>لابردنی ئەم بەستەیە</button>
+                      </div>
+                      <div className="ws-form-grid">
+                        <label className="form-col">ناوی بەستە *
+                          <input required value={pkg.name} onChange={e => changePackage(pkg.id, 'name', e.target.value)} />
+                        </label>
+                        <label className="form-col">بارکۆدی سەرەکی *
+                          <input required dir="ltr" value={pkg.barcode} onChange={e => changePackage(pkg.id, 'barcode', e.target.value)} />
+                        </label>
+                        <label className="form-col">ژمارەی یەکە لە بەستەدا *
+                          <input required type="number" min="2" step="1" value={pkg.units} onChange={e => changePackage(pkg.id, 'units', e.target.value)} />
+                        </label>
+                        <label className="form-col">نرخی کڕینی بەستە (IQD)
+                          <input type="number" min="0" step="1" value={pkg.buy} onChange={e => changePackage(pkg.id, 'buy', e.target.value)} />
+                        </label>
+                        <label className="form-col">نرخی فرۆشتنی بەستە (IQD) *
+                          <input required type="number" min="1" step="1" value={pkg.sell} onChange={e => changePackage(pkg.id, 'sell', e.target.value)} />
+                        </label>
+                        <label className="form-col">بارکۆدە هاوتاکان (زۆرترین 30)
+                          <input dir="ltr" value={pkg.aliases} onChange={e => changePackage(pkg.id, 'aliases', e.target.value)} />
+                        </label>
+                        <label className="form-col">نرخی هەر یەکە (تەنها نیشاندان)
+                          <input readOnly tabIndex={-1} value={Number(pkg.units) >= 2 && Number(pkg.sell) > 0 ? (Number(pkg.sell) / Number(pkg.units)).toFixed(3) : ''} />
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </section>
+
+                <div className="ws-toolbar" style={{ marginBottom: 0, paddingTop: '8px', paddingBottom: '8px', position: 'sticky', bottom: 0, background: '#fff', borderTop: '1px solid #dce6f0', zIndex: 2 }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <button type="submit" className="primary">
                       {editingId ? 'پاشەکەوتکردنی گۆڕانکارییەکان' : 'زیادکردنی کاڵا بۆ کەتەلۆگ'}
@@ -1009,7 +1074,7 @@ export const ProductCatalogView: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map(p => (
+                  displayedListProducts.map(p => (
                     <tr key={p.id}>
                       <td>
                         <strong>{p.name}</strong>
@@ -1067,14 +1132,7 @@ export const ProductCatalogView: React.FC = () => {
                           <button type="button" className="secondary" onClick={() => setSelectedForLabel(p)}>
                             لیبڵ
                           </button>
-                          <button
-                            type="button"
-                            className="secondary"
-                            onClick={() => deleteProduct(p.id)}
-                            style={{ color: '#b91c1c' }}
-                          >
-                            سڕینەوە
-                          </button>
+
                         </div>
                       </td>
                     </tr>
@@ -1082,6 +1140,13 @@ export const ProductCatalogView: React.FC = () => {
                 )}
               </tbody>
             </table>
+            <div className="ws-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span>پەڕەی {effectiveListPage} / {listPageCount} — 50 کاڵا لە هەر پەڕەیەک (پێشبینینی ناوخۆیی)</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" className="secondary" disabled={effectiveListPage <= 1} onClick={() => setProductListPage(p => Math.max(1, p - 1))}>پێشوو</button>
+                <button type="button" className="secondary" disabled={effectiveListPage >= listPageCount} onClick={() => setProductListPage(p => Math.min(listPageCount, p + 1))}>داهاتوو</button>
+              </div>
+            </div>
           </div>
         </>
       )}
