@@ -1,0 +1,58 @@
+name: V110 isolated PostgreSQL fixed-pack acceptance
+on:
+  push:
+    branches:
+      - 'feature/fixed-bundle-set-checkout-safe-20261103'
+  pull_request:
+    paths:
+      - 'offline/migrations/044_fixed_packs_v110_disposable.sql'
+      - 'offline/local-packs-scale-server-v26.mjs'
+      - 'offline/tests/053_v110_fixed_packs_checkout.sql'
+      - 'offline/tests/local-packs-scale-v26.test.mjs'
+      - '.github/workflows/fixed-pack-postgres-v110.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-fixed-packs:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: localtest
+          POSTGRES_PASSWORD: localtest_password
+          POSTGRES_DB: zhirox_v110_packs_disposable
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U localtest -d zhirox_v110_packs_disposable"
+          --health-interval 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: localtest
+      PGPASSWORD: localtest_password
+      PGDATABASE: zhirox_v110_packs_disposable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test server quote contract (unit/carton/scale/bundle/set)
+        run: node --test offline/tests/local-packs-scale-v26.test.mjs
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Create isolated baseline
+        run: |
+          set -euo pipefail
+          for f in 001_core.sql 002_atomic_checkout.sql 003_local_users.sql 004_catalog_indexes.sql 005_price_locked_checkout.sql 006_packs_scale_checkout.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "offline/migrations/$f"
+          done
+      - name: Apply guarded V110 migration and test atomic sale, stock and replay
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f offline/migrations/044_fixed_packs_v110_disposable.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/053_v110_fixed_packs_checkout.sql
+      - name: Verify migrations never attempt actual supermarket database
+        run: |
+          grep -q "current_database() <> 'zhirox_v110_packs_disposable'" offline/migrations/044_fixed_packs_v110_disposable.sql
