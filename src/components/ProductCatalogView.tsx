@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Product, SaleMode, BaseUnit } from '../types';
+import { Product, SaleMode, BaseUnit, ExtraPackConfig } from '../types';
 import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
+
+type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
+const emptyPackDrafts = ():ExtraPackDraft[] => [
+ {kind:'bundle',name:'',barcode:'',aliases:'',units:'',buy:'',sell:''},
+ {kind:'set',name:'',barcode:'',aliases:'',units:'',buy:'',sell:''}
+];
+const splitCodes = (value:string) => value.split(/[\n,،;]+/u).map(x=>x.trim()).filter(Boolean);
+const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, subtab, activeSectionId } = useApp();
@@ -47,6 +55,9 @@ export const ProductCatalogView: React.FC = () => {
   const [cartonBuyPrice, setCartonBuyPrice] = useState<string>('');
   const [cartonSellPrice, setCartonSellPrice] = useState<string>('');
   const [extraCartonBarcodes, setExtraCartonBarcodes] = useState('');
+
+  const [extraPackDrafts, setExtraPackDrafts] = useState<ExtraPackDraft[]>(emptyPackDrafts);
+  const editPack = (kind:ExtraPackDraft['kind'], patch:Partial<ExtraPackDraft>) => setExtraPackDrafts(prev => prev.map(d => d.kind===kind?{...d,...patch}:d));
 
   // Stock, min_stock, expiry_date
   const [initialStock, setInitialStock] = useState<string>('50');
@@ -115,6 +126,7 @@ export const ProductCatalogView: React.FC = () => {
     setCartonBuyPrice('');
     setCartonSellPrice('');
     setExtraCartonBarcodes('');
+    setExtraPackDrafts(emptyPackDrafts());
     setInitialStock('50');
     setMinStock('10');
     setExpiryDate('');
@@ -133,6 +145,7 @@ export const ProductCatalogView: React.FC = () => {
     setUnitBuyPrice(p.unit_purchase_price_iqd !== null ? String(p.unit_purchase_price_iqd) : '');
     setUnitSellPrice(String(p.unit_sale_price_iqd));
     setExtraBarcodes(p.unit_alias_barcodes.join(', '));
+    setExtraPackDrafts(emptyPackDrafts().map(d=>{const a=p.extra_packs?.find(x=>x.kind===d.kind);return a?{kind:a.kind,name:a.name,barcode:a.barcode,aliases:a.alias_barcodes.join(', '),units:String(a.units_per_pack),buy:a.purchase_price_iqd===null?'':String(a.purchase_price_iqd),sell:String(a.sale_price_iqd)}:d;}));
     setMinStock(String(p.min_stock ?? 10));
     setExpiryDate(p.expiry_date || '');
 
@@ -166,6 +179,7 @@ export const ProductCatalogView: React.FC = () => {
       if (p.unit_alias_barcodes.includes(clean)) return true;
       if (p.carton && p.carton.barcode === clean) return true;
       if (p.carton && p.carton.alias_barcodes.includes(clean)) return true;
+      if (p.extra_packs?.some(x=>x.barcode===clean||x.alias_barcodes.includes(clean))) return true;
       return false;
     });
   };
@@ -196,15 +210,9 @@ export const ProductCatalogView: React.FC = () => {
       return;
     }
 
-    const buyPrice = unitBuyPrice ? parseInt(unitBuyPrice, 10) : null;
-    const aliases = Array.from(
-      new Set(
-        extraBarcodes
-          .split(/[\n,]+/)
-          .map(x => x.trim())
-          .filter(x => Boolean(x) && x !== trimmedUnitBarcode)
-      )
-    );
+    const buyPrice = unitBuyPrice.trim() ? Number(unitBuyPrice) : null;
+    if(buyPrice!==null&&(!Number.isSafeInteger(buyPrice)||buyPrice<0)){setMessage({text:'نرخی کڕینی دانە نادروستە',error:true});return;}
+    const aliases = splitCodes(extraBarcodes);
 
     for (const alias of aliases) {
       const aliasConflict = findBarcodeOwner(alias, editingId);
@@ -236,25 +244,58 @@ export const ProductCatalogView: React.FC = () => {
         });
         return;
       }
-      const cartonAliases = Array.from(
-        new Set(
-          extraCartonBarcodes
-            .split(/[\n,]+/)
-            .map(x => x.trim())
-            .filter(x => Boolean(x) && x !== trimmedCartonBarcode && x !== trimmedUnitBarcode)
-        )
-      );
+      const cartonAliases = splitCodes(extraCartonBarcodes);
+      if(!Number.isSafeInteger(Number(unitsPerCarton))||Number(unitsPerCarton)<2||
+        !Number.isSafeInteger(Number(cartonSellPrice))||Number(cartonSellPrice)<=0||
+        (cartonBuyPrice.trim()!==''&&(!Number.isSafeInteger(Number(cartonBuyPrice))||Number(cartonBuyPrice)<0))){
+        setMessage({text:'ژمارەی دانە یان نرخی کارتۆن نادروستە',error:true});return;
+      }
       cartonObj = {
         name: cartonName.trim() || `کارتۆنی ${name.trim()}`,
         barcode: trimmedCartonBarcode,
         alias_barcodes: cartonAliases,
-        units_per_carton: Math.max(2, parseInt(unitsPerCarton, 10) || 24),
+        units_per_carton: Number(unitsPerCarton),
         purchase_price_iqd: cartonBuyPrice ? parseInt(cartonBuyPrice, 10) : null,
-        sale_price_iqd: Math.max(0, parseInt(cartonSellPrice, 10) || 0)
+        sale_price_iqd: Number(cartonSellPrice)
       };
     }
 
-    const parsedMinStock = Math.max(0, parseInt(minStock, 10) || 10);
+    // Reject duplicate definitions across ALL sale units, not just primary barcodes.
+    // No silent deduplication: operator must correct the conflicting field.
+    const cartonAliasCodes = splitCodes(extraCartonBarcodes);
+    const allCodes = [trimmedUnitBarcode, ...splitCodes(extraBarcodes), ...(cartonObj?[cartonObj.barcode,...cartonAliasCodes]:[])];
+    const extraPacks:ExtraPackConfig[] = [];
+    for(const draft of extraPackDrafts){
+      const used=[draft.name,draft.barcode,draft.aliases,draft.units,draft.buy,draft.sell].some(v=>v.trim()!=='');
+      if(!used)continue;
+      if(baseUnit==='kg'){
+        setMessage({text:'دەستە و سێت بۆ کاڵای کیلۆیی پێویستیان بە یاسای کۆگای جیاواز هەیە',error:true});return;
+      }
+      if(saleMode==='carton'){
+        setMessage({text:'دەستە و سێت لەگەڵ شێوازی تەنها کارتۆن چالاک ناکرێن',error:true});return;
+      }
+      const count=Number(draft.units),sale=safePrice(draft.sell),buy=safePrice(draft.buy);
+      const codes=splitCodes(draft.aliases);
+      if(!draft.barcode.trim()||!Number.isSafeInteger(count)||count<2||count>100000||
+          sale===null||!Number.isSafeInteger(sale)||sale<=0||sale>999999999||
+          (buy!==null&&(!Number.isSafeInteger(buy)||buy<0||buy>999999999))||
+          codes.length>30){
+        setMessage({text:'بارکۆد، بڕی ناو پاکەت و نرخی فرۆشتنی دەستە/سێت بە دروستی تۆمار بکە',error:true});return;
+      }
+      allCodes.push(draft.barcode.trim(),...codes);
+      extraPacks.push({kind:draft.kind,name:draft.name.trim()|| (draft.kind==='bundle'?'دەستە':'سێت'),barcode:draft.barcode.trim(),alias_barcodes:codes,units_per_pack:count,purchase_price_iqd:buy,sale_price_iqd:sale});
+    }
+    if(allCodes.some(c=>!c||c.length>60||/[\s,،;]/u.test(c))||
+       new Set(allCodes).size!==allCodes.length){
+      setMessage({text:'بارکۆدەکان دەبێت جیاواز و دروست بن؛ دووبارەبوونەوە قەدەغەیە',error:true});return;
+    }
+    for(const code of allCodes){
+      const owner=findBarcodeOwner(code,editingId);
+      if(owner){setMessage({text:`بارکۆدی (${code}) پێشتر بۆ «${owner.name}» تۆمارکراوە`,error:true});return;}
+    }
+
+    const parsedMinStock = Number(minStock);
+    if(!Number.isFinite(parsedMinStock)||parsedMinStock<0){setMessage({text:'کەمترین بڕی کۆگا نادروستە',error:true});return;}
 
     if (editingId) {
       updateProduct(editingId, {
@@ -269,6 +310,7 @@ export const ProductCatalogView: React.FC = () => {
         unit_sale_price_iqd: sellPrice,
         unit_alias_barcodes: aliases,
         carton: cartonObj,
+        extra_packs: extraPacks,
         min_stock: parsedMinStock,
         expiry_date: expiryDate.trim() || undefined,
         is_scale_product: baseUnit === 'kg' || Boolean(plu.trim())
@@ -287,6 +329,7 @@ export const ProductCatalogView: React.FC = () => {
         unit_sale_price_iqd: sellPrice,
         unit_alias_barcodes: aliases,
         carton: cartonObj,
+        extra_packs: extraPacks,
         stock: Math.max(0, parseFloat(initialStock) || 0),
         min_stock: parsedMinStock,
         expiry_date: expiryDate.trim() || undefined,
@@ -433,7 +476,8 @@ export const ProductCatalogView: React.FC = () => {
       p.unit_alias_barcodes.some(a => a.includes(searchTerm)) ||
       (p.sku && p.sku.toLowerCase().includes(q)) ||
       (p.plu && p.plu.includes(searchTerm)) ||
-      (p.carton && p.carton.barcode.includes(searchTerm));
+      (p.carton && p.carton.barcode.includes(searchTerm)) ||
+      (p.extra_packs?.some(x=>x.barcode.includes(searchTerm)||x.alias_barcodes.some(b=>b.includes(searchTerm)))??false);
 
     if (!matchSearch) return false;
     if (categoryFilter !== 'all' && (p.category || 'گشتی') !== categoryFilter) return false;
@@ -461,7 +505,7 @@ export const ProductCatalogView: React.FC = () => {
   const cartonProductsCount = products.filter(p => Boolean(p.carton)).length;
   const scaleProductsCount = products.filter(p => p.base_unit === 'kg' || Boolean(p.plu)).length;
   const totalAliasCount = products.reduce(
-    (sum, p) => sum + p.unit_alias_barcodes.length + (p.carton ? 1 + p.carton.alias_barcodes.length : 0),
+    (sum, p) => sum + p.unit_alias_barcodes.length + (p.carton ? 1 + p.carton.alias_barcodes.length : 0) + (p.extra_packs?.reduce((count,pack)=>count+1+pack.alias_barcodes.length,0)??0),
     0
   );
 
@@ -802,6 +846,37 @@ export const ProductCatalogView: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                <div style={{borderTop:'1px solid #e2e9f1',paddingTop:10}}>
+                  <div className="ws-panel-title">یەکەکانی زیادە — دەستە و سێت</div>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:12}}>
+                    {extraPackDrafts.map(d=>(
+                      <div key={d.kind} style={{padding:12,border:'1px solid #dfe6ed',borderRadius:10,background:'#fff'}}>
+                        <strong style={{color:'#172b45',fontSize:14}}>{d.kind==='bundle'?'دەستە':'سێت'}</strong>
+                        <div className="ws-form-grid" style={{marginTop:9}}>
+                          <label className="form-col">ناوی یەکە
+                            <input value={d.name} onChange={e=>editPack(d.kind,{name:e.target.value})}/>
+                          </label>
+                          <label className="form-col">بارکۆد
+                            <input dir="ltr" value={d.barcode} onChange={e=>editPack(d.kind,{barcode:e.target.value})}/>
+                          </label>
+                          <label className="form-col">ژمارەی دانە لە ناو یەکە
+                            <input type="number" min="2" max="100000" step="1" value={d.units} onChange={e=>editPack(d.kind,{units:e.target.value})}/>
+                          </label>
+                          <label className="form-col">نرخی فرۆشتن (IQD)
+                            <input type="number" min="1" step="1" value={d.sell} onChange={e=>editPack(d.kind,{sell:e.target.value})}/>
+                          </label>
+                          <label className="form-col">نرخی کڕین (IQD)
+                            <input type="number" min="0" step="1" value={d.buy} onChange={e=>editPack(d.kind,{buy:e.target.value})}/>
+                          </label>
+                          <label className="form-col">بارکۆدە هاوتاکان
+                            <input dir="ltr" value={d.aliases} onChange={e=>editPack(d.kind,{aliases:e.target.value})}/>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 <div className="ws-toolbar" style={{ marginBottom: 0, paddingTop: '4px' }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -1292,6 +1367,7 @@ export const ProductCatalogView: React.FC = () => {
                   <th>بارکۆدی سەرەکی (EAN / ناوخۆیی)</th>
                   <th>کۆدی تەرازوو (PLU)</th>
                   <th>بارکۆدی کارتۆن</th>
+                  <th>دەستە / سێت</th>
                   <th>فرەبارکۆدە هاوتاکان</th>
                   <th>کردار</th>
                 </tr>
@@ -1305,6 +1381,7 @@ export const ProductCatalogView: React.FC = () => {
                     <td style={{ direction: 'ltr', fontWeight: 900 }}>{p.unit_barcode}</td>
                     <td style={{ direction: 'ltr' }}>{p.plu || '—'}</td>
                     <td style={{ direction: 'ltr' }}>{p.carton ? p.carton.barcode : '—'}</td>
+                    <td>{p.extra_packs?.length ? p.extra_packs.map(pack=>`${pack.kind==='bundle'?'دەستە':'سێت'}: ${pack.barcode} (${pack.units_per_pack} دانە)`).join(' / ') : '—'}</td>
                     <td style={{ direction: 'ltr' }}>
                       {addingAliasId === p.id ? (
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>

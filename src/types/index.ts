@@ -10,6 +10,17 @@ export interface CartonConfig {
   sale_price_iqd: number;
 }
 
+/** Fixed pack of ONE underlying product. A multi-SKU kit requires a separate atomic stock model. */
+export interface ExtraPackConfig {
+  kind: 'bundle' | 'set';
+  name: string;
+  barcode: string;
+  alias_barcodes: string[];
+  units_per_pack: number;
+  purchase_price_iqd: number | null;
+  sale_price_iqd: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -22,6 +33,7 @@ export interface Product {
   unit_sale_price_iqd: number;
   unit_alias_barcodes: string[];
   carton: CartonConfig | null;
+  extra_packs?: ExtraPackConfig[]; // QA catalog-only until server checkout implements each mode
   stock: number; // in base units (pieces or kg)
   min_stock?: number;
   category?: string;
