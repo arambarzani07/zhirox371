@@ -44,7 +44,7 @@ BEGIN
    OR (SELECT stock_base_units FROM zhirox_local.products WHERE store_id=s AND id=p)<>5
    OR (SELECT count(*) FROM zhirox_local.sale_lines WHERE store_id=s AND sale_id=sale_uuid)<>2
    OR (SELECT count(*) FROM zhirox_local.stock_ledger WHERE store_id=s AND sale_id=sale_uuid)<>1
-   OR (SELECT count(*) FROM zhirox_local.event_outbox WHERE store_id=s AND aggregate_id=id)<>1
+   OR (SELECT count(*) FROM zhirox_local.event_outbox WHERE store_id=s AND aggregate_id=sale_uuid)<>1
  THEN RAISE EXCEPTION 'V110 durable pack transaction not atomic'; END IF;
  SELECT x.sale_id,x.replayed INTO again,replay
  FROM zhirox_local.commit_checkout_v31(s,cashier,req) x;
