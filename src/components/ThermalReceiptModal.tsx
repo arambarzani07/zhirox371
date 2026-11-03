@@ -311,9 +311,9 @@ export const ThermalReceiptModal: React.FC<Props> = ({ receipt, onClose }) => {
                     <td style={{ padding: '3px 2px', textAlign: 'center', border: '1px solid #333' }}>{idx + 1}</td>
                     <td style={{ padding: '3px 4px', textAlign: 'right', border: '1px solid #333', fontWeight: 700 }}>
                       {item.name}
-                      {item.mode === 'carton' && (
+                      {item.mode !== 'unit' && (
                         <span style={{ fontSize: '7.5px', color: '#555', display: 'block' }}>
-                          (کارتۆن)
+                          ({item.mode === 'carton' ? 'کارتۆن' : item.mode === 'bundle' ? 'دەستە' : 'سێت'} — {item.units} دانە)
                         </span>
                       )}
                     </td>
