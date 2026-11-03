@@ -48,3 +48,13 @@ test('malformed quantities, duplicate pack ownership and weighted products are r
  const kg=product();kg.base_unit='kg';
  assert.equal(saleUnitConfig(kg,'bundle'),null);
 });
+
+test('corrupted cross-mode or cross-product pack barcode ownership always fails closed',()=>{
+  const p=product();
+  const clash=product(); clash.id='foreign'; clash.unit_barcode='BUNDLE';
+  assert.equal(resolveFixedPackBarcode([p,clash],'BUNDLE')?.conflict,true);
+  const same=product(); same.carton.alias_barcodes.push('SET');
+  assert.equal(resolveFixedPackBarcode([same],'SET')?.conflict,true);
+  assert.equal(resolveFixedPackBarcode([p],'UNIT'),null,
+    'ordinary unit barcodes continue to be resolved by original cashier logic');
+});
