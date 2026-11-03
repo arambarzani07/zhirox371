@@ -24,6 +24,15 @@ function mock(){
    }
    if(sql.includes("FROM zhirox_local.barcodes b JOIN zhirox_local.products p")){
     assert.equal(args[0],store);
+    if(args[1]==="BUNDLE-2")return {rows:[{id:water,name:"ئاو",pack_name:"دەستەی ئاو",
+      base_price_minor:"500",stock_base_units:"30",quantity_base_units:6,
+      sale_mode:"bundle",sale_price_minor:"2700"}]};
+    if(args[1]==="SET-2")return {rows:[{id:water,name:"ئاو",pack_name:"سێتی ئاو",
+      base_price_minor:"500",stock_base_units:"30",quantity_base_units:3,
+      sale_mode:"set",sale_price_minor:"1450"}]};
+    if(args[1]==="BROKEN-2")return {rows:[{id:water,name:"ئاو",
+      base_price_minor:"500",stock_base_units:"30",quantity_base_units:3,
+      sale_mode:"set",sale_price_minor:"1450"}]};
     return {rows:args[1]==="6260053183998"?
       [{id:water,name:"ئاو",base_price_minor:"500",
         stock_base_units:"30",quantity_base_units:12,sale_mode:"carton",sale_price_minor:"5500"}]:
@@ -86,5 +95,26 @@ test("V26 weighted product quote uses integer grams and IQD half-up",async()=>{
   const bad=await fetch(url+"/api/local/v26/scan?code=2700001004805",{headers:authHeader});
   assert.equal(bad.status,400);
   assert.equal((await bad.json()).error,"invalid_scale_label");
+ });
+});
+
+test("V110 isolated server scan quotes independent bundle/set stock and price",async()=>{
+ const {pool}=mock();
+ await serve(pool,async url=>{
+  for(const [code,mode,price,units,name] of [
+    ["BUNDLE-2","bundle","2700",6,"دەستەی ئاو"],
+    ["SET-2","set","1450",3,"سێتی ئاو"]
+  ]){
+   const response=await fetch(url+"/api/local/v26/scan?code="+code,{headers:authHeader});
+   assert.equal(response.status,200);
+   const item=(await response.json()).product;
+   assert.equal(item.sale_mode,mode);
+   assert.equal(item.name,name);
+   assert.equal(item.price_minor,price);
+   assert.equal(item.quantity_base_units,units);
+  }
+  const malformed=await fetch(url+"/api/local/v26/scan?code=BROKEN-2",{headers:authHeader});
+  assert.equal(malformed.status,409);
+  assert.equal((await malformed.json()).error,"invalid_pack_definition");
  });
 });
