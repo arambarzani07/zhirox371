@@ -701,6 +701,7 @@ export const ProductCatalogView: React.FC = () => {
                       <input
                         type="number"
                         min="0"
+                        step={baseUnit === 'kg' ? '0.001' : '1'}
                         value={initialStock}
                         onChange={e => setInitialStock(e.target.value)}
                       />
@@ -712,6 +713,7 @@ export const ProductCatalogView: React.FC = () => {
                     <input
                       type="number"
                       min="0"
+                      step={baseUnit === 'kg' ? '0.001' : '1'}
                       value={minStock}
                       onChange={e => setMinStock(e.target.value)}
                       placeholder="10"
