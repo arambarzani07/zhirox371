@@ -207,7 +207,28 @@ try{
    [TEST_MARKET.store,TEST_MARKET.owner,sold.sale_id,1,id(9),1,true,
     "V112 intentionally denied original pack return"]);
   assert.fail("legacy pack refund was mistakenly permitted");
- }catch(error){assert.equal(error.code,"P1125","Legacy pack refund must refuse incorrect monetary value");}
+ }catch(error){
+  assert.ok(["P8808","P1125"].includes(error.code),
+   "Legacy route guard or pack-specific guard must refuse incorrect monetary value");
+ }
+ // The V88 LOT gate may reject BEFORE reaching the pack-specific trigger.
+ // With the TEST-only allowed V90 return context, confirm the V112 financial
+ // correctness trigger itself still refuses per-base-unit multiplication.
+ const returnClient=await admin.connect();
+ try{
+  await returnClient.query("BEGIN");
+  await returnClient.query("SELECT set_config('zhirox.v88_fefo_route','test_v90_return_authorized',true)");
+  try{
+   await returnClient.query(
+    "SELECT * FROM zhirox_local.record_sale_return_v84($1::uuid,$2::uuid,$3::uuid,$4::integer,$5::uuid,$6::bigint,$7::boolean,$8::text)",
+    [TEST_MARKET.store,TEST_MARKET.owner,sold.sale_id,1,id(9),1,true,
+     "V112 intentionally denied pack refund in approved test LOT context"]);
+   assert.fail("pack-specific guard did not refuse wrong money");
+  }catch(error){assert.equal(error.code,"P1125","pack-specific refund guard must fail closed");}
+ }finally{
+  await returnClient.query("ROLLBACK").catch(()=>{});
+  returnClient.release();
+ }
  assert.deepEqual(await summary(),afterSale,"Refused refund must not restock or pay");
  // Both cashier sessions can prepare an authentic final-SET intent, but only
  // one can commit the last 3 units; the other fails after the serialized lock.
