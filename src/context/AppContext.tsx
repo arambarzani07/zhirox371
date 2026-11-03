@@ -11,7 +11,8 @@ import {
   StockMovement,
   AuditLogEntry,
   NavView,
-  PaymentMethod
+  PaymentMethod,
+  SaleUnitMode
 } from '../types';
 import {
   INITIAL_PRODUCTS,
@@ -22,6 +23,7 @@ import {
   INITIAL_STOCK_MOVEMENTS
 } from '../data/initialData';
 import { parseScaleBarcode } from '../utils/retailHelpers';
+import {resolveFixedPackBarcode,saleUnitConfig,validateDemoSaleCart} from '../utils/fixedPackSales.js';
 import { validateDemoRefundV107, type DemoReturnV107 } from '../utils/demoRefundGuardV107';
 import { parseDemoBackupV108 } from '../utils/demoBackupGuardV108';
 
@@ -49,7 +51,7 @@ interface AppContextType {
   receiveStock: (productId: string, quantity: number, mode: 'unit' | 'carton', supplierId?: string, invoiceNo?: string) => void;
 
   cart: CartLine[];
-  addToCart: (input: string | Product, mode?: 'unit' | 'carton', requestedQty?: number) => { success: boolean; message?: string };
+  addToCart: (input: string | Product, mode?: SaleUnitMode, requestedQty?: number) => { success: boolean; message?: string };
   updateCartQty: (index: number, nextQty: number) => { success: boolean; message?: string };
   toggleCartLineMode: (index: number) => { success: boolean; message?: string };
   removeFromCart: (index: number) => void;
@@ -89,7 +91,7 @@ interface AppContextType {
     receiptNo: string;
     productId: string;
     qty: number;
-    mode?: 'unit' | 'carton';
+    mode?: SaleUnitMode;
     refundAmount: number;
     restock: boolean;
     refundMethod: 'cash' | 'debt';
@@ -458,114 +460,104 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addToCart = (
     input: string | Product,
-    requestedMode?: 'unit' | 'carton',
+    requestedMode?: SaleUnitMode,
     requestedQty?: number
   ): { success: boolean; message?: string } => {
     let p: Product;
-    let mode: 'unit' | 'carton' = requestedMode || 'unit';
+    let mode: SaleUnitMode = requestedMode || 'unit';
     let isScale = false;
     let scaleGrams = 1000;
     let scanBarcode = '';
-    let effectiveQty = Math.max(1, Math.floor(requestedQty || 1));
+    let effectiveQty = requestedQty ?? 1;
+    if (!Number.isSafeInteger(effectiveQty) || effectiveQty < 1 || effectiveQty > 1000) {
+      return {success:false,message:'بڕی فرۆشتن دەبێت ژمارەیەکی دروستی نێوان 1 و 1000 بێت'};
+    }
 
     if (typeof input === 'string') {
       let queryStr = input.trim();
-      const multMatch = queryStr.match(/^(\d{1,3})\*(.+)$/);
+      const multMatch = queryStr.match(/^(\\d{1,3})\\*(.+)$/);
       if (multMatch) {
-        const parsedMult = parseInt(multMatch[1], 10);
-        if (parsedMult > 0) {
-          effectiveQty = requestedQty ? Math.max(1, Math.floor(requestedQty)) : parsedMult;
-        }
+        if (requestedQty === undefined) effectiveQty = Number(multMatch[1]);
         queryStr = multMatch[2].trim();
       }
-
-      // Reserved pack barcodes are catalog-visible but cannot enter a checkout
-      // until backend-priced, atomic bundle/set inventory accounting is verified.
-      // Failing closed prevents a bundle barcode from being sold as one unit.
-      if (products.some(x => x.extra_packs?.some(pack =>
-        pack.barcode === queryStr || pack.alias_barcodes.includes(queryStr)))) {
-        return { success:false, message:'دەستە/سێت تۆمارکراوە، بەڵام فرۆشتنی ئەم یەکەیە هێشتا لە سێرڤەر پشتڕاست نەکراوە' };
+      if (!Number.isSafeInteger(effectiveQty) || effectiveQty < 1 || effectiveQty > 1000)
+        return {success:false,message:'بڕی فرۆشتن نادروستە'};
+      const fixed = resolveFixedPackBarcode(products,queryStr);
+      if (fixed?.conflict)
+        return {success:false,message:'بارکۆدی دەستە/سێت دووبارە تۆمارکراوە؛ پێویستە چاک بکرێت'};
+      if (fixed?.product) {
+        p = fixed.product;
+        mode = fixed.mode;
+        if (requestedMode && requestedMode !== mode)
+          return {success:false,message:'شێوازی فرۆشتن لەگەڵ بارکۆدی دەستە/سێت ناگونجێت'};
+      } else {
+        const match = findProductByCode(queryStr);
+        if (!match) return {success:false,message:'ئەم بارکۆدە نەدۆزرایەوە!'};
+        p = match.product;
+        mode = requestedMode || match.mode;
+        isScale = Boolean(match.isScale);
+        scaleGrams = match.scaleGrams || 1000;
+        if (mode === 'bundle' || mode === 'set')
+          return {success:false,message:'بارکۆدی دەستە/سێت نەدۆزرایەوە'};
       }
-      const match = findProductByCode(queryStr);
-      if (!match) {
-        return { success: false, message: 'ئەم بارکۆدە نەدۆزرایەوە!' };
-      }
-      p = match.product;
-      mode = requestedMode || match.mode;
-      isScale = match.isScale || false;
-      scaleGrams = match.scaleGrams || 1000;
       scanBarcode = queryStr;
     } else {
       p = input;
       mode = requestedMode || (p.sale_mode === 'carton' ? 'carton' : 'unit');
-      scanBarcode = mode === 'carton' && p.carton ? p.carton.barcode : p.unit_barcode;
+      const selected = saleUnitConfig(p,mode);
+      if (!selected)
+        return {success:false,message:'ئەم شێوازی فرۆشتنە بۆ کاڵاکە ئامادە نییە'};
+      scanBarcode = selected.barcode;
     }
 
     if (isScale) {
+      if (requestedMode && requestedMode !== 'unit')
+        return {success:false,message:'یەکەی کێش ناکرێت بگۆڕدرێت'};
       effectiveQty = 1;
     }
-
-    if (mode === 'carton' && !p.carton) {
-      mode = 'unit';
+    const selected = saleUnitConfig(p,mode);
+    if (!selected || (!isScale && (mode === 'bundle' || mode === 'set') &&
+      scanBarcode !== selected.barcode && !selected.aliases.includes(scanBarcode))) {
+      return {success:false,message:'زانیاریی دەستە/سێت یان نرخی فرۆشتن نادروستە'};
     }
-
-    const unitsPerPackage = isScale
-      ? scaleGrams / 1000
-      : mode === 'carton' && p.carton
-      ? p.carton.units_per_carton
-      : 1;
-
+    const unitsPerPackage = isScale ? scaleGrams / 1000 : selected.units;
     const pricePerUnit = isScale
-      ? Math.round((p.unit_sale_price_iqd * scaleGrams) / 1000)
-      : mode === 'carton' && p.carton
-      ? p.carton.sale_price_iqd
-      : p.unit_sale_price_iqd;
+      ? Math.round(p.unit_sale_price_iqd * scaleGrams / 1000)
+      : selected.price;
+    if (!Number.isSafeInteger(pricePerUnit) || pricePerUnit <= 0)
+      return {success:false,message:'نرخی فرۆشتن نادروستە'};
 
-    // Check if scale barcode is already scanned
     if (isScale && cart.some(c => c.barcode === scanBarcode)) {
-      return { success: false, message: 'ئەم لیبڵەی تەرازوو پێشتر تۆمارکراوە!' };
+      return {success:false,message:'ئەم لیبڵەی تەرازوو پێشتر تۆمارکراوە!'};
     }
-
-    // Check stock availability
-    const alreadyUsedBaseUnits = cart.reduce((sum, line) => {
-      return line.productId === p.id ? sum + line.qty * line.units : sum;
-    }, 0);
-
-    if (alreadyUsedBaseUnits + unitsPerPackage * effectiveQty > p.stock + 0.001) {
-      return { success: false, message: `بڕی بەردەست لە کۆگا تەواوبووە! (بەردەست: ${p.stock})` };
+    const alreadyUsedBaseUnits = cart.reduce((sum,line) =>
+      line.productId === p.id ? sum + line.qty * line.units : sum,0);
+    if (!Number.isFinite(p.stock) || p.stock < 0 ||
+      alreadyUsedBaseUnits + unitsPerPackage * effectiveQty > p.stock + 0.000001) {
+      return {success:false,message:`بڕی بەردەست لە کۆگا تەواوبووە! (بەردەست: ${p.stock})`};
     }
-
-    // Check if can merge with existing line
-    const existingIndex = isScale
-      ? -1
-      : cart.findIndex(c => c.productId === p.id && c.mode === mode && c.price === pricePerUnit);
-
+    const existingIndex = isScale ? -1 : cart.findIndex(c =>
+      !c.isScale && c.productId === p.id && c.mode === mode &&
+      c.price === pricePerUnit && c.units === unitsPerPackage);
     if (existingIndex >= 0) {
-      const nextCart = [...cart];
-      nextCart[existingIndex].qty += effectiveQty;
-      setCart(nextCart);
+      setCart(prev => prev.map((line,index) =>
+        index === existingIndex ? {...line,qty:line.qty + effectiveQty} : line));
     } else {
-      const newLine: CartLine = {
-        id: `cart-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-        productId: p.id,
-        name: isScale ? `${p.name} (${(scaleGrams / 1000).toFixed(3)} کگم)` : (mode === 'carton' && p.carton?.name ? p.carton.name : p.name),
-        barcode: scanBarcode,
-        mode,
-        price: pricePerUnit,
-        qty: effectiveQty,
-        units: unitsPerPackage,
-        isScale,
-        scaleGrams: isScale ? scaleGrams : undefined,
-        available: p.stock
+      const newLine:CartLine = {
+        id: `cart-${crypto.randomUUID()}`, productId:p.id,
+        name: isScale ? `${p.name} (${(scaleGrams/1000).toFixed(3)} کگم)` : selected.name,
+        barcode: scanBarcode,mode,price:pricePerUnit,qty:effectiveQty,
+        units:unitsPerPackage,isScale,scaleGrams:isScale?scaleGrams:undefined,available:p.stock
       };
-      setCart(prev => [...prev, newLine]);
+      setCart(prev => [...prev,newLine]);
     }
-
-    return { success: true };
+    return {success:true};
   };
 
   const updateCartQty = (index: number, nextQty: number): { success: boolean; message?: string } => {
     if (index < 0 || index >= cart.length) return { success: false };
+    if (!Number.isSafeInteger(nextQty) || nextQty < 0 || nextQty > 1000)
+      return {success:false,message:'بڕی سەبەتە دەبێت ژمارەی دروست بێت'};
     const line = cart[index];
     if (line.isScale && nextQty > 1) {
       return { success: false, message: 'کێشی تەرازوو ناگۆڕدرێت؛ دانەی جیاواز بسکێنە' };
@@ -597,8 +589,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const toggleCartLineMode = (index: number): { success: boolean; message?: string } => {
     if (index < 0 || index >= cart.length) return { success: false };
     const line = cart[index];
-    if (line.isScale) {
-      return { success: false, message: 'کاڵای تەرازوو ناکرێتە کارتۆن' };
+    if (line.isScale || line.mode === 'bundle' || line.mode === 'set') {
+      return {success:false,message:'دەستە/سێت و کاڵای کێش بە ئەم دوگمەیە ناگۆڕدرێن'};
     }
     const p = products.find(x => x.id === line.productId);
     if (!p || !p.carton) {
@@ -825,6 +817,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return newShift;
   };
 
+  const checkoutLockedRef = useRef(false);
+  useEffect(() => { if (cart.length === 0) checkoutLockedRef.current = false; }, [cart]);
   const completeCheckout = (options: {
     paymentMethod: PaymentMethod;
     customerId?: string | null;
@@ -837,12 +831,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (cart.length === 0) {
       return { success: false, error: 'سەبەتە بەتاڵە!' };
     }
+    if (checkoutLockedRef.current)
+      return {success:false,error:'فرۆشتنەکە پێشتر نێردراوە'};
+    const preflight = validateDemoSaleCart(cart,products);
+    if (!preflight.ok)
+      return {success:false,error:'زانیاریی بارکۆد، نرخ، بڕ یان کۆگا گۆڕاوە؛ سەبەتە نوێ بکەرەوە ('+preflight.reason+')'};
 
     if (currentShift.status !== 'open') {
       return { success: false, error: 'شێفتی کاشێر داخراوە! تکایە سەرەتا شێفتێکی نوێ بکەرەوە.' };
     }
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const subtotal = preflight.subtotal;
     const discount = options.discountAmount || (options.discountPercent ? Math.round((subtotal * options.discountPercent) / 100) : 0);
     const grandTotal = Math.max(0, subtotal - discount);
 
@@ -855,6 +854,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     const change = options.paymentMethod === 'cash' && paid >= grandTotal ? paid - grandTotal : 0;
 
+    checkoutLockedRef.current = true;
     // This React-only checkout persists to LocalStorage, not a trusted local PostgreSQL POS.
     // Mark every resulting receipt as a DEMO document until an authenticated LAN API owns checkout.
     const receiptNum = `DEMO-RCP-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -903,25 +903,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       })
     );
 
-    // Record stock movements
-    cart.forEach(line => {
-      const p = products.find(x => x.id === line.productId);
-      const prevStock = p ? p.stock : 0;
-      const baseUnitsDeducted = line.qty * line.units;
-      const mov: StockMovement = {
-        id: `mov-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        productId: line.productId,
-        productName: line.name,
-        type: 'sale',
-        quantityDelta: -baseUnitsDeducted,
-        mode: line.mode,
-        previousStock: prevStock,
-        newStock: Math.max(0, prevStock - baseUnitsDeducted),
-        reference: `پسووڵەی ${receiptNum}`,
-        createdAt: new Date().toISOString()
+    // Sequential per-product snapshots preserve correct stock ledger across mixed pack lines.
+    const stockBefore = new Map(products.map(p => [p.id,p.stock]));
+    const movements:StockMovement[] = cart.map(line => {
+      const previousStock = stockBefore.get(line.productId) ?? 0;
+      const quantity = line.qty * line.units;
+      const newStock = Number((previousStock - quantity).toFixed(3));
+      stockBefore.set(line.productId,newStock);
+      return {
+        id: 'mov-'+crypto.randomUUID(), productId:line.productId,productName:line.name,
+        type:'sale',quantityDelta:-quantity,mode:line.mode,
+        previousStock,newStock,reference:`پسووڵەی ${receiptNum}`,
+        createdAt:new Date().toISOString()
       };
-      setStockMovements(mPrev => [mov, ...mPrev]);
     });
+    setStockMovements(prev => [...movements,...prev]);
 
     // Update customer debt if paymentMethod is debt
     if (options.paymentMethod === 'debt' && options.customerId) {
@@ -957,7 +953,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     receiptNo: string;
     productId: string;
     qty: number;
-    mode?: 'unit' | 'carton';
+    mode?: SaleUnitMode;
     refundAmount: number;
     restock: boolean;
     refundMethod: 'cash' | 'debt';
