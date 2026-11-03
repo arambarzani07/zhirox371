@@ -189,7 +189,12 @@ try{
  assert.equal(retry.sale_id,sold.sale_id);
  assert.equal(String(retry.receipt_no),String(sold.receipt_no));
  assert.deepEqual(await summary(),afterSale);
+ // This first signed proof was only used for prior tamper attempts: its
+ // original nonce remains unconsumed. One legitimate replay may use it,
+ // then the same proof must fail as a one-time nonce.
+ assert.equal((await call(proof)).reason,"pack_idempotent_replay");
  assert.equal((await call(proof)).reason,"replayed_proof");
+ assert.deepEqual(await summary(),afterSale);
  const conflicting=await issue({token:signedIn.token,request_id:id(1),
   lines:[{barcode:"V111-BUNDLE",qty:1,expected_price_minor:2700,
    expected_units_per_pack:6}]});
