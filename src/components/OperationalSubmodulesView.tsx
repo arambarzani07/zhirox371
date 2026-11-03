@@ -400,7 +400,11 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
       const receiptLine = matchedReceipt?.items[returnLineIndex];
       const prod = products.find(p => p.id === receiptLine?.productId);
       const qtyNum = Number(returnQty);
-      if (!matchedReceipt || !receiptLine || !prod || !Number.isSafeInteger(qtyNum) || qtyNum <= 0) {
+      const validQty = receiptLine?.isScale
+        ? Number.isFinite(qtyNum) && qtyNum > 0 &&
+          Math.abs(qtyNum * 1000 - Math.round(qtyNum * 1000)) < 1e-7
+        : Number.isSafeInteger(qtyNum) && qtyNum > 0;
+      if (!matchedReceipt || !receiptLine || !prod || !validQty) {
         setReturnMsg({ text: 'پسووڵە، کاڵا یان بڕی گەڕاندنەوە نادروستە', error: true });
         return;
       }
@@ -526,8 +530,8 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
               بڕی گەڕاوە
               <input
                 type="number"
-                min="1"
-                step="1"
+                min={matchedReceipt?.items[returnLineIndex]?.isScale ? '0.001' : '1'}
+                step={matchedReceipt?.items[returnLineIndex]?.isScale ? '0.001' : '1'}
                 value={returnQty}
                 onChange={e => setReturnQty(e.target.value)}
                 required
