@@ -475,7 +475,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (typeof input === 'string') {
       let queryStr = input.trim();
-      const multMatch = queryStr.match(/^(\\d{1,3})\\*(.+)$/);
+      const multMatch = queryStr.match(/^(\d{1,3})\*(.+)$/);
       if (multMatch) {
         if (requestedQty === undefined) effectiveQty = Number(multMatch[1]);
         queryStr = multMatch[2].trim();
