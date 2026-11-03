@@ -18,8 +18,24 @@ Each registered `bundle` (دەستە) or `set` (سێت) represents a **fixed pos
 
 `offline/tests/053_v110_fixed_packs_checkout.sql` exercises mixed unit/carton/bundle/set, alias codes, price drift rollback, receipt names, cumulative base units, replay, oversell rejection and no partial side effects. The CI job creates its own disposable PostgreSQL service; no production database is connected.
 
+## V110 server-owned pack catalog (disposable only)
+`offline/migrations/045_fixed_pack_catalog_v110_disposable.sql` adds a **separate, versioned and idempotent** owner/manager catalog registration transaction:
+- Enforces active local user role, session version, store ownership, product version and one-SKU unit base stock.
+- Atomically replaces one fixed-pack configuration, retires old primary/alias codes without deleting historical definitions, and forbids reuse of previously allocated barcodes across products or sale modes.
+- Persists a store-scoped registration audit keyed by request UUID.
+- Uses the same PostgreSQL store-row lock as the isolated checkout to avoid races.
+
+`offline/fixed-pack-catalog-server-v110.mjs` exposes a separately opted-in, loopback-only POST endpoint (`/api/local/v110/fixed-pack`) and is disabled by default. Startup also checks the exact disposable database name. Its owner token must be freshly authorized; cashier, stale-session, malformed request and duplicate barcode submissions fail closed. Tests include API contract and a SQL registration → scan/checkout round trip.
+
+The existing React ProductCatalogView still uses LocalStorage. **No live React catalog registration is wired to this pilot endpoint.** The server is a standalone isolated proof of the new catalog ownership contract.
+
+## V110 extended checkout coverage
+- `offline/tests/054_v110_durable_packs.sql`: durable intent, different-cashier rejection, stale quote cancellation, replay without duplicate cash/stock and fresh retry.
+- `offline/tests/055_v110_pack_concurrency_seed.sql` and `056_v110_pack_concurrency_verify.sql`: two separate PostgreSQL connections attempt overlapping fixed-pack stock; exactly one commits.
+- `tests/browser/v110_fixed_pack_sale.mjs`: real Chromium PC browser scans fixed-pack codes and aliases, checks inventory and DEMO receipt without modifying the locked 12-card Home.
+
 ## Remaining requirements for *official* multi-cashier release
-1. Integrate product registration with authenticated server-side catalog ownership and unique-code transactions; React's LocalStorage catalog is **not** the PostgreSQL catalog.
+1. Integrate the isolated server registration contract into the *production-authorized* catalog workflow with approved migrations, roles, audit and a synchronized React client; React's LocalStorage catalog is **not** the PostgreSQL catalog.
 2. Port and verify bundle/set semantics through the current restricted/actor-proof, V90 FEFO lot and V97 atomic checkout route. V110 pilot extends legacy V26 only; it does not bypass the V63 deprecation gate or enable an official cash write route.
 3. Conduct simultaneous cashier tests including lot expiry, rollback/restart, stale price, pack return and thermal printer. Obtain market acceptance before any database migration or main production activation.
 
