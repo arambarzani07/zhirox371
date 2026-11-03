@@ -819,6 +819,47 @@ export const ProductCatalogView: React.FC = () => {
                   </div>
                 )}
 
+                <section className="ws-panel" aria-label="بەستە و دەستە و سێت" style={{ padding: '12px', marginBlock: '8px' }}>
+                  <div className="ws-toolbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <strong className="ws-panel-title">بەستە، دەستە و سێت بۆ هەمان کاڵا</strong>
+                    <button type="button" className="secondary" disabled={packagesDraft.length >= MAX_EXTRA_PACKAGES} onClick={() => addPackageCard('carton')}>+ کارتۆن</button>
+                    <button type="button" className="secondary" disabled={packagesDraft.length >= MAX_EXTRA_PACKAGES} onClick={() => addPackageCard('pack')}>+ دەستە</button>
+                    <button type="button" className="secondary" disabled={packagesDraft.length >= MAX_EXTRA_PACKAGES} onClick={() => addPackageCard('set')}>+ سێت</button>
+                  </div>
+                  {packagesDraft.map((pkg, idx) => (
+                    <div key={pkg.id} className="ws-panel" style={{ border: '1px solid #dce6f0', padding: '10px', marginBlock: '9px' }}>
+                      <div className="ws-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong>{idx + 1}. {pkg.kind === 'carton' ? 'کارتۆن' : pkg.kind === 'pack' ? 'دەستە' : 'سێت'}</strong>
+                        <button type="button" className="secondary" onClick={() => setPackagesDraft(prev => prev.filter(x => x.id !== pkg.id))}>لابردنی ئەم بەستەیە</button>
+                      </div>
+                      <div className="ws-form-grid">
+                        <label className="form-col">ناوی بەستە *
+                          <input required value={pkg.name} onChange={e => changePackage(pkg.id, 'name', e.target.value)} />
+                        </label>
+                        <label className="form-col">بارکۆدی سەرەکی *
+                          <input required dir="ltr" value={pkg.barcode} onChange={e => changePackage(pkg.id, 'barcode', e.target.value)} />
+                        </label>
+                        <label className="form-col">ژمارەی یەکە لە بەستەدا *
+                          <input required type="number" min="2" step="1" value={pkg.units} onChange={e => changePackage(pkg.id, 'units', e.target.value)} />
+                        </label>
+                        <label className="form-col">نرخی کڕینی بەستە (IQD)
+                          <input type="number" min="0" step="1" value={pkg.buy} onChange={e => changePackage(pkg.id, 'buy', e.target.value)} />
+                        </label>
+                        <label className="form-col">نرخی فرۆشتنی بەستە (IQD) *
+                          <input required type="number" min="1" step="1" value={pkg.sell} onChange={e => changePackage(pkg.id, 'sell', e.target.value)} />
+                        </label>
+                        <label className="form-col">بارکۆدە هاوتاکان (زۆرترین 30)
+                          <input dir="ltr" value={pkg.aliases} onChange={e => changePackage(pkg.id, 'aliases', e.target.value)} />
+                        </label>
+                        <label className="form-col">نرخی هەر یەکە (تەنها نیشاندان)
+                          <input readOnly tabIndex={-1} value={Number(pkg.units) >= 2 && Number(pkg.sell) > 0 ? (Number(pkg.sell) / Number(pkg.units)).toFixed(3) : ''} />
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                  <small>بارکۆدەکان بە تێکست هەڵدەگیرێن؛ سفرەکانی سەرەتای بارکۆد دەپارێزرێن. نرخ و بڕی هەر بەستەیەک جیاوازن.</small>
+                </section>
+
                 <div className="ws-toolbar" style={{ marginBottom: 0, paddingTop: '4px' }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <button type="submit" className="primary">
