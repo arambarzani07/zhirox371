@@ -1,0 +1,34 @@
+name: Locked Product Registration QA
+on:
+  pull_request:
+    paths:
+      - 'src/components/ProductCatalogView.tsx'
+      - 'src/context/AppContext.tsx'
+      - 'src/types/index.ts'
+      - 'src/utils/lockedProductRules.ts'
+      - 'scripts/qa-locked-product-registration.mjs'
+      - '.github/workflows/locked-product-registration-qa.yml'
+  push:
+    branches: [feature/locked-product-registration-v19-packages]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies (never connect to production DB)
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: TypeScript strict typecheck
+        run: npx tsc --noEmit
+      - name: Barcode and multi-package regression checks
+        run: node scripts/qa-locked-product-registration.mjs
+      - name: Assert locked Home is untouched
+        run: |
+          git diff --exit-code origin/main...HEAD -- src/components/HomeScreen.tsx
+          git diff --exit-code origin/main...HEAD -- ui-global.css ui-fixed-pc.css card-icons.css src/index.css src/systemDesignV2.css
