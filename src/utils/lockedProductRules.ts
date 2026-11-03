@@ -33,9 +33,12 @@ export function validateLockedProduct(
     return 'نرخی دانە نادروستە';
   }
   if (!Number.isFinite(next.stock) || next.stock < 0 ||
-      (next.base_unit === 'unit' && !Number.isInteger(next.stock))) {
+      (next.base_unit === 'unit' && !Number.isInteger(next.stock)) ||
+      (next.base_unit === 'kg' && Math.abs(next.stock * 1000 - Math.round(next.stock * 1000)) > 1e-7)) {
     return 'کۆگای سەرەتایی نادروستە';
   }
+  if (next.min_stock !== undefined && (!Number.isFinite(next.min_stock) || next.min_stock < 0))
+    return 'کەمترین بڕی کۆگا نادروستە';
   if (next.unit_alias_barcodes.length > MAX_ALIAS_BARCODES)
     return 'زۆرترین ژمارەی بارکۆدی هاوتای دانە 30 ـە';
   const carton = next.carton;
