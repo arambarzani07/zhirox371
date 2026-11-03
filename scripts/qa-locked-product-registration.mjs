@@ -1,18 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import ts from 'typescript';
+import {
+  validateLockedProduct, productCodes, parseAliases, MAX_ALIAS_BARCODES
+} from '../src/utils/lockedProductRules.ts';
 
-// Load the ACTUAL TypeScript validation source with type-only imports erased.
-// No mocked implementation; these tests exercise the production validator.
-const original = await readFile(new URL('../src/utils/lockedProductRules.ts', import.meta.url), 'utf8');
-const output = ts.transpileModule(original, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  reportDiagnostics: true
-});
-assert.equal((output.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
-const { validateLockedProduct, productCodes, parseAliases, MAX_ALIAS_BARCODES } =
-  await import('data:text/javascript;base64,' + Buffer.from(output.outputText).toString('base64'));
-
+// Node 22.23 strips TypeScript types from the ACTUAL application validator.
+// Do not import the TypeScript 7 compiler API (ModuleKind is no longer exported).
 const valid = {
   id: 'one', name: 'چای', base_unit: 'unit', sale_mode: 'both',
   unit_barcode: '001234567890', unit_alias_barcodes: ['000001'],
