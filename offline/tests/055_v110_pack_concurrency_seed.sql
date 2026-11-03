@@ -14,6 +14,13 @@ BEGIN
  INSERT INTO zhirox_local.stores(id,name) VALUES(s,'V110 concurrency isolated');
  INSERT INTO zhirox_local.products(store_id,id,name,price_minor,stock_base_units,base_unit)
  VALUES(s,p,'ئاوی تاقیکردنەوە',500,6,'unit');
+ INSERT INTO zhirox_local.local_users(store_id,id,username,password_hash,role)
+ VALUES(s,a,'v110-race-a','test-hash','cashier'),
+       (s,b,'v110-race-b','test-hash','cashier');
+ PERFORM * FROM zhirox_local.open_cash_shift_v37(
+  s,a,'11000000-0000-4000-8000-000000000316',0);
+ PERFORM * FROM zhirox_local.open_cash_shift_v37(
+  s,b,'11000000-0000-4000-8000-000000000317',0);
  INSERT INTO zhirox_local.barcodes(store_id,code,product_id,quantity_base_units,sale_mode,sale_price_minor,display_name)
  VALUES(s,'BUNDLE-RACE-310',p,6,'bundle',2700,'دەستەی ئاو'),
        (s,'SET-RACE-310',p,4,'set',1900,'سێتی ئاو');
