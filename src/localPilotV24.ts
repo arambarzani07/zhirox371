@@ -8,7 +8,7 @@ export interface LocalPilotItem {
   price_minor: number;
   stock_base_units: number;
   base_unit: "unit"|"gram";
-  sale_mode: "unit"|"carton"|"scale";
+  sale_mode: "unit"|"carton"|"bundle"|"set"|"scale";
   quantity_base_units: number;
   weight_grams: number|null;
   unit_price_minor: number;
@@ -57,7 +57,7 @@ export async function loginLocal(store_id:string,username:string,password:string
 export async function scanLocal(token:string,barcode:string):Promise<LocalPilotItem>{
   if(!/^[0-9A-Za-z._-]{4,80}$/.test(barcode))throw new Error("invalid_barcode");
   const data=await request<{ok:true;product:{id:string;name:string;barcode:string;price_minor:string;
-    stock_base_units:string;base_unit:"unit"|"gram";sale_mode:"unit"|"carton"|"scale";
+    stock_base_units:string;base_unit:"unit"|"gram";sale_mode:"unit"|"carton"|"bundle"|"set"|"scale";
     quantity_base_units:number;weight_grams:number|null;unit_price_minor:string}}>(
     "/api/local/v26/scan?code="+encodeURIComponent(barcode),{},token
   );
@@ -67,10 +67,10 @@ export async function scanLocal(token:string,barcode:string):Promise<LocalPilotI
   if(!uuid.test(p?.id||"")||!p.name||p.barcode!==barcode||
       !Number.isSafeInteger(price)||price<0||!Number.isSafeInteger(stock)||stock<0||
       !Number.isSafeInteger(baseQty)||baseQty<1||!Number.isSafeInteger(unitPrice)||unitPrice<0||
-      !["unit","gram"].includes(p.base_unit)||!["unit","carton","scale"].includes(p.sale_mode)||
+      !["unit","gram"].includes(p.base_unit)||!["unit","carton","bundle","set","scale"].includes(p.sale_mode)||
       (p.base_unit==="gram"&&(p.sale_mode!=="scale"||baseQty!==Number(p.weight_grams)))||
       (p.base_unit==="unit"&&(p.sale_mode==="scale"||
-        (p.sale_mode==="unit"&&baseQty!==1)||(p.sale_mode==="carton"&&baseQty<2))))
+        (p.sale_mode==="unit"&&baseQty!==1)||(["carton","bundle","set"].includes(p.sale_mode)&&baseQty<2))))
     throw new Error("invalid_product");
   return {id:p.id,name:p.name,barcode,price_minor:price,stock_base_units:stock,
     base_unit:p.base_unit,sale_mode:p.sale_mode,quantity_base_units:baseQty,
