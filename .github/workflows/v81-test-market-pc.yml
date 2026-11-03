@@ -42,6 +42,10 @@ on:
       - 'offline/tests/v96-actor-proof-contract.test.mjs'
       - 'docs/V96_BOUND_ACTOR_PROOF.md'
       - 'offline/migrations/042_v97_proven_atomic_checkout.sql'
+      - 'offline/migrations/047_v112_signed_pack_atomic_fefo.sql'
+      - 'offline/proven-pack-checkout-v112.mjs'
+      - 'offline/tests/v112_signed_pack_fefo_real_pg.mjs'
+      - 'docs/V112_SIGNED_PACK_FEFO_ATOMIC.md'
       - 'offline/migrations/046_v111_pack_fefo_signed_quote.sql'
       - 'offline/tests/059_v111_pack_quote_fixture.sql'
       - 'offline/tests/v111_signed_fefo_pack_quote_real_pg.mjs'
@@ -145,6 +149,10 @@ on:
       - 'offline/tests/v96-actor-proof-contract.test.mjs'
       - 'docs/V96_BOUND_ACTOR_PROOF.md'
       - 'offline/migrations/042_v97_proven_atomic_checkout.sql'
+      - 'offline/migrations/047_v112_signed_pack_atomic_fefo.sql'
+      - 'offline/proven-pack-checkout-v112.mjs'
+      - 'offline/tests/v112_signed_pack_fefo_real_pg.mjs'
+      - 'docs/V112_SIGNED_PACK_FEFO_ATOMIC.md'
       - 'offline/proven-checkout-v97.mjs'
       - 'offline/tests/v97_atomic_checkout_real_pg.mjs'
       - 'offline/tests/v97-atomic-checkout-contract.test.mjs'
@@ -356,6 +364,10 @@ jobs:
         run: node offline/tests/v101_private_nic_real_pg.mjs
       - name: V104 real private-NIC TLS1.3 mTLS read-only CSV catalog watcher with PostgreSQL device revocation
         run: node offline/tests/v104_lan_catalog_mtls_real_pg.mjs
+      - name: V112 install restricted test-only HMAC pack sale and FEFO atomic snapshot
+        run: psql -v ON_ERROR_STOP=1 -f offline/migrations/047_v112_signed_pack_atomic_fefo.sql
+      - name: V112 real PostgreSQL pack price, FEFO, ACK-loss, concurrent cashiers and blocked legacy refund
+        run: node offline/tests/v112_signed_pack_fefo_real_pg.mjs
       - name: Preserve a restorable REAL PostgreSQL V101 RFC1918 NIC TLS1.3 and PG checkout recovery test-market snapshot
         shell: bash
         run: |
