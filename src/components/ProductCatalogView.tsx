@@ -198,7 +198,7 @@ export const ProductCatalogView: React.FC = () => {
       setMessage({ text: 'تکایە ناوی کاڵا بنووسە', error: true });
       return;
     }
-    const sellPrice = parseInt(unitSellPrice, 10);
+    const sellPrice = unitSellPrice.trim() === '' ? NaN : Number(unitSellPrice);
     if (!Number.isSafeInteger(sellPrice) || sellPrice <= 0) {
       setMessage({ text: 'نرخی فرۆشتن دەبێت ژمارەیەکی دروستی گەورەتر لە سفر بێت', error: true });
       return;
@@ -218,7 +218,7 @@ export const ProductCatalogView: React.FC = () => {
       return;
     }
 
-    const buyPrice = unitBuyPrice ? parseInt(unitBuyPrice, 10) : null;
+    const buyPrice = unitBuyPrice.trim() ? Number(unitBuyPrice) : null;
     const aliases = parseAliases(extraBarcodes);
 
     for (const alias of aliases) {
@@ -257,7 +257,7 @@ export const ProductCatalogView: React.FC = () => {
         barcode: trimmedCartonBarcode,
         alias_barcodes: cartonAliases,
         units_per_carton: Number(unitsPerCarton),
-        purchase_price_iqd: cartonBuyPrice ? parseInt(cartonBuyPrice, 10) : null,
+        purchase_price_iqd: cartonBuyPrice.trim() ? Number(cartonBuyPrice) : null,
         sale_price_iqd: Number(cartonSellPrice)
       };
     }
