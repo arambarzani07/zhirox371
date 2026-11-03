@@ -5,7 +5,7 @@ import {fileURLToPath} from "node:url";
 import {createLocalAuthV3} from "./local-auth-v3.mjs";
 import {createLocalPacksScaleHandlerV26} from "./local-packs-scale-server-v26.mjs";
 
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CODE=/^[A-Za-z0-9._-]{4,80}$/;
 const keys=["aliases","barcode","expected_version","kind","name",
   "price_minor","product_id","request_id","units_per_pack"].sort().join(",");
