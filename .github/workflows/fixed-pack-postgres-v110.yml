@@ -6,6 +6,10 @@ on:
   pull_request:
     paths:
       - 'offline/migrations/044_fixed_packs_v110_disposable.sql'
+      - 'offline/migrations/045_fixed_pack_catalog_v110_disposable.sql'
+      - 'offline/fixed-pack-catalog-server-v110.mjs'
+      - 'offline/tests/fixed-pack-catalog-v110.test.mjs'
+      - 'offline/tests/057_v110_catalog_registration.sql'
       - 'offline/local-packs-scale-server-v26.mjs'
       - 'offline/tests/053_v110_fixed_packs_checkout.sql'
       - 'offline/tests/054_v110_durable_packs.sql'
@@ -44,6 +48,8 @@ jobs:
           node-version: '24'
       - name: Test server quote contract (unit/carton/scale/bundle/set)
         run: node --test offline/tests/local-packs-scale-v26.test.mjs
+      - name: Test authenticated owner-only fixed-pack catalog API
+        run: node --test offline/tests/fixed-pack-catalog-v110.test.mjs
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
       - name: Create isolated baseline
@@ -55,9 +61,11 @@ jobs:
       - name: Apply guarded V110 migration and test atomic sale, stock and replay
         run: |
           psql -X -v ON_ERROR_STOP=1 -f offline/migrations/044_fixed_packs_v110_disposable.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/migrations/045_fixed_pack_catalog_v110_disposable.sql
           psql -X -v ON_ERROR_STOP=1 -f offline/migrations/009_durable_checkout_intents.sql
           psql -X -v ON_ERROR_STOP=1 -f offline/tests/053_v110_fixed_packs_checkout.sql
           psql -X -v ON_ERROR_STOP=1 -f offline/tests/054_v110_durable_packs.sql
+          psql -X -v ON_ERROR_STOP=1 -f offline/tests/057_v110_catalog_registration.sql
       - name: Two real concurrent cashier connections cannot sell the same fixed-pack stock
         shell: bash
         run: |
@@ -82,3 +90,4 @@ jobs:
       - name: Verify migrations never attempt actual supermarket database
         run: |
           grep -q "current_database() <> 'zhirox_v110_packs_disposable'" offline/migrations/044_fixed_packs_v110_disposable.sql
+          grep -q "current_database()<>'zhirox_v110_packs_disposable'" offline/migrations/045_fixed_pack_catalog_v110_disposable.sql
