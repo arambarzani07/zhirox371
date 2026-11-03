@@ -857,10 +857,9 @@ export const ProductCatalogView: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  <small>بارکۆدەکان بە تێکست هەڵدەگیرێن؛ سفرەکانی سەرەتای بارکۆد دەپارێزرێن. نرخ و بڕی هەر بەستەیەک جیاوازن.</small>
                 </section>
 
-                <div className="ws-toolbar" style={{ marginBottom: 0, paddingTop: '4px' }}>
+                <div className="ws-toolbar" style={{ marginBottom: 0, paddingTop: '8px', paddingBottom: '8px', position: 'sticky', bottom: 0, background: '#fff', borderTop: '1px solid #dce6f0', zIndex: 2 }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <button type="submit" className="primary">
                       {editingId ? 'پاشەکەوتکردنی گۆڕانکارییەکان' : 'زیادکردنی کاڵا بۆ کەتەلۆگ'}
