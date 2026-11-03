@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import {
   Product,
+  TradePackage,
   CartLine,
   Receipt,
   SaleItem,
@@ -405,7 +406,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addAuditLog('وەرگرتنی کاڵا', `وەرگیرا: ${quantity} ${mode === 'carton' ? 'کارتۆن' : 'دانە'} لە ${p.name}`);
   };
 
-  const findProductByCode = (barcode: string): { product: Product; mode: 'unit' | 'carton'; isScale?: boolean; scaleGrams?: number } | null => {
+  const findProductByCode = (barcode: string): { product: Product; mode: 'unit' | 'carton'; tradePackage?: TradePackage; isScale?: boolean; scaleGrams?: number } | null => {
     const trimmed = barcode.trim();
     if (!trimmed) return null;
 
@@ -445,6 +446,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     matched = products.find(x => x.carton?.alias_barcodes.includes(trimmed));
     if (matched) return { product: matched, mode: 'carton' };
 
+    // A single product may carry multiple independently priced carton/pack/set cards.
+    // Scan lookup is exact and preserves leading zeros on barcode TEXT.
+    for (const product of products) {
+      const tradePackage = (product.packages || []).find(
+        pkg => pkg.barcode === trimmed || pkg.alias_barcodes.includes(trimmed)
+      );
+      if (tradePackage) return { product, mode: 'carton', tradePackage };
+    }
+
     // Fallback: SKU or PLU match
     matched = products.find(x => x.sku?.toLowerCase() === trimmed.toLowerCase() || x.plu === trimmed);
     if (matched) return { product: matched, mode: 'unit' };
@@ -464,6 +474,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     let p: Product;
     let mode: 'unit' | 'carton' = requestedMode || 'unit';
     let isScale = false;
+    let tradePackage: TradePackage | undefined;
     let scaleGrams = 1000;
     let scanBarcode = '';
     let effectiveQty = Math.max(1, Math.floor(requestedQty || 1));
@@ -485,6 +496,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       p = match.product;
       mode = requestedMode || match.mode;
+      tradePackage = requestedMode === 'unit' ? undefined : match.tradePackage;
       isScale = match.isScale || false;
       scaleGrams = match.scaleGrams || 1000;
       scanBarcode = queryStr;
@@ -498,18 +510,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       effectiveQty = 1;
     }
 
-    if (mode === 'carton' && !p.carton) {
+    if (mode === 'carton' && !p.carton && !tradePackage) {
       mode = 'unit';
     }
 
     const unitsPerPackage = isScale
       ? scaleGrams / 1000
+      : mode === 'carton' && tradePackage
+      ? tradePackage.units_per_package
       : mode === 'carton' && p.carton
       ? p.carton.units_per_carton
       : 1;
 
     const pricePerUnit = isScale
       ? Math.round((p.unit_sale_price_iqd * scaleGrams) / 1000)
+      : mode === 'carton' && tradePackage
+      ? tradePackage.sale_price_iqd
       : mode === 'carton' && p.carton
       ? p.carton.sale_price_iqd
       : p.unit_sale_price_iqd;
@@ -531,7 +547,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Check if can merge with existing line
     const existingIndex = isScale
       ? -1
-      : cart.findIndex(c => c.productId === p.id && c.mode === mode && c.price === pricePerUnit);
+      : cart.findIndex(c => c.productId === p.id && c.mode === mode &&
+          c.price === pricePerUnit && c.units === unitsPerPackage &&
+          (c.packageId || '') === (tradePackage?.id || ''));
+
 
     if (existingIndex >= 0) {
       const nextCart = [...cart];
@@ -541,13 +560,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newLine: CartLine = {
         id: `cart-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
         productId: p.id,
-        name: isScale ? `${p.name} (${(scaleGrams / 1000).toFixed(3)} کگم)` : (mode === 'carton' && p.carton?.name ? p.carton.name : p.name),
+        name: isScale ? `${p.name} (${(scaleGrams / 1000).toFixed(3)} کگم)` :
+          (tradePackage?.name || (mode === 'carton' && p.carton?.name ? p.carton.name : p.name)),
         barcode: scanBarcode,
         mode,
         price: pricePerUnit,
         qty: effectiveQty,
         units: unitsPerPackage,
         isScale,
+        packageId: tradePackage?.id,
         scaleGrams: isScale ? scaleGrams : undefined,
         available: p.stock
       };
@@ -594,7 +615,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: false, message: 'کاڵای تەرازوو ناکرێتە کارتۆن' };
     }
     const p = products.find(x => x.id === line.productId);
-    if (!p || !p.carton) {
+    if (!p || (line.mode === 'unit' && !p.carton)) {
       return { success: false, message: 'ئەم کاڵایە زانیاریی کارتۆنی نییە' };
     }
 
@@ -622,7 +643,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       units: nextUnits,
       price: nextPrice,
       name: nextName,
-      barcode: nextBarcode
+      barcode: nextBarcode,
+      packageId: undefined
     };
     setCart(next);
     return { success: true };
