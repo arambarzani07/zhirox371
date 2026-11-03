@@ -349,6 +349,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
   const [selectedProductId, setSelectedProductId] = useState<string>(products[0]?.id || '');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(suppliers[0]?.id || '');
   const [returnReceiptNo, setReturnReceiptNo] = useState<string>(receipts[0]?.receiptNumber || '');
+  const [returnLineIndex, setReturnLineIndex] = useState<number>(0);
   const [returnQty, setReturnQty] = useState<string>('1');
   const [returnRestock, setReturnRestock] = useState<boolean>(true);
   const [returnRefundMethod, setReturnRefundMethod] = useState<'cash' | 'debt'>('cash');
@@ -396,15 +397,15 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
 
     const handleReturnSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      const prod = products.find(p => p.id === selectedProductId);
+      const receiptLine = matchedReceipt?.items[returnLineIndex];
+      const prod = products.find(p => p.id === receiptLine?.productId);
       const qtyNum = Number(returnQty);
-      if (!matchedReceipt || !prod || !Number.isFinite(qtyNum) || qtyNum <= 0) {
+      if (!matchedReceipt || !receiptLine || !prod || !Number.isSafeInteger(qtyNum) || qtyNum <= 0) {
         setReturnMsg({ text: 'پسووڵە، کاڵا یان بڕی گەڕاندنەوە نادروستە', error: true });
         return;
       }
-      const receiptLine = matchedReceipt.items.find(i => i.productId === prod.id);
-      if (!receiptLine) {
-        setReturnMsg({ text: 'ئەم کاڵایە لە پسووڵەی هەڵبژێردراو نییە', error: true });
+      if (!Number.isSafeInteger(receiptLine.price) || receiptLine.price <= 0) {
+        setReturnMsg({text:'نرخی پسووڵە پشتڕاست نەکراوە',error:true});
         return;
       }
       const unitPrice = receiptLine.price;
@@ -430,13 +431,20 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
 
       setReturnQty('1');
       setReturnMsg({
-        text: `گەڕاندنەوەی ${qtyNum} × ${prod.name} بە بڕی ${money(refundAmount)} بە سەرکەوتوویی تۆمارکرا`,
+        text: `گەڕاندنەوەی ${qtyNum} × ${receiptLine.name} بە بڕی ${money(refundAmount)} بە سەرکەوتوویی تۆمارکرا`,
         error: false
       });
     };
 
     const totalReturnedIqd = demoRefunds.reduce((s, r) => s + r.refundAmount, 0);
-    const totalRestockedUnits = demoRefunds.filter(r => r.restocked).reduce((s, r) => s + r.qty, 0);
+    const totalRestockedUnits = demoRefunds.filter(r => r.restocked).reduce((sum, record) => {
+      const source = receipts.find(receipt => receipt.receiptNumber === record.receiptNo);
+      const line = source?.items.find(item => item.productId === record.productId &&
+        item.mode === (record.mode || 'unit'));
+      // An imported/legacy refund without a verifiable receipt must not invent stock.
+      return line && Number.isFinite(line.units) && line.units > 0
+        ? sum + record.qty * line.units : Number.NaN;
+    }, 0);
 
     return (
       <div className="ws-stack">
@@ -448,7 +456,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
           </div>
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">یەکەی گەڕاوە بۆ کۆگا (سالم)</span>
-            <span className="ws-kpi-value positive">{totalRestockedUnits}</span>
+            <span className="ws-kpi-value positive">{Number.isFinite(totalRestockedUnits) ? totalRestockedUnits : 'نادیار'}</span>
             <span className="ws-kpi-sub">زیادکراوەتەوە سەر باڵانسی کۆگا</span>
           </div>
           <div className="ws-kpi-card">
@@ -485,12 +493,10 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
                 onChange={e => {
                   const nextNo = e.target.value;
                   setReturnReceiptNo(nextNo);
+                  setReturnLineIndex(0);
                   const rcp = receipts.find(r => r.receiptNumber === nextNo);
                   if (rcp) {
                     setReturnRefundMethod(rcp.paymentMethod === 'debt' ? 'debt' : 'cash');
-                    if (rcp.items[0]?.productId) {
-                      setSelectedProductId(rcp.items[0].productId);
-                    }
                   }
                 }}
               >
@@ -503,11 +509,14 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
             </label>
 
             <label className="form-col">
-              کاڵای گەڕاوە
-              <select value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
-                {products.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({money(p.unit_sale_price_iqd)})
+              کاڵا و یەکەی گەڕاوە لە پسووڵە
+              <select value={matchedReceipt?.items[returnLineIndex] ? returnLineIndex : 0}
+                onChange={e => setReturnLineIndex(Number(e.target.value))}>
+                {(matchedReceipt?.items || []).map((line, index) => (
+                  <option key={index} value={index}>
+                    {line.name} — {line.mode === 'carton' ? 'کارتۆن' :
+                      line.mode === 'bundle' ? 'دەستە' :
+                      line.mode === 'set' ? 'سێت' : 'دانە'} ({money(line.price)})
                   </option>
                 ))}
               </select>
@@ -517,8 +526,8 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
               بڕی گەڕاوە
               <input
                 type="number"
-                min="0.001"
-                step="0.001"
+                min="1"
+                step="1"
                 value={returnQty}
                 onChange={e => setReturnQty(e.target.value)}
                 required
@@ -584,6 +593,10 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
                   <td style={{ direction: 'ltr', fontWeight: 900 }}>{r.receiptNo}</td>
                   <td>
                     <strong>{r.productName}</strong>
+                    <span style={{marginInlineStart:6,color:'#64748b'}}>
+                      ({r.mode === 'carton' ? 'کارتۆن' : r.mode === 'bundle' ? 'دەستە' :
+                        r.mode === 'set' ? 'سێت' : 'دانە'})
+                    </span>
                   </td>
                   <td>{r.qty}</td>
                   <td style={{ direction: 'ltr', fontWeight: 900, color: '#b91c1c' }}>
