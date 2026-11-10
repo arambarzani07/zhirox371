@@ -1193,7 +1193,7 @@ export const ProductCatalogView: React.FC = () => {
 
           </div>
             </div>
-            <aside className="canva-catalog-aside" aria-label="وردەکاری و دەسەڵات">
+            <aside className="canva-catalog-aside" data-canva-inline-details="true" aria-label="وردەکاری و دەسەڵات">
               <h2>وردەکاری و دەسەڵات</h2>
               <dl>
                 <div><dt>کاڵای هەڵبژێردراو</dt><dd>{selectedCatalogProduct?.name || '—'}</dd></div>
