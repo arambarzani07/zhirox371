@@ -450,6 +450,15 @@ export const CashierPos: React.FC = () => {
     }
   };
 
+  const handleReprintLastDemoReceipt = () => {
+    try {
+      window.print();
+    } catch (_printError) {
+      // A reprint never retries or changes the already recorded sale.
+      setFeedbackMsg({ text: 'پسووڵەکە پارێزراوە؛ چاپ سەرکەوتوو نەبوو. چاپکەرەکە بپشکنە.', error: true });
+    }
+  };
+
   // Keep latest handler ref for keyboard shortcuts without stale closures
   const finishSaleRef = useRef(handleFinishSale);
   finishSaleRef.current = handleFinishSale;
@@ -1855,7 +1864,7 @@ export const CashierPos: React.FC = () => {
               {inlineCheckoutReceipt && (
                 <InlineReceiptV110
                   receipt={inlineCheckoutReceipt}
-                  onReprint={() => window.print()}
+                  onReprint={handleReprintLastDemoReceipt}
                   onDismiss={() => setInlineCheckoutReceipt(null)}
                 />
               )}
