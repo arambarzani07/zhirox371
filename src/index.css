@@ -2,6 +2,7 @@
 @import "../ui-fixed-pc.css";
 @import "../card-icons.css";
 @import "./systemDesignV2.css";
+@import "./components/canvaOfficialV1.css";
 
 /* Base Resets & Layout */
 * {
