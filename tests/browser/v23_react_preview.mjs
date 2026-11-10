@@ -40,6 +40,19 @@ try {
  const barcode=page.getByTestId("pos-barcode-input");
  assert.equal(await barcode.getAttribute("aria-label"),"بارکۆدی کاڵا");
  await barcode.waitFor({state:"visible"});
+ // Canva 002: real React controls mirror the approved Sorani desktop geometry.
+ const pageHeading=page.locator('[data-canva-page-heading="002"]');
+ assert.equal(await pageHeading.locator("h1").innerText(),"فرۆشتن و کاشێر");
+ assert.equal(await pageHeading.getByRole("button",{name:"ماڵەوە"}).count(),1);
+ assert.equal(await page.locator(".canva-ticket-history").innerText(),"پسووڵەکان");
+ assert.equal(await page.locator(".canva-pos-summary-title").innerText(),"پوختەی پارەدان");
+ assert.equal(await page.locator(".canva-pos-totals dt").count(),3);
+ const posColumns=await page.locator(".ws-pos-layout").evaluate(el=>{
+   const children=Array.from(el.children).map(child=>child.getBoundingClientRect());
+   return {basketX:children[0].x,basketW:children[0].width,summaryX:children[1].x,summaryW:children[1].width};
+ });
+ assert.ok(posColumns.basketX>posColumns.summaryX,"RTL basket must be to the right of the summary");
+ assert.ok(posColumns.basketW>posColumns.summaryW*1.5,"Basket must remain the wider Canva column");
  // Canva 002 presents five ticket slots; switching preserves each basket.
  const tickets=page.locator("[data-canva-ticket]");
  assert.equal(await tickets.count(),5);
