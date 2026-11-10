@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import original from '../../design/canva-original-screen-map.json';
 
 type OriginalScreen = { number: number; id: string; title: string; canva: string };
@@ -16,6 +16,8 @@ const screenFromUrl = () => {
  */
 export const CanvaOriginalReview: React.FC = () => {
   const [number, setNumber] = useState(screenFromUrl);
+  const [imageMissing, setImageMissing] = useState(false);
+  useEffect(() => setImageMissing(false), [number]);
   const source = screens[number - 1];
   const goto = (next: number) => {
     if (!Number.isInteger(next) || next < 1 || next > screens.length) return;
@@ -57,13 +59,20 @@ export const CanvaOriginalReview: React.FC = () => {
       <section style={{ width: '100%', maxWidth: 1500, margin: 'auto', aspectRatio: '16 / 9',
         background: '#fff', boxShadow: '0 4px 18px #14233e22', overflow: 'hidden' }}
         aria-label="پیشاندانی دیزاینی ئەسڵی">
-        <iframe key={source.id} title={'Canva ZHIROX ' + String(source.number).padStart(3, '0')}
-          src={source.canva + '/view?embed'} loading="eager"
-          style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
-          allowFullScreen />
+        {imageMissing ? (
+          <div role="status" style={{display: 'grid', placeItems: 'center', height: '100%', padding: 20, textAlign: 'center'}}>
+            وێنەی ئەم شاشەیە هێشتا لە GitHub پاشەکەوت نەکراوە؛ دیزاینی ئەسڵی لە Canva بکەرەوە.
+          </div>
+        ) : (
+          <img key={source.id}
+            src={import.meta.env.BASE_URL + 'canva-previews/' + String(source.number).padStart(3, '0') + '.png'}
+            alt={'وێنەی ڕەسەنی Canva ـ شاشەی ' + source.number}
+            onError={() => setImageMissing(true)}
+            style={{width:'100%',height:'100%',display:'block',objectFit:'contain',background:'#fff'}} />
+        )}
       </section>
       <p style={{ maxWidth: 1500, margin: '8px auto', fontSize: 11, color: '#536781' }}>
-        تێبینی: شاشەکان لە Canva نیشان دەدرێن. کۆدی کاراکردنیان دەبێت بە جیا لە React جێبەجێ و تاقی بکرێت.
+        تێبینی: ئەمانە وێنەی پێشبینینی Canva ـن (596×335)، نەک کۆدی کارای کاشێر. بۆ دیزاینی پڕقەبارە و دەستکاریکردن، فایلە ئەسڵییەکە لە Canva بکەرەوە.
       </p>
     </main>
   );
