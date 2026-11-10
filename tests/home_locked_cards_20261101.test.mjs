@@ -8,10 +8,12 @@ const app=read("src/App.tsx");
 const vite=read("vite.config.ts");
 
 test("Owner-locked React Home contains 12 main Sorani cards and 4 subcards each",()=>{
- assert.match(home,/className="home-screen locked-home"/);
+ assert.match(home,/className="home-screen locked-home canva-home-001"/);
  assert.match(home,/\[0, 1, 2\]\.map\(rowIndex/);
  assert.match(home,/gridTemplateColumns: 'repeat\(4,minmax\(0,1fr\)\)'/);
- assert.match(home,/MODULE_SPECS\.slice\(start, start \+ 4\)/);
+ assert.match(home,/canvaHomeModules\.slice\(start, start \+ 4\)/);
+ assert.match(home,/\[0, 1, 2, 4, 3, 5, 10, 8, 6, 11, 9, 7\]/);
+ assert.match(home,/data-canva-card=\{String\(index \+ 1\)\.padStart\(2, '0'\)\}/);
  assert.match(home,/activeModule\.submodules\.map/);
  assert.match(home,/className="subgrid"/);
  assert.match(home,/navigateTo\(targetView as NavView, targetSubtab, sectionId\)/);
