@@ -4,6 +4,7 @@ import { Product, SaleMode, BaseUnit, ExtraPackConfig } from '../types';
 import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 
+type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
 const emptyPackDrafts = ():ExtraPackDraft[] => [
  {kind:'bundle',name:'',barcode:'',aliases:'',units:'',buy:'',sell:''},
@@ -99,7 +100,10 @@ export const ProductCatalogView: React.FC = () => {
 
   // Inline alias addition in 'barcodes' tab
   const [barcodeTestQuery, setBarcodeTestQuery] = useState('');
-  const [addingAliasId, setAddingAliasId] = useState<string | null>(null);
+  const [barcodeCatalogSelectedId, setBarcodeCatalogSelectedId] = useState<string | null>(null);
+  const [barcodeCatalogProductQuery, setBarcodeCatalogProductQuery] = useState('');
+  const [barcodeCatalogMode, setBarcodeCatalogMode] = useState<BarcodeCatalogMode>('unit');
+  const [barcodeCatalogAdding, setBarcodeCatalogAdding] = useState(false);
   const [newAliasCode, setNewAliasCode] = useState('');
 
   // Form message
@@ -454,23 +458,53 @@ export const ProductCatalogView: React.FC = () => {
     setMessage({ text: `نرخی «${p.name}» بە سەرکەوتوویی نوێکرایەوە بۆ ${money(nextSell)}`, error: false });
   };
 
-  const handleSaveQuickAlias = (p: Product) => {
+  const handleSaveBarcodeAlias = (p: Product, mode: BarcodeCatalogMode) => {
     const clean = newAliasCode.trim();
-    if (!clean) return;
-    const conflict = findBarcodeOwner(clean, null);
-    if (conflict) {
-      setMessage({
-        text: `بارکۆدی (${clean}) پێشتر بۆ «${conflict.name}» تۆمار کراوە`,
-        error: true
-      });
+    if (!clean || clean.length > 60 || /[\\s,،;]/u.test(clean)) {
+      setMessage({ text: 'بارکۆدەکە دەبێت پیت و ژمارەی دروست بێت و بۆشایی تێدا نەبێت', error: true });
       return;
     }
-    updateProduct(p.id, {
-      unit_alias_barcodes: [...p.unit_alias_barcodes, clean]
-    });
-    setAddingAliasId(null);
+    const owner = findBarcodeOwner(clean, null);
+    if (owner) {
+      setMessage({ text: 'بارکۆدی (' + clean + ') پێشتر بۆ «' + owner.name + '» تۆمار کراوە', error: true });
+      return;
+    }
+    if (mode === 'kg' || mode === 'unit') {
+      if ((mode === 'kg') !== (p.base_unit === 'kg')) {
+        setMessage({ text: 'یەکەی هەڵبژێردراو لەگەڵ ئەم کاڵایە ناگونجێت', error: true });
+        return;
+      }
+      if (p.unit_alias_barcodes.length >= 30) {
+        setMessage({ text: 'سنووری 30 بارکۆدی هاوتا بۆ ئەم یەکەیە پڕبووە', error: true });
+        return;
+      }
+      updateProduct(p.id, { unit_alias_barcodes: [...p.unit_alias_barcodes, clean] });
+    } else if (mode === 'carton' && p.carton) {
+      if (p.carton.alias_barcodes.length >= 30) {
+        setMessage({ text: 'سنووری 30 بارکۆدی کارتۆن پڕبووە', error: true });
+        return;
+      }
+      updateProduct(p.id, { carton: { ...p.carton, alias_barcodes: [...p.carton.alias_barcodes, clean] } });
+    } else if (mode === 'bundle' || mode === 'set') {
+      const pack = p.extra_packs?.find(x => x.kind === mode);
+      if (!pack) {
+        setMessage({ text: 'ئەم جۆرە یەکەیە بۆ کاڵاکە تۆمار نەکراوە', error: true });
+        return;
+      }
+      if (pack.alias_barcodes.length >= 30) {
+        setMessage({ text: 'سنووری 30 بارکۆدی ئەم یەکەیە پڕبووە', error: true });
+        return;
+      }
+      updateProduct(p.id, { extra_packs: p.extra_packs?.map(x =>
+        x.kind === mode ? { ...x, alias_barcodes: [...x.alias_barcodes, clean] } : x
+      ) });
+    } else {
+      setMessage({ text: 'ئەم جۆرە یەکەیە بۆ کاڵاکە تۆمار نەکراوە', error: true });
+      return;
+    }
+    setBarcodeCatalogAdding(false);
     setNewAliasCode('');
-    setMessage({ text: `بارکۆدی هاوتای (${clean}) زیادکرا بۆ «${p.name}»`, error: false });
+    setMessage({ text: 'بارکۆدی هاوتای (' + clean + ') زیادکرا بۆ «' + p.name + '»', error: false });
   };
 
   const filteredProducts = products.filter(p => {
@@ -537,6 +571,49 @@ export const ProductCatalogView: React.FC = () => {
     ? findBarcodeOwner(barcodeTestQuery.trim(), null) ||
       products.find(p => p.plu === barcodeTestQuery.trim() || p.sku === barcodeTestQuery.trim())
     : undefined;
+
+  const barcodeCatalogProduct = products.find(p => p.id === barcodeCatalogSelectedId) || null;
+  const barcodeCatalogQuery = barcodeCatalogProductQuery.trim().toLowerCase();
+  const barcodeCatalogMatches = barcodeCatalogQuery
+    ? products.filter(p => p.name.toLowerCase().includes(barcodeCatalogQuery)
+      || p.unit_barcode.includes(barcodeCatalogQuery)
+      || p.unit_alias_barcodes.some(x => x.includes(barcodeCatalogQuery))
+      || Boolean(p.carton && (p.carton.barcode.includes(barcodeCatalogQuery)
+        || p.carton.alias_barcodes.some(x => x.includes(barcodeCatalogQuery))))
+      || Boolean(p.extra_packs?.some(x => x.barcode.includes(barcodeCatalogQuery)
+        || x.alias_barcodes.some(a => a.includes(barcodeCatalogQuery))))).slice(0, 8)
+    : [];
+  const barcodeCatalogPack = barcodeCatalogProduct?.extra_packs?.find(x => x.kind === barcodeCatalogMode);
+  const barcodeCatalogEnabled = Boolean(barcodeCatalogProduct && (
+    barcodeCatalogMode === 'kg' ? barcodeCatalogProduct.base_unit === 'kg'
+      : barcodeCatalogMode === 'unit' ? barcodeCatalogProduct.base_unit !== 'kg'
+      : barcodeCatalogMode === 'carton' ? Boolean(barcodeCatalogProduct.carton)
+      : Boolean(barcodeCatalogPack)
+  ));
+  const barcodeCatalogPrimaryCode = barcodeCatalogProduct && barcodeCatalogEnabled
+    ? (barcodeCatalogMode === 'unit' || barcodeCatalogMode === 'kg'
+      ? barcodeCatalogProduct.unit_barcode
+      : barcodeCatalogMode === 'carton'
+        ? barcodeCatalogProduct.carton?.barcode
+        : barcodeCatalogPack?.barcode) || ''
+    : '';
+  const barcodeCatalogAliases = barcodeCatalogProduct && barcodeCatalogEnabled
+    ? (barcodeCatalogMode === 'unit' || barcodeCatalogMode === 'kg'
+      ? barcodeCatalogProduct.unit_alias_barcodes
+      : barcodeCatalogMode === 'carton'
+        ? barcodeCatalogProduct.carton?.alias_barcodes || []
+        : barcodeCatalogPack?.alias_barcodes || [])
+    : [];
+  const barcodeCatalogRows = [
+    ...(barcodeCatalogPrimaryCode ? [{ code: barcodeCatalogPrimaryCode, primary: true }] : []),
+    ...barcodeCatalogAliases.map(code => ({ code, primary: false }))
+  ];
+  const barcodeCatalogTotalCount = barcodeCatalogProduct ? (
+    1 + barcodeCatalogProduct.unit_alias_barcodes.length
+    + (barcodeCatalogProduct.carton ? 1 + barcodeCatalogProduct.carton.alias_barcodes.length : 0)
+    + (barcodeCatalogProduct.extra_packs?.reduce((count, pack) =>
+      count + 1 + pack.alias_barcodes.length, 0) || 0)
+  ) : 0;
 
   const selectedCatalogProduct = products.find(p => p.id === selectedCatalogProductId) || null;
   const editingProduct = products.find(p => p.id === editingId) || null;
@@ -1384,132 +1461,127 @@ export const ProductCatalogView: React.FC = () => {
         </>
       )}
 
-      {/* 4. BARCODES & SCALE CODES SUBMODULE */}
+      {/* 4. BARCODES: original Canva 024 layout, real local catalog handlers. */}
       {activeTab === 'barcodes' && (
-        <>
-          <div className="ws-kpi-grid">
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کۆی بارکۆدە سەرەکییەکان</span>
-              <span className="ws-kpi-value">{products.length}</span>
-              <span className="ws-kpi-sub">بارکۆدی ستانداردی یەکە (EAN-13 / ناوخۆیی)</span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کاڵاکانی تەرازوو (PLU / کێش)</span>
-              <span className="ws-kpi-value">{scaleProductsCount}</span>
-              <span className="ws-kpi-sub">ئامادە بۆ بارکۆدی کێش (پێشگری 27)</span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">بارکۆدی کارتۆن و هاوتاکان</span>
-              <span className="ws-kpi-value positive">{totalAliasCount}</span>
-              <span className="ws-kpi-sub">کۆی بارکۆدە لاوەکی و کارتۆنییەکان</span>
-            </div>
+        <section className="canva-barcode-024" data-canva-screen="024" dir="rtl">
+          <div className="canva-catalog-page-heading canva-barcode-heading">
+            <h1>بارکۆدەکان و جۆرەکانی فرۆشتن</h1>
+            <nav className="canva-catalog-new-nav" aria-label="ڕێڕەوی کاڵا">
+              <button type="button" className="canva-catalog-home" onClick={() => navigateTo('home')}>ماڵەوە</button>
+              <button type="button" className="secondary" onClick={() => setActiveTab('list')}>کاڵا و نرخ</button>
+            </nav>
           </div>
 
-          <div className="ws-panel">
-            <div className="ws-toolbar" style={{ marginBottom: 0 }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-                <input
-                  type="text"
-                  className="input-search"
-                  dir="ltr"
-                  placeholder="تاقیکردنەوەی بارکۆد یان PLU بنووسە..."
-                  value={barcodeTestQuery}
-                  onChange={e => setBarcodeTestQuery(e.target.value)}
-                />
-                {barcodeTestQuery.trim() && (
-                  <span
-                    className={`ws-badge ${matchedBarcodeProduct ? 'success' : 'danger'}`}
-                    style={{ fontSize: '12px', padding: '5px 12px' }}
-                  >
-                    {matchedBarcodeProduct
-                      ? `ناسرایەوە: ${matchedBarcodeProduct.name} (${money(matchedBarcodeProduct.unit_sale_price_iqd)})`
-                      : 'هیچ کاڵایەک بەم بارکۆدە نەدۆزرایەوە'}
-                  </span>
-                )}
-              </div>
-              <input
-                type="text"
-                className="input-search"
-                placeholder="فلتەرکردنی خشتەی بارکۆدەکان..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+          <div className="canva-barcode-layout">
+            <div className="canva-barcode-main">
+              <h2>بارکۆدەکانی هەر جۆرە یەکەیەک</h2>
+              <label className="canva-barcode-search">
+                <strong>کاڵا</strong>
+                <input type="search" value={barcodeCatalogProductQuery}
+                  onChange={e => setBarcodeCatalogProductQuery(e.target.value)}
+                  placeholder="هەڵبژاردنی کاڵا بە ناو یان بارکۆد" autoComplete="off" />
+              </label>
+              {barcodeCatalogQuery && barcodeCatalogProductQuery !== barcodeCatalogProduct?.name && (
+                <div className="canva-barcode-suggestions" aria-label="کاڵاکانی دۆزراوە">
+                  {barcodeCatalogMatches.map(p => (
+                    <button key={p.id} type="button" className="secondary"
+                      onClick={() => {
+                        setBarcodeCatalogSelectedId(p.id);
+                        setBarcodeCatalogProductQuery(p.name);
+                        setBarcodeCatalogMode(p.base_unit === 'kg' ? 'kg' : 'unit');
+                        setBarcodeCatalogAdding(false);
+                        setNewAliasCode('');
+                      }}>
+                      {p.name} — {p.unit_barcode}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-          <div className="section-workspace__table">
-            <strong className="section-workspace__metric">
-              خشتەی خاوەندارێتیی بارکۆد و کۆدی تەرازوو ({filteredProducts.length} کاڵا)
-            </strong>
-            <table>
-              <thead>
-                <tr>
-                  <th>ناوی کاڵا</th>
-                  <th>بارکۆدی سەرەکی (EAN / ناوخۆیی)</th>
-                  <th>کۆدی تەرازوو (PLU)</th>
-                  <th>بارکۆدی کارتۆن</th>
-                  <th>دەستە / سێت</th>
-                  <th>فرەبارکۆدە هاوتاکان</th>
-                  <th>کردار</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map(p => (
-                  <tr key={p.id}>
-                    <td>
-                      <strong>{p.name}</strong>
-                    </td>
-                    <td style={{ direction: 'ltr', fontWeight: 900 }}>{p.unit_barcode}</td>
-                    <td style={{ direction: 'ltr' }}>{p.plu || '—'}</td>
-                    <td style={{ direction: 'ltr' }}>{p.carton ? p.carton.barcode : '—'}</td>
-                    <td>{p.extra_packs?.length ? p.extra_packs.map(pack=>`${pack.kind==='bundle'?'دەستە':'سێت'}: ${pack.barcode} (${pack.units_per_pack} دانە)`).join(' / ') : '—'}</td>
-                    <td style={{ direction: 'ltr' }}>
-                      {addingAliasId === p.id ? (
-                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            dir="ltr"
-                            placeholder="بارکۆدی هاوتا..."
-                            value={newAliasCode}
-                            onChange={e => setNewAliasCode(e.target.value)}
-                            style={{ width: '125px', padding: '4px 6px' }}
-                          />
-                          <button type="button" className="primary" onClick={() => handleSaveQuickAlias(p)}>
-                            زیادکردن
-                          </button>
-                          <button type="button" className="secondary" onClick={() => setAddingAliasId(null)}>
-                            لادان
-                          </button>
-                        </div>
-                      ) : p.unit_alias_barcodes.length > 0 ? (
-                        p.unit_alias_barcodes.join(', ')
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          className="secondary"
-                          onClick={() => {
-                            setAddingAliasId(p.id);
-                            setNewAliasCode('');
-                          }}
-                        >
-                          + هاوتا
-                        </button>
-                        <button type="button" className="secondary" onClick={() => setSelectedForLabel(p)}>
-                          چاپی بارکۆد
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+              <h3>جۆری یەکە</h3>
+              <div className="canva-barcode-mode-tabs" role="group" aria-label="جۆری یەکە">
+                {([
+                  ['unit', 'دانە'], ['carton', 'کارتۆن'],
+                  ['bundle', 'دەستە'], ['set', 'سێت'], ['kg', 'کیلۆ']
+                ] as const).map(([mode, label]) => (
+                  <button type="button" key={mode} aria-pressed={barcodeCatalogMode === mode}
+                    className={barcodeCatalogMode === mode ? 'primary' : 'secondary'}
+                    disabled={!barcodeCatalogProduct || (
+                      mode === 'unit' ? barcodeCatalogProduct.base_unit === 'kg'
+                        : mode === 'kg' ? barcodeCatalogProduct.base_unit !== 'kg'
+                        : mode === 'carton' ? !barcodeCatalogProduct.carton
+                        : !barcodeCatalogProduct.extra_packs?.some(x => x.kind === mode)
+                    )}
+                    onClick={() => {
+                      setBarcodeCatalogMode(mode);
+                      setBarcodeCatalogAdding(false);
+                      setNewAliasCode('');
+                    }}>{label}</button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              <div className="canva-barcode-table-wrap">
+                <table className="canva-barcode-table">
+                  <thead><tr>
+                    <th>بارکۆد</th><th>جۆر</th><th>دۆخ</th><th>کردار</th>
+                  </tr></thead>
+                  <tbody>
+                    {barcodeCatalogRows.length ? barcodeCatalogRows.map(row => (
+                      <tr key={row.code}>
+                        <td dir="ltr">{row.code}</td>
+                        <td>{barcodeCatalogMode === 'unit' ? 'دانە'
+                          : barcodeCatalogMode === 'carton' ? 'کارتۆن'
+                          : barcodeCatalogMode === 'bundle' ? 'دەستە'
+                          : barcodeCatalogMode === 'set' ? 'سێت' : 'کیلۆ'}</td>
+                        <td>{row.primary ? 'سەرەکی' : 'هاوتا'}</td>
+                        <td>—</td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={4} className="canva-barcode-empty">—</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {barcodeCatalogAdding && barcodeCatalogProduct && barcodeCatalogEnabled && (
+                <div className="canva-barcode-alias-edit">
+                  <label htmlFor="canva-barcode-new-alias">بارکۆدی نوێ</label>
+                  <input id="canva-barcode-new-alias" type="text" dir="ltr"
+                    value={newAliasCode} onChange={e => setNewAliasCode(e.target.value)}
+                    maxLength={60} autoComplete="off"/>
+                  <button type="button" className="primary"
+                    onClick={() => handleSaveBarcodeAlias(barcodeCatalogProduct, barcodeCatalogMode)}>
+                    پاشەکەوت
+                  </button>
+                  <button type="button" className="secondary" onClick={() => {
+                    setBarcodeCatalogAdding(false); setNewAliasCode('');
+                  }}>هەڵوەشاندنەوە</button>
+                </div>
+              )}
+              <button type="button" className="primary canva-barcode-add"
+                disabled={!barcodeCatalogEnabled || barcodeCatalogAdding}
+                onClick={() => { setBarcodeCatalogAdding(true); setNewAliasCode(''); }}>
+                زیادکردنی بارکۆدی نوێ
+              </button>
+            </div>
+
+            <aside className="canva-barcode-aside" aria-label="یەکە و پەیوەندییەکان">
+              <h2>یەکە و پەیوەندییەکان</h2>
+              <dl>
+                <div><dt>یەکەی سەرەکی</dt><dd>
+                  {barcodeCatalogProduct ? (barcodeCatalogProduct.base_unit === 'kg' ? 'کیلۆ' : 'دانە') : '—'}
+                </dd></div>
+                <div><dt>دانە لە کارتۆندا</dt><dd>
+                  {barcodeCatalogProduct?.carton?.units_per_carton ?? '—'}
+                </dd></div>
+                <div><dt>ژمارەی بارکۆدەکان</dt><dd>{barcodeCatalogProduct ? barcodeCatalogTotalCount : '—'}</dd></div>
+              </dl>
+              <p>بارکۆدی دووبارە تۆمار ناکرێت</p>
+              <button type="button" className="secondary" disabled title="پاراستن لە هەمان کاتی زیادکردنی بارکۆددا جێبەجێ دەکرێت">
+                پاراستنی گۆڕانکاری
+              </button>
+            </aside>
           </div>
-        </>
+        </section>
       )}
 
       {/* Shelf Label Preview Modal */}

@@ -673,3 +673,54 @@
     }
   }
 }
+
+/* Canva 024 source DAHaaUMr4u8 — two-column PC grid:
+ * right content original width 1206px, left aside width 511.2px,
+ * documented in design/canva-original-screen-024-geometry.json.
+ * Relative layout only: final pixel parity requires visual comparison.
+ */
+@media screen {
+  #app .canva-barcode-024 {direction:rtl; display:flex; flex-direction:column; gap:14px; font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif; color:#172b45; background:#fff; min-width:0;}
+  #app .canva-barcode-024 .canva-barcode-heading {background:#fff;}
+  #app .canva-barcode-024 .canva-barcode-layout {
+    direction:rtl; display:grid;
+    grid-template-columns:minmax(0,1206fr) minmax(300px,511.2fr);
+    gap:clamp(18px,4.0625vw,78px);
+    margin:0 3.25%; align-items:start;
+  }
+  #app .canva-barcode-024 .canva-barcode-main,
+  #app .canva-barcode-024 .canva-barcode-aside {
+    border:1px solid #e0e7f0; background:white; border-radius:10px;
+    padding:18px 22px; min-width:0;
+  }
+  #app .canva-barcode-024 h2 {margin:0 0 15px; font-size:19px; line-height:1.6; color:#172b45; font-weight:900; text-align:right;}
+  #app .canva-barcode-024 h3 {margin:19px 0 10px; color:#172b45; font-size:14px; font-weight:900; text-align:right;}
+  #app .canva-barcode-024 .canva-barcode-search {display:flex; flex-direction:column; gap:7px; position:relative; font-weight:900; text-align:right;}
+  #app .canva-barcode-024 .canva-barcode-search input {height:48px; border:1px solid #dce5ee; border-radius:8px; font:inherit; font-size:14px; padding:8px 14px; background:#fff; color:#172b45; direction:rtl;}
+  #app .canva-barcode-024 .canva-barcode-suggestions {display:flex; flex-direction:column; gap:3px; padding:7px; max-height:230px; overflow:auto; background:#fff; border:1px solid #dae3ed; border-radius:8px; box-shadow:0 8px 20px rgba(23,43,69,.09);}
+  #app .canva-barcode-024 .canva-barcode-suggestions button {text-align:right; min-height:36px; font:inherit;}
+  #app .canva-barcode-024 .canva-barcode-mode-tabs {display:flex; flex-wrap:wrap; gap:12px; direction:rtl; align-items:center;}
+  #app .canva-barcode-024 .canva-barcode-mode-tabs button {min-width:91px; min-height:41px; border-radius:8px; font-weight:900; font-size:14px;}
+  #app .canva-barcode-024 .canva-barcode-mode-tabs button:disabled {opacity:.55; cursor:not-allowed;}
+  #app .canva-barcode-024 .canva-barcode-table-wrap {margin-top:23px; width:100%; overflow-x:auto;}
+  #app .canva-barcode-024 .canva-barcode-table {width:100%; border-collapse:collapse; direction:rtl; table-layout:fixed; text-align:right; color:#172b45; font-size:13px;}
+  #app .canva-barcode-024 .canva-barcode-table th,
+  #app .canva-barcode-024 .canva-barcode-table td {text-align:right; border-bottom:1px solid #e3eaf1; height:58px; padding:9px 11px;}
+  #app .canva-barcode-024 .canva-barcode-table th {background:#f1f5f9; font-weight:900;}
+  #app .canva-barcode-024 .canva-barcode-table th:first-child {width:52%;}
+  #app .canva-barcode-024 .canva-barcode-table td:first-child {font-weight:850; overflow-wrap:anywhere;}
+  #app .canva-barcode-024 .canva-barcode-empty {text-align:center!important; color:#64748b;}
+  #app .canva-barcode-024 .canva-barcode-add {display:block; margin-top:20px; min-height:48px; min-width:240px; font-weight:900;}
+  #app .canva-barcode-024 .canva-barcode-alias-edit {display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:14px; padding:12px; border:1px solid #e0e7f0; border-radius:8px;}
+  #app .canva-barcode-024 .canva-barcode-alias-edit label {font-weight:900;}
+  #app .canva-barcode-024 .canva-barcode-alias-edit input {height:39px; width:220px; max-width:100%; padding:6px 10px; border:1px solid #dce5ee; border-radius:8px; background:#fff; color:#172b45;}
+  #app .canva-barcode-024 .canva-barcode-aside dl {display:flex; flex-direction:column; gap:14px; margin:0;}
+  #app .canva-barcode-024 .canva-barcode-aside dl > div {display:flex; flex-direction:column; gap:5px; border-bottom:1px solid #e3eaf1; padding-bottom:12px;}
+  #app .canva-barcode-024 .canva-barcode-aside dt {font-weight:800; font-size:12px; color:#64758d;}
+  #app .canva-barcode-024 .canva-barcode-aside dd {margin:0; font-weight:900; font-size:16px; color:#172b45;}
+  #app .canva-barcode-024 .canva-barcode-aside p {margin:19px 0; padding:9px; background:#f8fafc; color:#64758d; font-size:12px; font-weight:800;}
+  #app .canva-barcode-024 .canva-barcode-aside button {min-height:44px; width:100%; font-weight:900;}
+  @media (max-width:1180px) {
+    #app .canva-barcode-024 .canva-barcode-layout {grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr); gap:12px; margin:0 8px;}
+  }
+}

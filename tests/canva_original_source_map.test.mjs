@@ -63,3 +63,26 @@ test('Canva 023 original geometry and bounded edit controls are preserved', () =
   assert.match(source,/onSubmit=\{handleSaveProduct\}/);
   assert.match(style,/canva-catalog-edit-023/);
 });
+
+test('Canva 024 uses verified 1920x1080 original text geometry and selectable in-screen barcode modes',()=>{
+  const geometry=JSON.parse(read('design/canva-original-screen-024-geometry.json'));
+  const source=read('src/components/ProductCatalogView.tsx');
+  const style=read('src/components/canvaOfficialV1.css');
+  assert.equal(geometry.design_id,layout.screens[23].id);
+  assert.equal(geometry.element_count,40);
+  assert.equal(geometry.canvas.width,1920);
+  assert.equal(geometry.canvas.height,1080);
+  assert.equal(new Set(geometry.elements.map(x=>x.id)).size,40);
+  assert.match(source,/data-canva-screen="024"/);
+  assert.match(source,/className="canva-barcode-layout"/);
+  assert.match(source,/بارکۆدەکانی هەر جۆرە یەکەیەک/);
+  assert.match(source,/بارکۆدی دووبارە تۆمار ناکرێت/);
+  for(const key of ["unit","carton","bundle","set","kg"]){
+    assert.ok(source.includes("['"+key+"',"),"Missing selectable mode "+key);
+  }
+  assert.match(source,/handleSaveBarcodeAlias\(barcodeCatalogProduct, barcodeCatalogMode\)/);
+  assert.match(source,/findBarcodeOwner\(clean, null\)/);
+  assert.match(source,/alias_barcodes: \[\.\.\.pack.alias_barcodes/);
+  assert.match(source,/alias_barcodes: \[\.\.\.p.carton.alias_barcodes/);
+  assert.match(style,/\.canva-barcode-024 \.canva-barcode-layout/);
+});
