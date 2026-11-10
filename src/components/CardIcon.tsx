@@ -101,7 +101,7 @@ export interface ModuleSpec {
 export const MODULE_SPECS: ModuleSpec[] = [
   {
     id: 0,
-    title: "کاشێر و فرۆشتن",
+    title: "فرۆشتن و کاشێر",
     color: "#4c6dcc",
     lightBg: "#edf2ff",
     iconName: "cash-register",
@@ -114,7 +114,7 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 1,
-    title: "کاڵاکان",
+    title: "کاڵا و نرخ",
     color: "#15987c",
     lightBg: "#e7f7f0",
     iconName: "product-box",
@@ -127,7 +127,7 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 2,
-    title: "کۆگا",
+    title: "کۆگا و بەسەرچوون",
     color: "#d18b34",
     lightBg: "#fff2e2",
     iconName: "warehouse",
@@ -140,7 +140,7 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 3,
-    title: "کڕیاران و حسابەکان",
+    title: "کڕیار و قەرز",
     color: "#9565cb",
     lightBg: "#f2ebfd",
     iconName: "people",
@@ -153,7 +153,7 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 4,
-    title: "کڕین و دابینکەران",
+    title: "کڕین و دابینکردن",
     color: "#168db7",
     lightBg: "#e6f5fd",
     iconName: "delivery-truck",
@@ -166,7 +166,7 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 5,
-    title: "دارایی",
+    title: "سندووق و دارایی",
     color: "#bd7953",
     lightBg: "#fff1e7",
     iconName: "wallet",
@@ -192,20 +192,20 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 7,
-    title: "ڕێکخستنەکان",
+    title: "ڕێکخستن و پاراستن",
     color: "#74849a",
     lightBg: "#eff2f6",
     iconName: "settings-gear",
     submodules: [
       { label: "بەکارهێنەران", iconName: "manage-users", targetView: "settings", targetSubtab: "users" },
       { label: "دەسەڵاتەکان", iconName: "access-key", targetView: "settings", targetSubtab: "roles" },
-      { label: "ئامێرەکان", iconName: "connected-devices", targetView: "qa", targetSubtab: "hardware" },
+      { label: "لیبڵی نرخ", iconName: "price-label", targetView: "labels", targetSubtab: "shelf" },
       { label: "سیستەم", iconName: "system-controls", targetView: "qa", targetSubtab: "system" }
     ]
   },
   {
     id: 8,
-    title: "ئافەر و داشکاندن",
+    title: "ئۆفەر و پاداشت",
     color: "#cf6d96",
     lightBg: "#fcecf2",
     iconName: "offer-badge",
@@ -218,12 +218,12 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 9,
-    title: "لیبڵ و چاپکردن",
+    title: "ئامێر و تۆڕ",
     color: "#0f9c9d",
     lightBg: "#e5f7f7",
     iconName: "printer",
     submodules: [
-      { label: "لیبڵی نرخ", iconName: "price-label", targetView: "labels", targetSubtab: "shelf" },
+      { label: "ئامێرەکان", iconName: "connected-devices", targetView: "qa", targetSubtab: "hardware" },
       { label: "بارکۆد", iconName: "label-barcode", targetView: "labels", targetSubtab: "barcodes" },
       { label: "چاپی کۆمەڵەیی", iconName: "batch-print", targetView: "labels", targetSubtab: "batch" },
       { label: "قاڵبی چاپ", iconName: "print-template", targetView: "labels", targetSubtab: "templates" }
@@ -231,7 +231,7 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 10,
-    title: "شێفت و کارمەندان",
+    title: "کارمەند و دەسەڵات",
     color: "#a67d45",
     lightBg: "#fbf1e3",
     iconName: "shift-calendar",
@@ -244,7 +244,7 @@ export const MODULE_SPECS: ModuleSpec[] = [
   },
   {
     id: 11,
-    title: "چاودێری و مۆڵەتەکان",
+    title: "ئاگاداری و پەسندکردن",
     color: "#745dc5",
     lightBg: "#eeeafd",
     iconName: "security-shield",
