@@ -510,11 +510,20 @@ export const CashierPos: React.FC = () => {
       } else if (e.key === 'F7') {
         e.preventDefault();
         if (cart.length > 0) {
-          parkCart();
-          setFeedbackMsg({ text: 'سەبەتەکە بە کاتی هەڵگیرا (F7)', error: false });
+          if (parkCart(ticketLabel(activeTicketNumber))) {
+            const next = [1, 2, 3, 4, 5].find(n => n !== activeTicketNumber &&
+              !parkedCarts.some(p => p.label === ticketLabel(n)));
+            if (next) setActiveTicketNumber(next);
+            setFeedbackMsg({ text: 'پسووڵەکە هەڵگیرا (F7)', error: false });
+          } else {
+            setFeedbackMsg({ text: 'زۆرترین ژمارەی پسووڵەی هاوکات 5 ـە', error: true });
+          }
         } else if (parkedCart) {
-          restoreParkedCart();
-          setFeedbackMsg({ text: 'سەبەتەی هەڵگیراو گەڕێنرایەوە', error: false });
+          const first = parkedCarts[0];
+          restoreParkedCart(first.id);
+          const n = Number(first.label.match(/پسووڵە (\\d+)/)?.[1] || 1);
+          if (n >= 1 && n <= 5) setActiveTicketNumber(n);
+          setFeedbackMsg({ text: 'پسووڵەی هەڵگیراو گەڕێنرایەوە', error: false });
         }
       } else if (e.key === 'F8') {
         e.preventDefault();
@@ -526,7 +535,7 @@ export const CashierPos: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, cart, parkedCart, parkCart, restoreParkedCart, soundEnabled]);
+  }, [activeTab, cart, parkedCart, parkedCarts, activeTicketNumber, parkCart, restoreParkedCart, soundEnabled]);
 
   const filteredReceipts = receipts.filter(rcp => {
     const matchSearch =
