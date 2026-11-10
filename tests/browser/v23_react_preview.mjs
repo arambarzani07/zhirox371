@@ -83,6 +83,37 @@ try {
    "Repeated carton alias must be rejected rather than duplicated");
  await barcodeScreen.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 025: change a local DEMO product price, then read the actual
+ // before/after audit event. Never infer approval or import legacy history.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(1).click();
+ const list025=page.locator('[data-canva-screen="021"]');
+ await list025.waitFor({state:"visible"});
+ await list025.locator(".canva-catalog-pick").first().click();
+ await list025.locator(".canva-catalog-aside").getByRole("button",{name:"بینینی وردەکاری"}).click();
+ const edit025=page.locator(".canva-catalog-new-layout form");
+ const saleInput025=edit025.locator('input[type="number"]').nth(1);
+ const originalSale025=Number(await saleInput025.inputValue());
+ assert.ok(Number.isSafeInteger(originalSale025) && originalSale025>0);
+ await saleInput025.fill(String(originalSale025+7));
+ await edit025.getByRole("button",{name:"پاشەکەوتکردنی گۆڕانکارییەکان"}).click();
+ await page.locator(".canva-catalog-edit-permission").getByRole("button",{name:"مێژووی گۆڕانکاریی نرخەکان"}).click();
+ const priceHistory025=page.locator('[data-canva-screen="025"]');
+ await priceHistory025.waitFor({state:"visible"});
+ assert.equal(await priceHistory025.locator("h1").innerText(),"مێژووی گۆڕانکاریی نرخەکان");
+ const firstAudit025=priceHistory025.locator(".canva-history-table tbody tr").first();
+ assert.ok(await firstAudit025.count(),"Real DEMO price change must appear");
+ const before025=await firstAudit025.locator("td").nth(3).innerText();
+ const after025=await firstAudit025.locator("td").nth(4).innerText();
+ assert.match(before025,new RegExp(String(originalSale025)));
+ assert.match(after025,new RegExp(String(originalSale025+7)));
+ assert.match(await firstAudit025.locator("td").nth(5).innerText(),/تاقیکردنەوە/);
+ assert.equal(await priceHistory025.locator(".canva-history-aside dd").nth(1).innerText(),"—",
+  "Unverified managerial approval count must not be fabricated");
+ await priceHistory025.getByRole("button",{name:"پشکنینی وردەکاری"}).click();
+ assert.equal(await page.locator('[data-canva-screen="023"]').count(),1);
+ await page.locator(".canva-catalog-new-heading").getByRole("button",{name:"ماڵەوە"}).click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
