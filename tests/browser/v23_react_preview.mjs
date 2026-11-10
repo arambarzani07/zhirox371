@@ -17,6 +17,17 @@ try {
  assert.equal(await page.locator("html").getAttribute("dir"),"rtl");
  // Owner-locked 12 main modules. Each expands to four Sorani subcards.
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ assert.deepEqual(
+   await page.locator(".home-screen .module .name").allTextContents(),
+   ["فرۆشتن و کاشێر","کاڵا و نرخ","کۆگا و بەسەرچوون","کڕین و دابینکردن",
+    "کڕیار و قەرز","سندووق و دارایی","کارمەند و دەسەڵات","ئۆفەر و پاداشت",
+    "ڕاپۆرت و شیکاری","ئاگاداری و پەسندکردن","ئامێر و تۆڕ","ڕێکخستن و پاراستن"]
+ );
+ assert.deepEqual(
+   await page.locator(".home-screen .module").evaluateAll(nodes => nodes.map(n => n.getAttribute("data-canva-card"))),
+   Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0"))
+ );
+ assert.equal(await page.locator(".market-banner .zhirox-canva-brand").innerText(),"ZHIROX");
  await page.locator(".home-screen .module").first().click();
  assert.equal(await page.locator(".home-screen .subgrid .sub").count(),4);
  await page.locator(".home-screen .module").first().click();
@@ -29,10 +40,25 @@ try {
  const barcode=page.getByTestId("pos-barcode-input");
  assert.equal(await barcode.getAttribute("aria-label"),"بارکۆدی کاڵا");
  await barcode.waitFor({state:"visible"});
+ // Canva 002 presents five ticket slots; switching preserves each basket.
+ const tickets=page.locator("[data-canva-ticket]");
+ assert.equal(await tickets.count(),5);
+ assert.equal(await tickets.first().getAttribute("data-canva-ticket"),"01");
+ const bank=page.getByRole("button",{name:/بانکی — هێشتا کارا نییە/});
+ assert.equal(await bank.isDisabled(),true);
+ const mixed=page.getByRole("button",{name:/تێکەڵ — هێشتا کارا نییە/});
+ assert.equal(await mixed.isDisabled(),true);
+ await page.locator('[data-canva-ticket="02"]').click();
+ assert.equal(await page.locator('[data-canva-ticket="02"]').getAttribute("aria-pressed"),"true");
  await context.setOffline(true);
  await barcode.fill("2000000000018");
  await barcode.press("Enter");
  await page.getByText("ئاوی کانی چنار 500ml").first().waitFor({state:"visible"});
+ await page.locator('[data-canva-ticket="01"]').click();
+ assert.equal(await page.locator("#finish-sale").isDisabled(),true);
+ await page.locator('[data-canva-ticket="02"]').click();
+ assert.equal(await page.locator("#finish-sale").isDisabled(),false);
+ assert.equal(await page.locator('[data-canva-ticket="02"]').getAttribute("aria-pressed"),"true");
  assert.equal(await page.locator('[data-demo-watermark="true"]').count(),0);
  // Offline DEMO checkout stays on the same cashier screen: never auto-open a modal.
  await page.keyboard.press("F4");
