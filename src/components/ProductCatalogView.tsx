@@ -13,7 +13,7 @@ const splitCodes = (value:string) => value.split(/[\n,،;]+/u).map(x=>x.trim()).
 const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 
 export const ProductCatalogView: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct, subtab, activeSectionId } = useApp();
+  const { products, addProduct, updateProduct, deleteProduct, subtab, activeSectionId, navigateTo } = useApp();
 
   const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' => {
     if (activeSectionId === 'add-box' || subtab === 'new') return 'new';
@@ -30,6 +30,9 @@ export const ProductCatalogView: React.FC = () => {
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
+  // Canva 021: local selling-unit filter, no extra page or modal required.
+  const [catalogUnitFilter, setCatalogUnitFilter] = useState<'all' | 'unit' | 'carton' | 'kg'>('all');
+  const [selectedCatalogProductId, setSelectedCatalogProductId] = useState<string | null>(null);
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out' | 'expiry'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
@@ -480,6 +483,9 @@ export const ProductCatalogView: React.FC = () => {
       (p.extra_packs?.some(x=>x.barcode.includes(searchTerm)||x.alias_barcodes.some(b=>b.includes(searchTerm)))??false);
 
     if (!matchSearch) return false;
+    if (catalogUnitFilter === 'carton' && !p.carton) return false;
+    if (catalogUnitFilter === 'kg' && p.base_unit !== 'kg' && !p.plu) return false;
+    if (catalogUnitFilter === 'unit' && (p.base_unit === 'kg' || Boolean(p.plu))) return false;
     if (categoryFilter !== 'all' && (p.category || 'گشتی') !== categoryFilter) return false;
     if (stockFilter === 'low') return p.stock <= (p.min_stock || 10) && p.stock > 0;
     if (stockFilter === 'out') return p.stock <= 0;
@@ -529,8 +535,10 @@ export const ProductCatalogView: React.FC = () => {
       products.find(p => p.plu === barcodeTestQuery.trim() || p.sku === barcodeTestQuery.trim())
     : undefined;
 
+  const selectedCatalogProduct = products.find(p => p.id === selectedCatalogProductId) || null;
+
   return (
-    <div className="ws-stack">
+    <div className="ws-stack canva-catalog-021" data-canva-screen="021">
       {message && (
         <div
           style={{
@@ -944,6 +952,28 @@ export const ProductCatalogView: React.FC = () => {
       {/* 2. PRODUCT LIST SUBMODULE */}
       {activeTab === 'list' && (
         <>
+          <div className="canva-catalog-page-heading">
+            <h1>لیستی کاڵا و نرخ</h1>
+            <button type="button" className="canva-catalog-home" onClick={() => navigateTo('home')}>ماڵەوە</button>
+          </div>
+          <div className="canva-catalog-section-heading">
+            <h2>لیستی کاڵاکان</h2>
+            <button type="button" className="primary" onClick={() => setActiveTab('new')}>کاڵای نوێ</button>
+          </div>
+          <div className="canva-catalog-unit-filters" role="group" aria-label="فلتەری یەکەی فرۆشتن">
+            {([
+              ['all', 'هەموو'],
+              ['unit', 'دانە'],
+              ['carton', 'کارتۆن'],
+              ['kg', 'کیلۆ']
+            ] as const).map(([key, label]) => (
+              <button key={key} type="button" aria-pressed={catalogUnitFilter === key}
+                className={catalogUnitFilter === key ? 'primary' : 'secondary'}
+                onClick={() => setCatalogUnitFilter(key)}>{label}</button>
+            ))}
+          </div>
+          <div className="canva-catalog-layout">
+            <div className="canva-catalog-primary">
           <div className="ws-kpi-grid">
             <div className="ws-kpi-card">
               <span className="ws-kpi-label">کۆی کاڵاکانی ناو کەتەلۆگ</span>
@@ -1087,7 +1117,10 @@ export const ProductCatalogView: React.FC = () => {
                   filteredProducts.map(p => (
                     <tr key={p.id}>
                       <td>
-                        <strong>{p.name}</strong>
+                        <button type="button" className="canva-catalog-pick"
+                          aria-label={`هەڵبژاردنی ${p.name}`}
+                          aria-pressed={selectedCatalogProductId === p.id}
+                          onClick={() => setSelectedCatalogProductId(p.id)}>{p.name}</button>
                         {p.sku && (
                           <span style={{ fontSize: '11px', color: '#64748b', marginRight: '6px' }}>
                             ({p.sku})
@@ -1157,6 +1190,22 @@ export const ProductCatalogView: React.FC = () => {
                 )}
               </tbody>
             </table>
+
+          </div>
+            </div>
+            <aside className="canva-catalog-aside" aria-label="وردەکاری و دەسەڵات">
+              <h2>وردەکاری و دەسەڵات</h2>
+              <dl>
+                <div><dt>کاڵای هەڵبژێردراو</dt><dd>{selectedCatalogProduct?.name || '—'}</dd></div>
+                <div><dt>نرخی فرۆشتن</dt><dd>{selectedCatalogProduct ? money(selectedCatalogProduct.unit_sale_price_iqd) : '— IQD'}</dd></div>
+                <div><dt>بارکۆدی سەرەکی</dt><dd dir="ltr">{selectedCatalogProduct?.unit_barcode || '—'}</dd></div>
+              </dl>
+              <p>کاشێر: تەنها بینین</p>
+              <button type="button" className="secondary" disabled={!selectedCatalogProduct}
+                onClick={() => selectedCatalogProduct && handleStartEdit(selectedCatalogProduct)}>
+                بینینی وردەکاری
+              </button>
+            </aside>
           </div>
         </>
       )}
