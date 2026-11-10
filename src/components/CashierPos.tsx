@@ -862,6 +862,12 @@ export const CashierPos: React.FC = () => {
       {/* SUBSECTION 1.1: FAST POS CHECKOUT (فرۆشتنی خێرا) */}
       {activeTab === 'checkout' && (
         <>
+          <div className="canva-pos-page-heading" data-canva-page-heading="002">
+            <h1>فرۆشتن و کاشێر</h1>
+            <button type="button" className="canva-pos-back-home" onClick={() => navigateTo('home')}>
+              ماڵەوە
+            </button>
+          </div>
           <div className="canva-ticket-tabs" role="group" aria-label="پسووڵەکانی هاوکات">
             {[1, 2, 3, 4, 5].map(n => (
               <React.Fragment key={n}>
@@ -891,6 +897,9 @@ export const CashierPos: React.FC = () => {
                 )}
               </React.Fragment>
             ))}
+            <button type="button" className="canva-ticket-history" onClick={() => setActiveTab('receipts')}>
+              پسووڵەکان
+            </button>
           </div>
           {currentShift.status !== 'open' && (
             <div
@@ -1636,6 +1645,19 @@ export const CashierPos: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* The official Canva 002 sidebar puts its payment summary on
+                  the same screen; totals are bound to live demo cart values. */}
+              <h2 className="canva-pos-summary-title">پوختەی پارەدان</h2>
+              <div className="canva-pos-customer-line">
+                <span>کڕیار</span>
+                <strong>{selectedCustomerObj?.name || 'کڕیاری ئاسایی'}</strong>
+              </div>
+              <dl className="canva-pos-totals" aria-label="پوختەی بڕەکانی پارەدان">
+                <div><dt>کۆی کاڵاکان</dt><dd>{money(subtotal)}</dd></div>
+                <div><dt>داشکاندن</dt><dd>{money(discountAmount)}</dd></div>
+                <div className="canva-pos-total-due"><dt>کۆی پارەدان</dt><dd>{money(grandTotal)}</dd></div>
+              </dl>
 
               {/* Quick Discount Selector (% + Direct IQD + Round-down small change) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
