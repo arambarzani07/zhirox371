@@ -145,7 +145,20 @@ export interface StockMovement {
   createdAt: string;
 }
 
+export interface PriceChangeAudit025 {
+  productId: string;
+  productName: string;
+  barcode: string;
+  unit: 'unit' | 'kg' | 'carton' | 'bundle' | 'set';
+  priceType: 'sale' | 'purchase';
+  previousIqd: number | null;
+  nextIqd: number | null;
+  /** DEMO write event; not an owner approval or verified production audit. */
+  status: 'recorded_demo';
+}
+
 export interface AuditLogEntry {
+  priceChange?: PriceChangeAudit025;
   id: string;
   timestamp: string;
   user: string;

@@ -10,6 +10,7 @@ import {
   Expense,
   StockMovement,
   AuditLogEntry,
+  PriceChangeAudit025,
   NavView,
   PaymentMethod
 } from '../types';
@@ -321,15 +322,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(prev =>
-      prev.map(p => {
-        if (p.id === id) {
-          const updated = { ...p, ...updates };
-          return updated;
-        }
-        return p;
-      })
-    );
+    // Keep previous and new prices from actual local DEMO product state.
+    // Old audit entries without a priceChange payload remain unknown.
+    const original = products.find(p => p.id === id);
+    if (!original) return;
+    const next = { ...original, ...updates };
+    const priceChanges: PriceChangeAudit025[] = [];
+    const track = (
+      unit: PriceChangeAudit025['unit'], priceType: PriceChangeAudit025['priceType'],
+      previousIqd: number | null, nextIqd: number | null
+    ) => {
+      if (previousIqd === nextIqd || nextIqd === null ||
+          !Number.isSafeInteger(nextIqd) || nextIqd < 0) return;
+      priceChanges.push({
+        productId: original.id, productName: original.name, barcode: original.unit_barcode,
+        unit, priceType, previousIqd, nextIqd, status: 'recorded_demo'
+      });
+    };
+    const primaryUnit = original.base_unit === 'kg' ? 'kg' : 'unit';
+    track(primaryUnit, 'sale', original.unit_sale_price_iqd, next.unit_sale_price_iqd);
+    track(primaryUnit, 'purchase', original.unit_purchase_price_iqd, next.unit_purchase_price_iqd);
+    if (original.carton && next.carton) {
+      track('carton', 'sale', original.carton.sale_price_iqd, next.carton.sale_price_iqd);
+      track('carton', 'purchase', original.carton.purchase_price_iqd, next.carton.purchase_price_iqd);
+    }
+    for (const oldPack of original.extra_packs || []) {
+      const updatedPack = next.extra_packs?.find(p => p.kind === oldPack.kind);
+      if (!updatedPack) continue;
+      track(oldPack.kind, 'sale', oldPack.sale_price_iqd, updatedPack.sale_price_iqd);
+      track(oldPack.kind, 'purchase', oldPack.purchase_price_iqd, updatedPack.purchase_price_iqd);
+    }
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    if (priceChanges.length) {
+      const timestamp = new Date().toISOString();
+      const actor = currentShift.cashierName || 'بەکارهێنەری تاقیکردنەوە';
+      const entries: AuditLogEntry[] = priceChanges.map((priceChange, index) => ({
+        id: `demo-price-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+        timestamp, user: actor, action: 'گۆڕینی نرخ — تاقیکردنەوە',
+        details: `${priceChange.productName}: ${priceChange.priceType} ${priceChange.unit}; ${priceChange.previousIqd ?? '—'} → ${priceChange.nextIqd ?? '—'} IQD`,
+        priceChange
+      }));
+      setAuditLogs(prev => [...entries, ...prev].slice(0, 100));
+    }
     addAuditLog('دەستکاریکردنی کاڵا', `زانیارییەکانی کاڵا نوێکرانەوە: ID ${id}`);
   };
 

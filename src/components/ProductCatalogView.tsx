@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Product, SaleMode, BaseUnit, ExtraPackConfig } from '../types';
 import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
+import { CanvaPriceHistory025 } from './CanvaPriceHistory025';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -14,16 +15,17 @@ const splitCodes = (value:string) => value.split(/[\n,،;]+/u).map(x=>x.trim()).
 const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 
 export const ProductCatalogView: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct, subtab, activeSectionId, navigateTo } = useApp();
+  const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' => {
+    if (activeSectionId === 'price-history' || subtab === 'history') return 'history';
     if (activeSectionId === 'add-box' || subtab === 'new') return 'new';
     if (activeSectionId === 'price-tags' || subtab === 'prices') return 'prices';
     if (activeSectionId === 'barcode-bars' || subtab === 'barcodes') return 'barcodes';
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -1036,6 +1038,7 @@ export const ProductCatalogView: React.FC = () => {
                   <div><dt>نرخی ئێستا</dt><dd>{editingProduct ? money(editingProduct.unit_sale_price_iqd) : '— IQD'}</dd></div>
                   <div><dt>نرخی پێشوو</dt><dd>— IQD</dd></div>
                 </dl>
+                <button type="button" className="secondary" onClick={() => setActiveTab('history')}>مێژووی گۆڕانکاریی نرخەکان</button>
                 <button type="button" className="secondary" disabled title="پشتڕاستکردنەوەی دەسەڵاتی گۆڕانکاری لەم ڕووکاری Demo ـەدا بەردەست نییە">
                   داواکردنی گۆڕانکاری
                 </button>
@@ -1459,6 +1462,14 @@ export const ProductCatalogView: React.FC = () => {
             </table>
           </div>
         </>
+      )}
+
+      {activeTab === 'history' && (
+        <CanvaPriceHistory025 auditLogs={auditLogs} products={products}
+          preferredProductId={editingId}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => { resetForm(); setActiveTab('list'); }}
+          onInspect={handleStartEdit}/>
       )}
 
       {/* 4. BARCODES: original Canva 024 layout, real local catalog handlers. */}

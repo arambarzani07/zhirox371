@@ -96,3 +96,25 @@ test('Canva 024 regression runs in real Chromium; barcode whitespace and repeats
   assert.match(browser,/canva-barcode-new-alias/);
   assert.match(browser,/Repeated carton alias must be rejected/);
 });
+
+test('Canva 025 source bounds and read-only price history never fabricate approval or prior prices', () => {
+  const geometry = JSON.parse(read('design/canva-original-screen-025-geometry.json'));
+  const source = read('src/components/CanvaPriceHistory025.tsx');
+  const state = read('src/context/AppContext.tsx');
+  const catalog = read('src/components/ProductCatalogView.tsx');
+  const style = read('src/components/canvaOfficialV1.css');
+  assert.equal(geometry.design_id, layout.screens[24].id);
+  assert.equal(geometry.element_count, 56);
+  assert.deepEqual(geometry.canvas, {width:1920,height:1080});
+  assert.equal(new Set(geometry.elements.map(e => e.id)).size, 56);
+  assert.match(source,/data-canva-screen="025"/);
+  assert.match(source,/تۆماری گۆڕانکارییەکان/);
+  assert.match(source,/هیچ گۆڕانکارییەک بۆ ئەم هەڵبژاردنە نییە/);
+  assert.match(source,/recorded_demo/);
+  assert.match(source,/summaryValues = \{ pending: '—', approved: '—', rejected: '—' \}/);
+  assert.match(state,/priceChanges: PriceChangeAudit025\[\]/);
+  assert.match(state,/track\('carton', 'sale'/);
+  assert.match(state,/track\(oldPack.kind, 'sale'/);
+  assert.match(catalog,/activeTab === 'history'/);
+  assert.match(style,/canva-price-history-025 \.canva-history-layout/);
+});

@@ -724,3 +724,44 @@
     #app .canva-barcode-024 .canva-barcode-layout {grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr); gap:12px; margin:0 8px;}
   }
 }
+
+/* Canva source 025 (DAHaafgxkUE), 1920x1080 with measured 1206px right
+   panel / 511.2px left panel. Full typography and vector parity pending. */
+@media screen {
+  #app .canva-price-history-025 {direction:rtl; display:flex; flex-direction:column; min-width:0; color:#172b45; font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+  #app .canva-price-history-025 .canva-history-heading {background:#fff;}
+  #app .canva-price-history-025 .canva-history-layout {display:grid; direction:rtl; grid-template-columns:minmax(0,1206fr) minmax(300px,511.2fr); gap:clamp(18px,4.0625vw,78px); margin:0 3.25%; align-items:start;}
+  #app .canva-price-history-025 .canva-history-primary,
+  #app .canva-price-history-025 .canva-history-aside {border:1px solid #e0e7f0; background:#fff; border-radius:10px; min-width:0; padding:18px 22px; min-height:640px;}
+  #app .canva-price-history-025 h2 {margin:0 0 16px; color:#172b45; font-weight:900; font-size:19px; text-align:right; line-height:1.6;}
+  #app .canva-price-history-025 .canva-history-filters {display:grid; grid-template-columns:minmax(0,1.65fr) minmax(185px,1fr); gap:18px; margin:16px 0 28px;}
+  #app .canva-price-history-025 .canva-history-filters label {display:flex; flex-direction:column; gap:8px; font-weight:900; font-size:13px; text-align:right;}
+  #app .canva-price-history-025 .canva-history-filters input,
+  #app .canva-price-history-025 .canva-history-filters select {min-width:0; min-height:49px; background:white; border:1px solid #dce5ee; border-radius:8px; padding:8px 12px; color:#172b45; font:inherit; font-size:14px;}
+  #app .canva-price-history-025 .canva-history-table-scroll {overflow-x:auto; width:100%;}
+  #app .canva-price-history-025 .canva-history-table {direction:rtl; width:100%; border-collapse:collapse; table-layout:fixed; font-size:12px; text-align:right;}
+  #app .canva-price-history-025 .canva-history-table th,
+  #app .canva-price-history-025 .canva-history-table td {height:58px; border-bottom:1px solid #e2e9f1; padding:7px 9px; text-align:right; overflow-wrap:anywhere;}
+  #app .canva-price-history-025 .canva-history-table th {background:#f1f5f9; color:#172b45; font-size:12px; font-weight:900;}
+  #app .canva-price-history-025 .canva-history-table th:nth-child(1) {width:22%;}
+  #app .canva-price-history-025 .canva-history-table th:nth-child(2) {width:17%;}
+  #app .canva-price-history-025 .canva-history-table th:nth-child(3) {width:18%;}
+  #app .canva-price-history-025 .canva-history-table th:nth-child(4) {width:15%;}
+  #app .canva-price-history-025 .canva-history-table th:nth-child(5) {width:14%;}
+  #app .canva-price-history-025 .canva-history-table th:nth-child(6) {width:14%;}
+  #app .canva-price-history-025 .canva-history-pick {font:inherit; font-weight:900; text-align:right; background:transparent; border:1px solid transparent; border-radius:6px; color:#172b45; cursor:pointer; padding:5px;}
+  #app .canva-price-history-025 .canva-history-pick[aria-pressed="true"],
+  #app .canva-price-history-025 .canva-history-pick:hover {color:#1d4e85; border-color:#cbdced; background:#eff5fd;}
+  #app .canva-price-history-025 .canva-history-empty {text-align:center; font-weight:800; color:#64758d; padding:18px;}
+  #app .canva-price-history-025 .canva-history-aside dl {margin:0; display:flex; flex-direction:column; gap:18px;}
+  #app .canva-price-history-025 .canva-history-aside dl>div {display:flex; flex-direction:column; border-bottom:1px solid #e3eaf1; padding-bottom:12px; gap:5px;}
+  #app .canva-price-history-025 .canva-history-aside dt {font-size:12px; font-weight:900; color:#64758d;}
+  #app .canva-price-history-025 .canva-history-aside dd {margin:0; font-size:16px; font-weight:900;}
+  #app .canva-price-history-025 .canva-history-aside p {background:#f7f9fc; padding:12px; color:#64758d; font-size:12px; font-weight:800; margin:20px 0;}
+  #app .canva-price-history-025 .canva-history-aside button {width:100%; min-height:48px; font-weight:900;}
+  #app .canva-price-history-025 .canva-history-aside button:disabled {opacity:.55; cursor:not-allowed;}
+  @media(max-width:1180px){
+    #app .canva-price-history-025 .canva-history-layout {grid-template-columns:minmax(0,1.7fr) minmax(275px,1fr); gap:12px; margin:0 8px;}
+    #app .canva-price-history-025 .canva-history-primary,#app .canva-price-history-025 .canva-history-aside {padding:12px;}
+  }
+}
