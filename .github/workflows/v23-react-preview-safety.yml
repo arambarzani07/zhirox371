@@ -10,6 +10,7 @@ on:
       - 'tests/v109_no_fabricated_cost_stock.test.mjs'
       - 'tests/browser/v107_demo_refund_integrity.mjs'
       - 'tests/home_locked_cards_20261101.test.mjs'
+      - 'tests/canva_original_source_map.test.mjs'
       - 'tests/browser/v23_react_preview.mjs'
       - 'tests/browser/v24_react_local_pilot.mjs'
       - 'tests/browser/v29_owner_mobile.mjs'
@@ -32,6 +33,7 @@ on:
       - 'src/**'
       - 'tests/v23_preview_mode_guard.test.mjs'
       - 'tests/home_locked_cards_20261101.test.mjs'
+      - 'tests/canva_original_source_map.test.mjs'
       - '.github/workflows/v23-react-preview-safety.yml'
 permissions:
   contents: read
@@ -45,6 +47,8 @@ jobs:
           node-version: '24'
       - name: Fail-closed offline mock and DEMO-only receipt checks
         run: node --test tests/v23_preview_mode_guard.test.mjs tests/home_locked_cards_20261101.test.mjs
+      - name: Verify 148 original Canva source references are complete and isolated
+        run: node --test tests/canva_original_source_map.test.mjs
       - name: V107 DEMO refund integrity, over-refund and repeated-return guard
         run: node --test tests/v107_demo_refund_integrity.test.mjs
       - name: V108 fail-closed all-collections DEMO JSON backup restore validation
