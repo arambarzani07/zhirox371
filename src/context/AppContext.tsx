@@ -57,7 +57,7 @@ interface AppContextType {
   parkedCart: CartLine[] | null;
   parkedCarts: ParkedCartEntry[];
   parkCart: (customLabel?: string) => boolean;
-  restoreParkedCart: (parkedId?: string) => void;
+  restoreParkedCart: (parkedId?: string, swapLabel?: string) => void;
   removeParkedCart: (parkedId: string) => void;
 
   customers: Customer[];
@@ -644,7 +644,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const parkCart = (customLabel?: string): boolean => {
-    if (cart.length === 0) return false;
+    // At most five simultaneously held/in-use tickets: four parked, one active.
+    // Existing over-limit local data is preserved, not automatically deleted.
+    if (cart.length === 0 || parkedCarts.length >= 4) return false;
     const totalIqd = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
     const entry: ParkedCartEntry = {
       id: `park-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -659,7 +661,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return true;
   };
 
-  const restoreParkedCart = (parkedId?: string) => {
+  const restoreParkedCart = (parkedId?: string, swapLabel?: string) => {
     if (parkedCarts.length === 0) return;
     const target = parkedId ? parkedCarts.find(x => x.id === parkedId) || parkedCarts[0] : parkedCarts[0];
     if (!target) return;
@@ -671,7 +673,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (currentActiveItems.length > 0) {
         const swappedEntry: ParkedCartEntry = {
           id: `park-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          label: `سەبەتەی گۆڕدراو`,
+          label: swapLabel || `سەبەتەی گۆڕدراو`,
           createdAt: new Date().toISOString(),
           items: currentActiveItems,
           totalIqd: currentActiveItems.reduce((s, i) => s + i.price * i.qty, 0)
