@@ -56,6 +56,33 @@ try {
  }
  await catalog.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 024: validate actual barcode UI, mode switching and per-unit alias
+ // in isolated React DEMO state (never a production stock/price mutation).
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(3).click();
+ const barcodeScreen=page.locator('[data-canva-screen="024"]');
+ await barcodeScreen.waitFor({state:"visible"});
+ assert.equal(await barcodeScreen.locator("h1").innerText(),"بارکۆدەکان و جۆرەکانی فرۆشتن");
+ assert.equal(await barcodeScreen.locator(".canva-barcode-mode-tabs button").count(),5);
+ assert.equal(await barcodeScreen.getByRole("button",{name:"کارتۆن",exact:true}).isDisabled(),true);
+ await barcodeScreen.getByPlaceholder("هەڵبژاردنی کاڵا بە ناو یان بارکۆد").fill("2000000000018");
+ await barcodeScreen.getByRole("button",{name:/ئاوی کانی چنار 500ml — 2000000000018/}).click();
+ assert.equal(await barcodeScreen.getByRole("button",{name:"کارتۆن",exact:true}).isEnabled(),true);
+ await barcodeScreen.getByRole("button",{name:"کارتۆن",exact:true}).click();
+ assert.equal(await barcodeScreen.getByRole("button",{name:"کارتۆن",exact:true}).getAttribute("aria-pressed"),"true");
+ assert.match(await barcodeScreen.locator(".canva-barcode-table").innerText(),/2000000000025/);
+ await barcodeScreen.getByRole("button",{name:"زیادکردنی بارکۆدی نوێ"}).click();
+ await barcodeScreen.locator("#canva-barcode-new-alias").fill("2000000099991");
+ await barcodeScreen.locator(".canva-barcode-alias-edit").getByRole("button",{name:"پاشەکەوت"}).click();
+ assert.match(await barcodeScreen.locator(".canva-barcode-table").innerText(),/2000000099991/);
+ assert.equal(await barcodeScreen.locator(".canva-barcode-table tbody tr").count(),2);
+ await barcodeScreen.getByRole("button",{name:"زیادکردنی بارکۆدی نوێ"}).click();
+ await barcodeScreen.locator("#canva-barcode-new-alias").fill("2000000099991");
+ await barcodeScreen.locator(".canva-barcode-alias-edit").getByRole("button",{name:"پاشەکەوت"}).click();
+ assert.equal(await barcodeScreen.locator(".canva-barcode-table tbody tr").count(),2,
+   "Repeated carton alias must be rejected rather than duplicated");
+ await barcodeScreen.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
