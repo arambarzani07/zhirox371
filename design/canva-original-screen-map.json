@@ -1,0 +1,1047 @@
+{
+  "project": "ZHIROX371",
+  "status": "Canonical Canva sources for code migration (not implemented as React UI)",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "originalFolderId": "FAHaXeWwwvs",
+  "screens": [
+    {
+      "number": 1,
+      "id": "DAHaaMmlLck",
+      "filename": "001.png",
+      "canva": "https://www.canva.com/design/DAHaaMmlLck",
+      "title": "ZHIROX | 001 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 2,
+      "id": "DAHaaO0eWBM",
+      "filename": "002.png",
+      "canva": "https://www.canva.com/design/DAHaaO0eWBM",
+      "title": "ZHIROX | 002 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 3,
+      "id": "DAHaaEU6_NY",
+      "filename": "003.png",
+      "canva": "https://www.canva.com/design/DAHaaEU6_NY",
+      "title": "ZHIROX | 003 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 4,
+      "id": "DAHaaBM3l0I",
+      "filename": "004.png",
+      "canva": "https://www.canva.com/design/DAHaaBM3l0I",
+      "title": "ZHIROX | 004 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 5,
+      "id": "DAHaaMg0kk0",
+      "filename": "005.png",
+      "canva": "https://www.canva.com/design/DAHaaMg0kk0",
+      "title": "ZHIROX | 005 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 6,
+      "id": "DAHaaNXO2u8",
+      "filename": "006.png",
+      "canva": "https://www.canva.com/design/DAHaaNXO2u8",
+      "title": "ZHIROX | 006 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 7,
+      "id": "DAHaaDHVY3w",
+      "filename": "007.png",
+      "canva": "https://www.canva.com/design/DAHaaDHVY3w",
+      "title": "ZHIROX | 007 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 8,
+      "id": "DAHaaNE-OVc",
+      "filename": "008.png",
+      "canva": "https://www.canva.com/design/DAHaaNE-OVc",
+      "title": "ZHIROX | 008 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 9,
+      "id": "DAHaaL4QAkU",
+      "filename": "009.png",
+      "canva": "https://www.canva.com/design/DAHaaL4QAkU",
+      "title": "ZHIROX | 009 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 10,
+      "id": "DAHaaEjNQe8",
+      "filename": "010.png",
+      "canva": "https://www.canva.com/design/DAHaaEjNQe8",
+      "title": "ZHIROX | 010 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 11,
+      "id": "DAHaaCd5gng",
+      "filename": "011.png",
+      "canva": "https://www.canva.com/design/DAHaaCd5gng",
+      "title": "ZHIROX | 011 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 12,
+      "id": "DAHaaKFbKaw",
+      "filename": "012.png",
+      "canva": "https://www.canva.com/design/DAHaaKFbKaw",
+      "title": "ZHIROX | 012 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 13,
+      "id": "DAHaaK6SKnc",
+      "filename": "013.png",
+      "canva": "https://www.canva.com/design/DAHaaK6SKnc",
+      "title": "ZHIROX | 013 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 14,
+      "id": "DAHaaNCfN9A",
+      "filename": "014.png",
+      "canva": "https://www.canva.com/design/DAHaaNCfN9A",
+      "title": "ZHIROX | 014 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 15,
+      "id": "DAHaaBFO17w",
+      "filename": "015.png",
+      "canva": "https://www.canva.com/design/DAHaaBFO17w",
+      "title": "ZHIROX | 015 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 16,
+      "id": "DAHaaDkGgYs",
+      "filename": "016.png",
+      "canva": "https://www.canva.com/design/DAHaaDkGgYs",
+      "title": "ZHIROX | 016 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 17,
+      "id": "DAHaaLhsY_A",
+      "filename": "017.png",
+      "canva": "https://www.canva.com/design/DAHaaLhsY_A",
+      "title": "ZHIROX | 017 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 18,
+      "id": "DAHaaGTm6rY",
+      "filename": "018.png",
+      "canva": "https://www.canva.com/design/DAHaaGTm6rY",
+      "title": "ZHIROX | 018 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 19,
+      "id": "DAHaaFbc6N0",
+      "filename": "019.png",
+      "canva": "https://www.canva.com/design/DAHaaFbc6N0",
+      "title": "ZHIROX | 019 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 20,
+      "id": "DAHaaPT9QjQ",
+      "filename": "020.png",
+      "canva": "https://www.canva.com/design/DAHaaPT9QjQ",
+      "title": "ZHIROX | 020 — فەرمی — دیزاینی نوێ"
+    },
+    {
+      "number": 21,
+      "id": "DAHaaUrrOOM",
+      "filename": "021.png",
+      "canva": "https://www.canva.com/design/DAHaaUrrOOM",
+      "title": "ZHIROX | 021 — لیستی کاڵا و نرخ"
+    },
+    {
+      "number": 22,
+      "id": "DAHaaVeM_Ek",
+      "filename": "022.png",
+      "canva": "https://www.canva.com/design/DAHaaVeM_Ek",
+      "title": "ZHIROX | 022 — تۆمارکردنی کاڵای نوێ"
+    },
+    {
+      "number": 23,
+      "id": "DAHaaTThotw",
+      "filename": "023.png",
+      "canva": "https://www.canva.com/design/DAHaaTThotw",
+      "title": "ZHIROX | 023 — دەستکاریکردنی کاڵا و نرخ"
+    },
+    {
+      "number": 24,
+      "id": "DAHaaUMr4u8",
+      "filename": "024.png",
+      "canva": "https://www.canva.com/design/DAHaaUMr4u8",
+      "title": "ZHIROX | 024 — بارکۆدەکان و جۆرەکانی فرۆشتن"
+    },
+    {
+      "number": 25,
+      "id": "DAHaafgxkUE",
+      "filename": "025.png",
+      "canva": "https://www.canva.com/design/DAHaafgxkUE",
+      "title": "ZHIROX | 025 — مێژووی گۆڕانکاریی نرخەکان"
+    },
+    {
+      "number": 26,
+      "id": "DAHaaY6kmos",
+      "filename": "026.png",
+      "canva": "https://www.canva.com/design/DAHaaY6kmos",
+      "title": "ZHIROX | 026 — پشکنینی بارکۆدی دووبارە"
+    },
+    {
+      "number": 27,
+      "id": "DAHaabOG1RQ",
+      "filename": "027.png",
+      "canva": "https://www.canva.com/design/DAHaabOG1RQ",
+      "title": "ZHIROX | 027 — نرخەکانی هەر جۆری یەکە"
+    },
+    {
+      "number": 28,
+      "id": "DAHaaY6cxsg",
+      "filename": "028.png",
+      "canva": "https://www.canva.com/design/DAHaaY6cxsg",
+      "title": "ZHIROX | 028 — گۆڕینی نرخ بەکۆمەڵ"
+    },
+    {
+      "number": 29,
+      "id": "DAHaaSStk5E",
+      "filename": "029.png",
+      "canva": "https://www.canva.com/design/DAHaaSStk5E",
+      "title": "ZHIROX | 029 — دەسەڵاتی کاشێر و بەڕێوەبەر"
+    },
+    {
+      "number": 30,
+      "id": "DAHaaeeHV94",
+      "filename": "030.png",
+      "canva": "https://www.canva.com/design/DAHaaeeHV94",
+      "title": "ZHIROX | 030 — پێداچوونەوە و پەسەندکردنی گۆڕانکاری"
+    },
+    {
+      "number": 31,
+      "id": "DAHaav2bQlc",
+      "filename": "031.png",
+      "canva": "https://www.canva.com/design/DAHaav2bQlc",
+      "title": "ZHIROX | 031 — بارکۆدە زیادەکانی هەر یەکە"
+    },
+    {
+      "number": 32,
+      "id": "DAHaavmPhXU",
+      "filename": "032.png",
+      "canva": "https://www.canva.com/design/DAHaavmPhXU",
+      "title": "ZHIROX | 032 — ڕێژەی گۆڕینی یەکەکان"
+    },
+    {
+      "number": 33,
+      "id": "DAHaap92Vk0",
+      "filename": "033.png",
+      "canva": "https://www.canva.com/design/DAHaap92Vk0",
+      "title": "ZHIROX | 033 — پشکنینی قازانج و نرخی کاڵا"
+    },
+    {
+      "number": 34,
+      "id": "DAHaaoRiN1M",
+      "filename": "034.png",
+      "canva": "https://www.canva.com/design/DAHaaoRiN1M",
+      "title": "ZHIROX | 034 — پێشبینینی هاوردەکردنی کاڵاکان"
+    },
+    {
+      "number": 35,
+      "id": "DAHaaoVRbFE",
+      "filename": "035.png",
+      "canva": "https://www.canva.com/design/DAHaaoVRbFE",
+      "title": "ZHIROX | 035 — ناچالاککردن و گەڕاندنەوەی کاڵا"
+    },
+    {
+      "number": 36,
+      "id": "DAHaajq8SMg",
+      "filename": "036.png",
+      "canva": "https://www.canva.com/design/DAHaajq8SMg",
+      "title": "ZHIROX | 036 — دۆخی کۆگا و بڕی بەردەست"
+    },
+    {
+      "number": 37,
+      "id": "DAHaanfStUQ",
+      "filename": "037.png",
+      "canva": "https://www.canva.com/design/DAHaanfStUQ",
+      "title": "ZHIROX | 037 — جووڵە و مێژووی کۆگا"
+    },
+    {
+      "number": 38,
+      "id": "DAHaainI4yM",
+      "filename": "038.png",
+      "canva": "https://www.canva.com/design/DAHaainI4yM",
+      "title": "ZHIROX | 038 — ئاگاداریی کەمبوونەوەی کاڵا"
+    },
+    {
+      "number": 39,
+      "id": "DAHaanhE6uM",
+      "filename": "039.png",
+      "canva": "https://www.canva.com/design/DAHaanhE6uM",
+      "title": "ZHIROX | 039 — بەسەرچوون و بەرواری کاڵاکان"
+    },
+    {
+      "number": 40,
+      "id": "DAHaanGKGZQ",
+      "filename": "040.png",
+      "canva": "https://www.canva.com/design/DAHaanGKGZQ",
+      "title": "ZHIROX | 040 — ژماردنی کۆگا و جیاوازیی بڕ"
+    },
+    {
+      "number": 41,
+      "id": "DAHaav6K_vw",
+      "filename": "041.png",
+      "canva": "https://www.canva.com/design/DAHaav6K_vw",
+      "title": "ZHIROX | 041 — وەرگرتنی کاڵا بۆ کۆگا"
+    },
+    {
+      "number": 42,
+      "id": "DAHaakpwpkw",
+      "filename": "042.png",
+      "canva": "https://www.canva.com/design/DAHaakpwpkw",
+      "title": "ZHIROX | 042 — گواستنەوەی کاڵا لەنێوان کۆگاکان"
+    },
+    {
+      "number": 43,
+      "id": "DAHaalRjbSw",
+      "filename": "043.png",
+      "canva": "https://www.canva.com/design/DAHaalRjbSw",
+      "title": "ZHIROX | 043 — ڕاستکردنەوەی جیاوازیی کۆگا"
+    },
+    {
+      "number": 44,
+      "id": "DAHaamQROzo",
+      "filename": "044.png",
+      "canva": "https://www.canva.com/design/DAHaamQROzo",
+      "title": "ZHIROX | 044 — مێژووی بەسەرچوون و لۆتەکان"
+    },
+    {
+      "number": 45,
+      "id": "DAHaahQHQZ8",
+      "filename": "045.png",
+      "canva": "https://www.canva.com/design/DAHaahQHQZ8",
+      "title": "ZHIROX | 045 — پەسەندکردنی کردارەکانی کۆگا"
+    },
+    {
+      "number": 46,
+      "id": "DAHaalUCb80",
+      "filename": "046.png",
+      "canva": "https://www.canva.com/design/DAHaalUCb80",
+      "title": "ZHIROX | 046 — دابینکەران و زانیارییان"
+    },
+    {
+      "number": 47,
+      "id": "DAHaavwwB0c",
+      "filename": "047.png",
+      "canva": "https://www.canva.com/design/DAHaavwwB0c",
+      "title": "ZHIROX | 047 — داواکاریی کڕین"
+    },
+    {
+      "number": 48,
+      "id": "DAHaakN4cjs",
+      "filename": "048.png",
+      "canva": "https://www.canva.com/design/DAHaakN4cjs",
+      "title": "ZHIROX | 048 — فەرمانی کڕین"
+    },
+    {
+      "number": 49,
+      "id": "DAHaagvelAY",
+      "filename": "049.png",
+      "canva": "https://www.canva.com/design/DAHaagvelAY",
+      "title": "ZHIROX | 049 — وەرگرتنی کڕین لە دابینکەر"
+    },
+    {
+      "number": 50,
+      "id": "DAHaaiqkT5E",
+      "filename": "050.png",
+      "canva": "https://www.canva.com/design/DAHaaiqkT5E",
+      "title": "ZHIROX | 050 — پسووڵەی کڕین و پارەدان"
+    },
+    {
+      "number": 51,
+      "id": "DAHaai9f7BQ",
+      "filename": "051.png",
+      "canva": "https://www.canva.com/design/DAHaai9f7BQ",
+      "title": "ZHIROX | 051 — گەڕاندنەوەی کڕین بۆ دابینکەر"
+    },
+    {
+      "number": 52,
+      "id": "DAHaaoIvdh4",
+      "filename": "052.png",
+      "canva": "https://www.canva.com/design/DAHaaoIvdh4",
+      "title": "ZHIROX | 052 — قەرزی دابینکەران و حساب"
+    },
+    {
+      "number": 53,
+      "id": "DAHaagm1NK0",
+      "filename": "053.png",
+      "canva": "https://www.canva.com/design/DAHaagm1NK0",
+      "title": "ZHIROX | 053 — مێژووی پارەدانی دابینکەران"
+    },
+    {
+      "number": 54,
+      "id": "DAHaalsHRqQ",
+      "filename": "054.png",
+      "canva": "https://www.canva.com/design/DAHaalsHRqQ",
+      "title": "ZHIROX | 054 — پەسەندکردنی داواکارییەکانی کڕین"
+    },
+    {
+      "number": 55,
+      "id": "DAHaarwEHQs",
+      "filename": "055.png",
+      "canva": "https://www.canva.com/design/DAHaarwEHQs",
+      "title": "ZHIROX | 055 — جیاوازیی پسووڵەی کڕین"
+    },
+    {
+      "number": 56,
+      "id": "DAHaalPiLLg",
+      "filename": "056.png",
+      "canva": "https://www.canva.com/design/DAHaalPiLLg",
+      "title": "ZHIROX | 056 — لیستی کڕیاران و قەرز"
+    },
+    {
+      "number": 57,
+      "id": "DAHaaluh7aI",
+      "filename": "057.png",
+      "canva": "https://www.canva.com/design/DAHaaluh7aI",
+      "title": "ZHIROX | 057 — تۆمارکردنی کڕیاری نوێ"
+    },
+    {
+      "number": 58,
+      "id": "DAHaam7DZIo",
+      "filename": "058.png",
+      "canva": "https://www.canva.com/design/DAHaam7DZIo",
+      "title": "ZHIROX | 058 — کەشفی حسابی قەرزی کڕیار"
+    },
+    {
+      "number": 59,
+      "id": "DAHaasWD0ug",
+      "filename": "059.png",
+      "canva": "https://www.canva.com/design/DAHaasWD0ug",
+      "title": "ZHIROX | 059 — زیادکردنی قەرز بۆ کڕیار"
+    },
+    {
+      "number": 60,
+      "id": "DAHaaiPN0Ps",
+      "filename": "060.png",
+      "canva": "https://www.canva.com/design/DAHaaiPN0Ps",
+      "title": "ZHIROX | 060 — وەرگرتنەوەی پارەی قەرز"
+    },
+    {
+      "number": 61,
+      "id": "DAHabHmJPo0",
+      "filename": "061.png",
+      "canva": "https://www.canva.com/design/DAHabHmJPo0",
+      "title": "ZHIROX | 061 — مێژووی مامەڵەکانی قەرز"
+    },
+    {
+      "number": 62,
+      "id": "DAHabEVleMQ",
+      "filename": "062.png",
+      "canva": "https://www.canva.com/design/DAHabEVleMQ",
+      "title": "ZHIROX | 062 — ڕاستکردنەوەی مامەڵەی قەرز"
+    },
+    {
+      "number": 63,
+      "id": "DAHabJHseU0",
+      "filename": "063.png",
+      "canva": "https://www.canva.com/design/DAHabJHseU0",
+      "title": "ZHIROX | 063 — سنووری قەرزی کڕیار"
+    },
+    {
+      "number": 64,
+      "id": "DAHabMhQ2Zs",
+      "filename": "064.png",
+      "canva": "https://www.canva.com/design/DAHabMhQ2Zs",
+      "title": "ZHIROX | 064 — قەرزە دواکەوتووەکان"
+    },
+    {
+      "number": 65,
+      "id": "DAHabAmLAcw",
+      "filename": "065.png",
+      "canva": "https://www.canva.com/design/DAHabAmLAcw",
+      "title": "ZHIROX | 065 — پەسەندکردنی داواکارییەکانی قەرز"
+    },
+    {
+      "number": 66,
+      "id": "DAHabPuqCK4",
+      "filename": "066.png",
+      "canva": "https://www.canva.com/design/DAHabPuqCK4",
+      "title": "ZHIROX | 066 — پوختەی سندووق و دارایی"
+    },
+    {
+      "number": 67,
+      "id": "DAHabBKVioc",
+      "filename": "067.png",
+      "canva": "https://www.canva.com/design/DAHabBKVioc",
+      "title": "ZHIROX | 067 — کردنەوە و داخستنی شێفتی کاشێر"
+    },
+    {
+      "number": 68,
+      "id": "DAHabMsOKTo",
+      "filename": "068.png",
+      "canva": "https://www.canva.com/design/DAHabMsOKTo",
+      "title": "ZHIROX | 068 — جووڵەی پارەی سندووق"
+    },
+    {
+      "number": 69,
+      "id": "DAHabPMXtiU",
+      "filename": "069.png",
+      "canva": "https://www.canva.com/design/DAHabPMXtiU",
+      "title": "ZHIROX | 069 — تۆمارکردنی خەرجی و داهاتی تر"
+    },
+    {
+      "number": 70,
+      "id": "DAHabO3QgSA",
+      "filename": "070.png",
+      "canva": "https://www.canva.com/design/DAHabO3QgSA",
+      "title": "ZHIROX | 070 — هاوتاکردنەوەی سندووق و ژماردنی پارە"
+    },
+    {
+      "number": 71,
+      "id": "DAHabHEIR6o",
+      "filename": "071.png",
+      "canva": "https://www.canva.com/design/DAHabHEIR6o",
+      "title": "ZHIROX | 071 — مێژووی خەرجی و داهات"
+    },
+    {
+      "number": 72,
+      "id": "DAHabEm9fpY",
+      "filename": "072.png",
+      "canva": "https://www.canva.com/design/DAHabEm9fpY",
+      "title": "ZHIROX | 072 — گواستنەوەی پارە لەنێوان سندووقەکان"
+    },
+    {
+      "number": 73,
+      "id": "DAHabAZnmdc",
+      "filename": "073.png",
+      "canva": "https://www.canva.com/design/DAHabAZnmdc",
+      "title": "ZHIROX | 073 — ڕاپۆرتی دارایی و قازانج"
+    },
+    {
+      "number": 74,
+      "id": "DAHabOukWmA",
+      "filename": "074.png",
+      "canva": "https://www.canva.com/design/DAHabOukWmA",
+      "title": "ZHIROX | 074 — پشکنینی جیاوازیی سندووق"
+    },
+    {
+      "number": 75,
+      "id": "DAHabJifFBI",
+      "filename": "075.png",
+      "canva": "https://www.canva.com/design/DAHabJifFBI",
+      "title": "ZHIROX | 075 — پەسەندکردنی مامەڵە داراییەکان"
+    },
+    {
+      "number": 76,
+      "id": "DAHabIAKlCY",
+      "filename": "076.png",
+      "canva": "https://www.canva.com/design/DAHabIAKlCY",
+      "title": "ZHIROX | 076 — لیستی کارمەندان"
+    },
+    {
+      "number": 77,
+      "id": "DAHab6gxBr0",
+      "filename": "077.png",
+      "canva": "https://www.canva.com/design/DAHab6gxBr0",
+      "title": "ZHIROX | 077 — تۆمارکردنی کارمەندی نوێ"
+    },
+    {
+      "number": 78,
+      "id": "DAHabPafO5s",
+      "filename": "078.png",
+      "canva": "https://www.canva.com/design/DAHabPafO5s",
+      "title": "ZHIROX | 078 — ڕۆڵ و دەسەڵاتەکان"
+    },
+    {
+      "number": 79,
+      "id": "DAHabPiJI60",
+      "filename": "079.png",
+      "canva": "https://www.canva.com/design/DAHabPiJI60",
+      "title": "ZHIROX | 079 — ئامادەبوون و کاتژمێری کار"
+    },
+    {
+      "number": 80,
+      "id": "DAHabWYpYSY",
+      "filename": "080.png",
+      "canva": "https://www.canva.com/design/DAHabWYpYSY",
+      "title": "ZHIROX | 080 — مێژووی کردار و پشکنینی دەسەڵات"
+    },
+    {
+      "number": 81,
+      "id": "DAHabcZCCPw",
+      "filename": "081.png",
+      "canva": "https://www.canva.com/design/DAHabcZCCPw",
+      "title": "ZHIROX | 081 — هەڵسەنگاندنی کارمەندان"
+    },
+    {
+      "number": 82,
+      "id": "DAHabXtiC6I",
+      "filename": "082.png",
+      "canva": "https://www.canva.com/design/DAHabXtiC6I",
+      "title": "ZHIROX | 082 — خشتەی شێفت و نۆرەی کار"
+    },
+    {
+      "number": 83,
+      "id": "DAHabXD8oTU",
+      "filename": "083.png",
+      "canva": "https://www.canva.com/design/DAHabXD8oTU",
+      "title": "ZHIROX | 083 — داواکاریی دەسەڵاتی کاتی"
+    },
+    {
+      "number": 84,
+      "id": "DAHabUMc1w0",
+      "filename": "084.png",
+      "canva": "https://www.canva.com/design/DAHabUMc1w0",
+      "title": "ZHIROX | 084 — پاراستنی چوونەژوورەوە"
+    },
+    {
+      "number": 85,
+      "id": "DAHabfHOwiw",
+      "filename": "085.png",
+      "canva": "https://www.canva.com/design/DAHabfHOwiw",
+      "title": "ZHIROX | 085 — پشکنینی هەژمار و سێشنەکان"
+    },
+    {
+      "number": 86,
+      "id": "DAHabTp5TFU",
+      "filename": "086.png",
+      "canva": "https://www.canva.com/design/DAHabTp5TFU",
+      "title": "ZHIROX | 086 — لیستی ئۆفەر و داشکاندن"
+    },
+    {
+      "number": 87,
+      "id": "DAHabQo2dB8",
+      "filename": "087.png",
+      "canva": "https://www.canva.com/design/DAHabQo2dB8",
+      "title": "ZHIROX | 087 — دروستکردنی ئۆفەری نوێ"
+    },
+    {
+      "number": 88,
+      "id": "DAHabb8zVE0",
+      "filename": "088.png",
+      "canva": "https://www.canva.com/design/DAHabb8zVE0",
+      "title": "ZHIROX | 088 — یاساکانی داشکاندن"
+    },
+    {
+      "number": 89,
+      "id": "DAHabSX17Ds",
+      "filename": "089.png",
+      "canva": "https://www.canva.com/design/DAHabSX17Ds",
+      "title": "ZHIROX | 089 — پاداشت و خاڵی کڕیار"
+    },
+    {
+      "number": 90,
+      "id": "DAHabbt4B1k",
+      "filename": "090.png",
+      "canva": "https://www.canva.com/design/DAHabbt4B1k",
+      "title": "ZHIROX | 090 — ڕاپۆرت و ئەنجامی ئۆفەرەکان"
+    },
+    {
+      "number": 91,
+      "id": "DAHabRLnR-A",
+      "filename": "091.png",
+      "canva": "https://www.canva.com/design/DAHabRLnR-A",
+      "title": "ZHIROX | 091 — پەسەندکردنی ئۆفەرەکان"
+    },
+    {
+      "number": 92,
+      "id": "DAHabTSqNt8",
+      "filename": "092.png",
+      "canva": "https://www.canva.com/design/DAHabTSqNt8",
+      "title": "ZHIROX | 092 — مێژووی داشکاندنەکان"
+    },
+    {
+      "number": 93,
+      "id": "DAHabYvefZA",
+      "filename": "093.png",
+      "canva": "https://www.canva.com/design/DAHabYvefZA",
+      "title": "ZHIROX | 093 — پاداشتە بەکارهاتووەکان"
+    },
+    {
+      "number": 94,
+      "id": "DAHabXHesrc",
+      "filename": "094.png",
+      "canva": "https://www.canva.com/design/DAHabXHesrc",
+      "title": "ZHIROX | 094 — خاڵە نزیک بە بەسەرچوونەکان"
+    },
+    {
+      "number": 95,
+      "id": "DAHabWkr04E",
+      "filename": "095.png",
+      "canva": "https://www.canva.com/design/DAHabWkr04E",
+      "title": "ZHIROX | 095 — پشکنینی یاسای ئۆفەر"
+    },
+    {
+      "number": 96,
+      "id": "DAHabXk3KIA",
+      "filename": "096.png",
+      "canva": "https://www.canva.com/design/DAHabXk3KIA",
+      "title": "ZHIROX | 096 — پوختەی فرۆشتن و ڕاپۆرتی ڕۆژانە"
+    },
+    {
+      "number": 97,
+      "id": "DAHabavvHmw",
+      "filename": "097.png",
+      "canva": "https://www.canva.com/design/DAHabavvHmw",
+      "title": "ZHIROX | 097 — شیکاری فرۆشتنی کاڵاکان"
+    },
+    {
+      "number": 98,
+      "id": "DAHabZ6XeFY",
+      "filename": "098.png",
+      "canva": "https://www.canva.com/design/DAHabZ6XeFY",
+      "title": "ZHIROX | 098 — ڕاپۆرتی کۆگا و بەسەرچوون"
+    },
+    {
+      "number": 99,
+      "id": "DAHabZqxL8s",
+      "filename": "099.png",
+      "canva": "https://www.canva.com/design/DAHabZqxL8s",
+      "title": "ZHIROX | 099 — شیکاری قازانج و خەرجی"
+    },
+    {
+      "number": 100,
+      "id": "DAHabVHtOeg",
+      "filename": "100.png",
+      "canva": "https://www.canva.com/design/DAHabVHtOeg",
+      "title": "ZHIROX | 100 — بەراوردی شێفت و کاشێرەکان"
+    },
+    {
+      "number": 101,
+      "id": "DAHabmqyGPQ",
+      "filename": "101.png",
+      "canva": "https://www.canva.com/design/DAHabmqyGPQ",
+      "title": "ZHIROX | 101 — وردەکاریی فرۆشتن و پسووڵەکان"
+    },
+    {
+      "number": 102,
+      "id": "DAHabn_MmnU",
+      "filename": "102.png",
+      "canva": "https://www.canva.com/design/DAHabn_MmnU",
+      "title": "ZHIROX | 102 — ڕاپۆرتی گەڕاندنەوە و گەڕاندنی پارە"
+    },
+    {
+      "number": 103,
+      "id": "DAHabtB4hFU",
+      "filename": "103.png",
+      "canva": "https://www.canva.com/design/DAHabtB4hFU",
+      "title": "ZHIROX | 103 — شیکاری کڕیاران و قەرز"
+    },
+    {
+      "number": 104,
+      "id": "DAHabl7W7q4",
+      "filename": "104.png",
+      "canva": "https://www.canva.com/design/DAHabl7W7q4",
+      "title": "ZHIROX | 104 — هەناردەکردنی ڕاپۆرت و داتا"
+    },
+    {
+      "number": 105,
+      "id": "DAHabjdeTMs",
+      "filename": "105.png",
+      "canva": "https://www.canva.com/design/DAHabjdeTMs",
+      "title": "ZHIROX | 105 — مێژووی ڕاپۆرت و پشکنینی داتا"
+    },
+    {
+      "number": 106,
+      "id": "DAHabwYlq5c",
+      "filename": "106.png",
+      "canva": "https://www.canva.com/design/DAHabwYlq5c",
+      "title": "ZHIROX | 106 — ناوەندی ڕێکخستنەکان"
+    },
+    {
+      "number": 107,
+      "id": "DAHabyEwVlo",
+      "filename": "107.png",
+      "canva": "https://www.canva.com/design/DAHabyEwVlo",
+      "title": "ZHIROX | 107 — ڕێکخستنی فرۆشتن"
+    },
+    {
+      "number": 108,
+      "id": "DAHab9JTzL8",
+      "filename": "108.png",
+      "canva": "https://www.canva.com/design/DAHab9JTzL8",
+      "title": "ZHIROX | 108 — سندووق و پارەدان"
+    },
+    {
+      "number": 109,
+      "id": "DAHabx_hctw",
+      "filename": "109.png",
+      "canva": "https://www.canva.com/design/DAHabx_hctw",
+      "title": "ZHIROX | 109 — چاپکەر و پسووڵە"
+    },
+    {
+      "number": 110,
+      "id": "DAHab80SY8w",
+      "filename": "110.png",
+      "canva": "https://www.canva.com/design/DAHab80SY8w",
+      "title": "ZHIROX | 110 — کاڵا و بارکۆد"
+    },
+    {
+      "number": 111,
+      "id": "DAHacPei8pM",
+      "filename": "111.png",
+      "canva": "https://www.canva.com/design/DAHacPei8pM",
+      "title": "ZHIROX | 111 — بەکارهێنەر و دەسەڵات"
+    },
+    {
+      "number": 112,
+      "id": "DAHacHRMqJM",
+      "filename": "112.png",
+      "canva": "https://www.canva.com/design/DAHacHRMqJM",
+      "title": "ZHIROX | 112 — پاشەکەوت و داتابەیس"
+    },
+    {
+      "number": 113,
+      "id": "DAHacKUKevQ",
+      "filename": "113.png",
+      "canva": "https://www.canva.com/design/DAHacKUKevQ",
+      "title": "ZHIROX | 113 — ئۆفلاین و تۆڕ"
+    },
+    {
+      "number": 114,
+      "id": "DAHacGAAtIc",
+      "filename": "114.png",
+      "canva": "https://www.canva.com/design/DAHacGAAtIc",
+      "title": "ZHIROX | 114 — پاراستن و تۆماری کردار"
+    },
+    {
+      "number": 115,
+      "id": "DAHacNKMw-g",
+      "filename": "115.png",
+      "canva": "https://www.canva.com/design/DAHacNKMw-g",
+      "title": "ZHIROX | 115 — ئاگادارکردنەوەکان"
+    },
+    {
+      "number": 116,
+      "id": "DAHacBw5pMg",
+      "filename": "116.png",
+      "canva": "https://www.canva.com/design/DAHacBw5pMg",
+      "title": "ZHIROX | 116 — داواکاری و پەسەندکردن"
+    },
+    {
+      "number": 117,
+      "id": "DAHacJoG8qo",
+      "filename": "117.png",
+      "canva": "https://www.canva.com/design/DAHacJoG8qo",
+      "title": "ZHIROX | 117 — هاوکاتکردنی داتا"
+    },
+    {
+      "number": 118,
+      "id": "DAHacAFc3II",
+      "filename": "118.png",
+      "canva": "https://www.canva.com/design/DAHacAFc3II",
+      "title": "ZHIROX | 118 — نوێکردنەوەی سیستەم"
+    },
+    {
+      "number": 119,
+      "id": "DAHacFZhF4k",
+      "filename": "119.png",
+      "canva": "https://www.canva.com/design/DAHacFZhF4k",
+      "title": "ZHIROX | 119 — هاوردەکردن و هەناردەکردن"
+    },
+    {
+      "number": 120,
+      "id": "DAHacFkWQ70",
+      "filename": "120.png",
+      "canva": "https://www.canva.com/design/DAHacFkWQ70",
+      "title": "ZHIROX | 120 — پشکنینی تەندروستی سیستەم"
+    },
+    {
+      "number": 121,
+      "id": "DAHacMblIpQ",
+      "filename": "121.png",
+      "canva": "https://www.canva.com/design/DAHacMblIpQ",
+      "title": "ZHIROX | 121 — ڕێکخستنی گەڕاندنەوە"
+    },
+    {
+      "number": 122,
+      "id": "DAHacEibqDc",
+      "filename": "122.png",
+      "canva": "https://www.canva.com/design/DAHacEibqDc",
+      "title": "ZHIROX | 122 — ڕێکخستنی قەرز و کڕیار"
+    },
+    {
+      "number": 123,
+      "id": "DAHacEjTnuE",
+      "filename": "123.png",
+      "canva": "https://www.canva.com/design/DAHacEjTnuE",
+      "title": "ZHIROX | 123 — ڕێکخستنی کۆگا و بەسەرچوون"
+    },
+    {
+      "number": 124,
+      "id": "DAHacCL7sJY",
+      "filename": "124.png",
+      "canva": "https://www.canva.com/design/DAHacCL7sJY",
+      "title": "ZHIROX | 124 — ڕێکخستنی شێفت و کاشێر"
+    },
+    {
+      "number": 125,
+      "id": "DAHacIFvYWA",
+      "filename": "125.png",
+      "canva": "https://www.canva.com/design/DAHacIFvYWA",
+      "title": "ZHIROX | 125 — پشکنینی کۆتایی ڕێکخستنەکان"
+    },
+    {
+      "number": 126,
+      "id": "DAHacQgZ2vg",
+      "filename": "126.png",
+      "canva": "https://www.canva.com/design/DAHacQgZ2vg",
+      "title": "ZHIROX | 126 — ناوەندی یارمەتی و پشتیوانی"
+    },
+    {
+      "number": 127,
+      "id": "DAHacYtKhBg",
+      "filename": "127.png",
+      "canva": "https://www.canva.com/design/DAHacYtKhBg",
+      "title": "ZHIROX | 127 — تۆمارکردنی کێشە و داواکاری"
+    },
+    {
+      "number": 128,
+      "id": "DAHacWpi8I8",
+      "filename": "128.png",
+      "canva": "https://www.canva.com/design/DAHacWpi8I8",
+      "title": "ZHIROX | 128 — پشکنینی ئامێرەکان"
+    },
+    {
+      "number": 129,
+      "id": "DAHacSoAYN0",
+      "filename": "129.png",
+      "canva": "https://www.canva.com/design/DAHacSoAYN0",
+      "title": "ZHIROX | 129 — چارەسەری هەڵەی هاوکاتکردن"
+    },
+    {
+      "number": 130,
+      "id": "DAHacW5vjrs",
+      "filename": "130.png",
+      "canva": "https://www.canva.com/design/DAHacW5vjrs",
+      "title": "ZHIROX | 130 — مێژووی چاکسازی و پشتیوانی"
+    },
+    {
+      "number": 131,
+      "id": "DAHacZ0m9f4",
+      "filename": "131.png",
+      "canva": "https://www.canva.com/design/DAHacZ0m9f4",
+      "title": "ZHIROX | 131 — کتێبخانەی ڕێنمایی و چارەسەر"
+    },
+    {
+      "number": 132,
+      "id": "DAHaccMIJn4",
+      "filename": "132.png",
+      "canva": "https://www.canva.com/design/DAHaccMIJn4",
+      "title": "ZHIROX | 132 — پشتیوانی دوورەوە"
+    },
+    {
+      "number": 133,
+      "id": "DAHacd8dur4",
+      "filename": "133.png",
+      "canva": "https://www.canva.com/design/DAHacd8dur4",
+      "title": "ZHIROX | 133 — مۆڵەت و پاراستنی پشتیوانی"
+    },
+    {
+      "number": 134,
+      "id": "DAHacQMNIVs",
+      "filename": "134.png",
+      "canva": "https://www.canva.com/design/DAHacQMNIVs",
+      "title": "ZHIROX | 134 — پشکنینی خێرایی و کارایی"
+    },
+    {
+      "number": 135,
+      "id": "DAHacWctI4s",
+      "filename": "135.png",
+      "canva": "https://www.canva.com/design/DAHacWctI4s",
+      "title": "ZHIROX | 135 — تاقیکردنەوەی فرۆشتنی تەواو"
+    },
+    {
+      "number": 136,
+      "id": "DAHaclaSHVY",
+      "filename": "136.png",
+      "canva": "https://www.canva.com/design/DAHaclaSHVY",
+      "title": "ZHIROX | 136 — تاقیکردنەوەی قەرز و کڕیار"
+    },
+    {
+      "number": 137,
+      "id": "DAHacskG7NM",
+      "filename": "137.png",
+      "canva": "https://www.canva.com/design/DAHacskG7NM",
+      "title": "ZHIROX | 137 — تاقیکردنەوەی کۆگا و وەرگرتن"
+    },
+    {
+      "number": 138,
+      "id": "DAHachjUfVw",
+      "filename": "138.png",
+      "canva": "https://www.canva.com/design/DAHachjUfVw",
+      "title": "ZHIROX | 138 — تاقیکردنەوەی گەڕاندنەوە"
+    },
+    {
+      "number": 139,
+      "id": "DAHacgPL-P0",
+      "filename": "139.png",
+      "canva": "https://www.canva.com/design/DAHacgPL-P0",
+      "title": "ZHIROX | 139 — تاقیکردنەوەی مۆڵەت و پاراستن"
+    },
+    {
+      "number": 140,
+      "id": "DAHacleX8WM",
+      "filename": "140.png",
+      "canva": "https://www.canva.com/design/DAHacleX8WM",
+      "title": "ZHIROX | 140 — تاقیکردنەوەی کۆتایی شێفت"
+    },
+    {
+      "number": 141,
+      "id": "DAHacmgJnVo",
+      "filename": "141.png",
+      "canva": "https://www.canva.com/design/DAHacmgJnVo",
+      "title": "ZHIROX | 141 — تاقیکردنەوەی چاپکەر و پسووڵە"
+    },
+    {
+      "number": 142,
+      "id": "DAHacpFAP0c",
+      "filename": "142.png",
+      "canva": "https://www.canva.com/design/DAHacpFAP0c",
+      "title": "ZHIROX | 142 — تاقیکردنەوەی پاشەکەوت و گەڕاندنەوە"
+    },
+    {
+      "number": 143,
+      "id": "DAHacjcModY",
+      "filename": "143.png",
+      "canva": "https://www.canva.com/design/DAHacjcModY",
+      "title": "ZHIROX | 143 — تاقیکردنەوەی ئۆفلاین و تۆڕ"
+    },
+    {
+      "number": 144,
+      "id": "DAHaclpoJsY",
+      "filename": "144.png",
+      "canva": "https://www.canva.com/design/DAHaclpoJsY",
+      "title": "ZHIROX | 144 — پشکنینی وردی شاشەکان"
+    },
+    {
+      "number": 145,
+      "id": "DAHacrPhl6s",
+      "filename": "145.png",
+      "canva": "https://www.canva.com/design/DAHacrPhl6s",
+      "title": "ZHIROX | 145 — پشکنینی بەستەر و ڕێڕەو"
+    },
+    {
+      "number": 146,
+      "id": "DAHacuWFgL8",
+      "filename": "146.png",
+      "canva": "https://www.canva.com/design/DAHacuWFgL8",
+      "title": "ZHIROX | 146 — پێداچوونەوەی هەڵە ماوەکان"
+    },
+    {
+      "number": 147,
+      "id": "DAHacp7fpTk",
+      "filename": "147.png",
+      "canva": "https://www.canva.com/design/DAHacp7fpTk",
+      "title": "ZHIROX | 147 — پەسەندکردنی وەشانی فەرمی"
+    },
+    {
+      "number": 148,
+      "id": "DAHacgVEaDA",
+      "filename": "148.png",
+      "canva": "https://www.canva.com/design/DAHacgVEaDA",
+      "title": "ZHIROX | 148 — ناوەندی کۆتایی و ڕێڕەوی سیستەم"
+    }
+  ]
+}
