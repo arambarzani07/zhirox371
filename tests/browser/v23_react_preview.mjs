@@ -32,6 +32,30 @@ try {
  assert.equal(await page.locator(".home-screen .subgrid .sub").count(),4);
  await page.locator(".home-screen .module").first().click();
  assert.equal(await page.locator(".home-screen .drawer").count(),0);
+ // Canva 021: product list + detail stay in the same route, filters apply
+ // in place and the item details are data-bound (not a flat Canva image).
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(1).click();
+ const catalog=page.locator('[data-canva-screen="021"]');
+ await catalog.waitFor({state:"visible"});
+ assert.equal(await catalog.locator(".canva-catalog-page-heading h1").innerText(),"لیستی کاڵا و نرخ");
+ assert.equal(await catalog.locator(".canva-catalog-unit-filters button").count(),4);
+ const layout=await catalog.locator(".canva-catalog-layout").evaluate(el=>{
+   const children=Array.from(el.children).map(child=>child.getBoundingClientRect());
+   return {listX:children[0].x,listWidth:children[0].width,asideX:children[1].x};
+ });
+ assert.ok(layout.listX>layout.asideX,"RTL product list must stay to the right of details");
+ await catalog.getByRole("button",{name:"کیلۆ",exact:true}).click();
+ assert.equal(await catalog.getByRole("button",{name:"کیلۆ",exact:true}).getAttribute("aria-pressed"),"true");
+ await catalog.getByRole("button",{name:"هەموو",exact:true}).click();
+ assert.equal(await catalog.getByRole("button",{name:"هەموو",exact:true}).getAttribute("aria-pressed"),"true");
+ const productPick=catalog.locator(".canva-catalog-pick").first();
+ if(await productPick.count()){
+   await productPick.click();
+   assert.notEqual(await catalog.locator(".canva-catalog-aside dd").first().innerText(),"—");
+ }
+ await catalog.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
