@@ -146,6 +146,10 @@ test('Canva 026 authentic source and read-only scan integration preserve exact i
   assert.match(helper,/enumerateActiveBarcodes026/);
   assert.match(helper,/entry.code === code/);
   assert.match(css,/canva-duplicate-026 \.canva-duplicate-layout/);
+  const browser=read('tests/browser/v23_react_preview.mjs');
+  assert.ok(browser.includes('const duplicateScreen=page.locator'));
+  assert.ok(browser.includes('یەک خاوەند'));
+  assert.ok(browser.includes('گەڕانەوە بۆ بارکۆدەکان'));
 });
 test('Canva 026 exact local ownership scan detects duplicate across unit, carton and pack without mutating data',async()=>{
   const {inspectDuplicateBarcode026}=await import('../src/utils/barcodeAudit026.ts');
