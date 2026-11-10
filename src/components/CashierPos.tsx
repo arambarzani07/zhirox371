@@ -871,13 +871,6 @@ export const CashierPos: React.FC = () => {
                   onClick={() => switchTicket(n)}>{ticketLabel(n)}</button>
                 {n === 1 && (
                   <>
-                    <button className="canva-ticket-plus" type="button" aria-label="پسووڵەی نوێ"
-                      onClick={() => {
-                        const empty = [1, 2, 3, 4, 5].find(x => x !== activeTicketNumber &&
-                          !parkedCarts.some(p => p.label === ticketLabel(x)));
-                        if (empty) switchTicket(empty);
-                        else setFeedbackMsg({ text: 'پێنج پسووڵە بەکاردەهێنرێن', error: true });
-                      }}>+</button>
                     <button className="canva-ticket-close" type="button" aria-label="داخستنی پسووڵەی 01"
                       onClick={() => {
                         const parkedOne = parkedCarts.find(p => p.label === ticketLabel(1));
@@ -887,6 +880,13 @@ export const CashierPos: React.FC = () => {
                         if (hasActiveBasket) clearCart();
                         if (activeTicketNumber === 1) setFeedbackMsg({ text: 'پسووڵەی 01 پاککرایەوە', error: false });
                       }}>×</button>
+                    <button className="canva-ticket-plus" type="button" aria-label="پسووڵەی نوێ"
+                      onClick={() => {
+                        const empty = [1, 2, 3, 4, 5].find(x => x !== activeTicketNumber &&
+                          !parkedCarts.some(p => p.label === ticketLabel(x)));
+                        if (empty) switchTicket(empty);
+                        else setFeedbackMsg({ text: 'پێنج پسووڵە بەکاردەهێنرێن', error: true });
+                      }}>+</button>
                   </>
                 )}
               </React.Fragment>
