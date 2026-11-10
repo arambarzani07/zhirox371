@@ -1,4 +1,4 @@
-name: Import original ZHIROX Canva screen renders
+name: Import ZHIROX Canva visual references
 on:
   push:
     branches: [main]
@@ -27,7 +27,7 @@ jobs:
           assert data.get("project")=="ZHIROX371" and data.get("source")=="Canva originals"
           targets=data["screens"]
           assert 1<=len(targets)<=148
-          output=pathlib.Path("public/canva-originals")
+          output=pathlib.Path("public/canva-previews")
           output.mkdir(parents=True,exist_ok=True)
           for item in targets:
               number=str(item["screen"]).zfill(3)
@@ -41,18 +41,18 @@ jobs:
               if len(raw)>16_000_000 or raw[:8]!=b"\x89PNG\r\n\x1a\n":
                   raise RuntimeError("Unexpected source image format or size for screen "+number)
               width,height=struct.unpack(">II",raw[16:24])
-              if (width,height)!=(1920,1080):
-                  raise RuntimeError(f"Screen {number} size {width}x{height}; original 1920x1080 required")
+              if (width,height)!=(600,337):
+                  raise RuntimeError(f"Screen {number} size {width}x{height}; 600x337 Canva connector preview required")
               (output/(number+".png")).write_bytes(raw)
-              print(f"Imported original screen {number}: {len(raw)} bytes, 1920x1080")
+              print(f"Imported Canva reference screen {number}: {len(raw)} bytes, 1920x1080")
           PY
       - name: Commit exact source images to main
         run: |
           if [ ! -f design/.canva-import.json ]; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/canva-originals
+          git add public/canva-previews
           git rm --force design/.canva-import.json
           git diff --cached --quiet && exit 0
-          git commit -m "assets(canva): store original 1920x1080 ZHIROX screen renders"
+          git commit -m "assets(canva): store 600px ZHIROX visual references (not production screens)"
           git push origin HEAD:main
