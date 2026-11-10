@@ -1,0 +1,268 @@
+{
+  "project": "ZHIROX371",
+  "design_id": "DAHaaTThotw",
+  "screen": "023",
+  "status": "Canva original text element bounds; not a complete pixel-perfect design export",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "element_count": 30,
+  "elements": [
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBwClQX4TsslQLPT",
+      "text": "ZHIROX",
+      "x": 50.400000000000006,
+      "y": 24,
+      "w": 366,
+      "h": 52.8
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBYgc1FRfjFdYd4q",
+      "text": "سوپەرمارکێتی کانی چنار",
+      "x": 618,
+      "y": 20.4,
+      "w": 684,
+      "h": 61.2
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBgDFhn5Jq9sWvHB",
+      "text": "دەستکاریکردنی کاڵا و نرخ",
+      "x": 1014,
+      "y": 132,
+      "w": 849.6,
+      "h": 54
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBTYppLnltQRL1lQ",
+      "text": "ماڵەوە",
+      "x": 49.2,
+      "y": 133.8,
+      "w": 146.4,
+      "h": 45.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaMmlLck"
+      ]
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBJWLW4RsfLrPsnQ",
+      "text": "کاڵا و نرخ",
+      "x": 509.99999999999994,
+      "y": 136.8,
+      "w": 441.6,
+      "h": 39.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaUrrOOM"
+      ]
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBvqZJy831PVtrZj",
+      "text": "دەستکاریکردنی زانیاری و نرخ",
+      "x": 651.5999999999999,
+      "y": 248.40000000000003,
+      "w": 1206,
+      "h": 56.4
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBFGvb1kdxGRgfxm",
+      "text": "دەسەڵات و پشتڕاستکردنەوە",
+      "x": 62.400000000000006,
+      "y": 248.40000000000003,
+      "w": 511.2,
+      "h": 56.4
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBStqQMB7GbhPjSS",
+      "text": "کاڵای هەڵبژێردراو",
+      "x": 987.5999999999999,
+      "y": 296.4,
+      "w": 846,
+      "h": 39.6
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB4Bs5qc4h4R5sR4",
+      "text": "گەڕان بە بارکۆد یان ناوی کاڵا",
+      "x": 1001.9999999999999,
+      "y": 346.8,
+      "w": 817.2,
+      "h": 52.8
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBYJgLN60BSm8sst",
+      "text": "ناوی کاڵا",
+      "x": 1288.7999999999997,
+      "y": 438,
+      "w": 544.8,
+      "h": 39.6
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB0SJWhrZGBWgH6V",
+      "text": "ناوی کاڵا",
+      "x": 1303.2,
+      "y": 488.3999999999999,
+      "w": 516,
+      "h": 51.6
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB6TFSfs2Jq7Rdj6",
+      "text": "بارکۆد",
+      "x": 668.3999999999999,
+      "y": 438,
+      "w": 566.4,
+      "h": 39.6
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB0t93sYhZQBvtG9",
+      "text": "بارکۆدی سەرەکی",
+      "x": 682.8,
+      "y": 488.3999999999999,
+      "w": 537.6,
+      "h": 51.6
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBpNvndN89nMvbs6",
+      "text": "نرخی فرۆشتن",
+      "x": 1288.7999999999997,
+      "y": 570,
+      "w": 544.8,
+      "h": 39.6
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBrVzFthBtzZds8X",
+      "text": "0 IQD",
+      "x": 1303.2,
+      "y": 620.4,
+      "w": 516,
+      "h": 52.8
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB4fW38FG3jGqhf5",
+      "text": "نرخی کڕین",
+      "x": 668.3999999999999,
+      "y": 570,
+      "w": 566.4,
+      "h": 39.60000000000002
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBV1xfl9zpzQVlr1",
+      "text": "0 IQD",
+      "x": 682.8,
+      "y": 620.4,
+      "w": 537.6,
+      "h": 52.8
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBFzCXWb1vJS0Sr3",
+      "text": "نرخی کارتۆن",
+      "x": 1288.7999999999997,
+      "y": 702,
+      "w": 544.8,
+      "h": 39.60000000000002
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBn6xs9TrbxZQh3Y",
+      "text": "0 IQD",
+      "x": 1303.2,
+      "y": 752.4,
+      "w": 516,
+      "h": 52.8
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBgv2DGrsph2xRRq",
+      "text": "ژمارەی دانە لە کارتۆندا",
+      "x": 668.3999999999999,
+      "y": 702,
+      "w": 566.4,
+      "h": 39.60000000000002
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB5NRzdF0VSln88k",
+      "text": "0",
+      "x": 682.8,
+      "y": 752.4,
+      "w": 537.6,
+      "h": 52.8
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB8JCYf5DW9j8QHH",
+      "text": "گۆڕینی نرخ دوای پەسەندکردنی دەسەڵاتدار تۆمار دەکرێت.",
+      "x": 693.5999999999999,
+      "y": 897.6,
+      "w": 1104,
+      "h": 48
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBhVFgJspcZJbGZR",
+      "text": "دۆخی دەستگەیشتن",
+      "x": 85.20000000000002,
+      "y": 358.8,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBm066qrF0WqPlGP",
+      "text": "بەڕێوەبەر",
+      "x": 85.20000000000002,
+      "y": 400.8,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBJGFgjyjyXdwSV7",
+      "text": "نرخی ئێستا",
+      "x": 85.20000000000002,
+      "y": 493.2,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBW6rWVLtTvRq8Mz",
+      "text": "— IQD",
+      "x": 85.20000000000002,
+      "y": 535.2,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB7Gn4pzp8nPMqHN",
+      "text": "نرخی پێشوو",
+      "x": 85.20000000000002,
+      "y": 627.6000000000001,
+      "w": 463.2,
+      "h": 32.39999999999998,
+      "links": [
+        "https://www.canva.com/design/DAHaafgxkUE"
+      ]
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LBsN2wjSLbj3fvS9",
+      "text": "— IQD",
+      "x": 85.20000000000002,
+      "y": 669.6,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB2MxnKrKyM83YJv",
+      "text": "داواکردنی گۆڕانکاری",
+      "x": 81.59999999999997,
+      "y": 834.6,
+      "w": 470.4,
+      "h": 66,
+      "links": [
+        "https://www.canva.com/design/DAHaaSStk5E"
+      ]
+    },
+    {
+      "id": "PBp9Kwxw3YxWx4bV-LB2cFm6yPt5gn61R",
+      "text": "گەڕانەوە",
+      "x": 81.59999999999997,
+      "y": 937.8,
+      "w": 470.4,
+      "h": 51.60000000000002,
+      "links": [
+        "https://www.canva.com/design/DAHaaUrrOOM"
+      ]
+    }
+  ]
+}
