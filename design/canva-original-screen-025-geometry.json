@@ -1,0 +1,470 @@
+{
+  "project": "ZHIROX371",
+  "screen": "025",
+  "design_id": "DAHaafgxkUE",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "note": "Authoritative text bounds only; complete artwork, visual parity and production data not yet verified",
+  "element_count": 56,
+  "elements": [
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB8Vk42qCWHygCTh",
+      "text": "ZHIROX",
+      "x": 50.400000000000006,
+      "y": 24,
+      "w": 366,
+      "h": 52.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBZt7VXBtYk4MSl7",
+      "text": "سوپەرمارکێتی کانی چنار",
+      "x": 618,
+      "y": 20.4,
+      "w": 684,
+      "h": 61.2
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBP2ymnV7fMx9HHf",
+      "text": "مێژووی گۆڕانکاریی نرخەکان",
+      "x": 1014,
+      "y": 132,
+      "w": 849.6,
+      "h": 54
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB2CfYg6NNMdtVnY",
+      "text": "ماڵەوە",
+      "x": 49.2,
+      "y": 133.8,
+      "w": 146.4,
+      "h": 45.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaMmlLck"
+      ]
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB22ptt8ZJ4D44Dl",
+      "text": "کاڵا و نرخ",
+      "x": 509.99999999999994,
+      "y": 136.8,
+      "w": 441.6,
+      "h": 39.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaUrrOOM"
+      ]
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBXQx8qxF3tXstqh",
+      "text": "تۆماری گۆڕانکارییەکان",
+      "x": 651.5999999999999,
+      "y": 248.40000000000003,
+      "w": 1206,
+      "h": 56.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBzcgqxztnMRYryd",
+      "text": "پشکنین و ڕێگەپێدان",
+      "x": 62.400000000000006,
+      "y": 248.40000000000003,
+      "w": 511.2,
+      "h": 56.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBdWQdVrpFqm6PMp",
+      "text": "گەڕان",
+      "x": 1104,
+      "y": 295.2,
+      "w": 729.6,
+      "h": 39.6
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB0sV1P0SkCLhqPj",
+      "text": "ناوی کاڵا یان بارکۆد",
+      "x": 1118.4,
+      "y": 345.6,
+      "w": 700.8,
+      "h": 49.2
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBBVFbvVfNHSzznv",
+      "text": "جۆری گۆڕانکاری",
+      "x": 662.4000000000001,
+      "y": 295.2,
+      "w": 393.6,
+      "h": 39.6
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBSZ9KfHqHPqDG61",
+      "text": "هەموو گۆڕانکارییەکان",
+      "x": 676.8,
+      "y": 345.6,
+      "w": 364.8,
+      "h": 49.2
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB0CCs8WY1CSZVky",
+      "text": "دۆخ",
+      "x": 665.4,
+      "y": 486.6,
+      "w": 170.4,
+      "h": 50.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBjMHg5ZQXpNTMFT",
+      "text": "نرخی نوێ",
+      "x": 846.6,
+      "y": 486.6,
+      "w": 154.8,
+      "h": 50.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB5R7cXBng74w2GS",
+      "text": "نرخی پێشوو",
+      "x": 1012.1999999999999,
+      "y": 486.6,
+      "w": 175.2,
+      "h": 50.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBDRv0rhVH3gv1fk",
+      "text": "بەروار",
+      "x": 1198.2,
+      "y": 486.6,
+      "w": 192,
+      "h": 50.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB1rW19vThcXcL0w",
+      "text": "کردار",
+      "x": 1401,
+      "y": 486.6,
+      "w": 175.2,
+      "h": 50.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBSHW17vNtnfHwSg",
+      "text": "کاڵا",
+      "x": 1587,
+      "y": 486.6,
+      "w": 244.8,
+      "h": 50.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBMRyqGFLH3KBDGb",
+      "text": "—",
+      "x": 666.6,
+      "y": 560.4,
+      "w": 168,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBRQ2gwXDg0fwP7h",
+      "text": "—",
+      "x": 847.8,
+      "y": 560.4,
+      "w": 152.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBNzlcjvQ98ZDxWf",
+      "text": "—",
+      "x": 1013.4,
+      "y": 560.4,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB1tShLv8qz46Pr3",
+      "text": "—",
+      "x": 1199.4,
+      "y": 560.4,
+      "w": 189.6,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBbzqfdqSb9M2dbH",
+      "text": "—",
+      "x": 1402.2,
+      "y": 560.4,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBZ0yYmMn2QbdhQs",
+      "text": "—",
+      "x": 1588.2,
+      "y": 560.4,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LByD5gXXxCTDT6rm",
+      "text": "—",
+      "x": 666.6,
+      "y": 631.2,
+      "w": 168,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBCD31lZFtHl0xKg",
+      "text": "—",
+      "x": 847.8,
+      "y": 631.2,
+      "w": 152.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBTws1kvwR5WgGh6",
+      "text": "—",
+      "x": 1013.4,
+      "y": 631.2,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBqChRCHjYzQPT64",
+      "text": "—",
+      "x": 1199.4,
+      "y": 631.2,
+      "w": 189.6,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBN5yHDSzWqlQR5V",
+      "text": "—",
+      "x": 1402.2,
+      "y": 631.2,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBdJ53p0vyKt6qB6",
+      "text": "—",
+      "x": 1588.2,
+      "y": 631.2,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBztjM2dZz6r4190",
+      "text": "—",
+      "x": 666.6,
+      "y": 702,
+      "w": 168,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBvjl3HnXWKY7RKR",
+      "text": "—",
+      "x": 847.8,
+      "y": 702,
+      "w": 152.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBY1flVhvrKpvLjS",
+      "text": "—",
+      "x": 1013.4,
+      "y": 702,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBhJX31nH0FQhQf3",
+      "text": "—",
+      "x": 1199.4,
+      "y": 702,
+      "w": 189.6,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBNlDH0Qh4m6h0Gv",
+      "text": "—",
+      "x": 1402.2,
+      "y": 702,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBqq4Xnv6yXzXhCP",
+      "text": "—",
+      "x": 1588.2,
+      "y": 702,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBxzl1vB8JKbnj2P",
+      "text": "—",
+      "x": 666.6,
+      "y": 772.8,
+      "w": 168,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBsWtXFdq4ljq0Wf",
+      "text": "—",
+      "x": 847.8,
+      "y": 772.8,
+      "w": 152.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBrcb5mVgT40dygC",
+      "text": "—",
+      "x": 1013.4,
+      "y": 772.8,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBzvytNCMNGzl1Y5",
+      "text": "—",
+      "x": 1199.4,
+      "y": 772.8,
+      "w": 189.6,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBhmF8hXYlZDQ2wM",
+      "text": "—",
+      "x": 1402.2,
+      "y": 772.8,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBHYRRzrNRqy9tLL",
+      "text": "—",
+      "x": 1588.2,
+      "y": 772.8,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBKBxdm1YQTYXCqQ",
+      "text": "—",
+      "x": 666.6,
+      "y": 843.6,
+      "w": 168,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBrL1vDl4RD1YX2Z",
+      "text": "—",
+      "x": 847.8,
+      "y": 843.6,
+      "w": 152.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBJpBl0Jj8jYgvkt",
+      "text": "—",
+      "x": 1013.4,
+      "y": 843.6,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB1zqwPfsnjkh9WK",
+      "text": "—",
+      "x": 1199.4,
+      "y": 843.6,
+      "w": 189.6,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB6hcH4YJvrJR4vK",
+      "text": "—",
+      "x": 1402.2,
+      "y": 843.6,
+      "w": 172.8,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB0lQQN29byhclmS",
+      "text": "—",
+      "x": 1588.2,
+      "y": 843.6,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBTYn3rzjJhPc5KH",
+      "text": "هیچ گۆڕانکارییەک بۆ ئەم هەڵبژاردنە نییە",
+      "x": 813.5999999999999,
+      "y": 932.4,
+      "w": 870,
+      "h": 52.8
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBnRkD1RKMW3r5ZX",
+      "text": "داواکاریی چاوەڕوان",
+      "x": 85.20000000000002,
+      "y": 358.8,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBvF99nv0ksfqhqS",
+      "text": "—",
+      "x": 85.20000000000002,
+      "y": 400.8,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB12RCCyTVk0xRrq",
+      "text": "گۆڕانکاریی پەسەندکراو",
+      "x": 85.20000000000002,
+      "y": 493.2,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBhSNcP8f4V4qnC6",
+      "text": "—",
+      "x": 85.20000000000002,
+      "y": 535.2,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBZzksMH9Z2HLP6t",
+      "text": "گۆڕانکاریی ڕەتکراوە",
+      "x": 85.20000000000002,
+      "y": 627.6,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBfjMYtgk0CnXSbk",
+      "text": "—",
+      "x": 85.20000000000002,
+      "y": 669.6,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LBBl8bFJqZW7dtGX",
+      "text": "هەموو کردارێک مێژووی تۆمارکراوی هەیە",
+      "x": 93.59999999999997,
+      "y": 772.8,
+      "w": 446.4,
+      "h": 48
+    },
+    {
+      "id": "PB9L4SV6rfwyFLR1-LB5f7c9VPC2m1Np0",
+      "text": "پشکنینی وردەکاری",
+      "x": 81.59999999999997,
+      "y": 900.5999999999999,
+      "w": 470.4,
+      "h": 63.60000000000002,
+      "links": [
+        "https://www.canva.com/design/DAHaaTThotw"
+      ]
+    }
+  ]
+}
