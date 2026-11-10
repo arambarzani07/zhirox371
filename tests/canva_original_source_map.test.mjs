@@ -82,7 +82,7 @@ test('Canva 024 uses verified 1920x1080 original text geometry and selectable in
   }
   assert.match(source,/handleSaveBarcodeAlias\(barcodeCatalogProduct, barcodeCatalogMode\)/);
   assert.match(source,/findBarcodeOwner\(clean, null\)/);
-  assert.match(source,/alias_barcodes: \[\.\.\.pack.alias_barcodes/);
+  assert.match(source,/alias_barcodes: \[\.\.\.x.alias_barcodes/);
   assert.match(source,/alias_barcodes: \[\.\.\.p.carton.alias_barcodes/);
   assert.match(style,/\.canva-barcode-024 \.canva-barcode-layout/);
 });
