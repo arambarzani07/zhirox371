@@ -81,6 +81,28 @@ try {
  await barcodeScreen.locator(".canva-barcode-alias-edit").getByRole("button",{name:"پاشەکەوت"}).click();
  assert.equal(await barcodeScreen.locator(".canva-barcode-table tbody tr").count(),2,
    "Repeated carton alias must be rejected rather than duplicated");
+ // Canva 026: read-only exact match scanner, verify local assignment and
+ // no mutation, with one-key Enter behavior as used by HID barcode scanners.
+ await barcodeScreen.locator(".canva-barcode-duplicate-open").click();
+ const duplicateScreen=page.locator('[data-canva-screen="026"]');
+ await duplicateScreen.waitFor({state:"visible"});
+ assert.equal(await duplicateScreen.locator("h1").innerText(),"پشکنینی بارکۆدی دووبارە");
+ const duplicateInput=duplicateScreen.locator("#canva-duplicate-barcode-input");
+ await duplicateInput.fill("2000000000025");
+ await duplicateInput.press("Enter");
+ assert.equal(await duplicateScreen.locator(".canva-duplicate-table tbody tr").count(),1);
+ assert.match(await duplicateScreen.locator(".canva-duplicate-table").innerText(),/کارتۆن/);
+ assert.equal(await duplicateScreen.locator(".canva-duplicate-aside dd").first().innerText(),"یەک خاوەن");
+ await duplicateInput.fill("0000000099999");
+ await duplicateScreen.getByRole("button",{name:"پشکنین",exact:true}).click();
+ assert.match(await duplicateScreen.getByRole("status").innerText(),/نەدۆزرایەوە/);
+ await duplicateInput.fill("20 000");
+ await duplicateInput.press("Enter");
+ assert.equal(await duplicateScreen.locator(".canva-duplicate-aside dd").first().innerText(),"بارکۆدی نادروست");
+ await duplicateScreen.getByRole("button",{name:"هەڵوەشاندنەوەی داواکاری"}).click();
+ assert.equal(await duplicateInput.inputValue(),"");
+ await duplicateScreen.getByRole("button",{name:"گەڕانەوە بۆ بارکۆدەکان"}).click();
+ assert.equal(await page.locator('[data-canva-screen="024"]').count(),1);
  await barcodeScreen.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 025: change a local DEMO product price, then read the actual

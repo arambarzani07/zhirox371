@@ -126,3 +126,52 @@ test('Canva 025 Chromium regression exercises actual before/after and rejects fa
   assert.match(browser, /Unverified managerial approval count must not be fabricated/);
   assert.match(browser, /پشکنینی وردەکاری/);
 });
+
+test('Canva 026 authentic source and read-only scan integration preserve exact identities', () => {
+  const geometry=JSON.parse(read('design/canva-original-screen-026-geometry.json'));
+  const source=read('src/components/CanvaBarcodeAudit026.tsx');
+  const catalog=read('src/components/ProductCatalogView.tsx');
+  const helper=read('src/utils/barcodeAudit026.ts');
+  const css=read('src/components/canvaOfficialV1.css');
+  assert.equal(geometry.design_id,layout.screens[25].id);
+  assert.equal(geometry.element_count,40);
+  assert.deepEqual(geometry.canvas,{width:1920,height:1080});
+  assert.equal(new Set(geometry.elements.map(x=>x.id)).size,40);
+  assert.match(source,/data-canva-screen="026"/);
+  assert.match(source,/پشکنینی بارکۆدی دووبارە/);
+  assert.match(source,/onSubmit=\{e => \{ e.preventDefault\(\); check\(\); \}\}/);
+  assert.match(source,/onBackToBarcodes/);
+  assert.match(catalog,/activeTab === 'duplicates'/);
+  assert.match(catalog,/canva-barcode-duplicate-open/);
+  assert.match(helper,/enumerateActiveBarcodes026/);
+  assert.match(helper,/entry.code === code/);
+  assert.match(css,/canva-duplicate-026 \.canva-duplicate-layout/);
+});
+test('Canva 026 exact local ownership scan detects duplicate across unit, carton and pack without mutating data',async()=>{
+  const {inspectDuplicateBarcode026}=await import('../src/utils/barcodeAudit026.ts');
+  const product={id:'test-a',name:'پشکنینی کاڵا',base_unit:'unit',unit_barcode:'000001',
+    unit_alias_barcodes:['000002'],carton:{barcode:'000003',alias_barcodes:['000004'],units_per_carton:24},
+    extra_packs:[{kind:'bundle',barcode:'000005',alias_barcodes:['000006']},
+      {kind:'set',barcode:'000007',alias_barcodes:['000008']}]};
+  const other={id:'test-b',name:'کاڵای دووەم',base_unit:'kg',unit_barcode:'000009',
+    unit_alias_barcodes:['000004'],carton:null,extra_packs:[]};
+  const input=[product,other];
+  const snapshot=JSON.stringify(input);
+  const valid=inspectDuplicateBarcode026(input,'000001');
+  assert.equal(valid.status,'unique');assert.equal(valid.matches[0].mode,'unit');
+  const carton=inspectDuplicateBarcode026(input,'000003');
+  assert.equal(carton.status,'unique');assert.equal(carton.matches[0].mode,'carton');
+  const duplicated=inspectDuplicateBarcode026(input,'000004');
+  assert.equal(duplicated.status,'duplicate');assert.equal(duplicated.matches.length,2);
+  assert.deepEqual(duplicated.matches.map(x=>x.mode),['carton','kg']);
+  assert.equal(inspectDuplicateBarcode026(input,'000006').matches[0].mode,'bundle');
+  assert.equal(inspectDuplicateBarcode026(input,'000008').matches[0].mode,'set');
+  assert.equal(inspectDuplicateBarcode026(input,'000009').matches[0].mode,'kg');
+  assert.equal(inspectDuplicateBarcode026(input,'099999').status,'unused');
+  assert.equal(inspectDuplicateBarcode026(input,'  ').status,'empty');
+  assert.equal(inspectDuplicateBarcode026(input,'000 009').status,'invalid');
+  assert.equal(inspectDuplicateBarcode026([{
+    ...product,carton:{...product.carton,barcode:'000001'}
+  }],'000001').status,'duplicate');
+  assert.equal(JSON.stringify(input),snapshot,'read-only audit never alters products');
+});

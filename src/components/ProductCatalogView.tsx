@@ -4,6 +4,7 @@ import { Product, SaleMode, BaseUnit, ExtraPackConfig } from '../types';
 import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 import { CanvaPriceHistory025 } from './CanvaPriceHistory025';
+import { CanvaBarcodeAudit026 } from './CanvaBarcodeAudit026';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -17,7 +18,8 @@ const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' => {
+    if (activeSectionId === 'barcode-duplicate-check' || subtab === 'duplicates') return 'duplicates';
     if (activeSectionId === 'price-history' || subtab === 'history') return 'history';
     if (activeSectionId === 'add-box' || subtab === 'new') return 'new';
     if (activeSectionId === 'price-tags' || subtab === 'prices') return 'prices';
@@ -25,7 +27,7 @@ export const ProductCatalogView: React.FC = () => {
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -1472,6 +1474,13 @@ export const ProductCatalogView: React.FC = () => {
           onInspect={handleStartEdit}/>
       )}
 
+      {activeTab === 'duplicates' && (
+        <CanvaBarcodeAudit026 products={products}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => setActiveTab('list')}
+          onBackToBarcodes={() => setActiveTab('barcodes')} />
+      )}
+
       {/* 4. BARCODES: original Canva 024 layout, real local catalog handlers. */}
       {activeTab === 'barcodes' && (
         <section className="canva-barcode-024" data-canva-screen="024" dir="rtl">
@@ -1586,7 +1595,10 @@ export const ProductCatalogView: React.FC = () => {
                 </dd></div>
                 <div><dt>ژمارەی بارکۆدەکان</dt><dd>{barcodeCatalogProduct ? barcodeCatalogTotalCount : '—'}</dd></div>
               </dl>
-              <p>بارکۆدی دووبارە تۆمار ناکرێت</p>
+              <button type="button" className="canva-barcode-duplicate-open"
+                onClick={() => setActiveTab('duplicates')} title="پشکنینی بارکۆدی دووبارە">
+                بارکۆدی دووبارە تۆمار ناکرێت
+              </button>
               <button type="button" className="secondary" disabled title="پاراستن لە هەمان کاتی زیادکردنی بارکۆددا جێبەجێ دەکرێت">
                 پاراستنی گۆڕانکاری
               </button>
