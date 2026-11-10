@@ -1,0 +1,84 @@
+/*
+ * Canva-to-React design alignment, official 1920x1080 Sorani references:
+ * 001 (home) DAHaaMmlLck, 002 (cashier) DAHaaO0eWBM.
+ * Presentation only: no changes to receipts, stores, SQL, or role permissions.
+ * Keep the 12×3 RTL module structure, the 48 existing subroutes, and PC-only layout.
+ */
+@media screen {
+  .market-banner.zhirox-canva-masthead {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+    color: #172b45 !important;
+    border-bottom: 1px solid #dfe6ee !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    direction: rtl;
+    position: fixed;
+  }
+  .market-banner.zhirox-canva-masthead .zhirox-canva-store-name {
+    display: inline-block;
+    max-width: 66%;
+    font-family: "Noto Kufi Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+    font-size: clamp(19px, 1.9vw, 28px);
+    font-weight: 900;
+    white-space: nowrap;
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+  }
+  .market-banner.zhirox-canva-masthead .zhirox-canva-brand {
+    position: absolute;
+    left: clamp(18px, 4.5vw, 86px);
+    top: 50%;
+    transform: translateY(-50%);
+    font: 900 clamp(19px, 2vw, 30px)/1 "Segoe UI", sans-serif !important;
+    letter-spacing: 1px;
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+  }
+  #app .home-screen.canva-home-001 {
+    direction: rtl;
+    background: #ffffff !important;
+    font-family: "Noto Kufi Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+    max-width: 1760px;
+  }
+  #app .home-screen.canva-home-001 .locked-home-row {
+    direction: rtl;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  #app .home-screen.canva-home-001 .canva-home-card {
+    min-width: 0;
+    direction: rtl;
+    border-color: #dfe5ed;
+    background: #ffffff !important;
+    box-shadow: 0 2px 12px rgba(23,43,69,.055);
+    outline-offset: 3px;
+  }
+  #app .home-screen.canva-home-001 .canva-home-card-number {
+    font-family: "Segoe UI", Tahoma, sans-serif !important;
+    font-variant-numeric: tabular-nums;
+    color: #172b45 !important;
+    -webkit-text-fill-color: #172b45 !important;
+  }
+  #app .home-screen.canva-home-001 .canva-home-title {
+    font-family: "Noto Kufi Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+    text-align: right !important;
+  }
+  #app .home-screen.canva-home-001 .canva-home-card .name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.65;
+    text-align: right !important;
+  }
+  #app .home-screen.canva-home-001 .drawer,
+  #app .home-screen.canva-home-001 .sub {
+    background: #ffffff !important;
+    color: #172b45 !important;
+  }
+  @media (max-height: 850px) {
+    #app .home-screen.canva-home-001 { padding-top: 12px !important; }
+    #app .home-screen.canva-home-001 .canva-home-card { min-height: 130px !important; }
+    #app .home-screen.canva-home-001 .canva-home-title { font-size: 24px !important; margin-bottom: 12px !important; }
+  }
+}
