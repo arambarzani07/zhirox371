@@ -118,3 +118,11 @@ test('Canva 025 source bounds and read-only price history never fabricate approv
   assert.match(catalog,/activeTab === 'history'/);
   assert.match(style,/canva-price-history-025 \.canva-history-layout/);
 });
+
+test('Canva 025 Chromium regression exercises actual before/after and rejects fake approvals', () => {
+  const browser = read('tests/browser/v23_react_preview.mjs');
+  assert.match(browser, /data-canva-screen="025"/);
+  assert.match(browser, /originalSale025\+7/);
+  assert.match(browser, /Unverified managerial approval count must not be fabricated/);
+  assert.match(browser, /پشکنینی وردەکاری/);
+});
