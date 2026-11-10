@@ -26,7 +26,7 @@ test('ZHIROX Canva source directory includes all 148 original distinct designs i
 test('Original design reference stays isolated from real and demo checkout', () => {
   const main = read('src/main.tsx');
   const preview = read('src/components/CanvaOriginalReview.tsx');
-  assert.match(main, /searchParams\)\.has\('canva-source'\)/);
+  assert.match(main, /URLSearchParams\(window\.location\.search\)\.has\('canva-source'\)/);
   assert.match(preview, /data-canva-original-review="true"/);
   assert.match(preview, /NOT a local source clone/);
   assert.doesNotMatch(preview, /completeCheckout|commitDurableLocal|window\.print\(/);
