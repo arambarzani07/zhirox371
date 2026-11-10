@@ -42,7 +42,10 @@ export const App: React.FC = () => {
 
   return (
     <>
-      <div className="market-banner">سوپەرمارکێتی کانی چنار</div>
+      <div className="market-banner zhirox-canva-masthead">
+        <span className="zhirox-canva-store-name">سوپەرمارکێتی کانی چنار</span>
+        <strong className="zhirox-canva-brand" dir="ltr">ZHIROX</strong>
+      </div>
       <div className="viewport">
         <div className="desktop">
           <Header localPilot={localCashierV32} />
