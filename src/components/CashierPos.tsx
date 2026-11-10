@@ -141,6 +141,38 @@ export const CashierPos: React.FC = () => {
   const [newCustomerPhone, setNewCustomerPhone] = useState<string>('');
   const [newCustomerLimit, setNewCustomerLimit] = useState<string>('250000');
   const [showParkedList, setShowParkedList] = useState<boolean>(false);
+  // Canva 002: five numbered tickets share the existing parked-basket store.
+  const [activeTicketNumber, setActiveTicketNumber] = useState(1);
+  const ticketPreferencesRef = useRef<Record<number, {
+    payment: PaymentMethod; customerId: string; discountPercent: number; directDiscountIqd: number;
+  }>>({});
+  const ticketLabel = (n: number) => `پسووڵە ${String(n).padStart(2, '0')}`;
+  const switchTicket = (next: number) => {
+    if (next < 1 || next > 5 || next === activeTicketNumber) return;
+    const target = parkedCarts.find(p => p.label === ticketLabel(next));
+    if (!target && cart.length > 0 && parkedCarts.length >= 4) {
+      setFeedbackMsg({ text: 'زۆرترین ژمارەی پسووڵەی هاوکات 5 ـە', error: true });
+      return;
+    }
+    ticketPreferencesRef.current[activeTicketNumber] = {
+      payment: paymentMethod, customerId: selectedCustomerId, discountPercent, directDiscountIqd
+    };
+    if (target) {
+      restoreParkedCart(target.id, cart.length > 0 ? ticketLabel(activeTicketNumber) : undefined);
+    } else if (cart.length > 0 && !parkCart(ticketLabel(activeTicketNumber))) {
+      setFeedbackMsg({ text: 'نەتوانرا پسووڵەکە هەڵبگیرێت', error: true });
+      return;
+    }
+    const prefs = ticketPreferencesRef.current[next];
+    setActiveTicketNumber(next);
+    setPaymentMethod(prefs?.payment ?? 'cash');
+    setSelectedCustomerId(prefs?.customerId ?? '');
+    setDiscountPercent(prefs?.discountPercent ?? 0);
+    setDirectDiscountIqd(prefs?.directDiscountIqd ?? 0);
+    setBarcodeInput('');
+    setFeedbackMsg(null);
+  };
+
   const [tenderedCash, setTenderedCash] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showQuickProducts, setShowQuickProducts] = useState(false);
@@ -433,9 +465,12 @@ export const CashierPos: React.FC = () => {
       // modal, route change, or second financial submission is involved.
       flushSync(() => setInlineCheckoutReceipt(res.receipt!));
       setFeedbackMsg({ text: `فرۆشتنی تاقیکردنەوە تۆمارکرا — پسووڵەی ${res.receipt.receiptNumber}`, error: false });
+      delete ticketPreferencesRef.current[activeTicketNumber];
       setDiscountPercent(0);
       setDirectDiscountIqd(0);
       setTenderedCash(0);
+      setSelectedCustomerId('');
+      setPaymentMethod('cash');
       try {
         window.print();
       } catch (_printError) {
@@ -541,7 +576,7 @@ export const CashierPos: React.FC = () => {
   const selectedCustomerObj = customers.find(c => c.id === selectedCustomerId);
 
   return (
-    <div className="ws-stack">
+    <div className="ws-stack canva-pos-002" data-canva-screen="002" dir="rtl">
       <div role="status" aria-label="دۆخی تاقیکردنەوەی کاشێر" style={{ padding: '6px 12px', border: '1px solid #a85d16', borderRadius: '7px', background: '#fff7ed', color: '#7c2d12', fontSize: '11.5px', fontWeight: 850, textAlign: 'center' }}>
         تاقیکردنەوە — داتای ئەم کاشێرە لە وێبگەڕ پاشەکەوت دەکرێت؛ فرۆشتنی ڕاستەقینە نییە
       </div>
@@ -818,6 +853,36 @@ export const CashierPos: React.FC = () => {
       {/* SUBSECTION 1.1: FAST POS CHECKOUT (فرۆشتنی خێرا) */}
       {activeTab === 'checkout' && (
         <>
+          <div className="canva-ticket-tabs" role="group" aria-label="پسووڵەکانی هاوکات">
+            {[1, 2, 3, 4, 5].map(n => (
+              <React.Fragment key={n}>
+                <button className={n === activeTicketNumber ? 'canva-ticket active' : 'canva-ticket'}
+                  data-canva-ticket={String(n).padStart(2, '0')}
+                  type="button" aria-pressed={n === activeTicketNumber}
+                  onClick={() => switchTicket(n)}>{ticketLabel(n)}</button>
+                {n === 1 && (
+                  <>
+                    <button className="canva-ticket-plus" type="button" aria-label="پسووڵەی نوێ"
+                      onClick={() => {
+                        const empty = [1, 2, 3, 4, 5].find(x => x !== activeTicketNumber &&
+                          !parkedCarts.some(p => p.label === ticketLabel(x)));
+                        if (empty) switchTicket(empty);
+                        else setFeedbackMsg({ text: 'پێنج پسووڵە بەکاردەهێنرێن', error: true });
+                      }}>+</button>
+                    <button className="canva-ticket-close" type="button" aria-label="داخستنی پسووڵەی 01"
+                      onClick={() => {
+                        const parkedOne = parkedCarts.find(p => p.label === ticketLabel(1));
+                        const hasActiveBasket = activeTicketNumber === 1 && cart.length > 0;
+                        if ((hasActiveBasket || parkedOne) && !window.confirm('پسووڵەی 01 بەبێ تۆمارکردن دابخرێت؟')) return;
+                        if (parkedOne) removeParkedCart(parkedOne.id);
+                        if (hasActiveBasket) clearCart();
+                        if (activeTicketNumber === 1) setFeedbackMsg({ text: 'پسووڵەی 01 پاککرایەوە', error: false });
+                      }}>×</button>
+                  </>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
           {currentShift.status !== 'open' && (
             <div
               className="ws-pos-banner"
@@ -877,7 +942,7 @@ export const CashierPos: React.FC = () => {
                       value={barcodeInput}
                       onChange={handleBarcodeInputChange}
                       onKeyDown={handleScanKeyDown}
-                      placeholder="بارکۆد بسکێنە، ژمارە*بارکۆد (نمونە 5*...) یان بە ناوی کاڵا بگەڕێ (F1)..."
+                      placeholder="بارکۆد یان ناوی کاڵا"
                       autoComplete="off"
                       style={{
                         width: '100%',
@@ -955,7 +1020,7 @@ export const CashierPos: React.FC = () => {
                       gap: '6px'
                     }}
                   >
-                    <span>⚡ کاڵا خێراکان</span>
+                    <span>هەڵبژاردن</span>
                     <span style={{ fontSize: '10px', opacity: 0.85 }}>{showQuickProducts ? '▲' : '▼'}</span>
                   </button>
                 </form>
@@ -1275,7 +1340,7 @@ export const CashierPos: React.FC = () => {
                   }}
                 >
                   <strong style={{ fontSize: '13px', color: '#1d3450', fontWeight: 900 }}>
-                    سەبەتەی کڕین ({cart.length} جۆر کاڵا ·{' '}
+                    سەبەتەی فرۆشتن ({cart.length} جۆر کاڵا ·{' '}
                     {cart.reduce((s, l) => s + l.qty, 0)} یەکە)
                   </strong>
                   <div style={{ display: 'flex', gap: '6px', position: 'relative' }}>
@@ -1397,12 +1462,12 @@ export const CashierPos: React.FC = () => {
                   <table style={{ width: '100%', margin: 0, borderCollapse: 'collapse' }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#f5f8fb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                       <tr>
-                        <th style={{ width: '28px' }}>#</th>
-                        <th style={{ minWidth: '120px' }}>ناوی کاڵا و بارکۆد</th>
-                        <th style={{ width: '80px' }}>یەکە / کارتۆن</th>
-                        <th style={{ width: '72px' }}>نرخی یەکە</th>
+                        <th style={{ width: '28px' }}>ژمارە</th>
+                        <th style={{ minWidth: '120px' }}>ناوی کاڵا</th>
+                        <th style={{ width: '80px' }}>یەکە</th>
+                        <th style={{ width: '72px' }}>نرخ</th>
                         <th style={{ width: '102px' }}>بڕ</th>
-                        <th style={{ width: '80px' }}>کۆ (IQD)</th>
+                        <th style={{ width: '80px' }}>کۆ</th>
                         <th style={{ width: '46px', textAlign: 'center' }}>سڕینەوە</th>
                       </tr>
                     </thead>
