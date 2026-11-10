@@ -569,6 +569,13 @@ export const ProductCatalogView: React.FC = () => {
       {/* 1. NEW / EDIT PRODUCT SUBMODULE */}
       {activeTab === 'new' && (
         <>
+          <div className="canva-catalog-page-heading canva-catalog-new-heading" data-canva-screen={editingId ? '023' : '022'}>
+            <h1>{editingId ? 'دەستکاریکردنی کاڵا و نرخ' : 'تۆمارکردنی کاڵای نوێ'}</h1>
+            <nav className="canva-catalog-new-nav" aria-label="ڕێڕەوی کاڵا">
+              <button type="button" className="canva-catalog-home" onClick={() => navigateTo('home')}>ماڵەوە</button>
+              <button type="button" className="secondary" onClick={() => { resetForm(); setActiveTab('list'); }}>کاڵا و نرخ</button>
+            </nav>
+          </div>
           <div className="ws-kpi-grid">
             <div className="ws-kpi-card">
               <span className="ws-kpi-label">کۆی کاڵاکانی ناو کەتەلۆگ</span>
@@ -587,7 +594,7 @@ export const ProductCatalogView: React.FC = () => {
             </div>
           </div>
 
-          <div
+          <div className="canva-catalog-new-layout"
             style={{
               display: 'grid',
               gridTemplateColumns: 'minmax(0, 1.25fr) minmax(320px, 1fr)',
@@ -600,7 +607,7 @@ export const ProductCatalogView: React.FC = () => {
             <div className="ws-panel" style={{ overflowY: 'auto', minHeight: 0 }}>
               <div className="ws-toolbar">
                 <h2 className="ws-panel-title" style={{ margin: 0 }}>
-                  {editingId ? 'دەستکاریکردنی زانیارییەکانی کاڵا' : 'تۆمارکردنی کاڵای نوێ لە کەتەلۆگ'}
+                  {editingId ? 'دەستکاریکردنی زانیارییەکانی کاڵا' : 'زانیاریی بنەڕەتی کاڵا'}
                 </h2>
                 {editingId && (
                   <button
@@ -889,7 +896,7 @@ export const ProductCatalogView: React.FC = () => {
                 <div className="ws-toolbar" style={{ marginBottom: 0, paddingTop: '4px' }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <button type="submit" className="primary">
-                      {editingId ? 'پاشەکەوتکردنی گۆڕانکارییەکان' : 'زیادکردنی کاڵا بۆ کەتەلۆگ'}
+                      {editingId ? 'پاشەکەوتکردنی گۆڕانکارییەکان' : 'پاشەکەوتکردنی کاڵا'}
                     </button>
                     <button type="button" className="secondary" onClick={resetForm}>
                       پاککردنەوەی خانەکان
@@ -912,39 +919,17 @@ export const ProductCatalogView: React.FC = () => {
               </form>
             </div>
 
-            <div className="section-workspace__table" style={{ height: '100%' }}>
-              <strong className="section-workspace__metric">
-                تازەترین کاڵاکانی ناو کەتەلۆگ ({products.length} کاڵا)
-              </strong>
-              <table>
-                <thead>
-                  <tr>
-                    <th>ناوی کاڵا</th>
-                    <th>بارکۆد</th>
-                    <th>نرخی فرۆشتن</th>
-                    <th>کۆگا</th>
-                    <th>کردار</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map(p => (
-                    <tr key={p.id}>
-                      <td>
-                        <strong>{p.name}</strong>
-                      </td>
-                      <td style={{ direction: 'ltr', fontWeight: 800 }}>{p.unit_barcode}</td>
-                      <td style={{ direction: 'ltr', fontWeight: 900 }}>{money(p.unit_sale_price_iqd)}</td>
-                      <td style={{ fontWeight: 800 }}>{p.stock}</td>
-                      <td>
-                        <button type="button" className="secondary" onClick={() => handleStartEdit(p)}>
-                          دەستکاری
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <aside className="canva-catalog-new-summary" data-canva-inline-summary="true" aria-label="پوختەی تۆمارکردن">
+              <h2>پوختەی تۆمارکردن</h2>
+              <dl>
+                <div><dt>دۆخی تۆمار</dt><dd>{editingId ? 'دەستکاری' : 'نوێ'}</dd></div>
+                <div><dt>ناوی کاڵا</dt><dd>{name.trim() || '—'}</dd></div>
+                <div><dt>یەکەی سەرەکی</dt><dd>{baseUnit === 'kg' ? 'کیلۆ' : 'دانە'}</dd></div>
+                <div><dt>بارکۆد</dt><dd dir="ltr">{unitBarcode.trim() || '—'}</dd></div>
+                <div><dt>نرخی فرۆشتنی دانە</dt><dd>{unitSellPrice.trim() ? unitSellPrice + ' IQD' : '0 IQD'}</dd></div>
+              </dl>
+              <button type="button" className="secondary" onClick={() => { resetForm(); setActiveTab('list'); }}>هەڵوەشاندنەوە</button>
+            </aside>
           </div>
         </>
       )}

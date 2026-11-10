@@ -600,3 +600,23 @@
     #app .canva-catalog-021 .canva-catalog-primary > .ws-kpi-grid { gap: 6px; }
   }
 }
+
+/* Canva 022: scoped PC-only registration panel. Real product validation unchanged. */
+@media screen {
+  #app .canva-catalog-021 .canva-catalog-new-heading {direction:rtl; background:#fff;}
+  #app .canva-catalog-021 .canva-catalog-new-nav {display:flex; flex-wrap:wrap; align-items:center; gap:8px;}
+  #app .canva-catalog-021 .canva-catalog-new-nav button {min-width:110px; min-height:40px; border-radius:8px; border:1px solid #dce5ee; font-weight:900;}
+  #app .canva-catalog-021 .canva-catalog-new-heading + .ws-kpi-grid {display:none;}
+  #app .canva-catalog-021 .canva-catalog-new-layout {direction:rtl; grid-template-columns:minmax(0, 1.65fr) minmax(300px, .8fr)!important; gap:clamp(12px,2vw,28px)!important; margin:0 15px; min-width:0;}
+  #app .canva-catalog-021 .canva-catalog-new-layout > .ws-panel {background:#fff; border:1px solid #e0e7f0; border-radius:10px; box-shadow:none;}
+  #app .canva-catalog-021 .canva-catalog-new-summary {align-self:start; display:flex; flex-direction:column; gap:16px; direction:rtl; padding:20px 24px; background:#fff; border:1px solid #e0e7f0; border-radius:10px; color:#172b45; font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+  #app .canva-catalog-021 .canva-catalog-new-summary h2 {margin:0; font-size:19px; font-weight:900;}
+  #app .canva-catalog-021 .canva-catalog-new-summary dl {margin:0; display:flex; flex-direction:column; gap:10px;}
+  #app .canva-catalog-021 .canva-catalog-new-summary dl > div {display:flex; flex-direction:column; gap:4px; padding-bottom:10px; border-bottom:1px solid #e3eaf1;}
+  #app .canva-catalog-021 .canva-catalog-new-summary dt {font-size:12px; font-weight:800; color:#64758d;}
+  #app .canva-catalog-021 .canva-catalog-new-summary dd {margin:0; font-size:15px; font-weight:900; color:#172b45; overflow-wrap:anywhere;}
+  #app .canva-catalog-021 .canva-catalog-new-summary button {min-height:44px; font-weight:900; background:#f5f8fc;}
+  @media (max-width:1180px) {
+    #app .canva-catalog-021 .canva-catalog-new-layout {grid-template-columns:minmax(0,1.3fr) minmax(260px,.8fr)!important; gap:12px!important; margin:0 7px;}
+  }
+}

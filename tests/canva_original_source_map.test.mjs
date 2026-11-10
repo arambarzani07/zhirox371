@@ -31,3 +31,16 @@ test('Original design reference stays isolated from real and demo checkout', () 
   assert.match(preview, /NOT a local source clone/);
   assert.doesNotMatch(preview, /completeCheckout|commitDurableLocal|window\.print\(/);
 });
+
+test('Canva 022 continues within existing product form and live summary', () => {
+  const source = read('src/components/ProductCatalogView.tsx');
+  const style = read('src/components/canvaOfficialV1.css');
+  assert.ok(source.includes("data-canva-screen={editingId ? '023' : '022'}"));
+  assert.ok(source.includes('data-canva-inline-summary="true"'));
+  assert.ok(source.includes('پوختەی تۆمارکردن'));
+  assert.ok(source.includes('زانیاریی بنەڕەتی کاڵا'));
+  assert.ok(source.includes('پاشەکەوتکردنی کاڵا'));
+  assert.ok(source.includes("onClick={() => { resetForm(); setActiveTab('list'); }}"));
+  assert.ok(style.includes('.canva-catalog-new-layout'));
+  assert.ok(style.includes('.canva-catalog-new-summary'));
+});
