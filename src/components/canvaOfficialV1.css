@@ -82,3 +82,88 @@
     #app .home-screen.canva-home-001 .canva-home-title { font-size: 24px !important; margin-bottom: 12px !important; }
   }
 }
+
+
+/* Cashier 002: reference ticket strip and two-column workflow. */
+@media screen {
+  #app .canva-pos-002 {
+    direction: rtl;
+    font-family: "Noto Kufi Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+  }
+  #app .canva-pos-002 .canva-ticket-tabs {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    direction: rtl;
+    gap: 8px;
+    padding: 9px 6px 14px;
+    overflow-x: auto;
+    scrollbar-gutter: stable;
+    background: #fff;
+    border-bottom: 1px solid #e3eaf1;
+  }
+  #app .canva-pos-002 .canva-ticket {
+    flex: 0 1 155px;
+    min-width: 108px;
+    min-height: 45px;
+    border: 1px solid #d9e3ee;
+    background: #f8fafc;
+    border-radius: 9px;
+    font-weight: 900;
+    font-size: 14px;
+    color: #172b45;
+  }
+  #app .canva-pos-002 .canva-ticket.active {
+    background: #203e66 !important;
+    color: #fff !important;
+    border-color: #203e66;
+    -webkit-text-fill-color: #fff !important;
+  }
+  #app .canva-pos-002 .canva-ticket-plus,
+  #app .canva-pos-002 .canva-ticket-close {
+    flex: 0 0 33px;
+    width: 33px;
+    min-height: 33px;
+    background: white;
+    color: #172b45;
+    border: 1px solid #d8e0ea;
+    border-radius: 7px;
+    font-size: 21px;
+    font-weight: 800;
+    padding: 0;
+  }
+  #app .canva-pos-002 .canva-ticket-close { color: #9c3840 !important; }
+  #app .canva-pos-002 .ws-pos-layout {
+    grid-template-columns: minmax(0, 2.75fr) minmax(345px, 1fr) !important;
+    gap: 16px !important;
+    align-items: start;
+  }
+  #app .canva-pos-002 .ws-panel,
+  #app .canva-pos-002 .section-workspace__table {
+    border: 1px solid #e0e7f0;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: none;
+  }
+  #app .canva-pos-002 .canva-payment-modes button:disabled {
+    cursor: not-allowed;
+    opacity: 0.54;
+    background: #f2f5f9 !important;
+    color: #536578 !important;
+    -webkit-text-fill-color: #536578 !important;
+  }
+  #app .canva-pos-002 .ws-pos-basket-bar strong { font-size: 14px !important; }
+  #app .canva-pos-002 .section-workspace__table thead th {
+    background: #f1f5f9 !important;
+    color: #172b45 !important;
+    border-bottom: 1px solid #dce5ef;
+    font-weight: 900;
+  }
+  @media (max-width: 1180px) {
+    #app .canva-pos-002 .ws-pos-layout {
+      grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr) !important;
+    }
+    #app .canva-pos-002 .canva-ticket-tabs { gap: 4px; }
+    #app .canva-pos-002 .canva-ticket { min-width: 96px; font-size: 12px; }
+  }
+}
