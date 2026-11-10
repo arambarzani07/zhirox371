@@ -1688,22 +1688,28 @@ export const CashierPos: React.FC = () => {
                 <div style={{ fontSize: '11px', fontWeight: 800, color: '#243b55', marginBottom: '3px' }}>
                   شێوازی پارەدان:
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <div className="canva-payment-modes" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   <button
                     type="button"
                     className={paymentMethod === 'cash' ? 'primary' : 'secondary'}
                     onClick={() => setPaymentMethod('cash')}
                     style={{ height: '30px', fontSize: '11.5px' }}
                   >
-                    نەختینە (Cash)
+                    نەقد
                   </button>
+                  <button type="button" className="secondary" disabled
+                    title="پارەدانی بانکی هێشتا کارا نەکراوە" aria-label="بانکی — هێشتا کارا نییە"
+                    style={{ height: '30px', fontSize: '11.5px' }}>بانکی</button>
+                  <button type="button" className="secondary" disabled
+                    title="پارەدانی تێکەڵ هێشتا کارا نەکراوە" aria-label="تێکەڵ — هێشتا کارا نییە"
+                    style={{ height: '30px', fontSize: '11.5px' }}>تێکەڵ</button>
                   <button
                     type="button"
                     className={paymentMethod === 'debt' ? 'primary' : 'secondary'}
                     onClick={() => setPaymentMethod('debt')}
                     style={{ height: '30px', fontSize: '11.5px' }}
                   >
-                    قەرز (Debt)
+                    قەرز
                   </button>
                 </div>
               </div>
