@@ -90,7 +90,7 @@ test('Canva 024 uses verified 1920x1080 original text geometry and selectable in
 test('Canva 024 regression runs in real Chromium; barcode whitespace and repeats are rejected',()=>{
   const source=read('src/components/ProductCatalogView.tsx');
   const browser=read('tests/browser/v23_react_preview.mjs');
-  assert.ok(source.includes(String.raw`/[\\s,،;]/u.test(clean)`));
+  assert.ok(source.includes(String.raw`/[\s,،;]/u.test(clean)`));
   assert.match(browser,/data-canva-screen="024"/);
   assert.match(browser,/\.canva-barcode-mode-tabs button/);
   assert.match(browser,/canva-barcode-new-alias/);
