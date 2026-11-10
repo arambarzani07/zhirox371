@@ -92,7 +92,7 @@ try {
  await duplicateInput.press("Enter");
  assert.equal(await duplicateScreen.locator(".canva-duplicate-table tbody tr").count(),1);
  assert.match(await duplicateScreen.locator(".canva-duplicate-table").innerText(),/کارتۆن/);
- assert.equal(await duplicateScreen.locator(".canva-duplicate-aside dd").first().innerText(),"یەک خاوەن");
+ assert.equal(await duplicateScreen.locator(".canva-duplicate-aside dd").first().innerText(),"یەک خاوەند");
  await duplicateInput.fill("0000000099999");
  await duplicateScreen.getByRole("button",{name:"پشکنین",exact:true}).click();
  assert.match(await duplicateScreen.getByRole("status").innerText(),/نەدۆزرایەوە/);
