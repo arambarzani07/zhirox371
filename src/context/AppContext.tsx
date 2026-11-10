@@ -945,7 +945,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setReceipts(rPrev => [newReceipt, ...rPrev]);
     setLastReceipt(newReceipt);
-    setActiveReceiptForModal(newReceipt);
+    // A completed demo sale stays on the cashier screen. Receipt history may
+    // still explicitly open the separate preview, but checkout never does.
     setCart([]);
 
     addAuditLog('فرۆشتنی تاقیکردنەوە', `پسووڵەی نموونەیی ${receiptNum} بە سەرکەوتوویی تەواوبوو بە کۆی ${grandTotal.toLocaleString()} IQD (${options.paymentMethod === 'cash' ? 'نەختینە' : 'قەرز'})`);
