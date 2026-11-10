@@ -167,3 +167,221 @@
     #app .canva-pos-002 .canva-ticket { min-width: 96px; font-size: 12px; }
   }
 }
+
+
+/* Canva 002 parity | geometry measured from the official 1920×1080 page.
+ * Canvas coordinates (1920px): header y=130, ticket strip y=219, basket
+ * x=599–1818, payment summary x=94–509; page is RTL. Presentation only.
+ * Scoped to the React cashier so the locked Home and local LAN shell remain
+ * unchanged. No overlay art or fake buttons: live React handlers stay attached.
+ */
+@media screen {
+  #app .canva-pos-002 {
+    --canva-ink: #172b45;
+    --canva-line: #dfe6ee;
+    --canva-blue: #203e66;
+    font-family: "Noto Kufi Arabic", "Noto Sans Arabic", Tahoma, sans-serif !important;
+    color: var(--canva-ink);
+    background: #fff;
+    gap: 12px;
+    padding: 0 4px 22px;
+    min-height: 0;
+    max-width: 100%;
+  }
+  #app .canva-pos-002 .canva-pos-page-heading {
+    display: flex;
+    direction: rtl;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    min-height: 62px;
+    margin: 0;
+    padding: 5px 22px 9px;
+    border-bottom: 1px solid var(--canva-line);
+    background: #fff;
+  }
+  #app .canva-pos-002 .canva-pos-page-heading h1 {
+    margin: 0;
+    color: #172b45;
+    text-align: right;
+    font-size: clamp(23px, 1.65vw, 30px);
+    line-height: 1.4;
+    font-weight: 900;
+  }
+  #app .canva-pos-002 .canva-pos-back-home {
+    min-width: 115px;
+    min-height: 40px;
+    border: 1px solid #dce5ee;
+    background: #fff;
+    color: #172b45;
+    font-weight: 900;
+    font-size: 15px;
+    border-radius: 8px;
+  }
+  #app .canva-pos-002 .canva-pos-back-home:focus-visible,
+  #app .canva-pos-002 .canva-ticket-history:focus-visible {
+    outline: 3px solid #6580bd;
+    outline-offset: 2px;
+  }
+  #app .canva-pos-002 .canva-ticket-tabs {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    direction: rtl;
+    gap: 9px !important;
+    padding: 7px 20px 12px !important;
+    min-height: 66px;
+    background: #fff !important;
+    border-bottom: 1px solid var(--canva-line);
+  }
+  #app .canva-pos-002 .canva-ticket {
+    flex: 0 1 155px !important;
+    min-width: 110px;
+    min-height: 51px !important;
+    font-size: 14px;
+    border-radius: 9px;
+  }
+  #app .canva-pos-002 .canva-ticket-plus,
+  #app .canva-pos-002 .canva-ticket-close {
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    align-self: center;
+    line-height: 1;
+  }
+  #app .canva-pos-002 .canva-ticket-history {
+    flex: 0 0 auto;
+    min-width: 150px;
+    min-height: 48px;
+    margin-right: auto;
+    padding: 4px 20px;
+    border: 1px solid #dce5ee;
+    border-radius: 9px;
+    background: #f6f8fb;
+    color: #172b45;
+    font-size: 14px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  /* Canva puts the basket on the RTL right, roughly three times the width
+   * of the checkout column. The local content can scroll inside the panel. */
+  #app .canva-pos-002 .ws-pos-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 2.72fr) minmax(375px, 1fr) !important;
+    gap: clamp(12px, 1.8vw, 30px) !important;
+    overflow: visible !important;
+    align-items: start !important;
+    padding: 12px 14px 0 !important;
+    min-height: 0;
+  }
+  #app .canva-pos-002 .ws-pos-layout > .ws-stack {
+    grid-column: 1;
+    min-width: 0;
+    gap: 11px !important;
+  }
+  #app .canva-pos-002 .ws-pos-layout > .ws-panel {
+    grid-column: 2;
+    min-width: 0;
+    padding: 16px 16px 19px !important;
+    max-height: min(665px, calc(100dvh - 345px));
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    border: 1px solid var(--canva-line) !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    scrollbar-gutter: stable;
+  }
+  #app .canva-pos-002 .canva-pos-summary-title {
+    margin: 0 0 8px;
+    order: -10;
+    font-size: 18px;
+    line-height: 1.6;
+    font-weight: 900;
+    color: #172b45;
+    text-align: right;
+  }
+  #app .canva-pos-002 .canva-pos-customer-line {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid #dce5ee;
+    border-radius: 8px;
+    color: #4d6079;
+    font-size: 12px;
+    font-weight: 850;
+    order: -8;
+  }
+  #app .canva-pos-002 .canva-pos-customer-line strong {
+    font-size: 13px;
+    color: #172b45;
+  }
+  #app .canva-pos-002 .canva-pos-totals {
+    display: grid;
+    gap: 4px;
+    margin: 7px 0 5px;
+    order: 2;
+    font-size: 12px;
+    font-weight: 850;
+  }
+  #app .canva-pos-002 .canva-pos-totals > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 3px;
+    border-bottom: 1px solid #e4ebf1;
+  }
+  #app .canva-pos-002 .canva-pos-totals dt { margin: 0; }
+  #app .canva-pos-002 .canva-pos-totals dd {
+    direction: ltr;
+    margin: 0;
+    color: #172b45;
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    text-align: left;
+  }
+  #app .canva-pos-002 .canva-pos-totals .canva-pos-total-due {
+    font-size: 14px;
+    color: #172b45;
+    border-top: 2px solid #dce4eb;
+    padding: 9px 3px;
+  }
+  #app .canva-pos-002 .ws-pos-layout > .ws-stack > .ws-panel,
+  #app .canva-pos-002 #cart-list {
+    background: #fff !important;
+    border: 1px solid #dfe6ee !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+  }
+  #app .canva-pos-002 .ws-pos-basket-bar {
+    min-height: 52px;
+    background: #fff !important;
+    border-bottom: 1px solid #dce5ee !important;
+  }
+  #app .canva-pos-002 #cart-list th {
+    color: #172b45 !important;
+    font-size: 12px;
+    font-weight: 900;
+    text-align: right;
+    background: #f2f5f8 !important;
+  }
+  #app .canva-pos-002 #cart-list td {
+    color: #263a51;
+    font-variant-numeric: tabular-nums;
+  }
+  #app .canva-pos-002 button.primary {
+    border-radius: 8px !important;
+  }
+  @media (max-width: 1280px) {
+    #app .canva-pos-002 .ws-pos-layout {
+      grid-template-columns: minmax(0, 2fr) minmax(315px, 1fr) !important;
+      gap: 12px !important;
+      padding: 6px !important;
+    }
+    #app .canva-pos-002 .canva-ticket { min-width: 93px; font-size: 12px; }
+    #app .canva-pos-002 .canva-ticket-history { min-width: 115px; padding: 4px 8px; }
+  }
+}
