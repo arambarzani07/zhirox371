@@ -6,7 +6,15 @@ import './index.css';
 // mounts AppProvider, browser-local finance, demo products or fake receipts.
 // Normal preview continues unchanged; official builds remain blocked by Vite.
 const root=ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-if(import.meta.env.DEV&&import.meta.env.VITE_ENABLE_LOCAL_PILOT==="true"&&
+// Explicit design-review only. This shows original Canva source, not a POS.
+// No change to the existing locked PC Home, pilot or demo routes.
+if(new URLSearchParams(window.location.search).has('canva-source')){
+  import('./components/CanvaOriginalReview').then(({CanvaOriginalReview})=>{
+    root.render(<React.StrictMode><CanvaOriginalReview/></React.StrictMode>);
+  }).catch(()=>{
+    root.render(<div role="alert" dir="rtl">پێشبینینی Canva بەردەست نییە.</div>);
+  });
+}else if(import.meta.env.DEV&&import.meta.env.VITE_ENABLE_LOCAL_PILOT==="true"&&
    (import.meta.env.VITE_V103_READONLY_CATALOG==="true"||import.meta.env.VITE_V102_READONLY_CATALOG==="true")){
  import('./components/MarketCatalogReadOnlyV102').then(({MarketCatalogReadOnlyV102})=>{
   root.render(<React.StrictMode><MarketCatalogReadOnlyV102/></React.StrictMode>);
