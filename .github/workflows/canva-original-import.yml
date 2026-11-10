@@ -1,0 +1,58 @@
+name: Import original ZHIROX Canva screen renders
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'design/.canva-import.json'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-canva-renders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download and validate original Canva PNG renders
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, struct, urllib.parse, urllib.request, re
+          manifest = pathlib.Path("design/.canva-import.json")
+          if not manifest.exists():
+              print("No pending source image import")
+              raise SystemExit(0)
+          data=json.loads(manifest.read_text())
+          assert data.get("project")=="ZHIROX371" and data.get("source")=="Canva originals"
+          targets=data["screens"]
+          assert 1<=len(targets)<=148
+          output=pathlib.Path("public/canva-originals")
+          output.mkdir(parents=True,exist_ok=True)
+          for item in targets:
+              number=str(item["screen"]).zfill(3)
+              assert re.fullmatch(r"\d{3}",number) and 1<=int(number)<=148
+              url=item["url"]
+              parsed=urllib.parse.urlsplit(url)
+              assert parsed.scheme=="https" and parsed.hostname=="export-download.canva.com"
+              req=urllib.request.Request(url,headers={"User-Agent":"ZHIROX371-Canva-Authorized-Importer/1.0"})
+              with urllib.request.urlopen(req,timeout=55) as response:
+                  raw=response.read(16_000_001)
+              if len(raw)>16_000_000 or raw[:8]!=b"\x89PNG\r\n\x1a\n":
+                  raise RuntimeError("Unexpected source image format or size for screen "+number)
+              width,height=struct.unpack(">II",raw[16:24])
+              if (width,height)!=(1920,1080):
+                  raise RuntimeError(f"Screen {number} size {width}x{height}; original 1920x1080 required")
+              (output/(number+".png")).write_bytes(raw)
+              print(f"Imported original screen {number}: {len(raw)} bytes, 1920x1080")
+          PY
+      - name: Commit exact source images to main
+        run: |
+          if [ ! -f design/.canva-import.json ]; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/canva-originals
+          git rm --force design/.canva-import.json
+          git diff --cached --quiet && exit 0
+          git commit -m "assets(canva): store original 1920x1080 ZHIROX screen renders"
+          git push origin HEAD:main
