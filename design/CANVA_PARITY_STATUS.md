@@ -15,7 +15,7 @@
 | GitHub React design-reference route | `?canva-source=001..148` (explicit opt-in) |
 | React UI alignment work | 001, 002, 021, 022, 023 **partial only** |
 | In-screen product editor 023 | Source-measured column proportions, item search and permissions panel; live editor remains the existing DEMO implementation |
-| Original screen 024 | Text geometry recorded; **React layout and workflow parity not yet implemented** |
+| Original screen 024 | RTL selected-product barcode table, unit/carton/bundle/set/kg mode tabs, local demo alias insertion and duplicate guard implemented; **pixel parity and real permissions NOT verified** |
 | Pixel-perfect typography, shapes, icons, colors, responsive states | **Not verified** |
 | Real role-based permission approval for price edits | **Not verified in preview**; approval request is disabled rather than presented as real |
 | Functional POS parity for all 148 screens | **Not done — NO-GO** |

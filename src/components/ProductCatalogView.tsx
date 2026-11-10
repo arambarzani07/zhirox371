@@ -460,7 +460,7 @@ export const ProductCatalogView: React.FC = () => {
 
   const handleSaveBarcodeAlias = (p: Product, mode: BarcodeCatalogMode) => {
     const clean = newAliasCode.trim();
-    if (!clean || clean.length > 60 || /[\\s,،;]/u.test(clean)) {
+    if (!clean || clean.length > 60 || /[\s,،;]/u.test(clean)) {
       setMessage({ text: 'بارکۆدەکە دەبێت پیت و ژمارەی دروست بێت و بۆشایی تێدا نەبێت', error: true });
       return;
     }

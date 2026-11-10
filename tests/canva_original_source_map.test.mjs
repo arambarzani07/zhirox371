@@ -86,3 +86,13 @@ test('Canva 024 uses verified 1920x1080 original text geometry and selectable in
   assert.match(source,/alias_barcodes: \[\.\.\.p.carton.alias_barcodes/);
   assert.match(style,/\.canva-barcode-024 \.canva-barcode-layout/);
 });
+
+test('Canva 024 regression runs in real Chromium; barcode whitespace and repeats are rejected',()=>{
+  const source=read('src/components/ProductCatalogView.tsx');
+  const browser=read('tests/browser/v23_react_preview.mjs');
+  assert.ok(source.includes(String.raw`/[\\s,،;]/u.test(clean)`));
+  assert.match(browser,/data-canva-screen="024"/);
+  assert.match(browser,/\.canva-barcode-mode-tabs button/);
+  assert.match(browser,/canva-barcode-new-alias/);
+  assert.match(browser,/Repeated carton alias must be rejected/);
+});
