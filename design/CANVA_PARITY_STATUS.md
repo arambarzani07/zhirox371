@@ -6,17 +6,27 @@
 - Source canvas: **1920 × 1080**, desktop PC, Sorani RTL.
 - Current primary source screens: `001` Home, `002` Cashier, `148` final navigation.
 
-## Implementation status (2026-11-10)
+## Implementation status (2026-11-11)
 | Item | State |
 |---|---|
 | Original Canva screen-to-GitHub ID mapping | 148/148 committed |
-| User-owned original Canva designs | Unmodified |
-| Local visual reference PNGs | 001, 002, 148 (596×335 connector previews) |
+| Original Canva source screens | 148 distinct single-page designs in existing folder; unmodified |
+| Native 1920×1080 text-container geometry captured | 022 (34), 023 (30), 024 (40) |
 | GitHub React design-reference route | `?canva-source=001..148` (explicit opt-in) |
-| React components rewritten to faithfully match Canva | **Not done** |
-| Pixel-perfect typography, shapes, icons and colors | **Not verified** |
-| Functional POS parity for all 148 screens | **Not done** |
-| Existing operational app and 12-card Home | Unchanged by this reference route |
+| React UI alignment work | 001, 002, 021, 022, 023 **partial only** |
+| In-screen product editor 023 | Source-measured column proportions, item search and permissions panel; live editor remains the existing DEMO implementation |
+| Original screen 024 | Text geometry recorded; **React layout and workflow parity not yet implemented** |
+| Pixel-perfect typography, shapes, icons, colors, responsive states | **Not verified** |
+| Real role-based permission approval for price edits | **Not verified in preview**; approval request is disabled rather than presented as real |
+| Functional POS parity for all 148 screens | **Not done — NO-GO** |
+| Production deploy, real printer/offline cash testing | **Not verified by source geometry or preview CI** |
+
+Geometry files are grounded in the original Canva editable text container positions, not guesswork:
+- [022 original text bounds](./canva-original-screen-022-geometry.json)
+- [023 original text bounds](./canva-original-screen-023-geometry.json)
+- [024 original text bounds](./canva-original-screen-024-geometry.json)
+
+These do **not** include full editable vector/shape styling, fonts/weights, backgrounds, icon geometry or all visual states. Until a rendered 1920×1080 screen is compared to the authentic original using exported artwork/layer styles and functional tests, label each screen **partial**, not "pixel-perfect." Preserve the same project and never replace existing Canva originals.
 
 The Canva connector returns a low-resolution image preview, **not** the original
 1920×1080 exported artwork, editable shapes, or all Canva style metadata.
