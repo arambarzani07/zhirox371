@@ -1,0 +1,46 @@
+name: ZHIROX original Canva full-resolution capture probe
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canva-screen-capture-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: |
+          npm install --no-package-lock --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Try source-faithful 1920x1080 Canva page capture
+        run: |
+          mkdir -p artifacts/canva-original-probe
+          node --input-type=module <<'JS'
+          import {chromium} from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1,locale:'en-US'});
+          const url='https://www.canva.com/design/DAHaaO0eWBM/view?embed';
+          try{
+            const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:65000});
+            await page.waitForTimeout(10000);
+            const title=await page.title();
+            const body=(await page.locator('body').innerText().catch(()=>'')).slice(0,1000);
+            const html=await page.locator('html').getAttribute('lang').catch(()=>'');
+            console.log(JSON.stringify({httpStatus:response?.status(),url:page.url(),title,lang:html,body}));
+            await page.screenshot({path:'artifacts/canva-original-probe/002-page.png',fullPage:false,animations:'disabled'});
+          } finally{await browser.close();}
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canva-original-002-capture-probe
+          path: artifacts/canva-original-probe/*
+          if-no-files-found: warn
+          retention-days: 2
