@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { money, formatDateTime } from '../utils/retailHelpers';
-import { PaymentMethod, Product } from '../types';
+import { PaymentMethod, Product, Receipt } from '../types';
+import { InlineReceiptV110 } from './InlineReceiptV110';
 import { LocalPostgresPilotV24 } from './LocalPostgresPilotV24';
 import { pilotEnabled } from '../localPilotV24';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
@@ -125,6 +127,10 @@ export const CashierPos: React.FC = () => {
 
   const [barcodeInput, setBarcodeInput] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; error: boolean } | null>(null);
+  const [inlineCheckoutReceipt, setInlineCheckoutReceipt] = useState<Receipt | null>(null);
+  // Retain this lock until React has rendered the cleared basket after a sale.
+  // A repeated F4/click in the same event turn must not post the cart twice.
+  const checkoutGuardRef = useRef(false);
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [directDiscountIqd, setDirectDiscountIqd] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
@@ -160,6 +166,7 @@ export const CashierPos: React.FC = () => {
 
   useEffect(() => {
     if (cart.length === 0) {
+      checkoutGuardRef.current = false;
       setDiscountPercent(0);
       setDirectDiscountIqd(0);
     }
@@ -372,6 +379,7 @@ export const CashierPos: React.FC = () => {
   };
 
   const handleFinishSale = () => {
+    if (checkoutGuardRef.current) return;
     if (cart.length === 0) {
       if (soundEnabled) playPosAudio('error');
       setFeedbackMsg({ text: 'سەبەتە بەتاڵە! تکایە سەرەتا کاڵا زیادبکە.', error: true });
@@ -400,24 +408,43 @@ export const CashierPos: React.FC = () => {
     }
 
     const selectedCust = customers.find(c => c.id === selectedCustomerId);
+    checkoutGuardRef.current = true;
+    let res: ReturnType<typeof completeCheckout>;
+    try {
+      res = completeCheckout({
+        paymentMethod,
+        customerId: selectedCustomerId || null,
+        customerName: selectedCust ? selectedCust.name : paymentMethod === 'debt' ? 'کڕیاری قەرز' : 'کڕیاری نەختینە',
+        paidAmount: paymentMethod === 'cash' ? tenderedCash : 0,
+        discountPercent,
+        discountAmount
+      });
+    } catch (_error) {
+      checkoutGuardRef.current = false;
+      if (soundEnabled) playPosAudio('error');
+      setFeedbackMsg({ text: 'ئەنجامی مامەڵە نادیارە؛ پێش دووبارەکردنەوە مێژووی پسووڵەکان بپشکنە.', error: true });
+      return;
+    }
 
-    const res = completeCheckout({
-      paymentMethod,
-      customerId: selectedCustomerId || null,
-      customerName: selectedCust ? selectedCust.name : paymentMethod === 'debt' ? 'کڕیاری قەرز' : 'کڕیاری نەختینە',
-      paidAmount: paymentMethod === 'cash' ? tenderedCash : 0,
-      discountPercent,
-      discountAmount
-    });
-
-    if (res.success) {
+    if (res.success && res.receipt) {
       if (soundEnabled) playPosAudio('chime');
       KurdishVoiceAnnouncer.announceCheckout(grandTotal);
-      setFeedbackMsg({ text: `فرۆشتن تەواوبوو — پسووڵەی ${res.receipt?.receiptNumber} ئامادەیە`, error: false });
+      // Flush the printable receipt before invoking browser printing. No POS
+      // modal, route change, or second financial submission is involved.
+      flushSync(() => setInlineCheckoutReceipt(res.receipt!));
+      setFeedbackMsg({ text: `فرۆشتنی تاقیکردنەوە تۆمارکرا — پسووڵەی ${res.receipt.receiptNumber}`, error: false });
       setDiscountPercent(0);
       setDirectDiscountIqd(0);
       setTenderedCash(0);
+      try {
+        window.print();
+      } catch (_printError) {
+        // Printing is separate from the already recorded DEMO sale. Never
+        // resubmit a checkout because the browser/printer declined printing.
+        setFeedbackMsg({ text: 'فرۆشتن تۆمارکرا، بەڵام چاپ سەرکەوتوو نەبوو؛ لێرە دووبارە چاپ بکە.', error: true });
+      }
     } else {
+      checkoutGuardRef.current = false;
       if (soundEnabled) playPosAudio('error');
       setFeedbackMsg({ text: res.error || 'هەڵە لە تەواوکردنی مامەڵەدا!', error: true });
     }
@@ -1823,8 +1850,15 @@ export const CashierPos: React.FC = () => {
                   opacity: cart.length === 0 || currentShift.status !== 'open' ? 0.55 : 1
                 }}
               >
-                تەواوکردنی فرۆشتن و چاپی پسووڵە (F4)
+                تۆمارکردن و چاپی پسووڵە (F4)
               </button>
+              {inlineCheckoutReceipt && (
+                <InlineReceiptV110
+                  receipt={inlineCheckoutReceipt}
+                  onReprint={() => window.print()}
+                  onDismiss={() => setInlineCheckoutReceipt(null)}
+                />
+              )}
             </div>
           </div>
 
