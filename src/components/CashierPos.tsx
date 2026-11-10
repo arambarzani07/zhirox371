@@ -521,7 +521,7 @@ export const CashierPos: React.FC = () => {
         } else if (parkedCart) {
           const first = parkedCarts[0];
           restoreParkedCart(first.id);
-          const n = Number(first.label.match(/پسووڵە (\\d+)/)?.[1] || 1);
+          const n = Number(first.label.match(/پسووڵە ([0-9]+)/)?.[1] || 1);
           if (n >= 1 && n <= 5) setActiveTicketNumber(n);
           setFeedbackMsg({ text: 'پسووڵەی هەڵگیراو گەڕێنرایەوە', error: false });
         }
