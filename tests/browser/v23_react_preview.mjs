@@ -5,6 +5,11 @@ const origin=process.env.PC_PREVIEW_ORIGIN||"http://127.0.0.1:3000";
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:1320,height:900},locale:"en-US"});
 const page=await context.newPage();
+// Browser printing is intercepted: this is a DEMO, never a real thermal printer.
+await page.addInitScript(() => {
+ window.__zhiroxPrintCalls=0;
+ window.print=() => {window.__zhiroxPrintCalls+=1;};
+});
 const errors=[];
 page.on("pageerror",error=>errors.push(error.message));
 try {
@@ -29,14 +34,26 @@ try {
  await barcode.press("Enter");
  await page.getByText("ئاوی کانی چنار 500ml").first().waitFor({state:"visible"});
  assert.equal(await page.locator('[data-demo-watermark="true"]').count(),0);
- // The browser demo intentionally works offline, but stores only in LocalStorage.
+ // Offline DEMO checkout stays on the same cashier screen: never auto-open a modal.
  await page.keyboard.press("F4");
- const watermark=page.locator('[data-demo-watermark="true"]');
- await watermark.waitFor({state:"visible"});
- assert.match(await watermark.innerText(),/بەڵگەی فرۆشتنی ڕاستەقینە نییە/);
- assert.match(await page.getByText(/DEMO-RCP-/).first().innerText(),/DEMO-RCP-/);
+ const inline=page.locator('[data-inline-checkout-confirmation="true"]');
+ await inline.waitFor({state:"visible"});
+ assert.equal(await page.locator(".thermal-receipt-backdrop").count(),0);
+ assert.match(await inline.innerText(),/DEMO-RCP-/);
+ const ticket=page.locator('#zhirox-inline-print-ticket[data-demo-receipt="true"]');
+ assert.equal(await ticket.count(),1);
+ assert.match(await ticket.textContent(),/بەڵگەی فرۆشتنی ڕاستەقینە نییە/);
+ assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),1);
+ assert.equal(await page.locator("#finish-sale").isDisabled(),true);
+ // An extra F4 after clearing the cart must not record/print a second sale.
+ await page.keyboard.press("F4");
+ assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),1);
+ // A reprint is allowed, but is not another checkout.
+ await inline.getByRole("button",{name:"دووبارە چاپ"}).click();
+ assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),2);
+ assert.equal(await page.locator('[data-inline-checkout-confirmation="true"]').count(),1);
  assert.deepEqual(errors,[],"React client should not throw when internet disappears during demo checkout");
- console.log("PASS: redesignable Home navigation, offline Demo scan and explicitly non-fiscal receipt");
+ console.log("PASS: locked Home navigation, offline Demo checkout, no modal, single print, safe reprint");
 } finally {
  await browser.close();
 }
