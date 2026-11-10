@@ -38,6 +38,7 @@ export const ProductCatalogView: React.FC = () => {
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editProductSearch, setEditProductSearch] = useState('');
 
   // Form State
   const [name, setName] = useState('');
@@ -113,6 +114,7 @@ export const ProductCatalogView: React.FC = () => {
 
   const resetForm = () => {
     setEditingId(null);
+    setEditProductSearch('');
     setName('');
     setCategory('خۆراک');
     setSku('');
@@ -138,6 +140,7 @@ export const ProductCatalogView: React.FC = () => {
 
   const handleStartEdit = (p: Product) => {
     setEditingId(p.id);
+    setEditProductSearch(p.name);
     setName(p.name);
     setCategory(p.category || 'گشتی');
     setSku(p.sku || '');
@@ -536,6 +539,12 @@ export const ProductCatalogView: React.FC = () => {
     : undefined;
 
   const selectedCatalogProduct = products.find(p => p.id === selectedCatalogProductId) || null;
+  const editingProduct = products.find(p => p.id === editingId) || null;
+  const editSearchMatches = editProductSearch.trim().toLowerCase()
+    ? products.filter(p => p.name.toLowerCase().includes(editProductSearch.trim().toLowerCase())
+        || p.unit_barcode.includes(editProductSearch.trim())
+        || Boolean(p.carton?.barcode.includes(editProductSearch.trim()))).slice(0, 6)
+    : [];
 
   return (
     <div className="ws-stack canva-catalog-021" data-canva-screen="021">
@@ -594,7 +603,7 @@ export const ProductCatalogView: React.FC = () => {
             </div>
           </div>
 
-          <div className="canva-catalog-new-layout"
+          <div className={editingId ? 'canva-catalog-new-layout canva-catalog-edit-023' : 'canva-catalog-new-layout'}
             style={{
               display: 'grid',
               gridTemplateColumns: 'minmax(0, 1.25fr) minmax(320px, 1fr)',
@@ -607,7 +616,7 @@ export const ProductCatalogView: React.FC = () => {
             <div className="ws-panel" style={{ overflowY: 'auto', minHeight: 0 }}>
               <div className="ws-toolbar">
                 <h2 className="ws-panel-title" style={{ margin: 0 }}>
-                  {editingId ? 'دەستکاریکردنی زانیارییەکانی کاڵا' : 'زانیاریی بنەڕەتی کاڵا'}
+                  {editingId ? 'دەستکاریکردنی زانیاری و نرخ' : 'زانیاریی بنەڕەتی کاڵا'}
                 </h2>
                 {editingId && (
                   <button
@@ -623,8 +632,31 @@ export const ProductCatalogView: React.FC = () => {
                 )}
               </div>
 
+              {editingId && (
+                <div className="canva-catalog-edit-search">
+                  <label htmlFor="canva-edit-023-search">کاڵای هەڵبژێردراو</label>
+                  <input
+                    id="canva-edit-023-search"
+                    type="search"
+                    value={editProductSearch}
+                    onChange={e => setEditProductSearch(e.target.value)}
+                    placeholder="گەڕان بە بارکۆد یان ناوی کاڵا"
+                    autoComplete="off"
+                  />
+                  {editProductSearch.trim() && editProductSearch.trim() !== editingProduct?.name && editSearchMatches.length > 0 && (
+                    <div className="canva-catalog-edit-search-results" aria-label="ئەنجامی گەڕانی کاڵا">
+                      {editSearchMatches.map(p => (
+                        <button key={p.id} type="button" className="secondary"
+                          onClick={() => handleStartEdit(p)}>
+                          {p.name} — {p.unit_barcode}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div
+                <div className="canva-catalog-product-fields"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -919,7 +951,21 @@ export const ProductCatalogView: React.FC = () => {
               </form>
             </div>
 
-            <aside className="canva-catalog-new-summary" data-canva-inline-summary="true" aria-label="پوختەی تۆمارکردن">
+            {editingId ? (
+              <aside className="canva-catalog-new-summary canva-catalog-edit-permission" data-canva-inline-permission="true" aria-label="دەسەڵات و پشتڕاستکردنەوە">
+                <h2>دەسەڵات و پشتڕاستکردنەوە</h2>
+                <dl>
+                  <div><dt>دۆخی دەستگەیشتن</dt><dd>پشتڕاست نەکراوە</dd></div>
+                  <div><dt>نرخی ئێستا</dt><dd>{editingProduct ? money(editingProduct.unit_sale_price_iqd) : '— IQD'}</dd></div>
+                  <div><dt>نرخی پێشوو</dt><dd>— IQD</dd></div>
+                </dl>
+                <button type="button" className="secondary" disabled title="پشتڕاستکردنەوەی دەسەڵاتی گۆڕانکاری لەم ڕووکاری Demo ـەدا بەردەست نییە">
+                  داواکردنی گۆڕانکاری
+                </button>
+                <button type="button" className="secondary" onClick={() => { resetForm(); setActiveTab('list'); }}>گەڕانەوە</button>
+              </aside>
+            ) : (
+              <aside className="canva-catalog-new-summary" data-canva-inline-summary="true" aria-label="پوختەی تۆمارکردن">
               <h2>پوختەی تۆمارکردن</h2>
               <dl>
                 <div><dt>دۆخی تۆمار</dt><dd>{editingId ? 'دەستکاری' : 'نوێ'}</dd></div>
@@ -929,7 +975,8 @@ export const ProductCatalogView: React.FC = () => {
                 <div><dt>نرخی فرۆشتنی دانە</dt><dd>{unitSellPrice.trim() ? unitSellPrice + ' IQD' : '0 IQD'}</dd></div>
               </dl>
               <button type="button" className="secondary" onClick={() => { resetForm(); setActiveTab('list'); }}>هەڵوەشاندنەوە</button>
-            </aside>
+              </aside>
+            )}
           </div>
         </>
       )}

@@ -44,3 +44,22 @@ test('Canva 022 continues within existing product form and live summary', () => 
   assert.ok(style.includes('.canva-catalog-new-layout'));
   assert.ok(style.includes('.canva-catalog-new-summary'));
 });
+
+test('Canva 023 original geometry and bounded edit controls are preserved', () => {
+  const geometry = JSON.parse(read('design/canva-original-screen-023-geometry.json'));
+  const source = read('src/components/ProductCatalogView.tsx');
+  const style = read('src/components/canvaOfficialV1.css');
+  assert.equal(geometry.design_id, layout.screens[22].id);
+  assert.equal(geometry.element_count, 30);
+  assert.deepEqual(geometry.canvas,{width:1920,height:1080});
+  assert.equal(new Set(geometry.elements.map(e=>e.id)).size, 30);
+  const title = geometry.elements.find(e=>e.text==='دەستکاریکردنی کاڵا و نرخ');
+  const permission = geometry.elements.find(e=>e.text==='دەسەڵات و پشتڕاستکردنەوە');
+  assert.equal(title.x,1014);
+  assert.equal(permission.x,62.400000000000006);
+  assert.match(source,/data-canva-inline-permission="true"/);
+  assert.match(source,/id="canva-edit-023-search"/);
+  assert.match(source,/disabled title="پشتڕاستکردنەوەی دەسەڵاتی گۆڕانکاری/);
+  assert.match(source,/onSubmit=\{handleSaveProduct\}/);
+  assert.match(style,/canva-catalog-edit-023/);
+});

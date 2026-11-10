@@ -620,3 +620,56 @@
     #app .canva-catalog-021 .canva-catalog-new-layout {grid-template-columns:minmax(0,1.3fr) minmax(260px,.8fr)!important; gap:12px!important; margin:0 7px;}
   }
 }
+
+/* Screen 023 uses source-measured panel widths 1206px and 511.2px,
+ * with a 78px physical gap on the original 1920px Canva canvas.
+ * Text field data: design/canva-original-screen-023-geometry.json.
+ * Parent app offsets, fonts and non-text shapes still require pixel review.
+ */
+@media screen {
+  #app .canva-catalog-021 .canva-catalog-edit-023 {
+    direction: rtl;
+    grid-template-columns: minmax(0,1206fr) minmax(300px,511.2fr) !important;
+    gap: clamp(20px,4.0625vw,78px) !important;
+    margin-inline: 3.25%;
+  }
+  #app .canva-catalog-021 .canva-catalog-edit-023 .canva-catalog-product-fields {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+  #app .canva-catalog-021 .canva-catalog-edit-023 .canva-catalog-product-fields > :nth-child(1) { order:1; }
+  #app .canva-catalog-021 .canva-catalog-edit-023 .canva-catalog-product-fields > :nth-child(3) { order:2; }
+  #app .canva-catalog-021 .canva-catalog-edit-023 .canva-catalog-product-fields > :nth-child(5) { order:3; }
+  #app .canva-catalog-021 .canva-catalog-edit-023 .canva-catalog-product-fields > :nth-child(4) { order:4; }
+  #app .canva-catalog-021 .canva-catalog-edit-023 .canva-catalog-product-fields > :nth-child(2) { order:5; }
+  #app .canva-catalog-021 .canva-catalog-edit-023 .canva-catalog-product-fields > :nth-child(n+6) { order:6; }
+  #app .canva-catalog-021 .canva-catalog-edit-search {
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative; padding: 8px 0 14px;
+  }
+  #app .canva-catalog-021 .canva-catalog-edit-search label {
+    font-weight: 900; color: #172b45; text-align:right;
+  }
+  #app .canva-catalog-021 .canva-catalog-edit-search input {
+    width:100%; min-height:47px; border:1px solid #dce5ee;
+    border-radius:8px; padding:8px 13px; font-family:inherit;
+    font-size:14px; direction:rtl; background:#fff; color:#172b45;
+  }
+  #app .canva-catalog-021 .canva-catalog-edit-search-results {
+    position:absolute; top:100%; inset-inline:0; z-index:20;
+    display:flex; flex-direction:column; gap:4px; padding:8px;
+    background:#fff; border:1px solid #dce5ee; border-radius:8px;
+    box-shadow:0 8px 20px rgba(23,43,69,.12); max-height:300px; overflow:auto;
+  }
+  #app .canva-catalog-021 .canva-catalog-edit-search-results button {
+    width:100%; min-height:39px; text-align:right; font-family:inherit;
+  }
+  #app .canva-catalog-021 .canva-catalog-edit-permission button:disabled {
+    opacity:.65; cursor:not-allowed;
+  }
+  @media (max-width: 1180px) {
+    #app .canva-catalog-021 .canva-catalog-edit-023 {
+      grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr)!important;
+      gap:12px!important; margin-inline:7px;
+    }
+  }
+}
