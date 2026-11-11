@@ -151,3 +151,9 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - 053 replaces the old supplier payment view. It lists the structured payment records still present in the local audit log, filters by drawer or safe, and reuses the account-level payment handler. The form checks the supplier balance and available drawer cash.
 - Browser checks passed for the 12 main sections, 48 sub-tabs, Home, demo checkout and receipt printing, and supplier payment entry and persistence. Build and 38 source tests passed.
 - This changes the shared PC design and the supplier payment workflow. Remaining screens need individual Canva layout work, and the separate pilot entrypoints still need review. Per-screen exact visual parity and a dedicated supplier payment history print layout remain unverified.
+
+### Customer directory, account and collection screens 056–058, 060–061
+- Replaced the legacy customer workspace on all four customer navigation routes and the direct customer view. Customer registration preserves the opening balance entry and validates duplicate mobile numbers; account and history views keep receipt lookup and filtering.
+- Cash collections record customer ID, amount and remaining balance alongside the existing audit event and update the open cash shift. Account statements and payment receipts have a browser print view. Older payment notes remain visible in unfiltered history, with unavailable numeric fields left blank.
+- Browser checks cover registration, duplicate phone rejection, overpayment prevention, payment and balance persistence, printing, and navigation. Running balances for old transactions are unknown; the audit-backed payment list has the existing 100-event retention limit.
+- 059, 062 and 063 and exact pixel matching remain pending.

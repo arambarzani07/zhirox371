@@ -1,0 +1,44 @@
+@media screen {
+  #app .canva-customer-shell .customer-form {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: clamp(14px, 3vh, 36px) 2vw;
+    margin: 0;
+  }
+  #app .canva-customer-shell .customer-history-fields {
+    margin: 0;
+  }
+  #app .canva-customer-shell .stock-036-summary dl {
+    gap: clamp(8px, 1.5vh, 16px);
+    margin-block: 16px;
+  }
+  #app .canva-customer-shell .stock-036-summary dl div {
+    min-height: clamp(48px, 7vh, 76px);
+  }
+  #app .canva-customer-shell .customer-directory-tools > button:last-child {
+    margin-inline-start: auto;
+    background: var(--stock-ink);
+    color: white;
+  }
+  .canva-customer-print { display: none; }
+}
+@media print {
+  body:has(> .canva-customer-print) {
+    overflow: visible !important;
+  }
+  .canva-customer-print {
+    display: block;
+    padding: 8mm;
+    font-family: "Noto Kufi Arabic", Tahoma, sans-serif;
+    color: #173757;
+  }
+  .canva-customer-print table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .canva-customer-print tr { break-inside: avoid; }
+  .canva-customer-print :is(th, td) {
+    padding: 5px;
+    border: 1px solid #d1e0ee;
+  }
+  body:has(.thermal-receipt-backdrop) > .canva-customer-print { display: none; }
+}

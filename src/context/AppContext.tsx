@@ -63,7 +63,7 @@ interface AppContextType {
 
   customers: Customer[];
   addCustomer: (c: Omit<Customer, 'id' | 'createdAt'>) => Customer;
-  recordDebtRepayment: (customerId: string, amount: number) => void;
+  recordDebtRepayment: (customerId: string, amount: number) => AuditLogEntry | null;
 
   suppliers: Supplier[];
   addSupplier: (s: Omit<Supplier, 'id'>) => Supplier;
@@ -294,16 +294,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (_e) {}
   }, [auditLogs]);
 
-  const addAuditLog = (action: string, details: string, supplierPayment?: AuditLogEntry['supplierPayment']) => {
+  const addAuditLog = (action: string, details: string, metadata?: Pick<AuditLogEntry, 'supplierPayment' | 'customerRepayment'>) => {
     const entry: AuditLogEntry = {
       id: `aud-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       timestamp: new Date().toISOString(),
       user: currentShift.cashierName || 'بەڕێوەبەر',
       action,
       details,
-      supplierPayment
+      ...metadata
     };
     setAuditLogs(prev => [entry, ...prev.slice(0, 99)]);
+    return entry;
   };
 
   const navigateTo = (view: NavView, targetSubtab?: string, sectionId?: string) => {
@@ -737,7 +738,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addCustomer = (c: Omit<Customer, 'id' | 'createdAt'>): Customer => {
     const cust: Customer = {
       ...c,
-      id: `cust-${Date.now()}`,
+      id: 'cust-' + crypto.randomUUID(),
       createdAt: new Date().toISOString()
     };
     setCustomers(prev => [cust, ...prev]);
@@ -746,26 +747,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const recordDebtRepayment = (customerId: string, amount: number) => {
-    if (amount <= 0) return;
-    const custName = customers.find(c => c.id === customerId)?.name || customerId;
-    setCustomers(prev =>
-      prev.map(c => {
-        if (c.id === customerId) {
-          const newDebt = Math.max(0, c.balanceDebt - amount);
-          return { ...c, balanceDebt: newDebt };
-        }
-        return c;
-      })
-    );
-
-    // Increase shift cash
-    setCurrentShift(prev => ({
-      ...prev,
-      cashSales: prev.cashSales + amount,
-      expectedCash: prev.expectedCash + amount
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer || !Number.isSafeInteger(amount) || amount <= 0 || amount > customer.balanceDebt ||
+      currentShift.status !== 'open') return null;
+    const remaining = customer.balanceDebt - amount;
+    setCustomers(previous => previous.map(c => c.id === customerId
+      ? { ...c, balanceDebt: c.balanceDebt - amount } : c));
+    setCurrentShift(previous => ({
+      ...previous,
+      cashSales: previous.cashSales + amount,
+      expectedCash: previous.expectedCash + amount,
     }));
-
-    addAuditLog('دانەوەی قەرز', `بڕی ${amount.toLocaleString('en-US')} IQD قەرز لەلایەن کڕیار (${custName}) گەڕێنرایەوە`);
+    return addAuditLog('دانەوەی قەرز',
+      `بڕی ${amount.toLocaleString('en-US')} IQD قەرز لەلایەن کڕیار (${customer.name}) گەڕێنرایەوە`,
+      { customerRepayment: { customerId, amount, remaining } });
   };
 
   const addSupplier = (s: Omit<Supplier, 'id'>): Supplier => {
@@ -812,7 +807,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addAuditLog(
       'پارەدان بە دابینکەر',
       `بڕی ${amount.toLocaleString('en-US')} IQD درا بە دابینکەر (${sup?.name || supplierId})${fromCashDrawer ? ' لە سندووقی کاشێر' : ' لە قاسەی گشتی'}`,
-      { supplierId, amount, source: fromCashDrawer ? 'drawer' : 'safe' }
+      { supplierPayment: { supplierId, amount, source: fromCashDrawer ? 'drawer' : 'safe' } }
     );
   };
 

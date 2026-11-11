@@ -575,7 +575,10 @@ export const CashierPos: React.FC = () => {
       });
       return;
     }
-    recordDebtRepayment(cust.id, amt);
+    if (!recordDebtRepayment(cust.id, amt)) {
+      setRepayMsg({ text: 'وەرگرتن تۆمار نەکرا. دۆخی شیفت و قەرزەکە بپشکنە.', error: true });
+      return;
+    }
     setRepayMsg({
       text: `بڕی ${money(amt)} لە قەرزی ${cust.name} وەرگیرایەوە و خرایە ناو سندووق`,
       error: false

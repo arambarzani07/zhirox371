@@ -9,7 +9,7 @@ import { LocalCashierV32 } from './components/LocalCashierV32';
 import { localCashierV32 } from './localCashierModeV32';
 import { ProductCatalogView } from './components/ProductCatalogView';
 import { InventoryStockView } from './components/InventoryStockView';
-import { CustomersLedgerView } from './components/CustomersLedgerView';
+import { CanvaCustomerWorkspace } from './components/CanvaCustomerWorkspace';
 import { CanvaSuppliers046 } from './components/CanvaSuppliers046';
 import { FinanceShiftView } from './components/FinanceShiftView';
 import { ReportsAnalyticsView } from './components/ReportsAnalyticsView';
@@ -74,7 +74,7 @@ export const App: React.FC = () => {
                 {currentView === 'pos' && (localCashierV32 ? <LocalCashierV32 /> : <CashierPos />)}
                 {currentView === 'products' && <ProductCatalogView key={subtab} />}
                 {currentView === 'stock' && <InventoryStockView key={subtab} />}
-                {currentView === 'customers' && <CustomersLedgerView key={subtab} />}
+                {currentView === 'customers' && <CanvaCustomerWorkspace key={subtab} />}
                 {currentView === 'suppliers' && <CanvaSuppliers046 key={subtab} />}
                 {(currentView === 'finance' || currentView === 'shifts') && <FinanceShiftView key={subtab} />}
                 {currentView === 'reports' && <ReportsAnalyticsView />}

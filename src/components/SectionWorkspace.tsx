@@ -8,7 +8,7 @@ import {CashierPos} from "./CashierPos";
 import {LocalCashierV32} from "./LocalCashierV32";
 import {ProductCatalogView} from "./ProductCatalogView";
 import {InventoryStockView} from "./InventoryStockView";
-import {CustomersLedgerView} from "./CustomersLedgerView";
+import {CanvaCustomerWorkspace} from "./CanvaCustomerWorkspace";
 import {CanvaSupplierPayments053} from "./CanvaSupplierPayments053";
 import {CanvaSuppliers046} from "./CanvaSuppliers046";
 import {CanvaPurchaseRequest047} from "./CanvaPurchaseRequest047";
@@ -123,7 +123,7 @@ export const SectionWorkspace:React.FC<{sectionId:string}>=({sectionId})=>{
    case "cashier":return localCashierV32?<LocalCashierV32/>:<CashierPos key={sectionId}/>;
    case "products":return <ProductCatalogView key={sectionId}/>;
    case "stock":return <InventoryStockView key={sectionId}/>;
-   case "customers":return <CustomersLedgerView key={sectionId}/>;
+   case "customers":return <CanvaCustomerWorkspace key={sectionId}/>;
    case "suppliers":return sectionId==="supplier-building"?<CanvaSuppliers046 key={sectionId}/>:state.subtab==="payments"?<CanvaSupplierPayments053/>:<CanvaSupplierRecords screen="052"/>;
    case "finance":return <FinanceShiftView key={sectionId}/>;
    case "labels":return <LabelsPrintView key={sectionId}/>;

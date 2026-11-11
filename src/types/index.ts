@@ -94,6 +94,7 @@ export interface Customer {
   phone: string;
   balanceDebt: number; // IQD owed to supermarket
   creditLimit?: number;
+  address?: string;
   note?: string;
   createdAt: string;
 }
@@ -169,6 +170,7 @@ export interface PriceChangeAudit025 {
 }
 
 export interface AuditLogEntry {
+  customerRepayment?: { customerId: string; amount: number; remaining: number };
   supplierPayment?: { supplierId: string; amount: number; source?: 'drawer' | 'safe' };
   priceChange?: PriceChangeAudit025;
   id: string;
