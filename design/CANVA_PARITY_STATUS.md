@@ -31,6 +31,7 @@
 | Original screens 036–039 | Stock overview, movement history, low-stock alerts and expiry tracking use existing local data. Browser checks cover search, filters, movement details and local edits at 1920 × 1080 and 1366 × 768. |
 | Original screen 040 | Session-local physical count draft snapshots recorded stock per item, validates pieces and kg, calculates differences and flags stale snapshots. Approval submission remains disabled because this route has no authenticated approval workflow. |
 | Original screen 041 | Local receiving uses the existing stock and supplier handlers for units, cartons and weight. Bundle, set and per-lot expiry are unavailable in the receiving model. |
+| Original screen 042 | Warehouse transfer draft uses the existing catalog and aggregate stock. The demo lacks per-location balances and authenticated approvals; this screen does not apply transfers or simulate them with stock adjustments. |
 | Pixel-perfect typography, shapes, icons, colors, responsive states | **Not verified** |
 | Real role-based permission approval for price edits | **Not verified in preview**; approval request is disabled rather than presented as real |
 | Functional POS parity for all 148 screens | **Not done — NO-GO** |

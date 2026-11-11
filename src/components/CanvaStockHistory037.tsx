@@ -73,7 +73,7 @@ export function CanvaStockHistory037() {
           onClick={() => setShowDetails(value => !value)}>وردەکاریی مامەڵە</button>
         <button type="button" onClick={() => navigateTo('stock', 'overview', 'stock-stack')}>گەڕانەوە بۆ کۆگا</button>
         <button type="button" className="stock-workflow-link"
-          onClick={() => navigateTo('stock', 'transfer', 'stock-transfer')}>تۆمارکردنی گواستنەوە</button>
+          onClick={() => navigateTo('stock', 'transfer', 'stock-transfer')}>ڕەشنووسی گواستنەوە</button>
       </>}>
       <CanvaStockTable columns={columns}>
         {rows.map(m => (
