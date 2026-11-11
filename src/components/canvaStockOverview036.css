@@ -442,3 +442,9 @@
   #app .stock-reconcile-reason label { width: 65%; }
   #app [data-canva-screen="043"] .stock-036-list > .stock-036-note { margin-top: 12px; }
 }
+
+@media screen {
+  #app [data-canva-screen="044"] .stock-workflow-filters { margin-bottom: clamp(18px, 4.3vh, 46px); }
+  #app [data-canva-screen="044"] .stock-036-summary dl div:nth-child(2) { background: var(--stock-field); }
+  #app [data-canva-screen="044"] .stock-036-summary dl div:nth-child(3) { background: var(--stock-teal); }
+}

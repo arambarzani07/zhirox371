@@ -96,3 +96,10 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Approval is explicitly unavailable in the demo route. No inventory mutation or production database changes. Reason selection is a local preview only.
 - Validation: TypeScript/Vite build and Playwright at 1920×1080 and 1366×768 passed, including draft reuse, alias search, stale exclusion, return navigation and unchanged stock.
 - Visual layout reviewed against Canva, exact pixel parity has not been certified. Backend approval integration remains outstanding.
+
+### Screen 044 — expiry and lot history preview
+- Layout follows original 044, reachable from 039 with return navigation. Product expiry search, date-ordered rows, 30-day/expired filters and selection are working.
+- The demo Product model has no lot identity or lot balances. Those cells are explicitly unavailable; aggregate stock is never relabeled as a lot balance. Lot movement action remains disabled.
+- Existing isolated V93 read-only lot endpoint and V92 views were inspected. They require their own authenticated test-store session and are not integrated into this demo. No database or API writes were made, and FEFO behavior is not claimed by this screen.
+- Build and Playwright passed at 1920×1080 and 1366×768: filters with a fixed date, search, selection clearing, unavailable lot values, return navigation, and unchanged product state.
+- Partial implementation: authenticated lot-source integration and exact pixel parity remain outstanding.

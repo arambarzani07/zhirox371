@@ -101,6 +101,8 @@ export function CanvaStockWatch({ mode, onAdjust }: Props) {
             }
           }}>{expiry ? 'بینینی وردەکاری' : 'پڕکردنەوە (+20)'}</button>
         <button type="button" onClick={() => navigateTo('stock', 'overview', 'stock-stack')}>گەڕانەوە بۆ کۆگا</button>
+        {expiry && <button type="button" className="stock-workflow-link"
+          onClick={() => navigateTo('stock', 'lots', 'expiry')}>مێژووی بەسەرچوون و لۆتەکان</button>}
         {selected && <button type="button" className="stock-workflow-link"
           onClick={() => onAdjust(selected.product)}>ڕێکخستنی بڕ (+/−)</button>}
       </>}>
