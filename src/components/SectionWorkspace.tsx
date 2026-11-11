@@ -1,4 +1,5 @@
 import {CanvaPurchaseOrder048} from './CanvaPurchaseOrder048';
+import {CanvaPurchaseReceiving049} from './CanvaPurchaseReceiving049';
 import React, { useEffect, useState } from "react";
 import {useApp} from "../context/AppContext";
 import {MODULE_SPECS,CardIcon} from "./CardIcon";
@@ -127,7 +128,8 @@ export const SectionWorkspace:React.FC<{sectionId:string}>=({sectionId})=>{
    case "labels":return <LabelsPrintView key={sectionId}/>;
    case "diagnostics":return <DiagnosticsQaView key={sectionId}/>;
    case "operational":return sectionId==="purchase-order"
-     ?state.subtab==="order"?<CanvaPurchaseOrder048/>:<CanvaPurchaseRequest047 key={sectionId}/>
+     ?state.subtab==="receiving-preview"?<CanvaPurchaseReceiving049/>
+      :state.subtab==="order"?<CanvaPurchaseOrder048/>:<CanvaPurchaseRequest047 key={sectionId}/>
      :<OperationalSubmodulesView key={sectionId} sectionId={sectionId}/>;
    default:return null;
   }

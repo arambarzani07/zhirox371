@@ -1,0 +1,92 @@
+/* Canva 049: original 1920x1080 inventory receiving preview geometry, PC-only.
+ * All selectors scoped to the screen. Not a production stock receiving UI. */
+@media screen {
+ #app [data-canva-screen="049"] .receiving049-filters {
+   display:grid;gap:clamp(10px,1.8vh,18px);
+   margin-bottom:clamp(14px,3.1vh,33px);
+ }
+ #app [data-canva-screen="049"] .receiving049-filters .stock-036-filters {
+   margin:0;grid-template-columns:repeat(2,minmax(0,1fr));
+   gap:clamp(12px,1.6vw,30px);
+ }
+ #app [data-canva-screen="049"] .receiving049-filters label {display:grid;gap:6px;}
+ #app [data-canva-screen="049"] .receiving049-filters input,
+ #app [data-canva-screen="049"] .receiving049-filters select {
+   box-sizing:border-box;
+   width:100%;
+   min-height:clamp(39px,5vh,54px);
+   padding:6px 11px;
+   border:1px solid var(--stock-border)!important;
+   border-radius:6px!important;
+   background:var(--stock-field)!important;
+   color:var(--stock-ink)!important;
+   font:inherit;
+ }
+ #app [data-canva-screen="049"] .receiving049-disconnected {
+   font-weight:800;
+   font-size:clamp(11px,.68vw,14px);
+   color:var(--stock-muted);
+   padding:7px 9px;margin:0;
+ }
+ #app [data-canva-screen="049"] .receiving049-select {
+   background:transparent;
+   padding:5px;
+   text-align:right;
+   font-weight:800;
+   border:0;
+   min-height:34px;
+ }
+ #app [data-canva-screen="049"] .receiving049-select[aria-pressed="true"] {
+   text-decoration:underline;
+   text-decoration-color:#00949d;
+   text-underline-offset:6px;
+ }
+ #app [data-canva-screen="049"] tr.receiving049-selected td {background:#eff7fa;}
+ #app [data-canva-screen="049"] .stock-036-table input {
+   box-sizing:border-box;
+   width:min(100%,110px);
+   max-width:110px;
+   text-align:center;
+   padding:6px;
+   border:1px solid var(--stock-border);
+   border-radius:6px;
+   background:var(--stock-field);
+   color:var(--stock-ink);
+   font:inherit;
+ }
+ #app [data-canva-screen="049"] .stock-036-table input[aria-invalid="true"] {
+   outline:2px solid #b94c40;
+ }
+ #app [data-canva-screen="049"] .stock-036-table th:first-child {width:34%;}
+ #app [data-canva-screen="049"] .stock-036-table th:nth-child(2) {width:15%;}
+ #app [data-canva-screen="049"] .stock-036-table th:nth-child(3) {width:16%;}
+ #app [data-canva-screen="049"] .stock-036-table th:nth-child(4) {width:17%;}
+ #app [data-canva-screen="049"] .stock-036-table th:nth-child(5) {width:18%;}
+ #app [data-canva-screen="049"] .stock-036-table [data-receiving049-difference="short"] {
+   color:#9f461f;
+   font-weight:800;
+ }
+ #app [data-canva-screen="049"] .stock-036-table [data-receiving049-difference="excess"] {
+   color:#9f461f;
+   font-weight:800;
+ }
+ #app [data-canva-screen="049"] .receiving049-note {
+   display:flex;flex-direction:column;gap:3px;
+ }
+ #app [data-canva-screen="049"] .receiving049-note p {margin:3px 0;}
+ #app [data-canva-screen="049"] .stock-036-summary dl {
+   gap:clamp(12px,2.5vh,26px);
+   margin-top:clamp(14px,2.5vh,26px);
+ }
+ #app [data-canva-screen="049"] .stock-036-summary dl div:nth-child(2) {
+   background:var(--stock-field);
+ }
+ #app [data-canva-screen="049"] .stock-036-summary dl div:nth-child(3) {
+   background:var(--stock-teal);
+ }
+ #app [data-canva-screen="049"] .stock-036-actions {gap:9px;}
+ @media(max-width:1180px) {
+  #app [data-canva-screen="049"] .receiving049-filters .stock-036-filters {gap:9px;}
+  #app [data-canva-screen="049"] .receiving049-filters input {min-height:35px;}
+ }
+}

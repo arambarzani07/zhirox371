@@ -764,3 +764,66 @@ test('Canva 047 safe draft rejects zero, bad formats, unknown suppliers and stal
  assert.deepEqual(readPurchaseDraft047('not json',products,suppliers),[]);
  assert.equal(JSON.stringify({products,suppliers}),original,'Draft must never mutate source data');
 });
+
+test('Canva 049 authentic text geometry, route and fail-closed receiving preview',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-049-geometry.json'));
+ const ui=read('src/components/CanvaPurchaseReceiving049.tsx');
+ const logic=read('src/utils/receivingPreview049.ts');
+ const section=read('src/components/SectionWorkspace.tsx');
+ const order=read('src/components/CanvaPurchaseOrder048.tsx');
+ assert.equal(g.design_id,layout.screens[48].id);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(g.element_count,45);
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,45);
+ assert.match(ui,/number="049"/);
+ assert.match(ui,/وەرگرتنی کڕین لە دابینکەر/);
+ assert.match(ui,/ناسنامەی فەرمانی کڕین/);
+ assert.match(ui,/پشتڕاستکردنەوەی وەرگرتن/);
+ assert.match(ui,/className="stock-036-primary" disabled/);
+ assert.match(ui,/sessionStorage\.setItem/);
+ assert.match(section,/state\.subtab==="receiving-preview"/);
+ assert.match(order,/پێداچوونەوەی وەرگرتن — ڕەشنووس/);
+ assert.match(read('src/components/canvaReceiving049.css'),/data-canva-screen="049"/);
+ assert.doesNotMatch(ui,/receiveStock\(|recordSupplierPayment\(|updateProduct\(|addAuditLog\(/);
+ assert.match(logic,/receivingFactor049/);
+});
+test('Canva 049 converts base units, checks under/over receipts and rejects stale drafts',async()=>{
+ const {receivingFactor049,receivingDifference049,receivingQuantity049,
+  checkedReceivingRows049,receivingSourceSignature049,loadReceivingDraft049}
+  =await import('../src/utils/receivingPreview049.ts');
+ const p={id:'a',name:'ئاوی کانی چنار',base_unit:'unit',unit_barcode:'a1',
+  unit_alias_barcodes:[],carton:{units_per_carton:24,barcode:'a24'},
+  extra_packs:[{kind:'bundle',units_per_pack:12,barcode:'a12'}]};
+ const kg={id:'b',name:'تەماتە',base_unit:'kg',unit_barcode:'b1',
+   unit_alias_barcodes:[],carton:null,extra_packs:[]};
+ const first={key:'a::carton::sup-1',productId:'a',supplierId:'sup-1',supplierName:'دابینکەر',
+  productName:p.name,barcode:'a24',unit:'carton',quantity:2};
+ const second={key:'b::kg::sup-1',productId:'b',supplierId:'sup-1',supplierName:'دابینکەر',
+  productName:kg.name,barcode:'b1',unit:'kg',quantity:1.5};
+ const ls=[first,second],ps=[p,kg],snapshot=JSON.stringify({ls,ps});
+ assert.equal(receivingFactor049(p,'carton'),24);
+ assert.equal(receivingFactor049(p,'bundle'),12);
+ assert.equal(receivingFactor049(kg,'kg'),1);
+ assert.equal(receivingFactor049(kg,'carton'),null);
+ assert.equal(receivingQuantity049('1.5','carton'),null);
+ assert.equal(receivingQuantity049('-1','kg'),null);
+ assert.equal(receivingQuantity049('0','carton'),0);
+ assert.equal(receivingQuantity049('0.1255','kg'),null);
+ assert.equal(receivingDifference049(first,p,'1').orderedBase,48);
+ assert.equal(receivingDifference049(first,p,'1').receivedBase,24);
+ assert.equal(receivingDifference049(first,p,'1').missingBase,24);
+ assert.equal(receivingDifference049(first,p,'3').missingBase,-24);
+ assert.equal(receivingDifference049(first,p,'2').state,'equal');
+ assert.equal(receivingDifference049(first,p,'1.5').state,'invalid');
+ assert.equal(receivingDifference049(second,kg,'1.25').missingBase,0.25);
+ assert.equal(receivingDifference049(second,kg,'').state,'unchecked');
+ assert.equal(checkedReceivingRows049(ls,ps,{[first.key]:{quantity:'1',expiry:''}}).checked,1);
+ assert.equal(checkedReceivingRows049(ls,ps,{[first.key]:{quantity:'1.5',expiry:''}}).invalid,true);
+ const saved={sourceSignature:receivingSourceSignature049(ls),supplierId:'sup-1',invoice:'DEMO-1',
+  rows:{[first.key]:{quantity:'1',expiry:'2027-06-01'}}};
+ assert.equal(loadReceivingDraft049(JSON.stringify(saved),ls,ps).rows[first.key].quantity,'1');
+ assert.deepEqual(loadReceivingDraft049(JSON.stringify(saved),[first],ps).rows,{});
+ assert.deepEqual(loadReceivingDraft049(JSON.stringify({...saved,
+  rows:{[first.key]:{quantity:'1.2',expiry:'2027-06-01'}}}),ls,ps).rows,{});
+ assert.equal(JSON.stringify({ls,ps}),snapshot);
+});

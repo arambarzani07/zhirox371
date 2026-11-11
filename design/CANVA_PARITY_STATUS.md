@@ -132,3 +132,10 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Fixed 047's empty-draft save so removing the final row can be persisted instead of restoring it on reload.
 - Validation: TypeScript/Vite build, all 36 Canva source checks, and Playwright 047→048 navigation, price validation, totals, persisted prices, empty-draft reload and global navigation at 1920×1080 and 1366×768 passed.
 - Partial: server-authorized order submission, receiving linkage, exact pixel parity and remaining screens are still outstanding.
+
+### Screen 049 — supplier receiving reconciliation DEMO, never recorded stock
+- Authentic original Canva design DAHaagvelAY (45 native text elements at 1920×1080) documented at [049 geometry](./canva-original-screen-049-geometry.json).
+- Reachable from 048 pricing preview via a clearly labeled DEMO receiving review, back to 048 and Home; 047 source requisition remains only an unapproved browser-tab draft.
+- A supplier-scoped item table supports barcode/name search, unit/carton/bundle/set/kg measured differences, input validation and per-row expiry dates, and a supplier invoice reference kept in tab-local sessionStorage only. Base-unit conversion uses confirmed local product pack ratios; never sum unlike product units.
+- Approved order IDs are unavailable and never fabricated. All receiving confirmation and stock/financial writes stay disabled. No real inventory, supplier balance, receipts, auth or Canva originals were changed.
+- Remaining: backend approved order lookup, server-side idempotent receiving, authoritative role, exact pixel parity.
