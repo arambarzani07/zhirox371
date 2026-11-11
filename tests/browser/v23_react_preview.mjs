@@ -65,6 +65,32 @@ try {
  await page.locator('[data-canva-screen="036"]').waitFor({state:"visible"});
  await page.locator('[data-canva-screen="036"]').getByRole("button",{name:"ماڵەوە"}).click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 046: original supplier directory and actual DEMO debt; no invented status.
+ await page.locator(".home-screen .module").nth(3).click();
+ await page.locator(".home-screen .subgrid .sub").first().click();
+ const suppliers046=page.locator('[data-canva-screen="046"]');
+ await suppliers046.waitFor({state:"visible"});
+ assert.equal(await suppliers046.locator("h1").innerText(),"دابینکەران و زانیارییان");
+ assert.equal(await suppliers046.locator("tbody tr[data-supplier-status]").count(),3);
+ assert.equal(await suppliers046.getByRole("button",{name:"زیادکردنی دابینکەر"}).isDisabled(),true);
+ assert.equal(await suppliers046.getByRole("button",{name:"بینینی وردەکاری"}).isDisabled(),true);
+ assert.equal(await suppliers046.locator("tbody tr[data-supplier-status='unverified']").count(),3);
+ await suppliers046.getByRole("button",{name:"چالاک",exact:true}).click();
+ assert.equal(await suppliers046.locator("tbody tr[data-supplier-status]").count(),0);
+ await suppliers046.getByRole("button",{name:"ناچالاک",exact:true}).click();
+ assert.equal(await suppliers046.locator("tbody tr[data-supplier-status]").count(),0);
+ await suppliers046.getByRole("button",{name:"هەموو",exact:true}).click();
+ await suppliers046.getByPlaceholder("ناو، ناسنامە یان ژمارەی تۆمار").fill("sup-2");
+ assert.equal(await suppliers046.locator("tbody tr[data-supplier-status]").count(),1);
+ await suppliers046.getByRole("button",{name:"دابینکەری شیرەمەنی چیا"}).click();
+ assert.equal(await suppliers046.locator(".canva-supplier-aside dd").nth(0).innerText(),"دابینکەری شیرەمەنی چیا");
+ assert.equal(await suppliers046.locator(".canva-supplier-aside dd").nth(2).innerText(),"180,000 IQD");
+ await suppliers046.getByRole("button",{name:"بینینی وردەکاری"}).click();
+ assert.match(await suppliers046.getByRole("region",{name:"زانیاری پەیوەندی"}).innerText(),/0770 111 2233/);
+ await suppliers046.getByRole("button",{name:"کۆی قەرز"}).click();
+ assert.equal(await page.locator('[data-section-id="supplier-accounts"]').count(),1);
+ await page.locator(".section-workspace__home-btn").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 021: product list + detail stay in the same route, filters apply
  // in place and the item details are data-bound (not a flat Canva image).
  await page.locator(".home-screen .module").nth(1).click();

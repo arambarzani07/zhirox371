@@ -662,3 +662,38 @@ test('Canva 045 never invents manager approvals or pending requests from a local
  assert.equal(canDecideStockApproval045('manager','req-1'),false);
  assert.equal(canDecideStockApproval045('cashier','req-1'),false);
 });
+
+test('Canva 046 original 48 text boxes and safe supplier directory integration',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-046-geometry.json'));
+ const view=read('src/components/CanvaSuppliers046.tsx');
+ const util=read('src/utils/supplierDirectory046.ts');
+ assert.equal(g.design_id,layout.screens[45].id);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(g.element_count,48);
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,48);
+ assert.match(view,/data-canva-screen="046"/);
+ assert.match(view,/کاشێر: تەنها بینین/);
+ assert.match(view,/disabled=\{!canWriteSupplier046\(\)\}/);
+ assert.match(util,/filter!=='all'\)return \[\]/);
+ assert.doesNotMatch(view,/addSupplier\(|recordSupplierPayment\(|updateSupplier\(/);
+ assert.match(read('src/App.tsx'),/currentView === 'suppliers' && <CanvaSuppliers046/);
+ assert.match(read('src/components/SectionWorkspace.tsx'),/sectionId==="supplier-building"/);
+ assert.match(read('src/components/canvaSuppliers046.css'),/canva-supplier-layout/);
+});
+test('Canva 046 uses real DEMO supplier values and no invented active flags',async()=>{
+ const {supplierRows046,canWriteSupplier046,trustedSupplierDebt046}=await import('../src/utils/supplierDirectory046.ts');
+ const data=[
+  {id:'sup-1',name:'کۆمپانیای ئەلبورز',phone:'0750 888 9900',address:'هەولێر',balanceDebt:450000},
+  {id:'sup-2',name:'شیرەمەنی چیا',phone:'0770 111 2233',address:'هەولێر',balanceDebt:0}
+ ];
+ const before=JSON.stringify(data);
+ assert.deepEqual(supplierRows046(data,'','all').map(x=>x.status),['unverified','unverified']);
+ assert.equal(supplierRows046(data,'sup-2','all')[0].debt,0);
+ assert.equal(supplierRows046(data,'0770 111','all').length,1);
+ assert.equal(supplierRows046(data,'ئەلبورز','all')[0].debt,450000);
+ assert.deepEqual(supplierRows046(data,'','active'),[]);
+ assert.deepEqual(supplierRows046(data,'','inactive'),[]);
+ assert.equal(canWriteSupplier046('manager'),false);
+ assert.equal(trustedSupplierDebt046(-5),null);
+ assert.equal(JSON.stringify(data),before);
+});

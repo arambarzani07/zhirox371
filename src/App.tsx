@@ -9,7 +9,7 @@ import { localCashierV32 } from './localCashierModeV32';
 import { ProductCatalogView } from './components/ProductCatalogView';
 import { InventoryStockView } from './components/InventoryStockView';
 import { CustomersLedgerView } from './components/CustomersLedgerView';
-import { SuppliersView } from './components/SuppliersView';
+import { CanvaSuppliers046 } from './components/CanvaSuppliers046';
 import { FinanceShiftView } from './components/FinanceShiftView';
 import { ReportsAnalyticsView } from './components/ReportsAnalyticsView';
 import { LabelsPrintView } from './components/LabelsPrintView';
@@ -56,7 +56,7 @@ export const App: React.FC = () => {
             {!activeSectionId && currentView === 'products' && <ProductCatalogView key={`products:${subtab}`} />}
             {!activeSectionId && currentView === 'stock' && <InventoryStockView key={`stock:${subtab}`} />}
             {!activeSectionId && currentView === 'customers' && <CustomersLedgerView key={`customers:${subtab}`} />}
-            {!activeSectionId && currentView === 'suppliers' && <SuppliersView key={`suppliers:${subtab}`} />}
+            {!activeSectionId && currentView === 'suppliers' && <CanvaSuppliers046 key={`suppliers:${subtab}`} />}
             {!activeSectionId && (currentView === 'finance' || currentView === 'shifts') && <FinanceShiftView key={`finance:${subtab}`} />}
             {!activeSectionId && currentView === 'reports' && <ReportsAnalyticsView />}
             {!activeSectionId && currentView === 'labels' && <LabelsPrintView />}

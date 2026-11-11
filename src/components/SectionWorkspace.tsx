@@ -7,6 +7,7 @@ import {ProductCatalogView} from "./ProductCatalogView";
 import {InventoryStockView} from "./InventoryStockView";
 import {CustomersLedgerView} from "./CustomersLedgerView";
 import {SuppliersView} from "./SuppliersView";
+import {CanvaSuppliers046} from "./CanvaSuppliers046";
 import {FinanceShiftView} from "./FinanceShiftView";
 import {LabelsPrintView} from "./LabelsPrintView";
 import {DiagnosticsQaView} from "./DiagnosticsQaView";
@@ -119,7 +120,7 @@ export const SectionWorkspace:React.FC<{sectionId:string}>=({sectionId})=>{
    case "products":return <ProductCatalogView key={sectionId}/>;
    case "stock":return <InventoryStockView key={sectionId}/>;
    case "customers":return <CustomersLedgerView key={sectionId}/>;
-   case "suppliers":return <SuppliersView key={sectionId}/>;
+   case "suppliers":return sectionId==="supplier-building"?<CanvaSuppliers046 key={sectionId}/>:<SuppliersView key={sectionId}/>;
    case "finance":return <FinanceShiftView key={sectionId}/>;
    case "labels":return <LabelsPrintView key={sectionId}/>;
    case "diagnostics":return <DiagnosticsQaView key={sectionId}/>;

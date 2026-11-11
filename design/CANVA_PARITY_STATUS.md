@@ -111,3 +111,9 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Both decision buttons are disabled even if someone claims to be the manager. A count draft from 040/043 is not a submitted request. No inventory, receipts, or real database are changed.
 - This is partial visual/interaction work, **not production-grade authorization or pixel-perfect parity**.
 - [045 original text bounds](./canva-original-screen-045-geometry.json).
+
+### Screen 046 — supplier directory
+- Authentic Canva design DAHaalUCb80: 48 original text bounds at 1920×1080, saved in [046 text geometry](./canva-original-screen-046-geometry.json).
+- React directory is connected to supplier-building in Home and the plain suppliers route; existing supplier-accounts submodule is retained separately.
+- Shows existing local DEMO supplier names, internal IDs, recorded remaining debt and contact detail; no changes to supplier, cash or production records.
+- Supplier model has no trusted active/inactive flag; both status filters show no fabricated records. Creation/edit requires backend authorization and is disabled. Source layout pixel parity and production role validation are not certified.

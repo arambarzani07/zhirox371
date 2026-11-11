@@ -1,0 +1,397 @@
+{
+  "project": "ZHIROX371",
+  "screen": "046",
+  "design_id": "DAHaalUCb80",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "note": "Original Canva editable text bounds only; not all graphic layers/font styles, pixel parity, or production authorization.",
+  "element_count": 48,
+  "elements": [
+    {
+      "id": "PB0GvFklCWnnBM9B-LBRDF4J1VjS6fC7M",
+      "text": "ZHIROX",
+      "x": 50.400000000000006,
+      "y": 24,
+      "w": 366,
+      "h": 52.8
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBWP03Hq9lv23LZh",
+      "text": "سوپەرمارکێتی کانی چنار",
+      "x": 618,
+      "y": 20.4,
+      "w": 684,
+      "h": 61.2
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBfDkbl6mBzCtqnS",
+      "text": "دابینکەران و زانیارییان",
+      "x": 1014,
+      "y": 132,
+      "w": 849.6,
+      "h": 54
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBClfhzvgP72hFcf",
+      "text": "ماڵەوە",
+      "x": 49.2,
+      "y": 133.8,
+      "w": 146.4,
+      "h": 45.599999999999994
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBrnJJFP4jTtCykg",
+      "text": "کڕین و دابینکەران",
+      "x": 509.99999999999994,
+      "y": 136.8,
+      "w": 441.6,
+      "h": 39.599999999999994
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBj70h7SSSrT3m1r",
+      "text": "لیستی دابینکەران",
+      "x": 651.5999999999999,
+      "y": 248.40000000000003,
+      "w": 1206,
+      "h": 56.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBCshL0YhPr4FJHV",
+      "text": "وردەکاریی دابینکەر",
+      "x": 62.400000000000006,
+      "y": 248.40000000000003,
+      "w": 511.2,
+      "h": 56.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB1xLHxDX4NqQDzQ",
+      "text": "گەڕان لە دابینکەران",
+      "x": 1062,
+      "y": 297.6,
+      "w": 771.6,
+      "h": 39.6
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBdXnK7fBDQF7gsl",
+      "text": "ناو، ناسنامە یان ژمارەی تۆمار",
+      "x": 1076.4,
+      "y": 348,
+      "w": 742.8,
+      "h": 50.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBbKyjQ9RV9nXM3V",
+      "text": "ناچالاک",
+      "x": 1360.8,
+      "y": 432.6,
+      "w": 142.4,
+      "h": 42
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBQ7kWbczWmX9mPP",
+      "text": "چالاک",
+      "x": 1524.8,
+      "y": 432.6,
+      "w": 142.4,
+      "h": 42
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBxwpFwgYj7TFgLy",
+      "text": "هەموو",
+      "x": 1688.8,
+      "y": 432.6,
+      "w": 142.4,
+      "h": 42
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBNyxFv0xrdzzLxw",
+      "text": "زیادکردنی دابینکەر",
+      "x": 674.4,
+      "y": 435,
+      "w": 283.2,
+      "h": 40.8
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB0xbYKlcfbdcy2C",
+      "text": "کردار",
+      "x": 671.4,
+      "y": 526.2,
+      "w": 121.2,
+      "h": 48
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB2lsR5NhW6RK52p",
+      "text": "دۆخ",
+      "x": 803.4,
+      "y": 526.2,
+      "w": 123.6,
+      "h": 48
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBCnJy65Q3Br8DLC",
+      "text": "کۆی قەرز",
+      "x": 937.7999999999998,
+      "y": 526.2,
+      "w": 175.2,
+      "h": 48
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBKWzQQ6C954tnyZ",
+      "text": "ناسنامە",
+      "x": 1123.8,
+      "y": 526.2,
+      "w": 231.6,
+      "h": 48
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB5c95ZXBZpLmdyx",
+      "text": "ناوی دابینکەر",
+      "x": 1366.2,
+      "y": 526.2,
+      "w": 460.8,
+      "h": 48
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBsV1bd9R7s0dQc6",
+      "text": "—",
+      "x": 672.6,
+      "y": 601.2,
+      "w": 118.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBtVD03tXSWfnjFS",
+      "text": "—",
+      "x": 804.6,
+      "y": 601.2,
+      "w": 121.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBkZ41RPBwSCqKLB",
+      "text": "—",
+      "x": 939.0000000000001,
+      "y": 601.2,
+      "w": 172.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBcxpmRDcQ8GxwYB",
+      "text": "—",
+      "x": 1125,
+      "y": 601.2,
+      "w": 229.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBmFd9gGnlM1wcTf",
+      "text": "—",
+      "x": 1367.4,
+      "y": 601.2,
+      "w": 458.4,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LByxfS7R7pCTXBsn",
+      "text": "—",
+      "x": 672.6,
+      "y": 670.8,
+      "w": 118.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBXSS9rL36V5ZSrl",
+      "text": "—",
+      "x": 804.6,
+      "y": 670.8,
+      "w": 121.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB5DWGSXzBDbXrlf",
+      "text": "—",
+      "x": 939.0000000000001,
+      "y": 670.8,
+      "w": 172.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB6z5bPmCMGy75qy",
+      "text": "—",
+      "x": 1125,
+      "y": 670.8,
+      "w": 229.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBMgfq1FzrsvnGlJ",
+      "text": "—",
+      "x": 1367.4,
+      "y": 670.8,
+      "w": 458.4,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBVFYl0SWlZ58R9c",
+      "text": "—",
+      "x": 672.6,
+      "y": 740.4,
+      "w": 118.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBdh20mqXW1sGQBw",
+      "text": "—",
+      "x": 804.6,
+      "y": 740.4,
+      "w": 121.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBChZsxWCBVqf9VK",
+      "text": "—",
+      "x": 939.0000000000001,
+      "y": 740.4,
+      "w": 172.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB1YBB6yNvqTwrJq",
+      "text": "—",
+      "x": 1125,
+      "y": 740.4,
+      "w": 229.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBXRvR5Rv8YkW3Yh",
+      "text": "—",
+      "x": 1367.4,
+      "y": 740.4,
+      "w": 458.4,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBP5dPDQ8V7FgqKR",
+      "text": "—",
+      "x": 672.6,
+      "y": 810,
+      "w": 118.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB09vhW6CLFQ981Z",
+      "text": "—",
+      "x": 804.6,
+      "y": 810,
+      "w": 121.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBjJJ5jLhf0tzs1h",
+      "text": "—",
+      "x": 939.0000000000001,
+      "y": 810,
+      "w": 172.8,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBWrShVnd90QShlv",
+      "text": "—",
+      "x": 1125,
+      "y": 810,
+      "w": 229.2,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBG2XCKnmr8Zl23P",
+      "text": "—",
+      "x": 1367.4,
+      "y": 810,
+      "w": 458.4,
+      "h": 44.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB90wlW02nxGSw8h",
+      "text": "دابینکەرێک هەڵبژێرە بۆ بینینی وردەکاری",
+      "x": 744,
+      "y": 876,
+      "w": 1032,
+      "h": 42
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBS9TvKRpBdmPrQ1",
+      "text": "دەستکاری و تۆمارکردنی دابینکەر تەنها بە ڕێگەپێدان ئەنجام دەدرێت.",
+      "x": 680.4,
+      "y": 944.4,
+      "w": 1135.2,
+      "h": 51.6
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB973Xd0V47sjRH0",
+      "text": "ناوی دابینکەر",
+      "x": 87.6,
+      "y": 360,
+      "w": 460.8,
+      "h": 32.39999999999998
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LB5Ls11Y7zhyjNb9",
+      "text": "—",
+      "x": 87.6,
+      "y": 402,
+      "w": 460.8,
+      "h": 37.2
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBFQWc0Hv0Ts4CHG",
+      "text": "ناسنامەی دابینکەر",
+      "x": 87.6,
+      "y": 492,
+      "w": 460.8,
+      "h": 32.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBSn7Hq1byW4Z8Lp",
+      "text": "—",
+      "x": 87.6,
+      "y": 534,
+      "w": 460.8,
+      "h": 37.2
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBDnxVBblFGl34rG",
+      "text": "پارەی ماوە",
+      "x": 87.6,
+      "y": 624,
+      "w": 460.8,
+      "h": 32.39999999999998
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBSk04CwGGDmsDCy",
+      "text": "0 IQD",
+      "x": 87.6,
+      "y": 666,
+      "w": 460.8,
+      "h": 37.2
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBwTtjrr6qpFjwFv",
+      "text": "کاشێر: تەنها بینین",
+      "x": 87.6,
+      "y": 765.6,
+      "w": 460.8,
+      "h": 50.4
+    },
+    {
+      "id": "PB0GvFklCWnnBM9B-LBHjZB4lLzjWzkZ4",
+      "text": "بینینی وردەکاری",
+      "x": 82.80000000000001,
+      "y": 875.4,
+      "w": 470.4,
+      "h": 57.6
+    }
+  ]
+}
