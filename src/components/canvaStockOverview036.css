@@ -3,7 +3,9 @@
     --market-banner-height: clamp(64px, 9.8vh, 106px);
   }
 
-  #root:has(.canva-stock-036) > .viewport > .desktop > .system-header,
+  /* Preserve the global two-line PC navigation across every module.
+   * Only the redundant workspace-level heading is hidden for Canva stock screens.
+   * Hiding the entire global header broke stock navigation and 48-section parity. */
   #app .section-workspace:has(.canva-stock-036) > .section-workspace__header {
     display: none !important;
   }
