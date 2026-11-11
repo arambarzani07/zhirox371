@@ -27,7 +27,7 @@ const fieldNames:Record<Field034,readonly string[]>={
  price:['price','saleprice','sale_price_iqd','نرخ','نرخی فرۆشتن'],
  unit:['unit','base_unit','یەکە','جۆری یەکە']
 };
-const normalizeHeader=(value:string)=>value.trim().replace(/^\uFEFF/,'').toLocaleLowerCase().replace(/\s+/gu,'');
+const normalizeHeader=(value:string)=>value.trim().replace(/^\uFEFF/,'').toLocaleLowerCase();
 function parseCsvCells034(text:string):string[][] {
  const data=text.replace(/^\uFEFF/,'');
  const rows:string[][]=[];let row:string[]=[],field='',quoted=false;

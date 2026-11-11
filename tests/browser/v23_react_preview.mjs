@@ -222,7 +222,11 @@ try {
  assert.equal(await import034.getByRole("button",{name:"پشکنینی فایل"}).isDisabled(),true);
  await import034.locator("#canva-034-file").setInputFiles({
   name:"test-preview.csv",mimeType:"text/csv",
-  buffer:Buffer.from("name,barcode,price,unit\\nئاوی نوێ,0000000091234,450,دانە\\nدووبارە,2000000000018,250,دانە".replaceAll("\\\\n","\\n"))
+  buffer:Buffer.from([
+   "name,barcode,price,unit",
+   "ئاوی نوێ,0000000091234,450,دانە",
+   "دووبارە,2000000000018,250,دانە"
+  ].join("\\n"))
  });
  await import034.getByRole("button",{name:"پشکنینی فایل"}).click();
  assert.equal(await import034.locator(".canva-import-table tbody tr[data-import-status]").count(),2);
