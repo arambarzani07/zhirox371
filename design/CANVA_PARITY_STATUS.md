@@ -11,13 +11,14 @@
 |---|---|
 | Original Canva screen-to-GitHub ID mapping | 148/148 committed |
 | Original Canva source screens | 148 distinct single-page designs in existing folder; unmodified |
-| Native 1920×1080 text-container geometry captured | 022 (34), 023 (30), 024 (40), 025 (56), **026 (40)** |
+| Native 1920×1080 text-container geometry captured | 022 (34), 023 (30), 024 (40), 025 (56), 026 (40), **027 (48)** |
 | GitHub React design-reference route | `?canva-source=001..148` (explicit opt-in) |
 | React UI alignment work | 001, 002, 021, 022, 023 **partial only** |
 | In-screen product editor 023 | Source-measured column proportions, item search and permissions panel; live editor remains the existing DEMO implementation |
 | Original screen 024 | RTL selected-product barcode table, unit/carton/bundle/set/kg mode tabs, local demo alias insertion and duplicate guard implemented; **pixel parity and real permissions NOT verified** |
 | Original screen 025 | Read-only Canva-inspired live local-DEMO price history, real before/after structured audit events for new changes; old history unknown, approval counts withheld; **pixel parity and production audit NOT verified** |
 | Original screen 026 | Exact local-DEMO read-only barcode scanner, cross-product and cross-unit duplicate detection for unit/carton/bundle/set/kg and aliases; **not a production-wide scan or proven pixel parity** |
+| Original screen 027 | Five original Canva unit rows (unit, carton, bundle, set, kg), actual local-DEMO selling and purchase prices only, last known real DEMO change date; approval action disabled pending screen 029; **pixel parity NOT verified** |
 | Pixel-perfect typography, shapes, icons, colors, responsive states | **Not verified** |
 | Real role-based permission approval for price edits | **Not verified in preview**; approval request is disabled rather than presented as real |
 | Functional POS parity for all 148 screens | **Not done — NO-GO** |
@@ -29,6 +30,7 @@ Geometry files are grounded in the original Canva editable text container positi
 - [024 original text bounds](./canva-original-screen-024-geometry.json)
 - [025 original text bounds](./canva-original-screen-025-geometry.json)
 - [026 original text bounds](./canva-original-screen-026-geometry.json)
+- [027 original text bounds](./canva-original-screen-027-geometry.json)
 
 These do **not** include full editable vector/shape styling, fonts/weights, backgrounds, icon geometry or all visual states. Until a rendered 1920×1080 screen is compared to the authentic original using exported artwork/layer styles and functional tests, label each screen **partial**, not "pixel-perfect." Preserve the same project and never replace existing Canva originals.
 

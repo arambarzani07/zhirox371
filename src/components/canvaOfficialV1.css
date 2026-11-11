@@ -805,3 +805,39 @@
     #app .canva-duplicate-026 .canva-duplicate-main,#app .canva-duplicate-026 .canva-duplicate-aside {padding:12px;}
   }
 }
+
+/* Screen 027 original Canva source DAHaabOG1RQ — measured 1920x1080
+ * text boxes with 1206px main + 511.2px aside.
+ * This is functional alignment, NOT certified pixel-identical artwork. */
+@media screen {
+ #app .canva-unit-prices-027 {direction:rtl;display:flex;flex-direction:column;gap:14px;min-width:0;color:#172b45;font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+ #app .canva-unit-prices-027 .canva-unit-price-heading {background:#fff;}
+ #app .canva-unit-prices-027 .canva-unit-price-layout {display:grid;direction:rtl;grid-template-columns:minmax(0,1206fr) minmax(280px,511.2fr);gap:clamp(18px,4.0625vw,78px);margin:0 3.25%;align-items:start;}
+ #app .canva-unit-prices-027 .canva-unit-price-main,#app .canva-unit-prices-027 .canva-unit-price-aside {background:#fff;border:1px solid #e0e7f0;border-radius:10px;padding:18px 22px;min-width:0;min-height:650px;}
+ #app .canva-unit-prices-027 h2 {font-weight:900;font-size:19px;line-height:1.6;text-align:right;margin:0 0 18px;color:#172b45;}
+ #app .canva-unit-prices-027 .canva-unit-price-search {font-weight:900;font-size:14px;text-align:right;display:flex;flex-direction:column;gap:8px;}
+ #app .canva-unit-prices-027 .canva-unit-price-search input {min-height:49px;border:1px solid #dce5ee;background:#fff;border-radius:8px;color:#172b45;padding:10px 14px;font:inherit;font-size:14px;}
+ #app .canva-unit-prices-027 .canva-unit-price-suggestions {display:flex;flex-direction:column;gap:5px;margin-top:5px;border:1px solid #e0e7f0;padding:8px;border-radius:8px;max-height:260px;overflow:auto;}
+ #app .canva-unit-prices-027 .canva-unit-price-suggestions button {text-align:right;min-height:39px;}
+ #app .canva-unit-prices-027 .canva-unit-price-table-wrap {width:100%;overflow-x:auto;margin-top:37px;}
+ #app .canva-unit-prices-027 .canva-unit-price-table {direction:rtl;text-align:right;border-collapse:collapse;table-layout:fixed;width:100%;font-size:13px;color:#172b45;}
+ #app .canva-unit-prices-027 .canva-unit-price-table th,#app .canva-unit-prices-027 .canva-unit-price-table td {text-align:right;border-bottom:1px solid #e3eaf1;padding:9px 10px;height:64px;overflow-wrap:anywhere;}
+ #app .canva-unit-prices-027 .canva-unit-price-table th {background:#f1f5f9;font-size:12px;font-weight:900;}
+ #app .canva-unit-prices-027 .canva-unit-price-table th:nth-child(1) {width:21%;}
+ #app .canva-unit-prices-027 .canva-unit-price-table th:nth-child(2) {width:21%;}
+ #app .canva-unit-prices-027 .canva-unit-price-table th:nth-child(3) {width:20%;}
+ #app .canva-unit-prices-027 .canva-unit-price-table th:nth-child(4) {width:19%;}
+ #app .canva-unit-prices-027 .canva-unit-price-table th:nth-child(5) {width:19%;}
+ #app .canva-unit-prices-027 .canva-unit-price-scanned {background:#edf6fd;}
+ #app .canva-unit-prices-027 .canva-unit-price-rule {background:#f7f9fc;padding:14px 12px;color:#566e82;font-size:12px;font-weight:850;margin:20px 0 0;}
+ #app .canva-unit-prices-027 .canva-unit-price-aside dl {display:flex;flex-direction:column;gap:22px;margin:35px 0 50px;}
+ #app .canva-unit-prices-027 .canva-unit-price-aside dl>div {display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #e3eaf1;padding-bottom:12px;}
+ #app .canva-unit-prices-027 .canva-unit-price-aside dt {color:#64758d;font-size:12px;font-weight:900;}
+ #app .canva-unit-prices-027 .canva-unit-price-aside dd {color:#172b45;margin:0;font-size:15px;font-weight:900;}
+ #app .canva-unit-prices-027 .canva-unit-price-aside button {width:100%;min-height:52px;margin-top:12px;font-weight:900;}
+ #app .canva-unit-prices-027 .canva-unit-price-aside button:disabled {opacity:.57;cursor:not-allowed;}
+ @media(max-width:1180px){
+  #app .canva-unit-prices-027 .canva-unit-price-layout {grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:12px;margin:0 8px;}
+  #app .canva-unit-prices-027 .canva-unit-price-main,#app .canva-unit-prices-027 .canva-unit-price-aside {padding:12px;}
+ }
+}

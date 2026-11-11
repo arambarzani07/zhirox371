@@ -5,6 +5,7 @@ import { money, generateNextBarcode, parseCsvRows } from '../utils/retailHelpers
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 import { CanvaPriceHistory025 } from './CanvaPriceHistory025';
 import { CanvaBarcodeAudit026 } from './CanvaBarcodeAudit026';
+import { CanvaUnitPrices027 } from './CanvaUnitPrices027';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -18,7 +19,8 @@ const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' => {
+    if (activeSectionId === 'unit-prices' || subtab === 'unit-prices') return 'unit-prices';
     if (activeSectionId === 'barcode-duplicate-check' || subtab === 'duplicates') return 'duplicates';
     if (activeSectionId === 'price-history' || subtab === 'history') return 'history';
     if (activeSectionId === 'add-box' || subtab === 'new') return 'new';
@@ -27,7 +29,7 @@ export const ProductCatalogView: React.FC = () => {
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -95,6 +97,8 @@ export const ProductCatalogView: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [showImport]);
+
+  const [unitPrice027ProductId, setUnitPrice027ProductId] = useState<string | null>(null);
 
   // Inline quick price edit in 'prices' tab
   const [quickPriceId, setQuickPriceId] = useState<string | null>(null);
@@ -1347,6 +1351,10 @@ export const ProductCatalogView: React.FC = () => {
 
           <div className="ws-panel">
             <div className="ws-toolbar" style={{ marginBottom: 0 }}>
+              <button type="button" className="secondary" onClick={() => {
+                setUnitPrice027ProductId(null);
+                setActiveTab('unit-prices');
+              }}>نرخەکانی هەر جۆری یەکە</button>
               <input
                 type="text"
                 className="input-search"
@@ -1451,6 +1459,10 @@ export const ProductCatalogView: React.FC = () => {
                             <button type="button" className="secondary" onClick={() => handleStartQuickPrice(p)}>
                               گۆڕینی خێرای نرخ
                             </button>
+                            <button type="button" className="secondary" onClick={() => {
+                              setUnitPrice027ProductId(p.id);
+                              setActiveTab('unit-prices');
+                            }}>نرخەکانی یەکەکان</button>
                             <button type="button" className="secondary" onClick={() => handleStartEdit(p)}>
                               دەستکاری تەواو
                             </button>
@@ -1464,6 +1476,13 @@ export const ProductCatalogView: React.FC = () => {
             </table>
           </div>
         </>
+      )}
+
+      {activeTab === 'unit-prices' && (
+        <CanvaUnitPrices027 products={products} auditLogs={auditLogs}
+          initialProductId={unitPrice027ProductId}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => setActiveTab('list')}/>
       )}
 
       {activeTab === 'history' && (

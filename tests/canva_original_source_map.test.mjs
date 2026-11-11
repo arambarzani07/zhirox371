@@ -179,3 +179,47 @@ test('Canva 026 exact local ownership scan detects duplicate across unit, carton
   }],'000001').status,'duplicate');
   assert.equal(JSON.stringify(input),snapshot,'read-only audit never alters products');
 });
+
+test('Canva 027 original price screen geometry and read-only five-mode React routing',()=>{
+  const geometry=JSON.parse(read('design/canva-original-screen-027-geometry.json'));
+  const screen=read('src/components/CanvaUnitPrices027.tsx');
+  const utility=read('src/utils/unitPrices027.ts');
+  const catalog=read('src/components/ProductCatalogView.tsx');
+  const style=read('src/components/canvaOfficialV1.css');
+  assert.equal(geometry.design_id,layout.screens[26].id);
+  assert.equal(geometry.element_count,48);
+  assert.deepEqual(geometry.canvas,{width:1920,height:1080});
+  assert.equal(new Set(geometry.elements.map(e=>e.id)).size,48);
+  assert.match(screen,/data-canva-screen="027"/);
+  assert.match(screen,/خشتەی نرخەکانی یەکەکان/);
+  assert.match(screen,/disabled[\s\S]*?داواکردنی گۆڕینی نرخ/);
+  assert.doesNotMatch(screen,/updateProduct\(|addProduct\(|deleteProduct\(/);
+  assert.match(utility,/mode==='kg'/);
+  assert.match(catalog,/activeTab === 'unit-prices'/);
+  assert.match(style,/canva-unit-prices-027 \.canva-unit-price-layout/);
+});
+test('Canva 027 renders actual prices by unit and never invents unconfigured costs or modes',async()=>{
+  const {unitPriceRows027,resolveUnitByBarcode027,matchesUnitPriceQuery027}=await import('../src/utils/unitPrices027.ts');
+  const p={id:'product-027',name:'نموونەی کاڵا',base_unit:'unit',unit_barcode:'111',
+    unit_alias_barcodes:['112'],unit_purchase_price_iqd:250,unit_sale_price_iqd:400,
+    carton:{barcode:'211',alias_barcodes:['212'],units_per_carton:24,purchase_price_iqd:5000,sale_price_iqd:7000},
+    extra_packs:[{kind:'bundle',barcode:'311',alias_barcodes:['312'],units_per_pack:6,purchase_price_iqd:null,sale_price_iqd:2100},
+      {kind:'set',barcode:'411',alias_barcodes:[],units_per_pack:2,purchase_price_iqd:0,sale_price_iqd:800}]};
+  const before=JSON.stringify(p);const rows=unitPriceRows027(p);
+  assert.deepEqual(rows.map(r=>r.mode),['unit','carton','bundle','set','kg']);
+  assert.deepEqual(rows.map(r=>r.configured),[true,true,true,true,false]);
+  assert.equal(rows[0].sellIqd,400);assert.equal(rows[0].buyIqd,250);
+  assert.equal(rows[1].units,24);assert.equal(rows[1].sellIqd,7000);
+  assert.equal(rows[2].units,6);assert.equal(rows[2].buyIqd,null);
+  assert.equal(rows[3].buyIqd,null);
+  assert.equal(rows[4].sellIqd,null);
+  assert.equal(resolveUnitByBarcode027(p,'212'),'carton');
+  assert.equal(resolveUnitByBarcode027(p,'312'),'bundle');
+  assert.equal(resolveUnitByBarcode027(p,'112'),'unit');
+  assert.equal(resolveUnitByBarcode027(p,'999'),null);
+  assert.equal(matchesUnitPriceQuery027(p,'312'),true);
+  const kg=unitPriceRows027({...p,base_unit:'kg',carton:null,extra_packs:[]});
+  assert.equal(kg[0].configured,false);assert.equal(kg[4].configured,true);
+  assert.equal(kg[4].sellIqd,400);assert.equal(kg[4].units,1);
+  assert.equal(JSON.stringify(p),before,'Price view never alters source product');
+});
