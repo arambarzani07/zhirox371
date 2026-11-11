@@ -211,6 +211,31 @@ try {
  await page.locator('[data-canva-screen="029"]').getByRole("button",{name:"گەڕانەوە",exact:true}).click();
  await page.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 034: CSV input must only preview and never silently add
+ // a new product or overwrite an existing real or DEMO barcode.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(1).click();
+ await page.getByRole("button",{name:"پێشبینینی هاوردەکردنی CSV"}).click();
+ const import034=page.locator('[data-canva-screen="034"]');
+ await import034.waitFor({state:"visible"});
+ assert.equal(await import034.locator("h1").innerText(),"پێشبینینی هاوردەکردنی کاڵاکان");
+ assert.equal(await import034.getByRole("button",{name:"پشکنینی فایل"}).isDisabled(),true);
+ await import034.locator("#canva-034-file").setInputFiles({
+  name:"test-preview.csv",mimeType:"text/csv",
+  buffer:Buffer.from("name,barcode,price,unit\\nئاوی نوێ,0000000091234,450,دانە\\nدووبارە,2000000000018,250,دانە".replaceAll("\\\\n","\\n"))
+ });
+ await import034.getByRole("button",{name:"پشکنینی فایل"}).click();
+ assert.equal(await import034.locator(".canva-import-table tbody tr[data-import-status]").count(),2);
+ assert.equal(await import034.locator(".canva-import-table tbody tr[data-import-status='ready']").count(),1);
+ assert.equal(await import034.locator(".canva-import-table tbody tr[data-import-status='error']").count(),1);
+ assert.match(await import034.locator(".canva-import-table tbody").innerText(),/بارکۆد پێشتر/);
+ assert.equal(await import034.locator(".canva-import-aside dd").first().innerText(),"2");
+ assert.equal(await import034.locator(".canva-import-aside dd").nth(1).innerText(),"1");
+ assert.match(await import034.getByRole("status").innerText(),/هیچ کاڵایەک هاوردە نەکراوە/);
+ await import034.getByRole("button",{name:"گەڕانەوە",exact:true}).click();
+ assert.equal(await page.locator(".section-workspace__metric").first().innerText().then(x=>x.includes("لیستی کاڵاکان")),true);
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 028: preview only, before any real local DEMO price edits.
  await page.locator(".home-screen .module").nth(1).click();
  await page.locator(".home-screen .subgrid .sub").nth(2).click();

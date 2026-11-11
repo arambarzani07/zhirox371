@@ -498,3 +498,61 @@ test('Canva 033 gross profit uses actual independent costs and never fabricates 
  assert.equal(productProfitRows033(badSale)[0].status,'invalid_price');
  assert.equal(JSON.stringify(product),before,'Audit never changes original product');
 });
+
+test('Canva 034 source geometry and safe CSV preview navigation have no write path',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-034-geometry.json'));
+ const screen=read('src/components/CanvaImportPreview034.tsx');
+ const util=read('src/utils/importPreview034.ts');
+ const catalog=read('src/components/ProductCatalogView.tsx');
+ const style=read('src/components/canvaOfficialV1.css');
+ assert.equal(g.design_id,layout.screens[33].id);
+ assert.equal(g.element_count,44);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,44);
+ assert.match(screen,/data-canva-screen="034"/);
+ assert.match(screen,/فایلی کاڵاکان/);
+ assert.match(screen,/تا پشکنین و پەسەندکردن تەواو نەبێت/);
+ assert.doesNotMatch(screen,/updateProduct\(|addProduct\(|deleteProduct\(/);
+ assert.match(util,/existingCodes.has\(c.barcode\)/);
+ assert.match(catalog,/activeTab === 'import-preview'/);
+ assert.match(catalog,/setActiveTab\('import-preview'\)/);
+ assert.match(style,/canva-import-preview-034 \.canva-import-layout/);
+});
+test('Canva 034 CSV file preview handles rows, duplicate aliases, missing units and bad prices, without writes',async()=>{
+ const {previewCsvProducts034}=await import('../src/utils/importPreview034.ts');
+ const products=[{id:'a',name:'ئاوی نموونە',base_unit:'unit',unit_barcode:'2000000000018',
+  unit_alias_barcodes:['010101'],carton:{barcode:'2000000000025',alias_barcodes:['2025']},
+  extra_packs:[{kind:'bundle',barcode:'9922',alias_barcodes:['9923']}]}];
+ const before=JSON.stringify(products);
+ const csv=[
+  'name,barcode,price,unit',
+  'ئاوی نوێ,00001234,250,دانە',
+  'کاڵای دووبارە,00005678,500,دانە',
+  'کاڵای دووبارە,00005678,500,دانە',
+  'پەیوەست بە کارتۆن,2000000000025,300,دانە',
+  'پەیوەست بە هاوتا,010101,700,دانە',
+  'بێ نرخ,00001111,0,دانە',
+  'بێ یەکە,00002222,450,کارتۆن',
+  'ناوی نوێ,00009999,1200,کیلۆ'
+ ].join('\n');
+ const report=previewCsvProducts034(csv,products);
+ assert.equal(report.total,8);
+ assert.equal(report.ready,2);
+ assert.equal(report.errors,6);
+ assert.deepEqual(report.rows.map(r=>r.status),[
+  'ready','error','error','error','error','error','error','ready'
+ ]);
+ assert.equal(report.rows[0].barcode,'00001234');
+ assert.equal(report.rows[0].priceIqd,250);
+ assert.equal(report.rows[0].line,2);
+ assert.match(report.rows[3].issues.join(','),/کەتەلۆگ/);
+ assert.match(report.rows[4].issues.join(','),/کەتەلۆگ/);
+ assert.equal(report.rows[5].priceIqd,null);
+ assert.equal(report.rows[6].unit,'کارتۆن');
+ assert.equal(previewCsvProducts034('نوێ,00003333,250',products).ready,0);
+ assert.match(previewCsvProducts034('"هەڵە,00005555,200,دانە',products).warnings[0],/نادروست/);
+ const safe=previewCsvProducts034('"ناوی کاڵا","بارکۆد","نرخی فرۆشتن","یەکە"\n"ئاوی, تایبەت",00007777,800,دانە',products);
+ assert.equal(safe.ready,1);
+ assert.equal(safe.rows[0].name,'ئاوی, تایبەت');
+ assert.equal(JSON.stringify(products),before,'No write or mutation during preview');
+});

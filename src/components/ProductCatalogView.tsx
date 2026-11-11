@@ -12,6 +12,7 @@ import { CanvaReviewApproval030 } from './CanvaReviewApproval030';
 import { CanvaExtraBarcodes031 } from './CanvaExtraBarcodes031';
 import { CanvaUnitRatios032 } from './CanvaUnitRatios032';
 import { CanvaProfitAudit033 } from './CanvaProfitAudit033';
+import { CanvaImportPreview034 } from './CanvaImportPreview034';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -25,7 +26,8 @@ const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' | 'unit-ratios' | 'profit-audit' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' | 'unit-ratios' | 'profit-audit' | 'import-preview' => {
+    if (activeSectionId === 'import-preview' || subtab === 'import-preview') return 'import-preview';
     if (activeSectionId === 'profit-audit' || subtab === 'profit-audit') return 'profit-audit';
     if (activeSectionId === 'unit-ratios' || subtab === 'unit-ratios') return 'unit-ratios';
     if (activeSectionId === 'extra-barcodes' || subtab === 'extra-barcodes') return 'extra-barcodes';
@@ -41,7 +43,7 @@ export const ProductCatalogView: React.FC = () => {
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' | 'unit-ratios' | 'profit-audit'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' | 'unit-ratios' | 'profit-audit' | 'import-preview'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -1164,9 +1166,9 @@ export const ProductCatalogView: React.FC = () => {
                 <button
                   type="button"
                   className={showImport ? 'primary' : 'secondary'}
-                  onClick={() => setShowImport(!showImport)}
+                  onClick={() => {setShowImport(false);setActiveTab('import-preview');}}
                 >
-                  {showImport ? 'داخستنی هاوردەکردن ▲' : 'هاوردەکردنی CSV ▼'}
+                  پێشبینینی هاوردەکردنی CSV
                 </button>
                 <button type="button" className="secondary" onClick={handleExportCsv}>
                   هەناردەکردنی CSV
@@ -1503,6 +1505,12 @@ export const ProductCatalogView: React.FC = () => {
             </table>
           </div>
         </>
+      )}
+
+      {activeTab === 'import-preview' && (
+        <CanvaImportPreview034 products={products}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => setActiveTab('list')}/>
       )}
 
       {activeTab === 'profit-audit' && (

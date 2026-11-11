@@ -1068,3 +1068,39 @@
   #app .canva-profit-audit-033 .canva-profit-main,#app .canva-profit-audit-033 .canva-profit-aside {padding:12px;}
  }
 }
+
+/* Native original Canva 034 editable-text proportions, 1920x1080.
+ * Main right 1206 px, side left 511.2 px. Not full pixel parity. */
+@media screen {
+ #app .canva-import-preview-034 {direction:rtl;display:flex;flex-direction:column;gap:14px;min-width:0;color:#172b45;font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+ #app .canva-import-preview-034 .canva-import-heading {background:#fff;}
+ #app .canva-import-preview-034 .canva-import-layout {display:grid;direction:rtl;grid-template-columns:minmax(0,1206fr) minmax(280px,511.2fr);gap:clamp(18px,4.0625vw,78px);margin:0 3.25%;align-items:start;}
+ #app .canva-import-preview-034 .canva-import-main,#app .canva-import-preview-034 .canva-import-aside {background:#fff;border:1px solid #e0e7f0;border-radius:10px;padding:18px 22px;min-width:0;min-height:650px;}
+ #app .canva-import-preview-034 h2 {margin:0 0 18px;font-size:19px;font-weight:900;line-height:1.6;text-align:right;color:#172b45;}
+ #app .canva-import-preview-034 .canva-import-pick {display:flex;flex-direction:column;gap:9px;margin:10px 0 20px;text-align:right;font-size:13px;font-weight:900;}
+ #app .canva-import-preview-034 .canva-import-pick input {padding:10px 11px;font:inherit;font-size:13px;min-height:49px;border-radius:8px;color:#172b45;background:#fff;border:1px solid #dce5ee;max-width:100%;}
+ #app .canva-import-preview-034 .canva-import-filename {font-size:12px;font-weight:750;color:#62768c;overflow-wrap:anywhere;}
+ #app .canva-import-preview-034 .canva-import-rule {background:#f6f8fb;color:#526a82;border-radius:8px;padding:13px 15px;font-size:12px;font-weight:850;margin:20px 0 25px;}
+ #app .canva-import-preview-034 .canva-import-table-scroll {width:100%;max-height:320px;overflow:auto;}
+ #app .canva-import-preview-034 .canva-import-table {direction:rtl;border-collapse:collapse;table-layout:fixed;width:100%;font-size:12px;color:#172b45;text-align:right;}
+ #app .canva-import-preview-034 .canva-import-table th,#app .canva-import-preview-034 .canva-import-table td {min-height:57px;height:57px;border-bottom:1px solid #e3eaf1;text-align:right;padding:9px;overflow-wrap:anywhere;}
+ #app .canva-import-preview-034 .canva-import-table th {font-weight:900;background:#f1f5f9;}
+ #app .canva-import-preview-034 .canva-import-table th:nth-child(1) {width:37%;}
+ #app .canva-import-preview-034 .canva-import-table th:nth-child(2) {width:16%;}
+ #app .canva-import-preview-034 .canva-import-table th:nth-child(3) {width:16%;}
+ #app .canva-import-preview-034 .canva-import-table th:nth-child(4) {width:19%;}
+ #app .canva-import-preview-034 .canva-import-table th:nth-child(5) {width:12%;}
+ #app .canva-import-preview-034 .canva-import-table tr[data-import-status="error"] td:last-child {color:#a72c2c;font-weight:900;}
+ #app .canva-import-preview-034 .canva-import-guidance {margin:24px 0 10px;background:#f7f9fc;color:#526a82;padding:13px 15px;font-size:12px;font-weight:900;}
+ #app .canva-import-preview-034 .canva-import-result {font-size:12px;font-weight:850;color:#64758d;margin:12px 0;}
+ #app .canva-import-preview-034 .canva-import-aside dl {display:flex;flex-direction:column;gap:22px;margin:30px 0 90px;}
+ #app .canva-import-preview-034 .canva-import-aside dl>div {display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #e3eaf1;padding-bottom:14px;}
+ #app .canva-import-preview-034 .canva-import-aside dt {color:#64758d;font-size:12px;font-weight:900;}
+ #app .canva-import-preview-034 .canva-import-aside dd {margin:0;font-weight:900;font-size:16px;color:#172b45;}
+ #app .canva-import-preview-034 .canva-import-aside button {width:100%;min-height:49px;margin-top:12px;font-weight:900;}
+ #app .canva-import-preview-034 .canva-import-aside button:disabled {opacity:.56;cursor:not-allowed;}
+ @media(max-width:1180px) {
+ #app .canva-import-preview-034 .canva-import-layout {grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:12px;margin:0 8px;}
+ #app .canva-import-preview-034 .canva-import-main,#app .canva-import-preview-034 .canva-import-aside {padding:12px;}
+ }
+}
