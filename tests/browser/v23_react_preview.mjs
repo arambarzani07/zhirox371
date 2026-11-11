@@ -66,8 +66,9 @@ try {
  await page.locator('[data-canva-screen="036"]').getByRole("button",{name:"ماڵەوە",exact:true}).click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 046: original supplier directory and actual DEMO debt; no invented status.
+ // Card 04 subcard 1 is purchase request (047), subcard 2 is suppliers (046).
  await page.locator(".home-screen .module").nth(3).click();
- await page.locator(".home-screen .subgrid .sub").first().click();
+ await page.locator(".home-screen .subgrid .sub").nth(1).click();
  const suppliers046=page.locator('[data-canva-screen="046"]');
  await suppliers046.waitFor({state:"visible"});
  assert.equal(await suppliers046.locator("h1").innerText(),"دابینکەران و زانیارییان");

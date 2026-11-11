@@ -709,6 +709,7 @@ test('Canva 047 authentic source geometry and home purchase request route',()=>{
  assert.deepEqual(g.canvas,{width:1920,height:1080});
  assert.equal(new Set(g.elements.map(x=>x.id)).size,45);
  assert.match(view,/data-canva-screen="047"/);
+ assert.match(view,/data-demo-only="true"/);
  assert.match(view,/کاڵاکانی پێویست بۆ کڕین/);
  assert.match(view,/بڕی داواکراو نابێت کەمتر لە سفر بێت/);
  assert.match(view,/ناردن بۆ پەسەندکردن/);
