@@ -223,3 +223,12 @@ test('Canva 027 renders actual prices by unit and never invents unconfigured cos
   assert.equal(kg[4].sellIqd,400);assert.equal(kg[4].units,1);
   assert.equal(JSON.stringify(p),before,'Price view never alters source product');
 });
+
+test('Canva 027 Chromium baseline pricing must precede any price mutation',()=>{
+  const browser=read('tests/browser/v23_react_preview.mjs');
+  assert.ok(browser.indexOf('// Canva 027:')>0);
+  assert.ok(browser.indexOf('// Canva 027:')<browser.indexOf('// Canva 025:'));
+  assert.match(browser,/data-canva-screen="027"/);
+  assert.match(browser,/data-unit-price-mode="carton"/);
+  assert.match(browser,/Do not invent historical price-change date/);
+});
