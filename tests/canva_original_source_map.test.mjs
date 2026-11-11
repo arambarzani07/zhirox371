@@ -556,3 +556,18 @@ test('Canva 034 CSV file preview handles rows, duplicate aliases, missing units 
  assert.equal(safe.rows[0].name,'ئاوی, تایبەت');
  assert.equal(JSON.stringify(products),before,'No write or mutation during preview');
 });
+
+test('Canva 034 rejects missing unit headers and preserves zero-prefixed CSV codes',async()=>{
+ const {previewCsvProducts034}=await import('../src/utils/importPreview034.ts');
+ const data=[];
+ const missing=previewCsvProducts034('name,barcode,price\nئاوی نوێ,0000012,450',data);
+ assert.equal(missing.ready,0);
+ assert.match(missing.warnings.join(','),/ستوون/);
+ const withBom=previewCsvProducts034('\uFEFFname,barcode,price,unit\nئاوی نوێ,0000012,450,unit',data);
+ assert.equal(withBom.ready,1);
+ assert.equal(withBom.rows[0].barcode,'0000012');
+ assert.equal(withBom.rows[0].priceIqd,450);
+ const unsafe=previewCsvProducts034('name,barcode,price,unit\nنوێ,0000012,1e5,دانە\nنوێی دووەم,0000044,500,کارتۆن',data);
+ assert.equal(unsafe.ready,0);
+ assert.equal(unsafe.errors,2);
+});
