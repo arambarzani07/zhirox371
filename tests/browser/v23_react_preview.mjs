@@ -63,7 +63,7 @@ try {
  assert.equal(await approvals045.locator("tbody tr[data-approval-placeholder]").count(),4);
  await approvals045.getByRole("button",{name:"گەڕانەوە بۆ کۆگا"}).click();
  await page.locator('[data-canva-screen="036"]').waitFor({state:"visible"});
- await page.locator('[data-canva-screen="036"]').getByRole("button",{name:"ماڵەوە"}).click();
+ await page.locator('[data-canva-screen="036"]').getByRole("button",{name:"ماڵەوە",exact:true}).click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 046: original supplier directory and actual DEMO debt; no invented status.
  await page.locator(".home-screen .module").nth(3).click();

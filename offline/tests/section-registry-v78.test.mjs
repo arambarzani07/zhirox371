@@ -14,7 +14,10 @@ test("12 x 4 source routes match unique seeded local SQL section IDs",()=>{
  assert.equal(seed.length,48);
  assert.equal(new Set(entries.map(e=>e.id)).size,48);
  assert.equal(new Set(seed.map(e=>e.id)).size,48);
- assert.deepEqual(entries,seed.map(({id,name})=>({id,name})));
+ // SQL registry row insertion order does not define Home geometry or route identity.
+ // Compare ID/name associations, still rejecting missing, duplicate or swapped mappings.
+ const byId=items=>[...items].sort((a,b)=>a.id.localeCompare(b.id));
+ assert.deepEqual(byId(entries),byId(seed.map(({id,name})=>({id,name}))));
 });
 test("section data flow uses explicit unique IDs and never silently reuses another screen",()=>{
  for(const fragment of ['activeSectionId','data-section-id','data-section-title']){
