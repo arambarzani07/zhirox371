@@ -8,6 +8,7 @@ interface Props {
   search: string;
   onSearch: (value: string) => void;
   onAdjust: (product: Product) => void;
+  onCount: () => void;
   onMovements: () => void;
   onHome: () => void;
 }
@@ -16,7 +17,7 @@ const columns = ['ناوی کاڵا', 'بارکۆد', 'کەمترین بڕ', 'ی
 const format = (quantity: number) => quantity.toLocaleString('en-US', { maximumFractionDigits: 3 });
 
 export function CanvaStockOverview036({
-  products, filteredProducts, lowStockCount, search, onSearch, onAdjust, onMovements, onHome,
+  products, filteredProducts, lowStockCount, search, onSearch, onAdjust, onCount, onMovements, onHome,
 }: Props) {
   return (
     <CanvaStockFrame number="036" title="دۆخی کۆگا و بڕی بەردەست"
@@ -34,7 +35,10 @@ export function CanvaStockOverview036({
           </label>
         </div>
       }
-      note="هەموو بڕەکان بەپێی یەکەی بنەڕەتی کاڵا هەژمار دەکرێن."
+      note={<span className="stock-count-note">
+        هەموو بڕەکان بەپێی یەکەی بنەڕەتی کاڵا هەژمار دەکرێن.
+        <button type="button" className="stock-036-product" onClick={onCount}>ژماردنی کۆگا</button>
+      </span>}
       summary={
         <dl>
           <div><dt>هەموو کاڵاکان</dt><dd>{format(products.length)}</dd></div>

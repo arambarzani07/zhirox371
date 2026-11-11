@@ -6,13 +6,15 @@ import { matchesUnitPriceQuery027 } from '../utils/unitPrices027';
 import { CanvaStockOverview036 } from './CanvaStockOverview036';
 import { CanvaStockHistory037 } from './CanvaStockHistory037';
 import { CanvaStockWatch } from './CanvaStockWatch';
+import { CanvaStockCount040 } from './CanvaStockCount040';
 import { CanvaStockReceiving041 } from './CanvaStockReceiving041';
 
 export const InventoryStockView: React.FC = () => {
   const { products, adjustStock, stockMovements, subtab, activeSectionId, navigateTo } =
     useApp();
 
-  const resolveMode = (): 'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer' => {
+  const resolveMode = (): 'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer' | 'count' => {
+    if (subtab === 'count') return 'count';
     if (activeSectionId === 'low-stock' || subtab === 'low') return 'low';
     if (activeSectionId === 'expiry' || subtab === 'expiry') return 'expiry';
     if (activeSectionId === 'stock-transfer') return subtab === 'transfer' ? 'transfer' : 'movements';
@@ -20,7 +22,7 @@ export const InventoryStockView: React.FC = () => {
     return 'overview';
   };
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer' | 'count'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -121,6 +123,8 @@ export const InventoryStockView: React.FC = () => {
 
   return (
     <div className={usesCanvaFrame ? 'ws-stack stock-036-shell' : 'ws-stack'}>
+      {activeTab === 'count' && <CanvaStockCount040 />}
+
       {activeTab === 'receive' && <CanvaStockReceiving041 />}
 
       {activeTab === 'movements' && <CanvaStockHistory037 />}
@@ -387,6 +391,7 @@ export const InventoryStockView: React.FC = () => {
         <CanvaStockOverview036 products={products} filteredProducts={filteredProducts}
           lowStockCount={lowStockCount} search={search} onSearch={setSearch}
           onAdjust={openStockAdjustment} onHome={() => navigateTo('home')}
+          onCount={() => navigateTo('stock', 'count', 'stock-stack')}
           onMovements={() => navigateTo('stock', 'receive', 'stock-transfer')} />
       )}
 

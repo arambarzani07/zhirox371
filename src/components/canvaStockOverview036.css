@@ -393,3 +393,28 @@
     min-height: clamp(55px, 7.5vh, 81px);
   }
 }
+
+@media screen {
+  #app .stock-count-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  #app .stock-count-note button { text-decoration: underline; }
+
+  #app .stock-count-filters > .stock-036-note {
+    margin: 0;
+  }
+
+  #app .stock-count-input {
+    width: min(100%, 104px);
+    padding: 6px;
+    text-align: center;
+  }
+
+  #app .stock-count-input[aria-invalid="true"] { outline: 1px solid #ab3d35; }
+
+  #app .stock-count-remove { margin-inline-start: 6px; }
+}
