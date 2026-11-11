@@ -499,3 +499,13 @@
  #app [data-canva-screen="048"] .stock-036-summary dl div { min-height:clamp(50px,7vh,76px); }
  #app [data-canva-screen="048"] .stock-036-actions { gap:8px;margin-bottom:0; }
 }
+
+@media screen {
+  #app .supplier-record-filters .stock-036-filters { margin: 0; grid-template-columns: 1fr 1fr; }
+  #app :is([data-canva-screen="050"], [data-canva-screen="051"], [data-canva-screen="052"]) .stock-036-summary dl {
+    gap: clamp(8px, 1.5vh, 16px); margin-block: 16px;
+  }
+  #app :is([data-canva-screen="050"], [data-canva-screen="051"], [data-canva-screen="052"]) .stock-036-summary dl div {
+    min-height: clamp(48px, 7vh, 76px);
+  }
+}

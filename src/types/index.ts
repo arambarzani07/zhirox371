@@ -132,7 +132,18 @@ export interface Expense {
   createdAt: string;
 }
 
+export interface SupplierReceiptLine {
+  supplierId: string;
+  invoiceNo: string;
+  barcode: string;
+  quantity: number;
+  unit: 'unit' | 'carton' | 'kg';
+  unitCost: number;
+  total: number;
+}
+
 export interface StockMovement {
+  supplierReceipt?: SupplierReceiptLine;
   id: string;
   productId: string;
   productName: string;
@@ -158,6 +169,7 @@ export interface PriceChangeAudit025 {
 }
 
 export interface AuditLogEntry {
+  supplierPayment?: { supplierId: string; amount: number };
   priceChange?: PriceChangeAudit025;
   id: string;
   timestamp: string;

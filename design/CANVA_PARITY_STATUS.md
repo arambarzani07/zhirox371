@@ -139,3 +139,9 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - A supplier-scoped item table supports barcode/name search, unit/carton/bundle/set/kg measured differences, input validation and per-row expiry dates, and a supplier invoice reference kept in tab-local sessionStorage only. Base-unit conversion uses confirmed local product pack ratios; never sum unlike product units.
 - Approved order IDs are unavailable and never fabricated. All receiving confirmation and stock/financial writes stay disabled. No real inventory, supplier balance, receipts, auth or Canva originals were changed.
 - Remaining: backend approved order lookup, server-side idempotent receiving, authoritative role, exact pixel parity.
+
+### Screens 050–052 — purchase invoices, supplier return drafts and supplier accounts
+- 050 shows invoice lines recorded by 041 when a known supplier, invoice number and positive purchase cost are available. Unit, quantity and cost are captured at receipt time. Invoice-level payment allocation requires a corresponding server data source.
+- 051 uses the same receipt lines for a tab-local return draft. It validates quantity against the received amount and previews the value. Submitting an approved return requires a server endpoint.
+- 052 shows structured local invoice records and supplier payments still present in the capped audit log. The outstanding balance comes from the supplier record. Existing account-level payment entry is accessible through the account details action. Old records lack the fields needed to reconstruct invoice history or running balances.
+- Verified the build, 38 Canva source tests and browser workflows at 1920×1080 and 1366×768. Visual comparison used the original Canva exports. Exact pixel parity remains unverified.

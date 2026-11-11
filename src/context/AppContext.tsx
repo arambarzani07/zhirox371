@@ -294,13 +294,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (_e) {}
   }, [auditLogs]);
 
-  const addAuditLog = (action: string, details: string) => {
+  const addAuditLog = (action: string, details: string, supplierPayment?: AuditLogEntry['supplierPayment']) => {
     const entry: AuditLogEntry = {
       id: `aud-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       timestamp: new Date().toISOString(),
       user: currentShift.cashierName || 'بەڕێوەبەر',
       action,
-      details
+      details,
+      supplierPayment
     };
     setAuditLogs(prev => [entry, ...prev.slice(0, 99)]);
   };
@@ -413,18 +414,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     updateProduct(productId, { stock: nextStock });
 
+    let supplierReceipt: StockMovement['supplierReceipt'];
     if (supplierId) {
       const costPerPkg = mode === 'carton' && p.carton?.purchase_price_iqd
         ? p.carton.purchase_price_iqd
         : (p.unit_purchase_price_iqd || 0);
       const totalCost = costPerPkg * quantity;
+      if (invoiceNo?.trim() && Number.isFinite(totalCost) && totalCost > 0 &&
+        suppliers.some(supplier => supplier.id === supplierId)) {
+        supplierReceipt = {
+          supplierId, invoiceNo: invoiceNo.trim(), quantity, unitCost: costPerPkg, total: totalCost,
+          unit: mode === 'carton' ? 'carton' : p.base_unit,
+          barcode: mode === 'carton' ? p.carton?.barcode ?? '' : p.unit_barcode,
+        };
+      }
       setSuppliers(prev =>
         prev.map(s => (s.id === supplierId ? { ...s, balanceDebt: s.balanceDebt + totalCost } : s))
       );
     }
 
     const movement: StockMovement = {
-      id: `mov-${Date.now()}`,
+      id: 'mov-' + crypto.randomUUID(),
+      supplierReceipt,
       productId,
       productName: p.name,
       type: 'receive',
@@ -773,8 +784,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     fromCashDrawer: boolean = true,
     note?: string
   ) => {
-    if (amount <= 0) return;
+    if (!Number.isFinite(amount) || amount <= 0) return;
     const sup = suppliers.find(s => s.id === supplierId);
+    if (!sup || amount > sup.balanceDebt) return;
     setSuppliers(prev =>
       prev.map(s => (s.id === supplierId ? { ...s, balanceDebt: Math.max(0, s.balanceDebt - amount) } : s))
     );
@@ -799,7 +811,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     addAuditLog(
       'پارەدان بە دابینکەر',
-      `بڕی ${amount.toLocaleString('en-US')} IQD درا بە دابینکەر (${sup?.name || supplierId})${fromCashDrawer ? ' لە سندووقی کاشێر' : ' لە قاسەی گشتی'}`
+      `بڕی ${amount.toLocaleString('en-US')} IQD درا بە دابینکەر (${sup?.name || supplierId})${fromCashDrawer ? ' لە سندووقی کاشێر' : ' لە قاسەی گشتی'}`,
+      { supplierId, amount }
     );
   };
 
