@@ -1,0 +1,308 @@
+{
+  "project": "ZHIROX371",
+  "screen": "029",
+  "design_id": "DAHaaSStk5E",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "note": "Authentic Canva editable text bounds only; NOT complete vector/image/style geometry, auth, or pixel-perfect proof",
+  "element_count": 35,
+  "elements": [
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBWF5CwV6x8dqcgk",
+      "text": "ZHIROX",
+      "x": 50.400000000000006,
+      "y": 24,
+      "w": 366,
+      "h": 52.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBJbWgPwJ6mNXlcd",
+      "text": "سوپەرمارکێتی کانی چنار",
+      "x": 618,
+      "y": 20.4,
+      "w": 684,
+      "h": 61.2
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBSr5D861NKtHQ5N",
+      "text": "دەسەڵاتی کاشێر و بەڕێوەبەر",
+      "x": 1014,
+      "y": 132,
+      "w": 849.6,
+      "h": 54
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBfnzB051q3hd9RW",
+      "text": "ماڵەوە",
+      "x": 49.2,
+      "y": 133.8,
+      "w": 146.4,
+      "h": 45.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaMmlLck"
+      ]
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB15B4jWscpDQnzt",
+      "text": "کاڵا و نرخ",
+      "x": 509.99999999999994,
+      "y": 136.8,
+      "w": 441.6,
+      "h": 39.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaUrrOOM"
+      ]
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBWtdvr5DJdQ8lgC",
+      "text": "خشتەی دەسەڵاتی بەکارهێنەران",
+      "x": 651.5999999999999,
+      "y": 248.40000000000003,
+      "w": 1206,
+      "h": 56.4
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBg1MKbQx3KdNX4c",
+      "text": "داواکاری و پشتڕاستکردنەوە",
+      "x": 62.400000000000006,
+      "y": 248.40000000000003,
+      "w": 511.2,
+      "h": 56.4
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBRwhd0jFyQgFcFw",
+      "text": "کاشێر زانیاریی کاڵا دەبینێت؛ گۆڕینی نرخ پێویستی بە ڕێگەپێدان هەیە",
+      "x": 680.4000000000001,
+      "y": 348.6,
+      "w": 1146,
+      "h": 57.6
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB2yqY9ZWsYDJdj5",
+      "text": "بەڕێوەبەر",
+      "x": 670.2,
+      "y": 471,
+      "w": 244.8,
+      "h": 54
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBKq2qVRcKrpFfjh",
+      "text": "کاشێر",
+      "x": 925.8000000000001,
+      "y": 471,
+      "w": 262.8,
+      "h": 54
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBkw5tLrM8lqGbtc",
+      "text": "کردار",
+      "x": 1199.4,
+      "y": 471,
+      "w": 631.2,
+      "h": 54
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBRbRQqdDSJs4k1V",
+      "text": "بینین",
+      "x": 671.4,
+      "y": 550.8,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBqTnKVTM2Pd0jgN",
+      "text": "بینین",
+      "x": 927,
+      "y": 550.8,
+      "w": 260.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB1X73HYzhPCq3VJ",
+      "text": "بینینی کاڵا و بارکۆد",
+      "x": 1200.6,
+      "y": 550.8,
+      "w": 628.8,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBcY3TY5PdzwxjdV",
+      "text": "دەستکاری",
+      "x": 671.4,
+      "y": 621.6,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB8jJTqSlxG1DVbc",
+      "text": "داواکاری",
+      "x": 927,
+      "y": 621.6,
+      "w": 260.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBXjZy2l3gqDCrGY",
+      "text": "گۆڕینی نرخی فرۆشتن",
+      "x": 1200.6,
+      "y": 621.6,
+      "w": 628.8,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB2LQppxxsX1T0Bp",
+      "text": "دەستکاری",
+      "x": 671.4,
+      "y": 692.4,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBb3Jz47Jv5LnlVD",
+      "text": "داواکاری",
+      "x": 927,
+      "y": 692.4,
+      "w": 260.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBpqnhHQ7S0L2NyS",
+      "text": "زیادکردنی کاڵای نوێ",
+      "x": 1200.6,
+      "y": 692.4,
+      "w": 628.8,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBWX1QGzhDfNWZcg",
+      "text": "پەسەندکردن",
+      "x": 671.4,
+      "y": 763.2,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBNXXVVPJBhzQwkL",
+      "text": "نەخێر",
+      "x": 927,
+      "y": 763.2,
+      "w": 260.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB3N6QX01c2dTm2L",
+      "text": "گۆڕینی نرخ بەکۆمەڵ",
+      "x": 1200.6,
+      "y": 763.2,
+      "w": 628.8,
+      "h": 46.799999999999955,
+      "links": [
+        "https://www.canva.com/design/DAHaaY6cxsg"
+      ]
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBgzsvG5Np0Xl0y7",
+      "text": "پەسەندکردن",
+      "x": 671.4,
+      "y": 834,
+      "w": 242.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBkDtJD9tMXrbF7v",
+      "text": "نەخێر",
+      "x": 927,
+      "y": 834,
+      "w": 260.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBwYDMV9sf3JMhHP",
+      "text": "پشکنینی بارکۆدی دووبارە",
+      "x": 1200.6,
+      "y": 834,
+      "w": 628.8,
+      "h": 46.799999999999955,
+      "links": [
+        "https://www.canva.com/design/DAHaaY6kmos"
+      ]
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBqzCwV33nNvtYcg",
+      "text": "هەر داواکارییەک: کێ، کەی، چی گۆڕا و بۆچی — تۆمار دەکرێت",
+      "x": 679.2,
+      "y": 940.2,
+      "w": 1146,
+      "h": 57.6
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBWXFqHLpvYh83M1",
+      "text": "ڕۆڵی ئێستا",
+      "x": 85.20000000000002,
+      "y": 360,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB0tBgYRGBmsRmRG",
+      "text": "کاشێر",
+      "x": 85.20000000000002,
+      "y": 402,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBPn9TTlpfdtX84z",
+      "text": "هۆکاری داواکاری",
+      "x": 72,
+      "y": 471.6,
+      "w": 489.6,
+      "h": 39.6
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB0tV3Mt3M4Yl8zx",
+      "text": "هۆکاری داواکاری بنووسە",
+      "x": 86.4,
+      "y": 522,
+      "w": 460.8,
+      "h": 70.8
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBSKGWClSBBGRrWK",
+      "text": "دۆخی داواکاری",
+      "x": 85.20000000000002,
+      "y": 673.2,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBBQZ9vKlcqgsNCR",
+      "text": "چاوەڕوان",
+      "x": 85.20000000000002,
+      "y": 715.2,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LB6QdV8FQ03ZVrY0",
+      "text": "ناردنی داواکاری",
+      "x": 81.59999999999997,
+      "y": 826.2,
+      "w": 470.4,
+      "h": 61.200000000000045
+    },
+    {
+      "id": "PBwxZnTt5R6b6HVH-LBvgmZcHZlq9GNzq",
+      "text": "گەڕانەوە",
+      "x": 81.59999999999997,
+      "y": 918.5999999999999,
+      "w": 470.4,
+      "h": 51.60000000000002,
+      "links": [
+        "https://www.canva.com/design/DAHaaUrrOOM"
+      ]
+    }
+  ]
+}
