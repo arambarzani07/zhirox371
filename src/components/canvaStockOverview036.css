@@ -434,3 +434,11 @@
   #app [data-canva-screen="042"] .stock-036-summary dl div:nth-child(2) { background: var(--stock-field); }
   #app [data-canva-screen="042"] .stock-036-summary dl div:nth-child(3) { background: var(--stock-teal); }
 }
+
+@media screen {
+  #app [data-canva-screen="043"] .stock-workflow-filters .stock-036-note { margin-top: 12px; }
+  #app .stock-036-summary dl .stock-reconcile-total { min-height: 0; padding: 0; border: 0; background: transparent; }
+  #app .stock-reconcile-reason { display: block; margin: 20px 0 0; }
+  #app .stock-reconcile-reason label { width: 65%; }
+  #app [data-canva-screen="043"] .stock-036-list > .stock-036-note { margin-top: 12px; }
+}

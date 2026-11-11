@@ -89,3 +89,10 @@ validated by these design reference checks.
 
 **No-Go**: The source map and PNG thumbnails are design evidence, not
 proof that the 148 original Canva pages have been transferred as functioning UI.
+
+### Screen 043 — stock count reconciliation
+- Implemented from the original 043 PNG, connected from 040 with return navigation.
+- Reads the shared tab-local count draft. Shows signed differences, alias/name search, incomplete counts and stale product snapshots. Totals remain separate by unit and exclude stale/invalid rows.
+- Approval is explicitly unavailable in the demo route. No inventory mutation or production database changes. Reason selection is a local preview only.
+- Validation: TypeScript/Vite build and Playwright at 1920×1080 and 1366×768 passed, including draft reuse, alias search, stale exclusion, return navigation and unchanged stock.
+- Visual layout reviewed against Canva, exact pixel parity has not been certified. Backend approval integration remains outstanding.

@@ -4,37 +4,10 @@ import type { Product } from '../types';
 import { matchesUnitPriceQuery027 } from '../utils/unitPrices027';
 import { CanvaStockFrame, CanvaStockTable } from './CanvaStockFrame';
 
-interface CountLine {
-  id: string;
-  name: string;
-  unit: Product['base_unit'];
-  systemStock: number;
-  counted: string;
-}
+import { loadDraft, countedQuantity, storageKey, type CountLine } from '../utils/stockCountDraft';
 
-const storageKey = 'zhirox.demo.stock-count.040.v1';
 const columns = ['ناوی کاڵا', 'یەکە', 'بڕی سیستەم', 'بڕی ژمێردراو', 'جیاوازی', 'دۆخ'];
 const format = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 3 });
-
-function loadDraft(): CountLine[] {
-  try {
-    const saved: unknown = JSON.parse(sessionStorage.getItem(storageKey) ?? '[]');
-    if (!Array.isArray(saved)) return [];
-    return saved.filter((line): line is CountLine => Boolean(line &&
-      typeof line.id === 'string' && typeof line.name === 'string' &&
-      ['unit', 'kg'].includes(line.unit) &&
-      Number.isFinite(line.systemStock) && typeof line.counted === 'string'));
-  } catch {
-    return [];
-  }
-}
-
-function countedQuantity(line: CountLine) {
-  const pattern = line.unit === 'kg' ? /^\d+(\.\d{1,3})?$/ : /^\d+$/;
-  const amount = Number(line.counted);
-  return pattern.test(line.counted) && Number.isSafeInteger(Math.round(amount * 1000))
-    ? amount : null;
-}
 
 export function CanvaStockCount040() {
   const { products, navigateTo } = useApp();
@@ -104,7 +77,7 @@ export function CanvaStockCount040() {
         <div><dt>دۆخی ژماردن</dt><dd>{rows.some(row => row.stale) ? 'پێویستی بە ژماردنەوەیە' : 'ڕەشنووس'}</dd></div>
       </dl>}
       actions={<>
-        <button type="button" className="stock-036-primary" disabled>داواکردنی پەسەندکردن</button>
+        <button type="button" className="stock-036-primary" onClick={() => navigateTo('stock', 'reconcile', 'stock-stack')}>پێداچوونەوەی جیاوازییەکان</button>
         <button type="button" onClick={() => navigateTo('stock', 'overview', 'stock-stack')}>گەڕانەوە بۆ کۆگا</button>
       </>}>
       <CanvaStockTable columns={columns}>
