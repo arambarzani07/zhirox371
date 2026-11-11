@@ -226,7 +226,7 @@ try {
    "name,barcode,price,unit",
    "ئاوی نوێ,0000000091234,450,دانە",
    "دووبارە,2000000000018,250,دانە"
-  ].join("\\n"))
+  ].join(String.fromCharCode(10)))
  });
  await import034.getByRole("button",{name:"پشکنینی فایل"}).click();
  assert.equal(await import034.locator(".canva-import-table tbody tr[data-import-status]").count(),2);
