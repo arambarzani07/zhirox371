@@ -1078,7 +1078,10 @@
  #app .canva-import-preview-034 .canva-import-main,#app .canva-import-preview-034 .canva-import-aside {background:#fff;border:1px solid #e0e7f0;border-radius:10px;padding:18px 22px;min-width:0;min-height:650px;}
  #app .canva-import-preview-034 h2 {margin:0 0 18px;font-size:19px;font-weight:900;line-height:1.6;text-align:right;color:#172b45;}
  #app .canva-import-preview-034 .canva-import-pick {display:flex;flex-direction:column;gap:9px;margin:10px 0 20px;text-align:right;font-size:13px;font-weight:900;}
- #app .canva-import-preview-034 .canva-import-pick input {padding:10px 11px;font:inherit;font-size:13px;min-height:49px;border-radius:8px;color:#172b45;background:#fff;border:1px solid #dce5ee;max-width:100%;}
+ #app .canva-import-preview-034 .canva-import-pick input.canva-import-file-hidden {position:absolute;left:-10000px;width:1px;height:1px;opacity:0;overflow:hidden;}
+ #app .canva-import-preview-034 .canva-import-file-trigger {display:flex;align-items:center;min-height:49px;padding:9px 13px;font-size:13px;font-weight:900;border:1px solid #dce5ee;border-radius:8px;background:#fff;color:#172b45;cursor:pointer;max-width:100%;}
+ #app .canva-import-preview-034 .canva-import-file-trigger:hover {background:#f3f7fb;border-color:#adc2d7;}
+ #app .canva-import-preview-034 .canva-import-pick input:focus-visible + .canva-import-file-trigger {outline:2px solid #285e8a;outline-offset:2px;}
  #app .canva-import-preview-034 .canva-import-filename {font-size:12px;font-weight:750;color:#62768c;overflow-wrap:anywhere;}
  #app .canva-import-preview-034 .canva-import-rule {background:#f6f8fb;color:#526a82;border-radius:8px;padding:13px 15px;font-size:12px;font-weight:850;margin:20px 0 25px;}
  #app .canva-import-preview-034 .canva-import-table-scroll {width:100%;max-height:320px;overflow:auto;}

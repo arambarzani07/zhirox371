@@ -512,6 +512,7 @@ test('Canva 034 source geometry and safe CSV preview navigation have no write pa
  assert.match(screen,/data-canva-screen="034"/);
  assert.match(screen,/فایلی کاڵاکان/);
  assert.match(screen,/تا پشکنین و پەسەندکردن تەواو نەبێت/);
+ assert.match(screen,/canva-import-file-trigger/);
  assert.doesNotMatch(screen,/updateProduct\(|addProduct\(|deleteProduct\(/);
  assert.match(util,/existingCodes.has\(c.barcode\)/);
  assert.match(catalog,/activeTab === 'import-preview'/);

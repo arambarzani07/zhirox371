@@ -40,10 +40,14 @@ export const CanvaImportPreview034:React.FC<Props>=({products,onHome,onCatalog})
     <main className="canva-import-main">
      <h2>پشکنینی داتاکان پێش هاوردەکردن</h2>
      <div className="canva-import-pick">
-      <label htmlFor="canva-034-file">فایلی کاڵاکان</label>
-      <input id="canva-034-file" type="file" accept=".csv,text/csv"
+      <strong>فایلی کاڵاکان</strong>
+      <input id="canva-034-file" className="canva-import-file-hidden"
+       type="file" accept=".csv,text/csv"
        onChange={chooseFile} aria-label="هەڵبژاردنی فایل CSV"/>
-      <span className="canva-import-filename">{fileName||'هەڵبژاردنی فایل CSV'}</span>
+      <label htmlFor="canva-034-file" className="canva-import-file-trigger">
+       هەڵبژاردنی فایل CSV
+      </label>
+      <span className="canva-import-filename">{fileName||'—'}</span>
      </div>
      <p className="canva-import-rule">تا پشکنین و پەسەندکردن تەواو نەبێت، هیچ کاڵایەک زیاد یان دەستکاری ناکرێت.</p>
      <div className="canva-import-table-scroll">
