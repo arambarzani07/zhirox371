@@ -185,6 +185,32 @@ try {
  await ratios032.getByRole("button",{name:"گەڕانەوە",exact:true}).click();
  await page.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 033: selected-product DEMO gross profit and missing costs,
+ // without retroactively inventing purchase prices or granting permission.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(2).click();
+ await page.getByRole("button",{name:"پشکنینی قازانج و نرخی کاڵا"}).click();
+ const profit033=page.locator('[data-canva-screen="033"]');
+ await profit033.waitFor({state:"visible"});
+ assert.equal(await profit033.locator(".canva-profit-table tbody tr").count(),5);
+ await profit033.getByPlaceholder("کاڵایەک هەڵبژێرە").fill("2000000000018");
+ await profit033.getByRole("button",{name:/ئاوی کانی چنار 500ml — 2000000000018/}).click();
+ const single033=profit033.locator('[data-profit-mode="unit"]');
+ assert.match(await single033.locator("td").nth(1).innerText(),/175 IQD/);
+ assert.match(await single033.locator("td").nth(2).innerText(),/250 IQD/);
+ assert.match(await single033.locator("td").nth(3).innerText(),/75 IQD/);
+ assert.match(await single033.locator("td").nth(4).innerText(),/30\.0 %/);
+ await profit033.locator('[data-profit-mode="carton"]').getByRole("button",{name:"کارتۆن"}).click();
+ assert.match(await profit033.locator(".canva-profit-aside dd").nth(0).innerText(),/5,000 IQD/);
+ assert.match(await profit033.locator(".canva-profit-aside dd").nth(1).innerText(),/3,800 IQD/);
+ assert.match(await profit033.locator(".canva-profit-aside dd").nth(2).innerText(),/1,200 IQD/);
+ assert.equal(await profit033.locator('[data-profit-mode="kg"] td').nth(3).innerText(),"— IQD");
+ await profit033.getByRole("button",{name:"داواکردنی گۆڕینی نرخ"}).click();
+ assert.equal(await page.locator('[data-canva-screen="029"]').count(),1);
+ assert.equal(await page.locator('[data-canva-screen="029"]').getByRole("button",{name:"ناردنی داواکاری"}).isDisabled(),true);
+ await page.locator('[data-canva-screen="029"]').getByRole("button",{name:"گەڕانەوە",exact:true}).click();
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 028: preview only, before any real local DEMO price edits.
  await page.locator(".home-screen .module").nth(1).click();
  await page.locator(".home-screen .subgrid .sub").nth(2).click();

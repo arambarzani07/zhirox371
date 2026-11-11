@@ -448,3 +448,53 @@ test('Canva 032 factors derive from real units, preserve kg independence and rej
  assert.equal(inspectUnitRatios032(bad).issues.length,3);
  assert.equal(JSON.stringify(counted),before,'Ratio inspection must never mutate data');
 });
+
+test('Canva 033 original geometry and five-mode profit UI do not mutate catalogue',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-033-geometry.json'));
+ const screen=read('src/components/CanvaProfitAudit033.tsx');
+ const util=read('src/utils/profitAudit033.ts');
+ const catalog=read('src/components/ProductCatalogView.tsx');
+ const style=read('src/components/canvaOfficialV1.css');
+ assert.equal(g.design_id,layout.screens[32].id);
+ assert.equal(g.element_count,54);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,54);
+ assert.match(screen,/data-canva-screen="033"/);
+ assert.match(screen,/شیکاریی نرخی کڕین و فرۆشتن/);
+ assert.match(screen,/داواکردنی گۆڕینی نرخ/);
+ assert.doesNotMatch(screen,/updateProduct\(|addProduct\(|deleteProduct\(/);
+ assert.match(util,/grossIqd\/sellIqd/);
+ assert.match(catalog,/activeTab === 'profit-audit'/);
+ assert.match(style,/canva-profit-audit-033 \.canva-profit-layout/);
+});
+test('Canva 033 gross profit uses actual independent costs and never fabricates absent buy price',async()=>{
+ const {productProfitRows033,isTrustedProfit033}=await import('../src/utils/profitAudit033.ts');
+ const product={id:'water',base_unit:'unit',unit_purchase_price_iqd:175,
+   unit_sale_price_iqd:250,carton:{purchase_price_iqd:3800,sale_price_iqd:5000},
+   extra_packs:[{kind:'bundle',purchase_price_iqd:null,sale_price_iqd:1200},
+     {kind:'set',purchase_price_iqd:1000,sale_price_iqd:900}]};
+ const before=JSON.stringify(product);
+ const rows=productProfitRows033(product);
+ assert.deepEqual(rows.map(r=>r.mode),['unit','carton','bundle','set','kg']);
+ assert.deepEqual(rows.map(r=>r.status),['profit','profit','missing_cost','loss','not_configured']);
+ assert.equal(rows[0].grossIqd,75);
+ assert.equal(rows[0].marginPercent,30);
+ assert.equal(rows[1].grossIqd,1200);
+ assert.equal(rows[1].marginPercent,24);
+ assert.equal(rows[2].grossIqd,null);
+ assert.equal(rows[2].marginPercent,null);
+ assert.equal(rows[3].grossIqd,-100);
+ assert.equal(rows[3].marginPercent,-11.1);
+ assert.equal(rows[4].sellIqd,null);
+ assert.equal(isTrustedProfit033(rows[0]),true);
+ assert.equal(isTrustedProfit033(rows[2]),false);
+ assert.equal(productProfitRows033(null).filter(r=>r.grossIqd!==null).length,0);
+ const weighted={...product,base_unit:'kg',carton:null,extra_packs:[]};
+ assert.equal(productProfitRows033(weighted)[0].configured,false);
+ assert.equal(productProfitRows033(weighted)[4].grossIqd,75);
+ const noCost={...product,unit_purchase_price_iqd:0,carton:null,extra_packs:[]};
+ assert.equal(productProfitRows033(noCost)[0].marginPercent,null);
+ const badSale={...product,unit_sale_price_iqd:-1};
+ assert.equal(productProfitRows033(badSale)[0].status,'invalid_price');
+ assert.equal(JSON.stringify(product),before,'Audit never changes original product');
+});
