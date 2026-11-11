@@ -562,7 +562,7 @@ test('Canva 034 rejects missing unit headers and preserves zero-prefixed CSV cod
  const data=[];
  const missing=previewCsvProducts034('name,barcode,price\nئاوی نوێ,0000012,450',data);
  assert.equal(missing.ready,0);
- assert.match(missing.warnings.join(','),/ستوون/);
+ assert.match(missing.warnings.join(','),/یەکە/);
  const withBom=previewCsvProducts034('\uFEFFname,barcode,price,unit\nئاوی نوێ,0000012,450,unit',data);
  assert.equal(withBom.ready,1);
  assert.equal(withBom.rows[0].barcode,'0000012');
