@@ -117,3 +117,10 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - React directory is connected to supplier-building in Home and the plain suppliers route; existing supplier-accounts submodule is retained separately.
 - Shows existing local DEMO supplier names, internal IDs, recorded remaining debt and contact detail; no changes to supplier, cash or production records.
 - Supplier model has no trusted active/inactive flag; both status filters show no fabricated records. Creation/edit requires backend authorization and is disabled. Source layout pixel parity and production role validation are not certified.
+
+### Screen 047 — purchase requisition DRAFT (no production submission)
+- Original Canva design DAHaavwwB0c, 45 native editable text boxes at 1920×1080, documented in [047 geometry](./canva-original-screen-047-geometry.json).
+- Wired to Home 4th card / first subcard (`purchase-order` ID remains unchanged). The older operational purchase-order handler is not invoked via this Home route; its local direct order/receiving write actions are deliberately not exposed by the 047 screen.
+- React UI searches actual local-DEMO products by barcode or name, derives configured unit/carton/bundle/set/kg modes, requires a deliberate existing DEMO supplier selection and positive validated quantities. Repeated identical product/unit/supplier items merge with a maximum cap; unlike physical units are **never summed as a single count**.
+- The draft lives in this browser tab's `sessionStorage` only after explicit "save draft"; on reload its product and supplier references are revalidated. This **does not** create a purchase order, submitted request, supplier charge, stock receiving, or official audit log.
+- "Send for approval" stays disabled until a verified authorized backend request/approval workflow exists. Real DB, Canva originals, existing sales and inventory are not modified. Pixel perfect parity **not certified**.

@@ -697,3 +697,66 @@ test('Canva 046 uses real DEMO supplier values and no invented active flags',asy
  assert.equal(trustedSupplierDebt046(-5),null);
  assert.equal(JSON.stringify(data),before);
 });
+
+test('Canva 047 authentic source geometry and home purchase request route',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-047-geometry.json'));
+ const view=read('src/components/CanvaPurchaseRequest047.tsx');
+ const rules=read('src/utils/purchaseRequest047.ts');
+ const section=read('src/components/SectionWorkspace.tsx');
+ const css=read('src/components/canvaPurchaseRequest047.css');
+ assert.equal(g.design_id,layout.screens[46].id);
+ assert.equal(g.element_count,45);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,45);
+ assert.match(view,/data-canva-screen="047"/);
+ assert.match(view,/کاڵاکانی پێویست بۆ کڕین/);
+ assert.match(view,/بڕی داواکراو نابێت کەمتر لە سفر بێت/);
+ assert.match(view,/ناردن بۆ پەسەندکردن/);
+ assert.match(view,/sessionStorage\.setItem/);
+ assert.match(view,/className="canva-purchase-submit" disabled/);
+ assert.doesNotMatch(view,/receiveStock\(|addAuditLog\(|setStoreState\(|recordSupplierPayment\(/);
+ assert.match(section,/sectionId==="purchase-order"/);
+ assert.match(rules,/purchaseUnitByScan047/);
+ assert.match(css,/canva-purchase-layout/);
+});
+test('Canva 047 safe draft rejects zero, bad formats, unknown suppliers and stale product IDs',async()=>{
+ const {getPurchaseUnits047,preparePurchaseLine047,addPurchaseDraftLine047,
+  summarizePurchaseDraft047,readPurchaseDraft047,purchaseUnitByScan047,findPurchaseProducts047}
+  =await import('../src/utils/purchaseRequest047.ts');
+ const product={id:'prod-1',name:'ئاوی کانی چنار 500ml',base_unit:'unit',
+   unit_barcode:'111',unit_alias_barcodes:['112'],carton:{barcode:'211',alias_barcodes:['212']},
+   extra_packs:[{kind:'bundle',barcode:'311',alias_barcodes:['312']}]};
+ const weighted={id:'prod-2',name:'تەماتە',base_unit:'kg',unit_barcode:'511',unit_alias_barcodes:[],carton:null,extra_packs:[]};
+ const products=[product,weighted],suppliers=[{id:'sup-1',name:'دابینکەر',phone:'0770',balanceDebt:0}];
+ const original=JSON.stringify({products,suppliers});
+ assert.deepEqual(getPurchaseUnits047(product).map(x=>x.value),['unit','carton','bundle']);
+ assert.deepEqual(getPurchaseUnits047(weighted).map(x=>x.value),['kg']);
+ assert.equal(purchaseUnitByScan047(product,'212'),'carton');
+ assert.equal(purchaseUnitByScan047(product,'112'),'unit');
+ assert.equal(findPurchaseProducts047(products,'311')[0].id,'prod-1');
+ for(const qty of ['0','-1','1.5','1000001','Infinity','1e6']){
+   assert.equal(preparePurchaseLine047(products,suppliers,'prod-1','carton',qty,'sup-1').ok,false);
+ }
+ assert.equal(preparePurchaseLine047(products,suppliers,'prod-1','carton','2','missing').ok,false);
+ assert.equal(preparePurchaseLine047(products,suppliers,'deleted','unit','1','sup-1').ok,false);
+ assert.equal(preparePurchaseLine047(products,suppliers,'prod-2','unit','1','sup-1').ok,false);
+ assert.equal(preparePurchaseLine047(products,suppliers,'prod-2','kg','0.7555','sup-1').ok,false);
+ const one=preparePurchaseLine047(products,suppliers,'prod-1','carton','2','sup-1');
+ assert.equal(one.ok,true);
+ const merged=addPurchaseDraftLine047([one.line],one.line);
+ assert.equal(merged.ok,true);
+ assert.equal(merged.lines.length,1);
+ assert.equal(merged.lines[0].quantity,4);
+ assert.equal(summarizePurchaseDraft047(merged.lines).quantityText,'کارتۆن: 4');
+ const kg=preparePurchaseLine047(products,suppliers,'prod-2','kg','0.75','sup-1');
+ assert.equal(kg.ok,true);
+ const all=addPurchaseDraftLine047(merged.lines,kg.line);
+ assert.equal(all.ok,true);
+ assert.equal(all.lines.length,2);
+ assert.match(summarizePurchaseDraft047(all.lines).quantityText,/کیلۆ: 0.75/);
+ assert.equal(readPurchaseDraft047(JSON.stringify(all.lines),products,suppliers).length,2);
+ assert.deepEqual(readPurchaseDraft047(JSON.stringify(all.lines),products,[]),[]);
+ assert.deepEqual(readPurchaseDraft047(JSON.stringify([{...one.line,productId:'missing'}]),products,suppliers),[]);
+ assert.deepEqual(readPurchaseDraft047('not json',products,suppliers),[]);
+ assert.equal(JSON.stringify({products,suppliers}),original,'Draft must never mutate source data');
+});

@@ -1,0 +1,106 @@
+/* ZHIROX Canva 047 native 1920×1080 text-box proportions.
+ * Visual geometry measured; graphic/pixel parity NOT verified. PC only. */
+@media screen {
+ #app .section-workspace:has(.canva-purchase-047) {padding:0!important;background:#f4f6fa!important;height:100%!important;max-height:none!important;}
+ #app .section-workspace:has(.canva-purchase-047)>.section-workspace__header {display:none!important;}
+ #app .section-workspace:has(.canva-purchase-047)>.section-workspace__live {min-height:0;flex:1;overflow:auto;display:flex;width:100%;}
+ #app .canva-purchase-047 {
+  direction:rtl;color:#172b45;font-family:"Noto Kufi Arabic",Tahoma,sans-serif;
+  width:100%;height:100%;min-height:640px;min-width:0;box-sizing:border-box;
+  display:flex;flex-direction:column;gap:15px;padding:10px 3.25% 24px;
+ }
+ #app .canva-purchase-047 .canva-purchase-heading {
+  display:flex;justify-content:space-between;align-items:center;flex:none;
+  gap:15px;border-bottom:1px solid #dfe8f2;padding:12px 0;
+ }
+ #app .canva-purchase-047 h1 {font-size:clamp(20px,1.6vw,31px);font-weight:900;margin:0;}
+ #app .canva-purchase-047 .canva-purchase-heading nav {display:flex;gap:12px;flex-direction:row-reverse;}
+ #app .canva-purchase-047 button {
+  min-height:41px;font:inherit;font-size:13px;font-weight:900;cursor:pointer;
+  background:#fff;color:#172b45;border:1px solid #d4e0ed;border-radius:7px;
+  padding:7px 12px;
+ }
+ #app .canva-purchase-047 button:hover:not(:disabled) {background:#eff6fb;}
+ #app .canva-purchase-047 button:focus-visible {outline:2px solid #285e8a;outline-offset:2px;}
+ #app .canva-purchase-047 button:disabled {opacity:.54;cursor:not-allowed;}
+ #app .canva-purchase-047 .canva-purchase-layout {
+  direction:rtl;display:grid;grid-template-columns:minmax(0,1206fr) minmax(260px,511.2fr);
+  gap:clamp(16px,4vw,78px);flex:1;min-height:0;
+ }
+ #app .canva-purchase-047 .canva-purchase-main,#app .canva-purchase-047 .canva-purchase-summary {
+  min-width:0;min-height:600px;border:1px solid #dbe6f0;border-radius:9px;
+  padding:19px 21px;box-sizing:border-box;background:#fff;
+ }
+ #app .canva-purchase-047 h2 {font-weight:900;font-size:clamp(16px,1.13vw,22px);margin:0 0 23px;}
+ #app .canva-purchase-047 .canva-purchase-product {
+  display:flex;flex-direction:column;gap:8px;font-weight:900;font-size:13px;margin-bottom:16px;
+ }
+ #app .canva-purchase-047 .canva-purchase-product input {
+  width:100%;font:inherit;color:#172b45;background:#fff;border:1px solid #d6e1ed;
+  border-radius:7px;min-height:49px;padding:10px 12px;
+ }
+ #app .canva-purchase-047 .canva-purchase-suggestions {
+  display:flex;flex-direction:column;gap:5px;max-height:182px;overflow:auto;
+  border:1px solid #dfe8f2;border-radius:7px;padding:7px;margin:-10px 0 14px;
+ }
+ #app .canva-purchase-047 .canva-purchase-suggestions button {text-align:right;min-height:38px;}
+ #app .canva-purchase-047 .canva-purchase-fields {
+  display:grid;grid-template-columns:minmax(130px,1fr) minmax(130px,1fr) minmax(170px,1.7fr);
+  gap:15px;align-items:end;margin:20px 0 12px;
+ }
+ #app .canva-purchase-047 .canva-purchase-fields label {
+  display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:900;min-width:0;
+ }
+ #app .canva-purchase-047 .canva-purchase-fields input,#app .canva-purchase-047 .canva-purchase-fields select {
+  font:inherit;font-size:13px;color:#172b45;background:#fff;border:1px solid #d6e1ed;
+  border-radius:7px;min-height:49px;padding:7px 11px;width:100%;min-width:0;
+ }
+ #app .canva-purchase-047 .canva-purchase-addline {
+  display:flex;justify-content:flex-start;margin:4px 0 22px;
+ }
+ #app .canva-purchase-047 .canva-purchase-addline button {
+  min-width:142px;background:#1d3652;color:#fff;border-color:#1d3652;
+ }
+ #app .canva-purchase-047 .canva-purchase-table-wrap {
+  width:100%;max-height:239px;overflow:auto;
+ }
+ #app .canva-purchase-047 .canva-purchase-table {
+  width:100%;table-layout:fixed;border-collapse:collapse;direction:rtl;
+  font-size:12px;text-align:right;color:#172b45;
+ }
+ #app .canva-purchase-047 .canva-purchase-table th,#app .canva-purchase-047 .canva-purchase-table td {
+  height:57px;text-align:right;padding:8px 9px;border-bottom:1px solid #e3ebf3;overflow-wrap:anywhere;
+ }
+ #app .canva-purchase-047 .canva-purchase-table th {background:#f1f5f9;font-weight:900;}
+ #app .canva-purchase-047 .canva-purchase-table th:first-child {width:39%;}
+ #app .canva-purchase-047 .canva-purchase-table th:nth-child(2) {width:21%;}
+ #app .canva-purchase-047 .canva-purchase-table th:nth-child(3) {width:14%;}
+ #app .canva-purchase-047 .canva-purchase-table th:nth-child(4) {width:12%;}
+ #app .canva-purchase-047 .canva-purchase-table th:nth-child(5) {width:14%;}
+ #app .canva-purchase-047 .canva-purchase-delete {min-height:34px;font-size:12px;}
+ #app .canva-purchase-047 .canva-purchase-empty,#app .canva-purchase-047 .canva-purchase-rule {
+  font-size:12px;font-weight:850;color:#566d85;padding:12px;margin:15px 0 0;
+ }
+ #app .canva-purchase-047 .canva-purchase-rule {background:#f6f8fb;margin-top:8px;}
+ #app .canva-purchase-047 .canva-purchase-notice {font-size:12px;font-weight:850;color:#566d85;padding:8px;margin:5px 0;}
+ #app .canva-purchase-047 .canva-purchase-summary dl {
+  display:flex;flex-direction:column;gap:26px;margin:35px 0 70px;
+ }
+ #app .canva-purchase-047 .canva-purchase-summary dl>div {
+  display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #e3ebf3;padding-bottom:14px;
+ }
+ #app .canva-purchase-047 .canva-purchase-summary dt {font-size:12px;font-weight:900;color:#647b91;}
+ #app .canva-purchase-047 .canva-purchase-summary dd {font-weight:900;color:#172b45;font-size:16px;margin:0;}
+ #app .canva-purchase-047 .canva-purchase-submit,#app .canva-purchase-047 .canva-purchase-save {
+  width:100%;min-height:50px;margin:0 0 14px;
+ }
+ #app .canva-purchase-047 .canva-purchase-submit {background:#1d3652;color:white;border-color:#1d3652;}
+ @media(max-width:1180px) {
+  #app .canva-purchase-047 {padding-inline:12px;}
+  #app .canva-purchase-047 .canva-purchase-layout {
+   grid-template-columns:minmax(0,1.6fr) minmax(245px,1fr);gap:12px;
+  }
+  #app .canva-purchase-047 .canva-purchase-main,#app .canva-purchase-047 .canva-purchase-summary {padding:11px;}
+  #app .canva-purchase-047 .canva-purchase-fields {gap:7px;}
+ }
+}

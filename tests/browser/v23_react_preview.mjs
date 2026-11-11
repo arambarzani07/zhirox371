@@ -91,6 +91,41 @@ try {
  assert.equal(await page.locator('[data-section-id="supplier-accounts"]').count(),1);
  await page.locator(".section-workspace__home-btn").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 047: request draft only. Actual procurement, manager approval,
+ // stock movement and real supplier payments remain untouched.
+ await page.locator(".home-screen .module").nth(3).click();
+ await page.locator(".home-screen .subgrid .sub").first().click();
+ const request047=page.locator('[data-canva-screen="047"]');
+ await request047.waitFor({state:"visible"});
+ assert.equal(await request047.locator("h1").innerText(),"داواکاریی کڕین");
+ assert.equal(await request047.getByRole("button",{name:"ناردن بۆ پەسەندکردن"}).isDisabled(),true);
+ assert.equal(await request047.getByRole("button",{name:"پاشەکەوتکردنی ڕەشنووس"}).isDisabled(),true);
+ await request047.getByPlaceholder("ناوی کاڵا یان بارکۆد").fill("2000000000018");
+ await request047.getByRole("button",{name:/ئاوی کانی چنار 500ml — 2000000000018/}).click();
+ await request047.locator("#purchase-047-unit").selectOption("carton");
+ await request047.locator("#purchase-047-quantity").fill("0");
+ await request047.locator("#purchase-047-supplier").selectOption("sup-1");
+ await request047.getByRole("button",{name:"هەڵبژاردن",exact:true}).click();
+ assert.equal(await request047.locator("tbody tr[data-purchase-line]").count(),0);
+ assert.match(await request047.getByRole("status").innerText(),/گەورەتر لە سفر/);
+ await request047.locator("#purchase-047-quantity").fill("2");
+ await request047.getByRole("button",{name:"هەڵبژاردن",exact:true}).click();
+ assert.equal(await request047.locator("tbody tr[data-purchase-line]").count(),1);
+ assert.match(await request047.locator("tbody tr[data-purchase-line]").innerText(),/2000000000025/);
+ assert.match(await request047.locator(".canva-purchase-summary").innerText(),/کارتۆن: 2/);
+ assert.equal(await request047.getByRole("button",{name:"ناردن بۆ پەسەندکردن"}).isDisabled(),true);
+ await request047.getByRole("button",{name:"پاشەکەوتکردنی ڕەشنووس"}).click();
+ assert.match(await request047.getByRole("status").innerText(),/تەنها لەم وێبگەڕەدا/);
+ await request047.getByRole("button",{name:"ماڵەوە"}).click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
+ await page.locator(".home-screen .module").nth(3).click();
+ await page.locator(".home-screen .subgrid .sub").first().click();
+ await page.locator('[data-canva-screen="047"]').waitFor({state:"visible"});
+ assert.equal(await page.locator('[data-canva-screen="047"] tbody tr[data-purchase-line]').count(),1);
+ await page.locator('[data-canva-screen="047"]').getByRole("button",{name:"کڕین و دابینکەران"}).click();
+ await page.locator('[data-canva-screen="046"]').waitFor({state:"visible"});
+ await page.locator('[data-canva-screen="046"]').getByRole("button",{name:"ماڵەوە"}).click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 021: product list + detail stay in the same route, filters apply
  // in place and the item details are data-bound (not a flat Canva image).
  await page.locator(".home-screen .module").nth(1).click();
