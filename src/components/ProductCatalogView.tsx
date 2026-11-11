@@ -9,6 +9,7 @@ import { CanvaUnitPrices027 } from './CanvaUnitPrices027';
 import { CanvaBulkPrice028 } from './CanvaBulkPrice028';
 import { CanvaPermissions029 } from './CanvaPermissions029';
 import { CanvaReviewApproval030 } from './CanvaReviewApproval030';
+import { CanvaExtraBarcodes031 } from './CanvaExtraBarcodes031';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -22,7 +23,8 @@ const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' => {
+    if (activeSectionId === 'extra-barcodes' || subtab === 'extra-barcodes') return 'extra-barcodes';
     if (activeSectionId === 'review' || subtab === 'review') return 'review';
     if (activeSectionId === 'permissions' || subtab === 'permissions') return 'permissions';
     if (activeSectionId === 'bulk-prices' || subtab === 'bulk-prices') return 'bulk-prices';
@@ -35,7 +37,7 @@ export const ProductCatalogView: React.FC = () => {
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -1493,6 +1495,17 @@ export const ProductCatalogView: React.FC = () => {
         </>
       )}
 
+      {activeTab === 'extra-barcodes' && (
+        <CanvaExtraBarcodes031 products={products}
+          initialProductId={barcodeCatalogSelectedId}
+          initialMode={barcodeCatalogMode}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => setActiveTab('list')}
+          onBackToBarcodes={() => setActiveTab('barcodes')}
+          onDuplicateAudit={() => setActiveTab('duplicates')}
+          onSaveAlias={(id,updates) => updateProduct(id,updates)}/>
+      )}
+
       {activeTab === 'review' && (
         <CanvaReviewApproval030 auditLogs={auditLogs}
           onHome={() => navigateTo('home')}
@@ -1650,6 +1663,8 @@ export const ProductCatalogView: React.FC = () => {
                 </dd></div>
                 <div><dt>ژمارەی بارکۆدەکان</dt><dd>{barcodeCatalogProduct ? barcodeCatalogTotalCount : '—'}</dd></div>
               </dl>
+              <button type="button" className="secondary"
+                onClick={() => setActiveTab('extra-barcodes')}>بارکۆدە زیادەکانی هەر یەکە</button>
               <button type="button" className="canva-barcode-duplicate-open"
                 onClick={() => setActiveTab('duplicates')} title="پشکنینی بارکۆدی دووبارە">
                 بارکۆدی دووبارە تۆمار ناکرێت

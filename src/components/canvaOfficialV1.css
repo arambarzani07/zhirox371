@@ -950,3 +950,45 @@
   #app .canva-review-030 .canva-review-main,#app .canva-review-030 .canva-review-aside {padding:12px;}
  }
 }
+
+/* Native Canva 031 DAHaav2bQlc: 1920x1080, right main ~1206px,
+ * left aside ~511px; visual/pixel parity still unverified. */
+@media screen {
+ #app .canva-extra-barcodes-031 {direction:rtl;display:flex;flex-direction:column;gap:14px;min-width:0;color:#172b45;font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+ #app .canva-extra-barcodes-031 .canva-extra-heading {background:#fff;}
+ #app .canva-extra-barcodes-031 .canva-extra-layout {display:grid;direction:rtl;grid-template-columns:minmax(0,1206fr) minmax(270px,511.2fr);gap:clamp(18px,4.0625vw,78px);margin:0 3.25%;align-items:start;}
+ #app .canva-extra-barcodes-031 .canva-extra-main,#app .canva-extra-barcodes-031 .canva-extra-aside {background:#fff;border:1px solid #e0e7f0;border-radius:10px;min-width:0;min-height:650px;padding:18px 22px;}
+ #app .canva-extra-barcodes-031 h2 {margin:0 0 16px;font-size:19px;font-weight:900;line-height:1.6;text-align:right;color:#172b45;}
+ #app .canva-extra-barcodes-031 h3 {font-size:13px;font-weight:900;margin:20px 0 12px;text-align:right;}
+ #app .canva-extra-barcodes-031 .canva-extra-product-search,#app .canva-extra-barcodes-031 .canva-extra-add-form label {display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:900;min-width:0;}
+ #app .canva-extra-barcodes-031 .canva-extra-product-search input,#app .canva-extra-barcodes-031 .canva-extra-add-form input {min-height:49px;padding:9px 12px;font:inherit;font-size:13px;border:1px solid #dce5ee;border-radius:8px;background:#fff;color:#172b45;min-width:0;width:100%;}
+ #app .canva-extra-barcodes-031 .canva-extra-suggestions {border:1px solid #e3eaf1;border-radius:8px;margin-top:8px;padding:7px;display:flex;flex-direction:column;gap:5px;max-height:200px;overflow:auto;}
+ #app .canva-extra-barcodes-031 .canva-extra-suggestions button {min-height:38px;text-align:right;}
+ #app .canva-extra-barcodes-031 .canva-extra-tabs {display:flex;direction:rtl;gap:10px;flex-wrap:wrap;margin:10px 0 20px;}
+ #app .canva-extra-barcodes-031 .canva-extra-tabs button {min-height:43px;min-width:108px;font-size:13px;font-weight:900;}
+ #app .canva-extra-barcodes-031 .canva-extra-tabs button:disabled {opacity:.55;cursor:not-allowed;}
+ #app .canva-extra-barcodes-031 .canva-extra-add-form {display:flex;gap:14px;align-items:end;margin:10px 0 23px;}
+ #app .canva-extra-barcodes-031 .canva-extra-add-form label {flex:1;}
+ #app .canva-extra-barcodes-031 .canva-extra-add-form button {min-width:155px;min-height:49px;font-weight:900;}
+ #app .canva-extra-barcodes-031 .canva-extra-add-form button:disabled {opacity:.57;cursor:not-allowed;}
+ #app .canva-extra-barcodes-031 .canva-extra-table-scroll {width:100%;max-height:205px;overflow:auto;margin-top:26px;}
+ #app .canva-extra-barcodes-031 .canva-extra-table {direction:rtl;table-layout:fixed;border-collapse:collapse;width:100%;font-size:12px;text-align:right;}
+ #app .canva-extra-barcodes-031 .canva-extra-table th,#app .canva-extra-barcodes-031 .canva-extra-table td {border-bottom:1px solid #e3eaf1;padding:9px 11px;text-align:right;height:62px;overflow-wrap:anywhere;}
+ #app .canva-extra-barcodes-031 .canva-extra-table th {background:#f1f5f9;font-weight:900;}
+ #app .canva-extra-barcodes-031 .canva-extra-table th:nth-child(1) {width:38%;}
+ #app .canva-extra-barcodes-031 .canva-extra-table th:nth-child(2) {width:15%;}
+ #app .canva-extra-barcodes-031 .canva-extra-table th:nth-child(3) {width:20%;}
+ #app .canva-extra-barcodes-031 .canva-extra-table th:nth-child(4) {width:14%;}
+ #app .canva-extra-barcodes-031 .canva-extra-table th:nth-child(5) {width:13%;}
+ #app .canva-extra-barcodes-031 .canva-extra-rule {background:#f7f9fc;color:#536c85;font-size:12px;font-weight:900;padding:12px 15px;margin:22px 0 10px;}
+ #app .canva-extra-barcodes-031 .canva-extra-feedback {color:#64758d;font-size:12px;font-weight:800;margin:8px 0;}
+ #app .canva-extra-barcodes-031 .canva-extra-aside dl {display:flex;flex-direction:column;gap:21px;margin:28px 0 60px;}
+ #app .canva-extra-barcodes-031 .canva-extra-aside dl>div {display:flex;flex-direction:column;gap:9px;border-bottom:1px solid #e3eaf1;padding-bottom:13px;}
+ #app .canva-extra-barcodes-031 .canva-extra-aside dt {color:#64758d;font-size:12px;font-weight:900;}
+ #app .canva-extra-barcodes-031 .canva-extra-aside dd {margin:0;color:#172b45;font-size:16px;font-weight:900;}
+ #app .canva-extra-barcodes-031 .canva-extra-aside button {width:100%;min-height:49px;font-weight:900;margin-top:12px;}
+ @media(max-width:1180px) {
+  #app .canva-extra-barcodes-031 .canva-extra-layout {grid-template-columns:minmax(0,1.7fr) minmax(265px,1fr);gap:12px;margin:0 8px;}
+  #app .canva-extra-barcodes-031 .canva-extra-main,#app .canva-extra-barcodes-031 .canva-extra-aside {padding:12px;}
+ }
+}

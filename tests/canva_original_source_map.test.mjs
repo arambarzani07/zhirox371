@@ -355,3 +355,48 @@ test('Canva 030 displays only actual DEMO audit entries and never forges pending
   assert.equal(canFinalizeReview030('cashier','a'),false);
   assert.equal(JSON.stringify(original),before,'Inspection is read-only');
 });
+
+test('Canva 031 authentic source 42 boxes, five unit modes, and existing DEMO navigation',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-031-geometry.json'));
+ const screen=read('src/components/CanvaExtraBarcodes031.tsx');
+ const utility=read('src/utils/extraBarcodes031.ts');
+ const catalog=read('src/components/ProductCatalogView.tsx');
+ const style=read('src/components/canvaOfficialV1.css');
+ assert.equal(g.design_id,layout.screens[30].id);
+ assert.equal(g.element_count,42);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,42);
+ assert.match(screen,/data-canva-screen="031"/);
+ assert.match(screen,/بارکۆدە زیادەکانی هەر یەکە/);
+ assert.match(screen,/پشکنینی دووبارەبوونەوە/);
+ assert.match(screen,/onSubmit=\{e=>\{e.preventDefault\(\);save\(\);\}\}/);
+ assert.match(utility,/inspectDuplicateBarcode026/);
+ assert.match(utility,/aliases.length>=30/);
+ assert.match(catalog,/activeTab === 'extra-barcodes'/);
+ assert.match(style,/canva-extra-barcodes-031 \.canva-extra-layout/);
+});
+test('Canva 031 validates alias ownership for every selling mode, with no input mutation',async()=>{
+ const {isConfigured031,listBarcodes031,prepareExtraAlias031}=await import('../src/utils/extraBarcodes031.ts');
+ const p={id:'a',name:'ئاوی نموونە',base_unit:'unit',unit_barcode:'111',
+  unit_alias_barcodes:['112'],carton:{barcode:'211',alias_barcodes:['212'],units_per_carton:24},
+  extra_packs:[{kind:'bundle',barcode:'311',alias_barcodes:['312']},
+    {kind:'set',barcode:'411',alias_barcodes:[]}]};
+ const kg={id:'b',name:'کیلۆ',base_unit:'kg',unit_barcode:'511',unit_alias_barcodes:['512'],carton:null,extra_packs:[]};
+ const items=[p,kg];const snapshot=JSON.stringify(items);
+ assert.equal(isConfigured031(p,'unit'),true);
+ assert.equal(isConfigured031(p,'kg'),false);
+ assert.equal(isConfigured031(kg,'kg'),true);
+ assert.equal(listBarcodes031(p,'carton')[1].code,'212');
+ assert.equal(prepareExtraAlias031(items,'a','carton','212').ok,false);
+ assert.equal(prepareExtraAlias031(items,'a','carton','512').ok,false);
+ assert.equal(prepareExtraAlias031(items,'a','kg','613').ok,false);
+ assert.equal(prepareExtraAlias031(items,'a','unit','space code').ok,false);
+ assert.equal(prepareExtraAlias031(items,'a','set','613').ok,true);
+ const add=prepareExtraAlias031(items,'a','bundle',' 613 ');
+ assert.equal(add.ok,true);assert.deepEqual(add.updates.extra_packs[0].alias_barcodes,['312','613']);
+ const cap={...p,unit_alias_barcodes:Array.from({length:30},(_,i)=>'77'+String(i).padStart(2,'0'))};
+ assert.equal(prepareExtraAlias031([cap],'a','unit','77777').ok,false);
+ const good=prepareExtraAlias031(items,'b','kg','613');
+ assert.equal(good.ok,true);assert.deepEqual(good.updates.unit_alias_barcodes,['512','613']);
+ assert.equal(JSON.stringify(items),snapshot,'Pure validation cannot modify DEMO source input');
+});

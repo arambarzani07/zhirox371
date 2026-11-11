@@ -103,6 +103,26 @@ try {
  assert.equal(await duplicateInput.inputValue(),"");
  await duplicateScreen.getByRole("button",{name:"گەڕانەوە بۆ بارکۆدەکان"}).click();
  assert.equal(await page.locator('[data-canva-screen="024"]').count(),1);
+ // Canva 031: navigate from original barcode page and add one carton
+ // alias in the isolated local DEMO; duplicate ownership remains guarded.
+ await barcodeScreen.getByRole("button",{name:"بارکۆدە زیادەکانی هەر یەکە"}).click();
+ const extras031=page.locator('[data-canva-screen="031"]');
+ await extras031.waitFor({state:"visible"});
+ assert.equal(await extras031.locator("h1").innerText(),"بارکۆدە زیادەکانی هەر یەکە");
+ assert.equal(await extras031.locator(".canva-extra-tabs button").count(),5);
+ assert.equal(await extras031.getByRole("button",{name:"کارتۆن",exact:true}).getAttribute("aria-pressed"),"true");
+ const before031=await extras031.locator(".canva-extra-table tbody tr").count();
+ await extras031.locator("#canva-031-new-code").fill("2000000099992");
+ await extras031.getByRole("button",{name:"زیادکردن",exact:true}).click();
+ assert.equal(await extras031.locator(".canva-extra-table tbody tr").count(),before031+1);
+ assert.match(await extras031.locator(".canva-extra-table").innerText(),/2000000099992/);
+ await extras031.locator("#canva-031-new-code").fill("2000000099992");
+ await extras031.getByRole("button",{name:"زیادکردن",exact:true}).click();
+ assert.match(await extras031.getByRole("status").innerText(),/پێشتر/);
+ assert.equal(await extras031.locator(".canva-extra-table tbody tr").count(),before031+1);
+ await extras031.getByRole("button",{name:"گەڕانەوە بۆ بارکۆدەکان"}).click();
+ assert.equal(await page.locator('[data-canva-screen="024"]').count(),1);
+ assert.match(await barcodeScreen.locator(".canva-barcode-table").innerText(),/2000000099992/);
  await barcodeScreen.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 029: user-facing permission matrix is only a role specification;
