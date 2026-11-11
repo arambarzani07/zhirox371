@@ -94,7 +94,7 @@ export const summarizePurchaseDraft047=(rows:readonly PurchaseLine047[])=>{
   for(const row of rows)
     byUnit[row.unit]=Math.round(((byUnit[row.unit]||0)+row.quantity)*1000)/1000;
   return {
-    itemCount:rows.length,
+    itemCount:new Set(rows.map(row=>row.productId)).size,
     quantityText: (Object.keys(labels) as PurchaseUnit047[])
       .filter(mode=>byUnit[mode]!==undefined)
       .map(mode=>labels[mode]+': '+(byUnit[mode]||0).toLocaleString('en-US',{maximumFractionDigits:3}))

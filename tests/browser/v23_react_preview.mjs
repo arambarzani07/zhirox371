@@ -112,6 +112,7 @@ try {
  await request047.getByRole("button",{name:"هەڵبژاردن",exact:true}).click();
  assert.equal(await request047.locator("tbody tr[data-purchase-line]").count(),1);
  assert.match(await request047.locator("tbody tr[data-purchase-line]").innerText(),/2000000000025/);
+ assert.match(await request047.locator(".canva-purchase-line-supplier").innerText(),/کۆمپانیای ئەلبورز/);
  assert.match(await request047.locator(".canva-purchase-summary").innerText(),/کارتۆن: 2/);
  assert.equal(await request047.getByRole("button",{name:"ناردن بۆ پەسەندکردن"}).isDisabled(),true);
  await request047.getByRole("button",{name:"پاشەکەوتکردنی ڕەشنووس"}).click();

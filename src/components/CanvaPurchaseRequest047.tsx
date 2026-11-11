@@ -107,7 +107,7 @@ export function CanvaPurchaseRequest047(){
       <th>کاڵا</th><th>بارکۆد</th><th>یەکە</th><th>بڕ</th><th>هەڵبژاردن</th>
      </tr></thead><tbody>
       {lines.length?lines.map(line=><tr key={line.key} data-purchase-line={line.key}>
-       <td>{line.productName}</td><td><bdi>{line.barcode}</bdi></td>
+       <td><strong>{line.productName}</strong><span className="canva-purchase-line-supplier">{line.supplierName}</span></td><td><bdi>{line.barcode}</bdi></td>
        <td>{getPurchaseUnits047(products.find(p=>p.id===line.productId)||null)
         .find(x=>x.value===line.unit)?.label||'—'}</td>
        <td><bdi>{line.quantity.toLocaleString('en-US',{maximumFractionDigits:3})}</bdi></td>

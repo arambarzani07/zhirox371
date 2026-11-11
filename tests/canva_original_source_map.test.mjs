@@ -713,6 +713,7 @@ test('Canva 047 authentic source geometry and home purchase request route',()=>{
  assert.match(view,/بڕی داواکراو نابێت کەمتر لە سفر بێت/);
  assert.match(view,/ناردن بۆ پەسەندکردن/);
  assert.match(view,/sessionStorage\.setItem/);
+ assert.match(view,/canva-purchase-line-supplier/);
  assert.match(view,/className="canva-purchase-submit" disabled/);
  assert.doesNotMatch(view,/receiveStock\(|addAuditLog\(|setStoreState\(|recordSupplierPayment\(/);
  assert.match(section,/sectionId==="purchase-order"/);
@@ -748,11 +749,13 @@ test('Canva 047 safe draft rejects zero, bad formats, unknown suppliers and stal
  assert.equal(merged.lines.length,1);
  assert.equal(merged.lines[0].quantity,4);
  assert.equal(summarizePurchaseDraft047(merged.lines).quantityText,'کارتۆن: 4');
+ assert.equal(summarizePurchaseDraft047(merged.lines).itemCount,1,'Product count uses unique product IDs');
  const kg=preparePurchaseLine047(products,suppliers,'prod-2','kg','0.75','sup-1');
  assert.equal(kg.ok,true);
  const all=addPurchaseDraftLine047(merged.lines,kg.line);
  assert.equal(all.ok,true);
  assert.equal(all.lines.length,2);
+ assert.equal(summarizePurchaseDraft047(all.lines).itemCount,2);
  assert.match(summarizePurchaseDraft047(all.lines).quantityText,/کیلۆ: 0.75/);
  assert.equal(readPurchaseDraft047(JSON.stringify(all.lines),products,suppliers).length,2);
  assert.deepEqual(readPurchaseDraft047(JSON.stringify(all.lines),products,[]),[]);
