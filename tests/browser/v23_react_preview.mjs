@@ -105,6 +105,28 @@ try {
  assert.equal(await page.locator('[data-canva-screen="024"]').count(),1);
  await barcodeScreen.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 027: compare actual unit/carton prices without automatic guesses.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(2).click();
+ await page.getByRole("button",{name:"نرخەکانی هەر جۆری یەکە"}).click();
+ const perUnit027=page.locator('[data-canva-screen="027"]');
+ await perUnit027.waitFor({state:"visible"});
+ assert.equal(await perUnit027.locator(".canva-unit-price-table tbody tr").count(),5);
+ assert.equal(await perUnit027.getByRole("button",{name:"داواکردنی گۆڕینی نرخ"}).isDisabled(),true);
+ await perUnit027.getByPlaceholder("کاڵا بە ناو یان بارکۆد هەڵبژێرە").fill("2000000000018");
+ await perUnit027.getByRole("button",{name:/ئاوی کانی چنار 500ml — 2000000000018/}).click();
+ const unit027=perUnit027.locator('[data-unit-price-mode="unit"]');
+ const carton027=perUnit027.locator('[data-unit-price-mode="carton"]');
+ assert.equal(await unit027.locator("td").nth(1).innerText(),"دانە");
+ assert.match(await unit027.locator("td").nth(3).innerText(),/250/);
+ assert.equal(await carton027.locator("td").nth(2).innerText(),"24");
+ assert.match(await carton027.locator("td").nth(3).innerText(),/5,000/);
+ assert.equal(await perUnit027.locator('[data-unit-price-mode="kg"] td').first().innerText(),"—");
+ assert.equal(await perUnit027.locator(".canva-unit-price-aside dd").nth(2).innerText(),"—",
+   "Do not invent historical price-change date");
+ await perUnit027.getByRole("button",{name:"گەڕانەوە بۆ کاڵاکان"}).click();
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 025: change a local DEMO product price, then read the actual
  // before/after audit event. Never infer approval or import legacy history.
  await page.locator(".home-screen .module").nth(1).click();
@@ -135,28 +157,6 @@ try {
  await priceHistory025.getByRole("button",{name:"پشکنینی وردەکاری"}).click();
  assert.equal(await page.locator('[data-canva-screen="023"]').count(),1);
  await page.locator(".canva-catalog-new-heading").getByRole("button",{name:"ماڵەوە"}).click();
- assert.equal(await page.locator(".home-screen .module").count(),12);
- // Canva 027: compare actual unit/carton prices without automatic guesses.
- await page.locator(".home-screen .module").nth(1).click();
- await page.locator(".home-screen .subgrid .sub").nth(2).click();
- await page.getByRole("button",{name:"نرخەکانی هەر جۆری یەکە"}).click();
- const perUnit027=page.locator('[data-canva-screen="027"]');
- await perUnit027.waitFor({state:"visible"});
- assert.equal(await perUnit027.locator(".canva-unit-price-table tbody tr").count(),5);
- assert.equal(await perUnit027.getByRole("button",{name:"داواکردنی گۆڕینی نرخ"}).isDisabled(),true);
- await perUnit027.getByPlaceholder("کاڵا بە ناو یان بارکۆد هەڵبژێرە").fill("2000000000018");
- await perUnit027.getByRole("button",{name:/ئاوی کانی چنار 500ml — 2000000000018/}).click();
- const unit027=perUnit027.locator('[data-unit-price-mode="unit"]');
- const carton027=perUnit027.locator('[data-unit-price-mode="carton"]');
- assert.equal(await unit027.locator("td").nth(1).innerText(),"دانە");
- assert.match(await unit027.locator("td").nth(3).innerText(),/250/);
- assert.equal(await carton027.locator("td").nth(2).innerText(),"24");
- assert.match(await carton027.locator("td").nth(3).innerText(),/5,000/);
- assert.equal(await perUnit027.locator('[data-unit-price-mode="kg"] td').first().innerText(),"—");
- assert.equal(await perUnit027.locator(".canva-unit-price-aside dd").nth(2).innerText(),"—",
-   "Do not invent historical price-change date");
- await perUnit027.getByRole("button",{name:"گەڕانەوە بۆ کاڵاکان"}).click();
- await page.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
  await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
