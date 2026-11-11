@@ -1,23 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Product } from '../types';
-import { formatDateTime, money } from '../utils/retailHelpers';
+import { formatDateTime } from '../utils/retailHelpers';
 import { matchesUnitPriceQuery027 } from '../utils/unitPrices027';
 import { CanvaStockOverview036 } from './CanvaStockOverview036';
+import { CanvaStockHistory037 } from './CanvaStockHistory037';
+import { CanvaStockWatch } from './CanvaStockWatch';
+import { CanvaStockReceiving041 } from './CanvaStockReceiving041';
 
 export const InventoryStockView: React.FC = () => {
-  const { products, suppliers, receiveStock, adjustStock, updateProduct, stockMovements, subtab, activeSectionId, navigateTo } =
+  const { products, adjustStock, stockMovements, subtab, activeSectionId, navigateTo } =
     useApp();
 
-  const resolveMode = (): 'overview' | 'low' | 'expiry' | 'receive' | 'movements' => {
+  const resolveMode = (): 'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer' => {
     if (activeSectionId === 'low-stock' || subtab === 'low') return 'low';
     if (activeSectionId === 'expiry' || subtab === 'expiry') return 'expiry';
-    if (activeSectionId === 'stock-transfer') return 'movements';
+    if (activeSectionId === 'stock-transfer') return subtab === 'transfer' ? 'transfer' : 'movements';
     if (activeSectionId === 'receive-goods' || subtab === 'receive') return 'receive';
     return 'overview';
   };
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'low' | 'expiry' | 'receive' | 'movements'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -25,14 +28,6 @@ export const InventoryStockView: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [movementTypeFilter, setMovementTypeFilter] = useState<'all' | 'receive' | 'sale' | 'return' | 'adjust'>('all');
-
-  // Stock Receiving Form
-  const [selectedProdId, setSelectedProdId] = useState(products[0]?.id || '');
-  const [receiveMode, setReceiveMode] = useState<'unit' | 'carton'>('unit');
-  const [receiveQty, setReceiveQty] = useState<string>('5');
-  const [selectedSupplierId, setSelectedSupplierId] = useState(suppliers[0]?.id || '');
-  const [invoiceNo, setInvoiceNo] = useState('');
-  const [receiveMsg, setReceiveMsg] = useState<{ text: string; error: boolean } | null>(null);
 
   // Stock Transfer Form (in 'movements' tab)
   const [showTransferForm, setShowTransferForm] = useState(false);
@@ -62,45 +57,12 @@ export const InventoryStockView: React.FC = () => {
     };
   }, [showTransferForm]);
 
-  // Inline Expiry Date Editor
-  const [editingExpiryId, setEditingExpiryId] = useState<string | null>(null);
-  const [newExpiryValue, setNewExpiryValue] = useState<string>('');
-
   // Stock Adjustment Modal
   const [adjustingProd, setAdjustingProd] = useState<Product | null>(null);
   const [adjustDelta, setAdjustDelta] = useState<string>('1');
   const [adjustMode, setAdjustMode] = useState<'unit' | 'carton'>('unit');
   const [adjustType, setAdjustType] = useState<'add' | 'subtract'>('add');
   const [adjustReason, setAdjustReason] = useState('ژماردنی خولی کۆگا');
-
-  const selectedReceiveProd = products.find(x => x.id === selectedProdId);
-  const receiveUnitCost =
-    receiveMode === 'carton' && selectedReceiveProd?.carton?.purchase_price_iqd
-      ? selectedReceiveProd.carton.purchase_price_iqd
-      : selectedReceiveProd?.unit_purchase_price_iqd || 0;
-  const totalReceiveInvoiceCost = receiveUnitCost * (parseFloat(receiveQty) || 0);
-
-  const handleReceiveSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProdId) {
-      setReceiveMsg({ text: 'تکایە کاڵا دیاریبکە', error: true });
-      return;
-    }
-    const q = parseFloat(receiveQty);
-    if (!Number.isFinite(q) || q <= 0) {
-      setReceiveMsg({ text: 'بڕی وەرگیراو نادروستە', error: true });
-      return;
-    }
-
-    receiveStock(selectedProdId, q, receiveMode, selectedSupplierId || undefined, invoiceNo || undefined);
-    const p = products.find(x => x.id === selectedProdId);
-    setReceiveMsg({
-      text: `بڕی ${q} ${receiveMode === 'carton' ? 'کارتۆن' : 'دانە'} لە «${p?.name}» بە سەرکەوتوویی وەرگیرا و خرایە سەر کۆگا`,
-      error: false
-    });
-    setReceiveQty('5');
-    setInvoiceNo('');
-  };
 
   const handleTransferSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,27 +101,10 @@ export const InventoryStockView: React.FC = () => {
   };
 
   const overviewQuery = search.trim().toLowerCase();
-  const filteredProducts = products
-    .filter(p => {
-      if (activeTab === 'overview') {
-        return !overviewQuery || matchesUnitPriceQuery027(p, overviewQuery)
-          || Boolean(p.category?.toLowerCase().includes(overviewQuery));
-      }
-      const match = p.name.toLowerCase().includes(search.toLowerCase()) || p.unit_barcode.includes(search);
-      if (!match) return false;
-      if (activeTab === 'low') return p.stock <= (p.min_stock ?? 10);
-      if (activeTab === 'expiry') return Boolean(p.expiry_date);
-      return true;
-    })
-    .sort((a, b) => {
-      if (activeTab === 'expiry') {
-        return (a.expiry_date || '9999-12-31').localeCompare(b.expiry_date || '9999-12-31');
-      }
-      if (activeTab === 'low') {
-        return a.stock - b.stock;
-      }
-      return 0;
-    });
+  const filteredProducts = overviewQuery
+    ? products.filter(p => matchesUnitPriceQuery027(p, overviewQuery)
+      || Boolean(p.category?.toLowerCase().includes(overviewQuery)))
+    : products;
 
   const filteredMovements = stockMovements.filter(m => {
     const matchSearch =
@@ -171,212 +116,16 @@ export const InventoryStockView: React.FC = () => {
     return true;
   });
 
-  const totalUnitsInStock = products.reduce((s, p) => s + p.stock, 0);
   const lowStockCount = products.filter(p => p.stock <= (p.min_stock ?? 10)).length;
-  const expiryTrackedCount = products.filter(p => Boolean(p.expiry_date)).length;
-
-  const getDaysUntilExpiry = (dateStr?: string | null): number | null => {
-    if (!dateStr) return null;
-    const target = new Date(dateStr).getTime();
-    if (Number.isNaN(target)) return null;
-    return Math.ceil((target - Date.now()) / (1000 * 3600 * 24));
-  };
+  const usesCanvaFrame = activeTab !== 'transfer';
 
   return (
-    <div className={activeTab === 'overview' ? 'ws-stack stock-036-shell' : 'ws-stack'}>
-      {/* 1. RECEIVE GOODS SUBMODULE (وەرگرتنی کاڵا) */}
-      {activeTab === 'receive' && (
-        <>
-          <div className="ws-kpi-grid">
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کۆی جووڵەی وەرگرتن لە دابینکەران</span>
-              <span className="ws-kpi-value positive">
-                {stockMovements.filter(m => m.type === 'receive').length} وەسڵ
-              </span>
-              <span className="ws-kpi-sub">هاوردەی کاڵا بۆ ناو کۆگای مارکێت</span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">تێچووی چاوەڕوانکراوی وەسڵی ئێستا</span>
-              <span className="ws-kpi-value">{money(totalReceiveInvoiceCost)}</span>
-              <span className="ws-kpi-sub">ڕاستەوخۆ دەچێتە سەر حیسابی دابینکەر</span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کۆی یەکەکانی ناو کۆگا</span>
-              <span className="ws-kpi-value">{totalUnitsInStock.toLocaleString('en-US')}</span>
-              <span className="ws-kpi-sub">لە سەرجەم کاڵاکانی فرۆشگا</span>
-            </div>
-          </div>
+    <div className={usesCanvaFrame ? 'ws-stack stock-036-shell' : 'ws-stack'}>
+      {activeTab === 'receive' && <CanvaStockReceiving041 />}
 
-          <div className="ws-panel">
-            <h2 className="ws-panel-title">تۆمارکردنی وەرگرتنی کاڵا لە دابینکەر بۆ ناو کۆگا</h2>
-            {receiveMsg && (
-              <div
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  marginBottom: '8px',
-                  background: receiveMsg.error ? '#fef2f2' : '#f0fdf4',
-                  border: `1px solid ${receiveMsg.error ? '#fca5a5' : '#bbf7d0'}`,
-                  color: receiveMsg.error ? '#991b1b' : '#166534',
-                  fontWeight: 800,
-                  fontSize: '12px'
-                }}
-              >
-                {receiveMsg.text}
-              </div>
-            )}
+      {activeTab === 'movements' && <CanvaStockHistory037 />}
 
-            <form onSubmit={handleReceiveSubmit} className="ws-form-grid">
-              <label className="form-col">
-                دابینکەر / کۆمپانیا
-                <select value={selectedSupplierId} onChange={e => setSelectedSupplierId(e.target.value)}>
-                  <option value="">-- هەڵبژاردنی دابینکەر (کڕینی نەختینە) --</option>
-                  {suppliers.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} (قەرز: {money(s.balanceDebt)})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="form-col">
-                کاڵا *
-                <select
-                  value={selectedProdId}
-                  onChange={e => {
-                    setSelectedProdId(e.target.value);
-                    const p = products.find(x => x.id === e.target.value);
-                    if (p && !p.carton) setReceiveMode('unit');
-                  }}
-                  required
-                >
-                  <option value="">-- کاڵا هەڵبژێرە --</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (کۆگا: {p.stock})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="form-col">
-                شێوازی وەرگرتن
-                <select
-                  value={receiveMode}
-                  onChange={e => setReceiveMode(e.target.value as 'unit' | 'carton')}
-                >
-                  <option value="unit">دانە / کگم ({money(selectedReceiveProd?.unit_purchase_price_iqd || 0)})</option>
-                  <option value="carton" disabled={!selectedReceiveProd?.carton}>
-                    {selectedReceiveProd?.carton
-                      ? `کارتۆن (${selectedReceiveProd.carton.units_per_carton} دانە · ${money(selectedReceiveProd.carton.purchase_price_iqd || 0)})`
-                      : 'کارتۆن (بەردەست نییە)'}
-                  </option>
-                </select>
-              </label>
-
-              <label className="form-col">
-                بڕی وەرگیراو *
-                <input
-                  type="number"
-                  min="0.1"
-                  step="any"
-                  value={receiveQty}
-                  onChange={e => setReceiveQty(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="form-col">
-                ژمارەی وەسڵی کڕین
-                <input
-                  type="text"
-                  value={invoiceNo}
-                  onChange={e => setInvoiceNo(e.target.value)}
-                  dir="ltr"
-                  placeholder="INV-9842"
-                />
-              </label>
-
-              <button type="submit" className="primary">
-                پاشەکەوتکردنی وەرگرتن ({money(totalReceiveInvoiceCost)})
-              </button>
-            </form>
-          </div>
-
-          <div className="section-workspace__table">
-            <strong className="section-workspace__metric">
-              تۆماری وەرگرتن و جووڵەکانی کۆگا ({stockMovements.length} جووڵە)
-            </strong>
-            <table>
-              <thead>
-                <tr>
-                  <th>بەروار و کات</th>
-                  <th>ناوی کاڵا</th>
-                  <th>جۆری جووڵە</th>
-                  <th>بڕی زیادبوو / کەمبوو</th>
-                  <th>کۆگای پێشوو</th>
-                  <th>کۆگای نوێ</th>
-                  <th>ئاماژە</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stockMovements.length === 0 ? (
-                  <tr>
-                    <td className="section-workspace__empty" colSpan={7}>
-                      هیچ وەرگرتنێکی نوێ تۆمارنەکراوە
-                    </td>
-                  </tr>
-                ) : (
-                  stockMovements.map(m => (
-                    <tr key={m.id}>
-                      <td style={{ direction: 'ltr' }}>{formatDateTime(m.createdAt)}</td>
-                      <td>
-                        <strong>{m.productName}</strong>
-                      </td>
-                      <td>
-                        <span
-                          className={`ws-badge ${
-                            m.type === 'receive' || m.type === 'return'
-                              ? 'success'
-                              : m.type === 'sale'
-                              ? 'warning'
-                              : ''
-                          }`}
-                        >
-                          {m.type === 'receive'
-                            ? 'وەرگرتن (کڕین)'
-                            : m.type === 'sale'
-                            ? 'فرۆشتن'
-                            : m.type === 'return'
-                            ? 'گەڕاندنەوە'
-                            : 'گواستنەوە / ڕێکخستن'}
-                        </span>
-                      </td>
-                      <td
-                        style={{
-                          direction: 'ltr',
-                          fontWeight: 900,
-                          color: m.quantityDelta > 0 ? '#15803d' : '#b91c1c'
-                        }}
-                      >
-                        {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta}
-                      </td>
-                      <td>{m.previousStock}</td>
-                      <td>
-                        <strong>{m.newStock}</strong>
-                      </td>
-                      <td>{m.reference}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {/* 2. STOCK MOVEMENTS & TRANSFERS SUBMODULE (گواستنەوەی کۆگا) */}
-      {activeTab === 'movements' && (
+      {activeTab === 'transfer' && (
         <>
           <div className="ws-kpi-grid">
             <div className="ws-kpi-card">
@@ -430,6 +179,8 @@ export const InventoryStockView: React.FC = () => {
             )}
 
             <div className="ws-toolbar" style={{ marginBottom: 0 }}>
+              <button type="button" className="secondary"
+                onClick={() => navigateTo('stock', 'receive', 'stock-transfer')}>گەڕانەوە بۆ جووڵەکان</button>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                 {(
                   [
@@ -639,190 +390,8 @@ export const InventoryStockView: React.FC = () => {
           onMovements={() => navigateTo('stock', 'receive', 'stock-transfer')} />
       )}
 
-      {/* 3. LOW STOCK AND EXPIRY SUBMODULES */}
       {(activeTab === 'low' || activeTab === 'expiry') && (
-        <>
-          <div className="ws-kpi-grid">
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کۆی یەکەکانی ناو کۆگا</span>
-              <span className="ws-kpi-value">{totalUnitsInStock.toLocaleString('en-US')}</span>
-              <span className="ws-kpi-sub">لە سەرجەم کاڵا چالاکەکانی فرۆشگا</span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کاڵا کەمبووەکان</span>
-              <span className={`ws-kpi-value ${lowStockCount > 0 ? 'negative' : 'positive'}`}>
-                {lowStockCount}
-              </span>
-              <span className="ws-kpi-sub">پێویستی بە داواکردنەوەی کڕینە</span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کاڵای خاوەن بەرواری بەسەرچوون (FEFO)</span>
-              <span className="ws-kpi-value">{expiryTrackedCount}</span>
-              <span className="ws-kpi-sub">چاودێریکراو بەپێی نزیکترین بەروار</span>
-            </div>
-          </div>
-
-          <div className="ws-panel">
-            <div className="ws-toolbar" style={{ marginBottom: 0 }}>
-              <span style={{ fontWeight: 900, fontSize: '13px', color: '#1d3450' }}>
-                {activeTab === 'low'
-                  ? 'لیستی کاڵا کەمبووەکانی کۆگا (کۆگا ≤ کەمترین بڕ)'
-                  : 'چاودێری بەرواری بەسەرچوونی کاڵاکان (ڕیزبەندکراو بەپێی FEFO)'}
-              </span>
-              <input
-                type="text"
-                className="input-search"
-                placeholder="گەڕان لە کۆگا بە ناو یان بارکۆد..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="section-workspace__table">
-            <strong className="section-workspace__metric">
-              {activeTab === 'low'
-                ? `کاڵا کەمبووەکان لە کۆگا (${filteredProducts.length} کاڵا)`
-                : `کاڵاکانی خاوەن بەرواری بەسەرچوون (${filteredProducts.length} کاڵا)`}
-            </strong>
-            <table>
-              <thead>
-                <tr>
-                  <th>ناوی کاڵا</th>
-                  <th>بارکۆد</th>
-                  <th>بڕی بەردەست</th>
-                  <th>کەمترین بڕ</th>
-                  <th>یەکە</th>
-                  <th>هاوتای کارتۆن</th>
-                  {activeTab === 'expiry' && <th>بەرواری بەسەرچوون</th>}
-                  {activeTab === 'expiry' && <th>ماوەی ماوە</th>}
-                  <th>کردار</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.length === 0 ? (
-                  <tr>
-                    <td className="section-workspace__empty" colSpan={activeTab === 'expiry' ? 9 : 7}>
-                      هیچ کاڵایەک لەم پۆلەدا نەدۆزرایەوە
-                    </td>
-                  </tr>
-                ) : (
-                  filteredProducts.map(p => {
-                    const cartonEquiv = p.carton
-                      ? (p.stock / p.carton.units_per_carton).toFixed(1)
-                      : null;
-                    const daysLeft = getDaysUntilExpiry(p.expiry_date);
-
-                    return (
-                      <tr key={p.id}>
-                        <td>
-                          <strong>{p.name}</strong>
-                        </td>
-                        <td style={{ direction: 'ltr', fontWeight: 800 }}>{p.unit_barcode}</td>
-                        <td
-                          style={{
-                            fontWeight: 900,
-                            color: p.stock <= 0 ? '#b91c1c' : p.stock <= (p.min_stock ?? 10) ? '#b45309' : '#15803d'
-                          }}
-                        >
-                          {p.stock}
-                        </td>
-                        <td>{p.min_stock ?? 10}</td>
-                        <td>{p.base_unit === 'kg' ? 'کیلۆگرام' : 'دانە'}</td>
-                        <td>
-                          {cartonEquiv
-                            ? `${cartonEquiv} کارتۆن (${p.carton?.units_per_carton} دانە)`
-                            : '—'}
-                        </td>
-                        {activeTab === 'expiry' && (
-                          <td style={{ direction: 'ltr', fontWeight: 900 }}>
-                            {editingExpiryId === p.id ? (
-                              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                <input
-                                  type="date"
-                                  value={newExpiryValue}
-                                  onChange={e => setNewExpiryValue(e.target.value)}
-                                  style={{ padding: '3px 6px' }}
-                                />
-                                <button
-                                  type="button"
-                                  className="primary"
-                                  onClick={() => {
-                                    if (newExpiryValue) {
-                                      updateProduct(p.id, { expiry_date: newExpiryValue });
-                                    }
-                                    setEditingExpiryId(null);
-                                  }}
-                                >
-                                  پاشەکەوت
-                                </button>
-                              </div>
-                            ) : (
-                              p.expiry_date || '—'
-                            )}
-                          </td>
-                        )}
-                        {activeTab === 'expiry' && (
-                          <td>
-                            {daysLeft !== null ? (
-                              <span
-                                className={`ws-badge ${
-                                  daysLeft <= 0 ? 'danger' : daysLeft <= 30 ? 'warning' : 'success'
-                                }`}
-                              >
-                                {daysLeft <= 0
-                                  ? 'بەسەرچووە'
-                                  : daysLeft <= 30
-                                  ? `${daysLeft} ڕۆژ ماوە (نزیک)`
-                                  : `${daysLeft} ڕۆژ ماوە`}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
-                          </td>
-                        )}
-                        <td>
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            {activeTab === 'low' && (
-                              <button
-                                type="button"
-                                className="primary"
-                                onClick={() =>
-                                  adjustStock(p.id, 20, 'unit', 'پڕکردنەوەی خێرای کاڵای کەمبوو')
-                                }
-                              >
-                                + پڕکردنەوە (20)
-                              </button>
-                            )}
-                            {activeTab === 'expiry' && (
-                              <button
-                                type="button"
-                                className="secondary"
-                                onClick={() => {
-                                  setEditingExpiryId(p.id);
-                                  setNewExpiryValue(p.expiry_date || '2027-01-01');
-                                }}
-                              >
-                                نوێکردنەوەی بەروار
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="secondary"
-                              onClick={() => openStockAdjustment(p)}
-                            >
-                              ڕێکخستنی بڕ (+/−)
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
+        <CanvaStockWatch key={activeTab} mode={activeTab} onAdjust={openStockAdjustment} />
       )}
 
       {/* Adjust Stock Modal */}

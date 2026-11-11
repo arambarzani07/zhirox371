@@ -269,3 +269,127 @@
     color: #fff;
   }
 }
+
+@media screen {
+  #app .stock-workflow-filters {
+    display: grid;
+    gap: clamp(8px, 1.8vh, 20px);
+    margin-bottom: clamp(12px, 2vh, 22px);
+  }
+
+  #app .stock-workflow-filters > label {
+    display: grid;
+    width: 70%;
+    gap: 4px;
+  }
+
+  #app .stock-workflow-filters input,
+  #app .stock-workflow-detail input {
+    min-width: 0;
+    min-height: clamp(38px, 6.2vh, 67px);
+    padding: 8px 12px;
+    background: var(--stock-field) !important;
+    color: var(--stock-muted) !important;
+    border-color: var(--stock-border) !important;
+  }
+
+  #app .stock-workflow-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  #app .canva-stock-036 .stock-workflow-tabs button {
+    min-width: 15%;
+    min-height: clamp(32px, 4.5vh, 48px);
+    background: var(--stock-field);
+  }
+
+  #app .canva-stock-036 .stock-workflow-tabs button[aria-pressed="true"] {
+    background: var(--stock-ink);
+    color: #fff;
+  }
+
+  #app .canva-stock-036 .stock-workflow-selected td {
+    background: var(--stock-teal) !important;
+  }
+
+  #app .canva-stock-036 .stock-workflow-detail {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 12px;
+    overflow-wrap: anywhere;
+  }
+
+  #app .stock-workflow-detail label { display: grid; gap: 4px; }
+
+  #app .canva-stock-036 .stock-036-actions button.stock-workflow-link {
+    min-height: 32px;
+    padding: 3px 8px;
+    font-size: .83em;
+  }
+
+  #app .canva-stock-036 .stock-036-actions button:disabled {
+    opacity: .55;
+    cursor: default;
+  }
+
+  #app .canva-stock-036:not([data-canva-screen="036"]) .stock-036-summary dd {
+    font-size: clamp(16px, 1.2vw, 23px);
+    overflow-wrap: anywhere;
+  }
+
+  #app [data-canva-screen="037"] .stock-036-summary dl div:nth-child(2),
+  #app :is([data-canva-screen="038"], [data-canva-screen="039"]) .stock-036-summary dl div:nth-child(2) {
+    background: var(--stock-field);
+  }
+
+  #app [data-canva-screen="037"] .stock-036-summary dl div:nth-child(3),
+  #app :is([data-canva-screen="038"], [data-canva-screen="039"]) .stock-036-summary dl div:first-child {
+    background: var(--stock-teal);
+  }
+
+  #app [data-canva-screen="039"] .stock-036-note {
+    background: #fcf1ec;
+  }
+}
+
+@media screen {
+  #app .stock-receive-form {
+    display: grid;
+    gap: clamp(8px, 1.5vh, 16px);
+    margin: 0 0 clamp(12px, 2.6vh, 28px);
+  }
+
+  #app .stock-receive-form .stock-036-filters { margin: 0; }
+  #app .stock-receive-form label { display: grid; gap: 4px; }
+
+  #app .stock-receive-form input {
+    min-width: 0;
+    min-height: clamp(32px, 4.8vh, 52px);
+    padding: 6px 10px;
+    background: var(--stock-field) !important;
+    color: var(--stock-muted) !important;
+    border-color: var(--stock-border) !important;
+  }
+
+  #app .stock-receive-units {
+    display: grid;
+    grid-template-columns: 1fr minmax(60px, 15%);
+    gap: 12px;
+    align-items: end;
+  }
+
+  #app .stock-receive-form button:disabled { opacity: .65; }
+}
+
+@media screen {
+  #app [data-canva-screen="037"] .stock-036-summary:has(.stock-workflow-detail) dl {
+    gap: clamp(8px, 1.4vh, 15px);
+    margin-block: clamp(10px, 1.5vh, 16px);
+  }
+
+  #app [data-canva-screen="037"] .stock-036-summary:has(.stock-workflow-detail) dl div {
+    min-height: clamp(55px, 7.5vh, 81px);
+  }
+}

@@ -27,6 +27,9 @@
 | Original screen 033 | Five-unit read-only gross profit audit from real local-DEMO selling/purchase prices, absent or zero purchase cost withheld, gross margin based on selling price; link to disabled 029 permission request, no write path; **pixel parity NOT verified** |
 | Original screen 034 | Local CSV file **preview only**: explicit four-column name/barcode/price/base-unit validation, active-catalog aliases and within-file collisions, row counts, invalid price and unsupported pack units. Legacy direct importer entry routes here; **no approvals or writes**, pixel parity unverified |
 | Original screen 035 | Source-based product/barcode deactivation and restoration **read-only** view: actual registered unit/carton/pack barcodes but status **unverified** (no active/retired state in DEMO model), local reason draft, all deactivation/restoration actions disabled; no mutation/history fabrication, pixel parity unverified |
+| Original PNG exports | 148/148 in [canva-exports](./canva-exports), all 1920 × 1080 |
+| Original screens 036–039 | Stock overview, movement history, low-stock alerts and expiry tracking use existing local data. Browser checks cover search, filters, movement details and local edits at 1920 × 1080 and 1366 × 768. |
+| Original screen 041 | Local receiving uses the existing stock and supplier handlers for units, cartons and weight. Bundle, set and per-lot expiry are unavailable in the receiving model. |
 | Pixel-perfect typography, shapes, icons, colors, responsive states | **Not verified** |
 | Real role-based permission approval for price edits | **Not verified in preview**; approval request is disabled rather than presented as real |
 | Functional POS parity for all 148 screens | **Not done — NO-GO** |
@@ -75,9 +78,6 @@ validated by these design reference checks.
 9. Do not make changes to actual supermarket database as part of a design port.
 
 ## Required to finish the *same* design in GitHub
-- Obtain authorized original full-resolution image exports or editable design
-  layer metadata for **all 148 screens**. The current Canva connector does not
-  supply these exports; the account owner can provide them through Canva.
 - Implement each screen as React/TypeScript/CSS at 1920×1080 using original
   spacing, colors, fonts, iconography and UI states.
 - Verify every screen against the authentic reference at desktop resolution,
