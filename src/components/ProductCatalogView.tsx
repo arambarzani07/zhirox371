@@ -10,6 +10,7 @@ import { CanvaBulkPrice028 } from './CanvaBulkPrice028';
 import { CanvaPermissions029 } from './CanvaPermissions029';
 import { CanvaReviewApproval030 } from './CanvaReviewApproval030';
 import { CanvaExtraBarcodes031 } from './CanvaExtraBarcodes031';
+import { CanvaUnitRatios032 } from './CanvaUnitRatios032';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -23,7 +24,8 @@ const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' | 'unit-ratios' => {
+    if (activeSectionId === 'unit-ratios' || subtab === 'unit-ratios') return 'unit-ratios';
     if (activeSectionId === 'extra-barcodes' || subtab === 'extra-barcodes') return 'extra-barcodes';
     if (activeSectionId === 'review' || subtab === 'review') return 'review';
     if (activeSectionId === 'permissions' || subtab === 'permissions') return 'permissions';
@@ -37,7 +39,7 @@ export const ProductCatalogView: React.FC = () => {
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' | 'extra-barcodes' | 'unit-ratios'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -1363,6 +1365,9 @@ export const ProductCatalogView: React.FC = () => {
                 setUnitPrice027ProductId(null);
                 setActiveTab('unit-prices');
               }}>نرخەکانی هەر جۆری یەکە</button>
+              <button type="button" className="secondary" onClick={() => setActiveTab('unit-ratios')}>
+                ڕێژەی گۆڕینی یەکەکان
+              </button>
               <button type="button" className="secondary" onClick={() => setActiveTab('bulk-prices')}>
                 گۆڕینی نرخ بەکۆمەڵ
               </button>
@@ -1493,6 +1498,12 @@ export const ProductCatalogView: React.FC = () => {
             </table>
           </div>
         </>
+      )}
+
+      {activeTab === 'unit-ratios' && (
+        <CanvaUnitRatios032 products={products}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => setActiveTab('list')}/>
       )}
 
       {activeTab === 'extra-barcodes' && (

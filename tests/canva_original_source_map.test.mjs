@@ -400,3 +400,51 @@ test('Canva 031 validates alias ownership for every selling mode, with no input 
  assert.equal(good.ok,true);assert.deepEqual(good.updates.unit_alias_barcodes,['512','613']);
  assert.equal(JSON.stringify(items),snapshot,'Pure validation cannot modify DEMO source input');
 });
+
+test('Canva 032 authentic geometry and actual read-only unit ratio route',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-032-geometry.json'));
+ const screen=read('src/components/CanvaUnitRatios032.tsx');
+ const util=read('src/utils/unitRatios032.ts');
+ const catalog=read('src/components/ProductCatalogView.tsx');
+ const css=read('src/components/canvaOfficialV1.css');
+ assert.equal(g.design_id,layout.screens[31].id);
+ assert.equal(g.element_count,50);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,50);
+ assert.match(screen,/data-canva-screen="032"/);
+ assert.match(screen,/یەکەی سەرەکی بۆ کاڵای ژمێردراو/);
+ assert.match(screen,/داواکردنی پاشەکەوتکردن/);
+ assert.doesNotMatch(screen,/updateProduct\(|addProduct\(|deleteProduct\(/);
+ assert.match(util,/unitRatioRows032/);
+ assert.match(util,/base_unit==='kg'/);
+ assert.match(catalog,/activeTab === 'unit-ratios'/);
+ assert.match(css,/canva-unit-ratios-032 \.canva-ratio-layout/);
+});
+test('Canva 032 factors derive from real units, preserve kg independence and reject corrupt quantities',async()=>{
+ const {unitRatioRows032,inspectUnitRatios032}=await import('../src/utils/unitRatios032.ts');
+ const counted={id:'a',base_unit:'unit',carton:{units_per_carton:24},
+   extra_packs:[{kind:'bundle',units_per_pack:6},{kind:'set',units_per_pack:2}]};
+ const before=JSON.stringify(counted);
+ const rows=unitRatioRows032(counted);
+ assert.deepEqual(rows.map(r=>r.mode),['unit','carton','bundle','set','kg']);
+ assert.deepEqual(rows.map(r=>r.factor),[1,24,6,2,null]);
+ assert.equal(rows[0].baseUnit,'دانە');
+ assert.equal(rows[1].baseQuantity,24);
+ assert.equal(rows[4].baseUnit,'کیلۆ');
+ assert.equal(rows[4].status,'سەربەخۆ');
+ assert.equal(inspectUnitRatios032(counted).verifiedCount,4);
+ assert.deepEqual(inspectUnitRatios032(counted).issues,[]);
+ const noPacks={...counted,carton:null,extra_packs:[]};
+ assert.equal(unitRatioRows032(noPacks)[1].factor,null);
+ assert.equal(unitRatioRows032(noPacks)[1].status,'دیاری نەکراوە');
+ assert.deepEqual(inspectUnitRatios032(null).issues,['سەرەتا کاڵا هەڵبژێرە']);
+ const weighted={...counted,base_unit:'kg',carton:null,extra_packs:[]};
+ assert.equal(unitRatioRows032(weighted)[0].factor,null);
+ assert.equal(unitRatioRows032(weighted)[4].factor,1);
+ assert.equal(unitRatioRows032(weighted)[4].status,'چالاک');
+ const bad={...counted,carton:{units_per_carton:0},
+   extra_packs:[{kind:'bundle',units_per_pack:1.5},{kind:'set',units_per_pack:-2}]};
+ assert.equal(unitRatioRows032(bad)[1].status,'پشکنین پێویستە');
+ assert.equal(inspectUnitRatios032(bad).issues.length,3);
+ assert.equal(JSON.stringify(counted),before,'Ratio inspection must never mutate data');
+});

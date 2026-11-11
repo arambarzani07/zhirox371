@@ -162,6 +162,29 @@ try {
  await review030.getByRole("button",{name:"کاڵا و نرخ"}).click();
  await page.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 032: source-based base-unit factor table, no silent conversion
+ // from kilograms to pieces and no unverified write request.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(2).click();
+ await page.getByRole("button",{name:"ڕێژەی گۆڕینی یەکەکان"}).click();
+ const ratios032=page.locator('[data-canva-screen="032"]');
+ await ratios032.waitFor({state:"visible"});
+ assert.equal(await ratios032.locator("h1").innerText(),"ڕێژەی گۆڕینی یەکەکان");
+ assert.equal(await ratios032.locator(".canva-ratio-table tbody tr").count(),5);
+ assert.equal(await ratios032.getByRole("button",{name:"داواکردنی پاشەکەوتکردن"}).isDisabled(),true);
+ await ratios032.getByPlaceholder("کاڵا بە بارکۆد یان ناو هەڵبژێرە").fill("2000000000018");
+ await ratios032.getByRole("button",{name:/ئاوی کانی چنار 500ml — 2000000000018/}).click();
+ const carton032=ratios032.locator('[data-unit-ratio-mode="carton"]');
+ assert.equal(await carton032.locator("td").nth(0).innerText(),"کارتۆن");
+ assert.equal(await carton032.locator("td").nth(1).innerText(),"دانە");
+ assert.equal(await carton032.locator("td").nth(2).innerText(),"24");
+ assert.equal(await carton032.locator("td").nth(4).innerText(),"چالاک");
+ assert.equal(await ratios032.locator('[data-unit-ratio-mode="kg"] td').nth(2).innerText(),"—");
+ await ratios032.getByRole("button",{name:"پشکنینی ڕێژەکان"}).click();
+ assert.match(await ratios032.getByRole("status").innerText(),/2 جۆری یەکەی چالاک/);
+ await ratios032.getByRole("button",{name:"گەڕانەوە",exact:true}).click();
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 028: preview only, before any real local DEMO price edits.
  await page.locator(".home-screen .module").nth(1).click();
  await page.locator(".home-screen .subgrid .sub").nth(2).click();
