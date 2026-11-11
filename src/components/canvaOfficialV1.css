@@ -841,3 +841,40 @@
   #app .canva-unit-prices-027 .canva-unit-price-main,#app .canva-unit-prices-027 .canva-unit-price-aside {padding:12px;}
  }
 }
+
+/* Canva 028 original DAHaaY6cxsg: text panel widths 1206px and 511.2px,
+ * 1920x1080. No claim of full graphic or pixel parity. */
+@media screen {
+ #app .canva-bulk-price-028 {direction:rtl;display:flex;flex-direction:column;gap:14px;min-width:0;color:#172b45;font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+ #app .canva-bulk-price-028 .canva-bulk-price-heading {background:#fff;}
+ #app .canva-bulk-price-028 .canva-bulk-price-layout {display:grid;direction:rtl;grid-template-columns:minmax(0,1206fr) minmax(280px,511.2fr);gap:clamp(18px,4.0625vw,78px);margin:0 3.25%;align-items:start;}
+ #app .canva-bulk-price-028 .canva-bulk-price-main,#app .canva-bulk-price-028 .canva-bulk-price-aside {background:#fff;border:1px solid #e0e7f0;border-radius:10px;padding:18px 22px;min-width:0;min-height:650px;}
+ #app .canva-bulk-price-028 h2 {margin:0 0 18px;font-size:19px;font-weight:900;line-height:1.6;text-align:right;color:#172b45;}
+ #app .canva-bulk-price-028 h3 {margin:14px 0 10px;font-size:13px;font-weight:900;text-align:right;}
+ #app .canva-bulk-price-028 .canva-bulk-price-filters {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;margin-bottom:22px;}
+ #app .canva-bulk-price-028 .canva-bulk-price-filters label {display:flex;flex-direction:column;gap:8px;text-align:right;font-size:13px;font-weight:900;}
+ #app .canva-bulk-price-028 .canva-bulk-price-filters input,#app .canva-bulk-price-028 .canva-bulk-price-filters select {height:49px;min-width:0;padding:8px 12px;font:inherit;font-size:13px;color:#172b45;background:#fff;border:1px solid #dce5ee;border-radius:8px;}
+ #app .canva-bulk-price-028 .canva-bulk-price-type-picker,#app .canva-bulk-price-028 .canva-bulk-price-adjustment {display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;direction:rtl;}
+ #app .canva-bulk-price-028 .canva-bulk-price-type-picker button,#app .canva-bulk-price-028 .canva-bulk-price-adjustment button {min-height:41px;min-width:120px;font-size:13px;font-weight:900;}
+ #app .canva-bulk-price-028 .canva-bulk-price-type-picker button:disabled {opacity:.56;cursor:not-allowed;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table-scroll {width:100%;margin-top:22px;max-height:267px;overflow:auto;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table {border-collapse:collapse;width:100%;table-layout:fixed;direction:rtl;text-align:right;font-size:12px;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table th,#app .canva-bulk-price-028 .canva-bulk-price-table td {height:68px;padding:9px 10px;border-bottom:1px solid #e3eaf1;text-align:right;overflow-wrap:anywhere;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table th {background:#f1f5f9;font-weight:900;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table th:nth-child(1) {width:33%;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table th:nth-child(2) {width:18%;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table th:nth-child(3) {width:18%;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table th:nth-child(4) {width:16%;}
+ #app .canva-bulk-price-028 .canva-bulk-price-table th:nth-child(5) {width:15%;}
+ #app .canva-bulk-price-028 .canva-bulk-price-warning {background:#f7f9fc;color:#566e82;font-size:12px;font-weight:900;margin:24px 0 0;padding:13px 15px;}
+ #app .canva-bulk-price-028 .canva-bulk-price-aside dl {display:flex;flex-direction:column;gap:20px;margin:25px 0 70px;}
+ #app .canva-bulk-price-028 .canva-bulk-price-aside dl>div {display:flex;flex-direction:column;gap:8px;padding-bottom:13px;border-bottom:1px solid #e3eaf1;}
+ #app .canva-bulk-price-028 .canva-bulk-price-aside dt {color:#64758d;font-size:12px;font-weight:900;}
+ #app .canva-bulk-price-028 .canva-bulk-price-aside dd {margin:0;font-size:15px;font-weight:900;color:#172b45;}
+ #app .canva-bulk-price-028 .canva-bulk-price-aside button {width:100%;min-height:47px;margin-top:12px;font-weight:900;}
+ #app .canva-bulk-price-028 .canva-bulk-price-aside button:disabled {opacity:.56;cursor:not-allowed;}
+ @media(max-width:1180px){
+  #app .canva-bulk-price-028 .canva-bulk-price-layout {grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:12px;margin:0 8px;}
+  #app .canva-bulk-price-028 .canva-bulk-price-main,#app .canva-bulk-price-028 .canva-bulk-price-aside {padding:12px;}
+ }
+}

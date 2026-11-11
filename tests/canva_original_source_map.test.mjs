@@ -232,3 +232,48 @@ test('Canva 027 Chromium baseline pricing must precede any price mutation',()=>{
   assert.match(browser,/data-unit-price-mode="carton"/);
   assert.match(browser,/Do not invent historical price-change date/);
 });
+
+test('Canva 028 authentic geometry and bulk price preview have no write path', () => {
+  const geometry=JSON.parse(read('design/canva-original-screen-028-geometry.json'));
+  const screen=read('src/components/CanvaBulkPrice028.tsx');
+  const helper=read('src/utils/bulkPricePreview028.ts');
+  const catalog=read('src/components/ProductCatalogView.tsx');
+  const style=read('src/components/canvaOfficialV1.css');
+  assert.equal(geometry.design_id,layout.screens[27].id);
+  assert.equal(geometry.element_count,44);
+  assert.deepEqual(geometry.canvas,{width:1920,height:1080});
+  assert.equal(new Set(geometry.elements.map(x=>x.id)).size,44);
+  assert.match(screen,/data-canva-screen="028"/);
+  assert.match(screen,/پێشبینینی گۆڕینی نرخ بەکۆمەڵ/);
+  assert.match(screen,/پێش پەسەندکردن هیچ نرخێکی ڕاستەقینە ناگۆڕدرێت/);
+  assert.doesNotMatch(screen,/updateProduct\(|addProduct\(|deleteProduct\(/);
+  assert.match(helper,/priceType==='wholesale'/);
+  assert.match(helper,/Number.isSafeInteger\(proposed\)/);
+  assert.match(catalog,/activeTab === 'bulk-prices'/);
+  assert.match(style,/canva-bulk-price-028 \.canva-bulk-price-layout/);
+});
+test('Canva 028 preview calculates only real selected product values and remains immutable',async()=>{
+  const {previewBulkPrices028}=await import('../src/utils/bulkPricePreview028.ts');
+  const products=[
+    {id:'a',name:'ئاوی نموونە',category:'خواردنەوەکان',base_unit:'unit',
+      unit_barcode:'123',unit_sale_price_iqd:250,carton:{barcode:'124',sale_price_iqd:5000}},
+    {id:'b',name:'ئاوی دووەم',category:'خواردنەوەکان',base_unit:'unit',
+      unit_barcode:'223',unit_sale_price_iqd:130,carton:null},
+    {id:'c',name:'شەکر',category:'خۆراک',base_unit:'unit',
+      unit_barcode:'323',unit_sale_price_iqd:1000,carton:null}
+  ];
+  const before=JSON.stringify(products);
+  const req={category:'خواردنەوەکان',priceType:'unit',adjustmentType:'percent',adjustment:'10'};
+  const pct=previewBulkPrices028(products,req);
+  assert.equal(pct.error,null);assert.equal(pct.selectedCount,2);
+  assert.deepEqual(pct.rows.map(r=>r.proposedIqd),[275,143]);
+  assert.equal(pct.rows[0].previousIqd,250);
+  assert.equal(previewBulkPrices028(products,{...req,priceType:'carton'}).rows[0].proposedIqd,5500);
+  assert.equal(previewBulkPrices028(products,{...req,priceType:'carton'}).skipped,1);
+  assert.equal(previewBulkPrices028(products,{...req,adjustmentType:'amount',adjustment:'-100'}).rows[0].proposedIqd,150);
+  assert.equal(previewBulkPrices028(products,{...req,category:'ناپەیوەند'}).rows.length,0);
+  assert.equal(previewBulkPrices028(products,{...req,priceType:'wholesale'}).rows.length,0);
+  assert.ok(previewBulkPrices028(products,{...req,adjustment:'-100'}).error);
+  assert.ok(previewBulkPrices028(products,{...req,adjustment:'1e3'}).error);
+  assert.equal(JSON.stringify(products),before,'Preview must never write data');
+});

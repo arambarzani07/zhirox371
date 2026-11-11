@@ -105,6 +105,26 @@ try {
  assert.equal(await page.locator('[data-canva-screen="024"]').count(),1);
  await barcodeScreen.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 028: preview only, before any real local DEMO price edits.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(2).click();
+ await page.getByRole("button",{name:"گۆڕینی نرخ بەکۆمەڵ"}).click();
+ const bulk028=page.locator('[data-canva-screen="028"]');
+ await bulk028.waitFor({state:"visible"});
+ assert.equal(await bulk028.locator("h1").innerText(),"گۆڕینی نرخ بەکۆمەڵ");
+ assert.equal(await bulk028.getByRole("button",{name:"نرخی بەکۆمەڵ"}).isDisabled(),true);
+ assert.equal(await bulk028.locator(".canva-bulk-price-table tbody tr").count(),3);
+ await bulk028.locator("#canva-028-category").selectOption({label:"خواردنەوەکان"});
+ await bulk028.locator("#canva-028-change").fill("10");
+ await bulk028.getByRole("button",{name:"پێشبینینی گۆڕانکاری"}).click();
+ const water028=bulk028.locator(".canva-bulk-price-table tbody tr").filter({hasText:"ئاوی کانی چنار 500ml"}).first();
+ assert.equal(await water028.count(),1);
+ assert.match(await water028.innerText(),/250 IQD/);
+ assert.match(await water028.innerText(),/275 IQD/);
+ assert.match(await bulk028.getByRole("status").innerText(),/هیچ نرخێکی ڕاستەقینە ناگۆڕدرێت/);
+ await bulk028.getByRole("button",{name:"هەڵوەشاندنەوە",exact:true}).click();
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 027: compare actual unit/carton prices without automatic guesses.
  await page.locator(".home-screen .module").nth(1).click();
  await page.locator(".home-screen .subgrid .sub").nth(2).click();

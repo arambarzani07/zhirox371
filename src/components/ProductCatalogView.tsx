@@ -6,6 +6,7 @@ import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 import { CanvaPriceHistory025 } from './CanvaPriceHistory025';
 import { CanvaBarcodeAudit026 } from './CanvaBarcodeAudit026';
 import { CanvaUnitPrices027 } from './CanvaUnitPrices027';
+import { CanvaBulkPrice028 } from './CanvaBulkPrice028';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -19,7 +20,8 @@ const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' => {
+    if (activeSectionId === 'bulk-prices' || subtab === 'bulk-prices') return 'bulk-prices';
     if (activeSectionId === 'unit-prices' || subtab === 'unit-prices') return 'unit-prices';
     if (activeSectionId === 'barcode-duplicate-check' || subtab === 'duplicates') return 'duplicates';
     if (activeSectionId === 'price-history' || subtab === 'history') return 'history';
@@ -29,7 +31,7 @@ export const ProductCatalogView: React.FC = () => {
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -1355,6 +1357,9 @@ export const ProductCatalogView: React.FC = () => {
                 setUnitPrice027ProductId(null);
                 setActiveTab('unit-prices');
               }}>نرخەکانی هەر جۆری یەکە</button>
+              <button type="button" className="secondary" onClick={() => setActiveTab('bulk-prices')}>
+                گۆڕینی نرخ بەکۆمەڵ
+              </button>
               <input
                 type="text"
                 className="input-search"
@@ -1476,6 +1481,12 @@ export const ProductCatalogView: React.FC = () => {
             </table>
           </div>
         </>
+      )}
+
+      {activeTab === 'bulk-prices' && (
+        <CanvaBulkPrice028 products={products}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => setActiveTab('prices')}/>
       )}
 
       {activeTab === 'unit-prices' && (
