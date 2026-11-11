@@ -616,3 +616,49 @@ test('Canva 035 lists genuine registered barcodes without fabricating active or 
  assert.equal(lifecycleSummary035(null).status,'no_selection');
  assert.equal(JSON.stringify([product,kg]),before,'Read-only lifecycle must not mutate products');
 });
+
+test('Canva 045 original stock approval source geometry and fail-closed React routing',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-045-geometry.json'));
+ const source=read('src/components/CanvaStockApprovals045.tsx');
+ const rule=read('src/utils/stockApproval045.ts');
+ const stock=read('src/components/InventoryStockView.tsx');
+ const reconcile=read('src/components/CanvaStockReconcile043.tsx');
+ const style=read('src/components/canvaStockOverview036.css');
+ assert.equal(g.design_id,layout.screens[44].id);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(g.element_count,52);
+ assert.equal(new Set(g.elements.map(e=>e.id)).size,52);
+ assert.match(source,/number="045"/);
+ assert.match(source,/پەسەندکردنی کردارەکانی کۆگا/);
+ assert.match(source,/ناسنامەی داواکاری، کاڵا یان کارمەند/);
+ assert.match(source,/disabled=\{!authorized\|\|!selected\}/);
+ assert.match(source,/سەرچاوەی داواکارییە پەسەندکراوەکانی کۆگا هێشتا پەیوەست نییە/);
+ assert.match(rule,/connected: false, records: \[\]/);
+ assert.match(rule,/canDecideStockApproval045/);
+ assert.doesNotMatch(source,/adjustStock\(|updateProduct\(|deleteProduct\(|approveRequest\(/);
+ assert.match(stock,/activeTab === 'approvals'/);
+ assert.match(reconcile,/navigateTo\('stock', 'approvals', 'stock-stack'\)/);
+ assert.match(style,/data-canva-screen="045"/);
+});
+test('Canva 045 never invents manager approvals or pending requests from a local stock count draft',async()=>{
+ const {disconnectedStockApprovalFeed045,filterStockApproval045,canDecideStockApproval045}
+  =await import('../src/utils/stockApproval045.ts');
+ const feed=disconnectedStockApprovalFeed045();
+ assert.equal(feed.connected,false);
+ assert.deepEqual(feed.records,[]);
+ for(const status of ['pending','approved','rejected']){
+  assert.deepEqual(filterStockApproval045(feed,'ئاوی کانی چنار',status),[]);
+ }
+ const fake={connected:true,records:[
+  {id:'req-1',subject:'ئاوی کانی چنار',action:'ڕاستکردنەوە',
+   requestedBy:'کارمەند',requestedAt:'2026-11-11',reason:'ژماردن',status:'pending'},
+  {id:'req-2',subject:'ڕۆن',action:'وەرگرتن',
+   requestedBy:'بەڕێوەبەر',requestedAt:'2026-11-10',reason:'کڕین',status:'approved'}
+ ]};
+ assert.deepEqual(filterStockApproval045(fake,'ئاوی', 'pending').map(x=>x.id),['req-1']);
+ assert.equal(filterStockApproval045(fake,'ڕۆن','pending').length,0);
+ assert.equal(filterStockApproval045(fake,'ڕۆن','approved').length,1);
+ assert.equal(filterStockApproval045(fake,'','rejected').length,0);
+ assert.equal(canDecideStockApproval045('manager','req-1'),false);
+ assert.equal(canDecideStockApproval045('cashier','req-1'),false);
+});

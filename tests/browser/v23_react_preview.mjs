@@ -32,6 +32,39 @@ try {
  assert.equal(await page.locator(".home-screen .subgrid .sub").count(),4);
  await page.locator(".home-screen .module").first().click();
  assert.equal(await page.locator(".home-screen .drawer").count(),0);
+ // Canva 045: stock approvals have NO authoritative feed in the DEMO.
+ // Navigation 036 → 040 → 043 → 045 must preserve the fail-closed gate.
+ await page.locator(".home-screen .module").nth(2).click();
+ await page.locator(".home-screen .subgrid .sub").first().click();
+ const stock036=page.locator('[data-canva-screen="036"]');
+ await stock036.waitFor({state:"visible"});
+ await stock036.getByRole("button",{name:"ژماردنی کۆگا"}).click();
+ const count040=page.locator('[data-canva-screen="040"]');
+ await count040.waitFor({state:"visible"});
+ await count040.getByRole("button",{name:"پێداچوونەوەی جیاوازییەکان"}).click();
+ const reconcile043=page.locator('[data-canva-screen="043"]');
+ await reconcile043.waitFor({state:"visible"});
+ assert.equal(await reconcile043.getByRole("button",{name:"داواکردنی پەسەندکردن"}).isDisabled(),true);
+ await reconcile043.getByRole("button",{name:"بینینی داواکارییەکانی کۆگا"}).click();
+ const approvals045=page.locator('[data-canva-screen="045"]');
+ await approvals045.waitFor({state:"visible"});
+ assert.equal(await approvals045.locator("h1").innerText(),"پەسەندکردنی کردارەکانی کۆگا");
+ assert.equal(await approvals045.locator("tbody tr[data-approval-placeholder]").count(),4);
+ assert.equal(await approvals045.getByRole("button",{name:"پەسەندکردن",exact:true}).isDisabled(),true);
+ assert.equal(await approvals045.getByRole("button",{name:"ڕەتکردنەوە",exact:true}).isDisabled(),true);
+ assert.equal(await approvals045.getByRole("status").innerText().then(s=>s.includes("پەیوەست نییە")),true);
+ assert.equal(await approvals045.locator(".stock-036-summary dd").first().innerText(),"—");
+ for(const label of ["پەسەندکراو","ڕەتکراوە","چاوەڕوان"]){
+  await approvals045.getByRole("button",{name:label,exact:true}).click();
+  assert.equal(await approvals045.getByRole("button",{name:label,exact:true}).getAttribute("aria-pressed"),"true");
+  assert.equal(await approvals045.locator("tbody tr[data-approval-placeholder]").count(),4);
+ }
+ await approvals045.getByPlaceholder("ناسنامەی داواکاری، کاڵا یان کارمەند").fill("fake-request");
+ assert.equal(await approvals045.locator("tbody tr[data-approval-placeholder]").count(),4);
+ await approvals045.getByRole("button",{name:"گەڕانەوە بۆ کۆگا"}).click();
+ await page.locator('[data-canva-screen="036"]').waitFor({state:"visible"});
+ await page.locator('[data-canva-screen="036"]').getByRole("button",{name:"ماڵەوە"}).click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 021: product list + detail stay in the same route, filters apply
  // in place and the item details are data-bound (not a flat Canva image).
  await page.locator(".home-screen .module").nth(1).click();

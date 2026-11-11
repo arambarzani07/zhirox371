@@ -1,4 +1,5 @@
 import { CanvaStockLots044 } from './CanvaStockLots044';
+import { CanvaStockApprovals045 } from './CanvaStockApprovals045';
 import { CanvaStockReconcile043 } from './CanvaStockReconcile043';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
@@ -15,7 +16,8 @@ export const InventoryStockView: React.FC = () => {
   const { products, adjustStock, subtab, activeSectionId, navigateTo } =
     useApp();
 
-  const resolveMode = (): 'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer' | 'count' | 'reconcile' | 'lots' => {
+  const resolveMode = (): 'overview' | 'low' | 'expiry' | 'receive' | 'movements' | 'transfer' | 'count' | 'reconcile' | 'lots' | 'approvals' => {
+    if (subtab === 'approvals') return 'approvals';
     if (subtab === 'lots') return 'lots';
     if (subtab === 'reconcile') return 'reconcile';
     if (subtab === 'count') return 'count';
@@ -62,6 +64,8 @@ export const InventoryStockView: React.FC = () => {
 
   return (
     <div className="ws-stack stock-036-shell">
+      {activeTab === 'approvals' && <CanvaStockApprovals045 />}
+
       {activeTab === 'lots' && <CanvaStockLots044 />}
 
       {activeTab === 'reconcile' && <CanvaStockReconcile043 />}

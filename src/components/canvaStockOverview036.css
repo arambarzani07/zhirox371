@@ -448,3 +448,45 @@
   #app [data-canva-screen="044"] .stock-036-summary dl div:nth-child(2) { background: var(--stock-field); }
   #app [data-canva-screen="044"] .stock-036-summary dl div:nth-child(3) { background: var(--stock-teal); }
 }
+
+@media screen {
+ #app [data-canva-screen="045"] .stock-approval-filters {
+   margin-bottom: clamp(12px,2.6vh,29px);
+ }
+ #app [data-canva-screen="045"] .stock-approval-filters > label {width:76%;}
+ #app [data-canva-screen="045"] .stock-approval-filters .stock-workflow-tabs {
+   justify-content:flex-start;
+   gap:clamp(10px,1.3vw,24px);
+ }
+ #app [data-canva-screen="045"] .stock-approval-filters .stock-workflow-tabs button {
+   min-width:clamp(130px,11vw,211px);
+ }
+ #app [data-canva-screen="045"] .stock-approval-unavailable {
+   margin:0;
+   color:var(--stock-muted);
+   font-size:clamp(11px,.72vw,14px);
+   font-weight:700;
+ }
+ #app [data-canva-screen="045"] .stock-036-table table {
+   font-size:clamp(10px,.75vw,15px);
+ }
+ #app [data-canva-screen="045"] .stock-036-table th:first-child {width:25%;}
+ #app [data-canva-screen="045"] .stock-036-summary dl div:nth-child(2) {
+   background:var(--stock-field);
+ }
+ #app [data-canva-screen="045"] .stock-036-summary dl div:nth-child(3) {
+   background:var(--stock-teal);
+ }
+ #app [data-canva-screen="045"] .stock-approval-decision {
+   display:grid;
+   grid-template-columns:repeat(2,minmax(0,1fr));
+   gap:clamp(9px,1.2vw,24px);
+ }
+ #app [data-canva-screen="045"] .stock-approval-decision button:disabled {
+   opacity:.55;
+   cursor:not-allowed;
+ }
+ #app [data-canva-screen="045"] .stock-036-note {
+   margin-top:clamp(11px,2.4vh,26px);
+ }
+}

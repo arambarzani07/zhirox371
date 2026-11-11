@@ -42,7 +42,9 @@ export function CanvaStockReconcile043() {
       <div><dt>دۆخی داواکاری</dt><dd>{rows.some(row => row.stale || row.counted === null) ? 'پێویستی بە ژماردنەوەیە' : 'ڕەشنووس'}</dd></div>
     </dl>}
     actions={<><button type="button" className="stock-036-primary" disabled title="پەسەندکردنی بەڕێوەبەر هێشتا بەردەست نییە">داواکردنی پەسەندکردن</button>
-      <button type="button" onClick={() => navigateTo('stock', 'count', 'stock-stack')}>گەڕانەوە بۆ ژماردن</button></>}
+      <button type="button" onClick={() => navigateTo('stock', 'count', 'stock-stack')}>گەڕانەوە بۆ ژماردن</button>
+      <button type="button" className="stock-workflow-link"
+        onClick={() => navigateTo('stock', 'approvals', 'stock-stack')}>بینینی داواکارییەکانی کۆگا</button></>}
     note="پەسەندکردنی بەڕێوەبەر هێشتا بەردەست نییە.">
     <CanvaStockTable columns={columns}>
       {visible.map(({line, counted, difference, stale}) => <tr key={line.id}>

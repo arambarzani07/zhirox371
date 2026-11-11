@@ -103,3 +103,11 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Existing isolated V93 read-only lot endpoint and V92 views were inspected. They require their own authenticated test-store session and are not integrated into this demo. No database or API writes were made, and FEFO behavior is not claimed by this screen.
 - Build and Playwright passed at 1920×1080 and 1366×768: filters with a fixed date, search, selection clearing, unavailable lot values, return navigation, and unchanged product state.
 - Partial implementation: authenticated lot-source integration and exact pixel parity remain outstanding.
+
+### Screen 045 — inventory action approvals (fail-closed preview)
+- Original Canva 045 is DAHaahQHQZ8 (52 authentic text bounds, 1920×1080).
+- Connected from the existing 043 stock reconciliation screen; returns to 036.
+- The React DEMO has no verified inventory approval request feed, trusted actor identity, or secure approval/rejection endpoint. Therefore no pending, approved, or rejected records are invented. Search and status filters are operable, but results and managerial summary remain unverified.
+- Both decision buttons are disabled even if someone claims to be the manager. A count draft from 040/043 is not a submitted request. No inventory, receipts, or real database are changed.
+- This is partial visual/interaction work, **not production-grade authorization or pixel-perfect parity**.
+- [045 original text bounds](./canva-original-screen-045-geometry.json).
