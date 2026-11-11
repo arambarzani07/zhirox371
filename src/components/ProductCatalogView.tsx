@@ -1486,7 +1486,7 @@ export const ProductCatalogView: React.FC = () => {
       {activeTab === 'bulk-prices' && (
         <CanvaBulkPrice028 products={products}
           onHome={() => navigateTo('home')}
-          onCatalog={() => setActiveTab('prices')}/>
+          onCatalog={() => setActiveTab('list')}/>
       )}
 
       {activeTab === 'unit-prices' && (
