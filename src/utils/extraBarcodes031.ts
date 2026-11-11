@@ -1,5 +1,5 @@
 import type { Product } from '../types';
-import { inspectDuplicateBarcode026, type BarcodeSellingMode026 } from './barcodeAudit026';
+import type { BarcodeSellingMode026 } from './barcodeAudit026';
 
 export type BarcodeUnit031 = BarcodeSellingMode026;
 export interface BarcodeRecord031 { code:string; primary:boolean; mode:BarcodeUnit031; }
@@ -39,20 +39,31 @@ export const listBarcodes031=(p:Product|null,mode:BarcodeUnit031):BarcodeRecord0
  * including a repeat on the same product, and never changes actual data.
  * The returned Partial<Product> is ONLY for the isolated browser DEMO.
  */
+/** Same exact-code ownership policy as screen 026; self-contained to work in
+ * the production TypeScript bundle and the zero-dependency Node native tests.
+ */
+export const codeTaken031=(products:readonly Product[],code:string):boolean=>
+  products.some(p=>
+    p.unit_barcode===code
+    || p.unit_alias_barcodes.includes(code)
+    || Boolean(p.carton&&(p.carton.barcode===code||p.carton.alias_barcodes.includes(code)))
+    || Boolean(p.extra_packs?.some(pack=>
+      pack.barcode===code||pack.alias_barcodes.includes(code)))
+  );
+
 export const prepareExtraAlias031=(
   products:readonly Product[],productId:string,mode:BarcodeUnit031,raw:string
 ):AliasResult031=>{
   const p=products.find(item=>item.id===productId);
   if(!p)return {ok:false,error:'کاڵای هەڵبژێردراو نەدۆزرایەوە'};
   if(!isConfigured031(p,mode))return {ok:false,error:'ئەم جۆرە یەکەیە بۆ کاڵاکە تۆمار نەکراوە'};
-  const scan=inspectDuplicateBarcode026([...products],raw);
-  if(scan.status==='empty'||scan.status==='invalid')return {
+  const code=raw.trim();
+  if(!code || code.length>60 || /[\\s,،;]/u.test(code))return {
     ok:false,error:'بارکۆدی دروست بنووسە، بەبێ بۆشایی و بە درێژی زۆرترین 60 نووسە'
   };
-  if(scan.status!=='unused')return {
+  if(codeTaken031(products,code))return {
     ok:false,error:'بارکۆدەکە پێشتر بە کاڵا یان یەکەیەکی تر پەیوەستە'
   };
-  const code=scan.code;
   const aliases=listBarcodes031(p,mode).filter(x=>!x.primary);
   if(aliases.length>=30)return {ok:false,error:'سنووری 30 بارکۆدی زیادە بۆ ئەم یەکەیە پڕبووە'};
   if(mode==='unit'||mode==='kg')return {

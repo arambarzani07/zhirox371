@@ -370,7 +370,7 @@ test('Canva 031 authentic source 42 boxes, five unit modes, and existing DEMO na
  assert.match(screen,/بارکۆدە زیادەکانی هەر یەکە/);
  assert.match(screen,/پشکنینی دووبارەبوونەوە/);
  assert.match(screen,/onSubmit=\{e=>\{e.preventDefault\(\);save\(\);\}\}/);
- assert.match(utility,/inspectDuplicateBarcode026/);
+ assert.match(utility,/codeTaken031\(products,code\)/);
  assert.match(utility,/aliases.length>=30/);
  assert.match(catalog,/activeTab === 'extra-barcodes'/);
  assert.match(style,/canva-extra-barcodes-031 \.canva-extra-layout/);
