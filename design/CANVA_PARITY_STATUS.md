@@ -124,3 +124,11 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - React UI searches actual local-DEMO products by barcode or name, derives configured unit/carton/bundle/set/kg modes, requires a deliberate existing DEMO supplier selection and positive validated quantities. Repeated identical product/unit/supplier items merge with a maximum cap; unlike physical units are **never summed as a single count**.
 - The draft lives in this browser tab's `sessionStorage` only after explicit "save draft"; on reload its product and supplier references are revalidated. This **does not** create a purchase order, submitted request, supplier charge, stock receiving, or official audit log.
 - "Send for approval" stays disabled until a verified authorized backend request/approval workflow exists. Real DB, Canva originals, existing sales and inventory are not modified. Pixel perfect parity **not certified**.
+
+### Screen 048 — purchase order pricing preview
+- Added to the latest main after preserving the independently shipped 045–047 implementations and global PC navigation.
+- Reads 047's explicitly saved tab-local requisition, separates rows by supplier, uses the correct unit/carton/extra-pack purchase cost, validates positive integer IQD costs and safe totals, and saves draft price overrides per line.
+- Search filters displayed rows without changing the whole supplier order total. No approval, official order identifier, supplier send, stock movement or debt mutation is simulated.
+- Fixed 047's empty-draft save so removing the final row can be persisted instead of restoring it on reload.
+- Validation: TypeScript/Vite build, all 36 Canva source checks, and Playwright 047→048 navigation, price validation, totals, persisted prices, empty-draft reload and global navigation at 1920×1080 and 1366×768 passed.
+- Partial: server-authorized order submission, receiving linkage, exact pixel parity and remaining screens are still outstanding.

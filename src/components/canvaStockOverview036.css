@@ -492,3 +492,10 @@
    margin-top:clamp(11px,2.4vh,26px);
  }
 }
+
+@media screen {
+ #app .purchase-order-fields { margin:0;grid-template-columns:1fr 1fr; }
+ #app [data-canva-screen="048"] .stock-036-summary dl { gap:clamp(8px,1.4vh,16px);margin-block:16px; }
+ #app [data-canva-screen="048"] .stock-036-summary dl div { min-height:clamp(50px,7vh,76px); }
+ #app [data-canva-screen="048"] .stock-036-actions { gap:8px;margin-bottom:0; }
+}

@@ -3,6 +3,7 @@ import './canvaStockOverview036.css';
 
 interface Props {
   number: string;
+  category?: string;
   title: string;
   listTitle: string;
   summaryTitle: string;
@@ -15,14 +16,14 @@ interface Props {
 }
 
 export function CanvaStockFrame({
-  number, title, listTitle, summaryTitle, filters, children, note, summary, actions, onHome,
+  number, category = 'کۆگا و بەسەرچوون', title, listTitle, summaryTitle, filters, children, note, summary, actions, onHome,
 }: Props) {
   const id = `stock-${number}`;
   return (
     <section className="canva-stock-036" data-canva-screen={number} dir="rtl" aria-labelledby={`${id}-title`}>
       <header className="stock-036-heading">
         <h1 id={`${id}-title`}>{title}</h1>
-        <span>کۆگا و بەسەرچوون</span>
+        <span>{category}</span>
         <button type="button" onClick={onHome}>ماڵەوە</button>
       </header>
       <div className="stock-036-layout">

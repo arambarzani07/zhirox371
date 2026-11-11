@@ -42,7 +42,7 @@ export function CanvaPurchaseRequest047(){
    setNotice('کاڵاکە زیاد کرا بۆ ڕەشنووسی ناوخۆیی؛ هیچ داواکارییەک نەنێردراوە.');
  };
  const save=()=>{
-   if(!lines.length){setNotice('سەرەتا کاڵایەک زیاد بکە بۆ ڕەشنووس');return;}
+
    // Source products or suppliers may have changed since rows were first added.
    const restored=readPurchaseDraft047(JSON.stringify(lines.map(x=>({
      productId:x.productId,supplierId:x.supplierId,unit:x.unit,quantity:x.quantity
@@ -142,7 +142,8 @@ export function CanvaPurchaseRequest047(){
      ناردن بۆ پەسەندکردن
     </button>
     <button type="button" className="canva-purchase-save" onClick={save}
-     disabled={!lines.length}>پاشەکەوتکردنی ڕەشنووس</button>
+     >پاشەکەوتکردنی ڕەشنووس</button>
+    <button type="button" className="canva-purchase-save" onClick={()=>navigateTo('suppliers','order','purchase-order')}>فەرمانی کڕین لە ڕەشنووسی پاشەکەوتکراو</button>
    </aside>
   </div>
  </section>;
