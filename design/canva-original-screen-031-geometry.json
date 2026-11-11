@@ -1,0 +1,361 @@
+{
+  "project": "ZHIROX371",
+  "screen": "031",
+  "design_id": "DAHaav2bQlc",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "note": "Authentic text box bounds only, not complete graphical/color/font/pixel parity or production authorizations",
+  "element_count": 42,
+  "elements": [
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBjq3pzxNKgjF8Q9",
+      "text": "ZHIROX",
+      "x": 50.400000000000006,
+      "y": 24,
+      "w": 366,
+      "h": 52.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBTF5s9S30WTqnQd",
+      "text": "سوپەرمارکێتی کانی چنار",
+      "x": 618,
+      "y": 20.4,
+      "w": 684,
+      "h": 61.2
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBytgy1m32Ph8StN",
+      "text": "بارکۆدە زیادەکانی هەر یەکە",
+      "x": 1014,
+      "y": 132,
+      "w": 849.6,
+      "h": 54
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB07TDRxlGScTKNL",
+      "text": "ماڵەوە",
+      "x": 49.2,
+      "y": 133.8,
+      "w": 146.4,
+      "h": 45.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaMmlLck"
+      ]
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBF9bsKvZmGrm4sS",
+      "text": "کاڵا و نرخ",
+      "x": 509.99999999999994,
+      "y": 136.8,
+      "w": 441.6,
+      "h": 39.599999999999994,
+      "links": [
+        "https://www.canva.com/design/DAHaaUrrOOM"
+      ]
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBFmw1jZxH0mnkfs",
+      "text": "بەڕێوەبردنی بارکۆدە زیادەکان",
+      "x": 651.5999999999999,
+      "y": 248.40000000000003,
+      "w": 1206,
+      "h": 56.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBbfVtb0vZvHxqgH",
+      "text": "پشکنین و دەستکاریکردن",
+      "x": 62.400000000000006,
+      "y": 248.40000000000003,
+      "w": 511.2,
+      "h": 56.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBzGlLZJGwQ03cPy",
+      "text": "کاڵای هەڵبژێردراو",
+      "x": 974.4000000000001,
+      "y": 303.6,
+      "w": 855.6,
+      "h": 39.6
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBjQG3C6lcZStJ5q",
+      "text": "کاڵا بە ناو یان بارکۆد هەڵبژێرە",
+      "x": 988.7999999999998,
+      "y": 354,
+      "w": 826.8,
+      "h": 48
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB25dXRGSYjqTsTm",
+      "text": "جۆری یەکە",
+      "x": 1654.8,
+      "y": 434.4,
+      "w": 171.6,
+      "h": 40.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBkj4D7PN5ZJhbT6",
+      "text": "دانە",
+      "x": 1672.8,
+      "y": 487.8,
+      "w": 148.8,
+      "h": 42
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBH1FqcMPZl81Vx6",
+      "text": "کارتۆن",
+      "x": 1502.4,
+      "y": 487.8,
+      "w": 148.8,
+      "h": 42
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBy7fxxpT2yq8by0",
+      "text": "دەستە",
+      "x": 1332,
+      "y": 487.8,
+      "w": 148.8,
+      "h": 42
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB07Lhgqqdz5zXSG",
+      "text": "سێت",
+      "x": 1161.6,
+      "y": 487.8,
+      "w": 148.8,
+      "h": 42
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB1M19pN1qdGNDfr",
+      "text": "کیلۆ",
+      "x": 991.2000000000002,
+      "y": 487.8,
+      "w": 148.8,
+      "h": 42
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBtRHzBQqhhqhgwL",
+      "text": "زیادکردنی بارکۆد",
+      "x": 986.4000000000001,
+      "y": 544.8,
+      "w": 843.6,
+      "h": 39.6
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBGY00DM1LP9TWjW",
+      "text": "بارکۆدی زیادە بنووسە یان سکان بکە",
+      "x": 1000.7999999999998,
+      "y": 595.2,
+      "w": 814.8,
+      "h": 44.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB53B9RqKKwvy8fG",
+      "text": "زیادکردن",
+      "x": 674.4,
+      "y": 593.4,
+      "w": 244.8,
+      "h": 49.2
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBbjWSHsrZH7FYBS",
+      "text": "کردار",
+      "x": 670.2,
+      "y": 711,
+      "w": 142.8,
+      "h": 44.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBpY0q1mR9qHBZBS",
+      "text": "دۆخ",
+      "x": 823.8,
+      "y": 711,
+      "w": 130.8,
+      "h": 44.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBnz255rHrB562XB",
+      "text": "جۆری بارکۆد",
+      "x": 965.4000000000001,
+      "y": 711,
+      "w": 249.6,
+      "h": 44.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBjVzsL6KhX1XSdC",
+      "text": "یەکە",
+      "x": 1225.8,
+      "y": 711,
+      "w": 168,
+      "h": 44.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBbcJZRMG24zgl44",
+      "text": "بارکۆد",
+      "x": 1404.6,
+      "y": 711,
+      "w": 424.8,
+      "h": 44.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBN6GhPpq9RCDPmP",
+      "text": "—",
+      "x": 671.4,
+      "y": 780,
+      "w": 140.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBmg00RQhfcngtrl",
+      "text": "—",
+      "x": 825,
+      "y": 780,
+      "w": 128.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBsPmB1pVKFJpNdd",
+      "text": "—",
+      "x": 966.6,
+      "y": 780,
+      "w": 247.2,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB3FrSQLDZhb0Zs9",
+      "text": "دانە",
+      "x": 1227,
+      "y": 780,
+      "w": 165.6,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBzckHdqPsLd09jz",
+      "text": "—",
+      "x": 1405.8,
+      "y": 780,
+      "w": 422.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBTfbNNvKVHkPzvg",
+      "text": "—",
+      "x": 671.4,
+      "y": 852,
+      "w": 140.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBftDsLrqtBs0NCc",
+      "text": "—",
+      "x": 825,
+      "y": 852,
+      "w": 128.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBZSX6nJ5VV9VvFJ",
+      "text": "—",
+      "x": 966.6,
+      "y": 852,
+      "w": 247.2,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBLz6YBsmQrYMMtw",
+      "text": "—",
+      "x": 1227,
+      "y": 852,
+      "w": 165.6,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBLvbK7HmpsQHZSC",
+      "text": "—",
+      "x": 1405.8,
+      "y": 852,
+      "w": 422.4,
+      "h": 46.8
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBj23xs8zyPPKCfl",
+      "text": "بارکۆدی دووبارە ناتوانرێت بۆ کاڵا یان یەکەیەکی تر چالاک بکرێت.",
+      "x": 682.8,
+      "y": 938.4,
+      "w": 1137.6,
+      "h": 55.2
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBZGt4Kwv2Hpd88s",
+      "text": "یەکەی هەڵبژێردراو",
+      "x": 85.20000000000002,
+      "y": 360,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB19G0k1FSQ0cTBX",
+      "text": "دانە",
+      "x": 85.20000000000002,
+      "y": 402,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBk3Csv15ywnBpsG",
+      "text": "بارکۆدی چالاک",
+      "x": 85.20000000000002,
+      "y": 495.6,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LB0XZg86wtHsnGcC",
+      "text": "—",
+      "x": 85.20000000000002,
+      "y": 537.6,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBNyVFhWSKj7RxRd",
+      "text": "زۆرترین بارکۆدی زیادە",
+      "x": 85.20000000000002,
+      "y": 631.2,
+      "w": 463.2,
+      "h": 32.4
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBF0blDnvWd6b260",
+      "text": "30",
+      "x": 85.20000000000002,
+      "y": 673.2,
+      "w": 463.2,
+      "h": 37.2
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBwcnGzGSKglsQMP",
+      "text": "پشکنینی دووبارەبوونەوە",
+      "x": 81.59999999999997,
+      "y": 799.8,
+      "w": 470.4,
+      "h": 62.39999999999998,
+      "links": [
+        "https://www.canva.com/design/DAHaaY6kmos"
+      ]
+    },
+    {
+      "id": "PBttCvgPKvwZ2sYk-LBhD0K8mfGsjKBrD",
+      "text": "گەڕانەوە بۆ کاڵاکان",
+      "x": 81.59999999999997,
+      "y": 906.6,
+      "w": 470.4,
+      "h": 54,
+      "links": [
+        "https://www.canva.com/design/DAHaaUrrOOM"
+      ]
+    }
+  ]
+}
