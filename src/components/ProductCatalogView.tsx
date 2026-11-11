@@ -8,6 +8,7 @@ import { CanvaBarcodeAudit026 } from './CanvaBarcodeAudit026';
 import { CanvaUnitPrices027 } from './CanvaUnitPrices027';
 import { CanvaBulkPrice028 } from './CanvaBulkPrice028';
 import { CanvaPermissions029 } from './CanvaPermissions029';
+import { CanvaReviewApproval030 } from './CanvaReviewApproval030';
 
 type BarcodeCatalogMode = 'unit' | 'carton' | 'bundle' | 'set' | 'kg';
 type ExtraPackDraft = {kind:'bundle'|'set'; name:string; barcode:string; aliases:string; units:string; buy:string; sell:string};
@@ -21,7 +22,8 @@ const safePrice = (value:string) => value.trim() === '' ? null : Number(value);
 export const ProductCatalogView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, auditLogs, subtab, activeSectionId, navigateTo } = useApp();
 
-  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' => {
+  const resolveInitialTab = (): 'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review' => {
+    if (activeSectionId === 'review' || subtab === 'review') return 'review';
     if (activeSectionId === 'permissions' || subtab === 'permissions') return 'permissions';
     if (activeSectionId === 'bulk-prices' || subtab === 'bulk-prices') return 'bulk-prices';
     if (activeSectionId === 'unit-prices' || subtab === 'unit-prices') return 'unit-prices';
@@ -33,7 +35,7 @@ export const ProductCatalogView: React.FC = () => {
     return 'list';
   };
 
-  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions'>(resolveInitialTab);
+  const [activeTab, setActiveTab] = useState<'new' | 'list' | 'prices' | 'barcodes' | 'history' | 'duplicates' | 'unit-prices' | 'bulk-prices' | 'permissions' | 'review'>(resolveInitialTab);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
@@ -1365,6 +1367,9 @@ export const ProductCatalogView: React.FC = () => {
               <button type="button" className="secondary" onClick={() => setActiveTab('permissions')}>
                 دەسەڵاتی کاشێر و بەڕێوەبەر
               </button>
+              <button type="button" className="secondary" onClick={() => setActiveTab('review')}>
+                پێداچوونەوە و پەسەندکردنی گۆڕانکاری
+              </button>
               <input
                 type="text"
                 className="input-search"
@@ -1488,12 +1493,19 @@ export const ProductCatalogView: React.FC = () => {
         </>
       )}
 
+      {activeTab === 'review' && (
+        <CanvaReviewApproval030 auditLogs={auditLogs}
+          onHome={() => navigateTo('home')}
+          onCatalog={() => setActiveTab('list')}/>
+      )}
+
       {activeTab === 'permissions' && (
         <CanvaPermissions029
           onHome={() => navigateTo('home')}
           onCatalog={() => setActiveTab('list')}
           onBulkPrice={() => setActiveTab('bulk-prices')}
-          onDuplicateAudit={() => setActiveTab('duplicates')}/>
+          onDuplicateAudit={() => setActiveTab('duplicates')}
+          onReview={() => setActiveTab('review')}/>
       )}
 
       {activeTab === 'bulk-prices' && (

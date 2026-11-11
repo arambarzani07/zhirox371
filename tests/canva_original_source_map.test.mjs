@@ -313,3 +313,45 @@ test('Canva 029 template roles never authorize writes, even if caller passes spo
   assert.equal(authorizationStatus029({role:'manager',sessionVerifiedByServer:true,actorId:'forged'}).canApproveChanges,false);
   assert.equal(authorizationStatus029({role:'cashier',sessionVerifiedByServer:false,actorId:'fake'}).canSubmitRequest,false);
 });
+
+test('Canva 030 original source geometry and fail-closed untrusted approval UI',()=>{
+  const g=JSON.parse(read('design/canva-original-screen-030-geometry.json'));
+  const screen=read('src/components/CanvaReviewApproval030.tsx');
+  const helper=read('src/utils/reviewApproval030.ts');
+  const catalog=read('src/components/ProductCatalogView.tsx');
+  const role=read('src/components/CanvaPermissions029.tsx');
+  const style=read('src/components/canvaOfficialV1.css');
+  assert.equal(g.design_id,layout.screens[29].id);
+  assert.equal(g.element_count,50);
+  assert.deepEqual(g.canvas,{width:1920,height:1080});
+  assert.equal(new Set(g.elements.map(x=>x.id)).size,50);
+  assert.match(screen,/data-canva-screen="030"/);
+  assert.match(screen,/پەسەندکردنی دووبارەی هەمان داواکاری ڕێگەی پێ نادرێت/);
+  assert.match(screen,/disabled=\{!isAuthorized\}/);
+  assert.doesNotMatch(screen,/updateProduct\(|approveRequest\(|rejectRequest\(|addProduct\(/);
+  assert.match(helper,/if\(filter==='pending'\) return \[\]/);
+  assert.match(helper,/canFinalizeReview030 = .*false => false/);
+  assert.match(catalog,/activeTab === 'review'/);
+  assert.match(role,/onReview/);
+  assert.match(style,/canva-review-030 \.canva-review-layout/);
+});
+test('Canva 030 displays only actual DEMO audit entries and never forges pending requests',async()=>{
+  const {recordedPriceAudit030,reviewEntries030,canFinalizeReview030}=await import('../src/utils/reviewApproval030.ts');
+  const original=[
+    {id:'a',timestamp:'2026-11-11T09:15:00.000Z',user:'Demo',
+      action:'گۆڕینی نرخ',details:'Demo 250 > 275',
+      priceChange:{productId:'p1',productName:'ئاوی نموونە',barcode:'123',unit:'unit',priceType:'sale',previousIqd:250,nextIqd:275,status:'recorded_demo'}},
+    {id:'b',timestamp:'2026-11-11T09:16:00.000Z',user:'Demo',
+      action:'تۆماری گشتی',details:'بەڵگەی ناتەواو'}
+  ];
+  const before=JSON.stringify(original);
+  assert.equal(recordedPriceAudit030(original).length,1);
+  assert.equal(reviewEntries030(original,'pending','').length,0);
+  assert.equal(reviewEntries030(original,'all','ئاوی نموونە').length,1);
+  assert.equal(reviewEntries030(original,'all','123').length,1);
+  assert.equal(reviewEntries030(original,'all','not-found').length,0);
+  assert.equal(reviewEntries030(original,'recorded_demo','').length,1);
+  assert.equal(canFinalizeReview030('manager','a'),false);
+  assert.equal(canFinalizeReview030('cashier','a'),false);
+  assert.equal(JSON.stringify(original),before,'Inspection is read-only');
+});

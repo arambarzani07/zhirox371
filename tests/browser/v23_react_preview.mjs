@@ -126,6 +126,22 @@ try {
  await page.locator('[data-canva-screen="028"]').getByRole("button",{name:"هەڵوەشاندنەوە",exact:true}).click();
  await page.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 030: no trusted requests and no authorization while demo-only.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(2).click();
+ await page.getByRole("button",{name:"پێداچوونەوە و پەسەندکردنی گۆڕانکاری"}).click();
+ const review030=page.locator('[data-canva-screen="030"]');
+ await review030.waitFor({state:"visible"});
+ assert.equal(await review030.locator("h1").innerText(),"پێداچوونەوە و پەسەندکردنی گۆڕانکاری");
+ assert.equal(await review030.locator(".canva-review-table tbody tr").count(),4);
+ assert.equal(await review030.getByRole("button",{name:"پەسەندکردن",exact:true}).isDisabled(),true);
+ assert.equal(await review030.getByRole("button",{name:"ڕەتکردنەوە",exact:true}).isDisabled(),true);
+ await review030.locator("#canva-030-status").selectOption("pending");
+ assert.match(await review030.getByRole("status").innerText(),/هیچ داواکاریی چاوەڕوانێکی پشتڕاستکراو/);
+ assert.equal(await review030.locator(".canva-review-table tbody tr[data-review-type]").count(),0);
+ await review030.getByRole("button",{name:"کاڵا و نرخ"}).click();
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 028: preview only, before any real local DEMO price edits.
  await page.locator(".home-screen .module").nth(1).click();
  await page.locator(".home-screen .subgrid .sub").nth(2).click();

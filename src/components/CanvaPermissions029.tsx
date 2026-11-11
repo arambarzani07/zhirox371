@@ -6,13 +6,14 @@ interface Props {
   onCatalog:()=>void;
   onBulkPrice:()=>void;
   onDuplicateAudit:()=>void;
+  onReview:()=>void;
 }
 
 /** Canva 029 is a role-policy reference only until server identity can be verified.
  * It cannot grant rights, send real requests, or modify the catalog.
  */
 export const CanvaPermissions029:React.FC<Props>=({
-  onHome,onCatalog,onBulkPrice,onDuplicateAudit
+  onHome,onCatalog,onBulkPrice,onDuplicateAudit,onReview
 })=>{
   const [reason,setReason]=useState('');
   const permissions=authorizationStatus029();
@@ -77,6 +78,7 @@ export const CanvaPermissions029:React.FC<Props>=({
             title="پەیوەندی ناسنامەی پشتڕاستکراو و ڕێگەپێدانی بەڕێوەبەر هێشتا نەبەستراوە">
             ناردنی داواکاری
           </button>
+          <button type="button" className="secondary" onClick={onReview}>پێداچوونەوە و پەسەندکردنی گۆڕانکاری</button>
           <button type="button" className="secondary" onClick={onCatalog}>گەڕانەوە</button>
         </aside>
       </div>
