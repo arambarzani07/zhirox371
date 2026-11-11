@@ -572,3 +572,47 @@ test('Canva 034 rejects missing unit headers and preserves zero-prefixed CSV cod
  assert.equal(unsafe.ready,0);
  assert.equal(unsafe.errors,2);
 });
+
+test('Canva 035 original text geometry and fail-closed lifecycle screen',()=>{
+ const g=JSON.parse(read('design/canva-original-screen-035-geometry.json'));
+ const view=read('src/components/CanvaLifecycle035.tsx');
+ const rules=read('src/utils/lifecyclePreview035.ts');
+ const catalog=read('src/components/ProductCatalogView.tsx');
+ const style=read('src/components/canvaOfficialV1.css');
+ assert.equal(g.design_id,layout.screens[34].id);
+ assert.equal(g.element_count,44);
+ assert.deepEqual(g.canvas,{width:1920,height:1080});
+ assert.equal(new Set(g.elements.map(x=>x.id)).size,44);
+ assert.match(view,/data-canva-screen="035"/);
+ assert.match(view,/ناچالاککردن واتە وەستاندنی فرۆشتن/);
+ assert.match(view,/بارکۆدی لابراو بە ناچالاکی دەپارێزرێت/);
+ assert.match(view,/disabled=\{!summary.canSubmitRequest\}/);
+ assert.match(view,/disabled=\{!summary.canRestore\}/);
+ assert.doesNotMatch(view,/updateProduct\(|deleteProduct\(|addProduct\(|approveRequest\(/);
+ assert.match(rules,/verifiedActiveCodes:null/);
+ assert.match(catalog,/activeTab === 'lifecycle'/);
+ assert.match(style,/canva-lifecycle-035 \.canva-lifecycle-layout/);
+});
+test('Canva 035 lists genuine registered barcodes without fabricating active or retired state',async()=>{
+ const {productBarcodeRows035,lifecycleSummary035}=await import('../src/utils/lifecyclePreview035.ts');
+ const product={id:'a',name:'ئاوی تاقیکردنەوە',base_unit:'unit',unit_barcode:'111',unit_alias_barcodes:['112'],
+  carton:{barcode:'211',alias_barcodes:['212']},
+  extra_packs:[{kind:'bundle',barcode:'311',alias_barcodes:['312']},
+    {kind:'set',barcode:'411',alias_barcodes:[]}]};
+ const kg={id:'b',name:'تەماتە',base_unit:'kg',unit_barcode:'511',unit_alias_barcodes:['512'],
+  carton:null,extra_packs:[]};
+ const before=JSON.stringify([product,kg]);
+ const rows=productBarcodeRows035(product);
+ assert.deepEqual(rows.map(x=>x.barcode),['111','112','211','212','311','312','411']);
+ assert.deepEqual(rows.map(x=>x.label),['دانە','دانە','کارتۆن','کارتۆن','دەستە','دەستە','سێت']);
+ assert.deepEqual(rows.map(x=>x.primary),[true,false,true,false,true,false,true]);
+ assert.equal(rows.every(x=>x.status==='unverified'),true);
+ assert.equal(productBarcodeRows035(kg)[0].mode,'kg');
+ assert.equal(productBarcodeRows035(null).length,0);
+ assert.deepEqual(lifecycleSummary035(product),{
+  status:'unverified',verifiedActiveCodes:null,registeredCodes:7,
+  canDeactivate:false,canRestore:false,canSubmitRequest:false
+ });
+ assert.equal(lifecycleSummary035(null).status,'no_selection');
+ assert.equal(JSON.stringify([product,kg]),before,'Read-only lifecycle must not mutate products');
+});

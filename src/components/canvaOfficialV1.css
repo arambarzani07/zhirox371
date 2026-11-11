@@ -1107,3 +1107,41 @@
  #app .canva-import-preview-034 .canva-import-main,#app .canva-import-preview-034 .canva-import-aside {padding:12px;}
  }
 }
+
+/* Native Canva source screen 035 DAHaaoVRbFE, 1920x1080 editable text bounds.
+ * Main right 1206 px, side left 511.2 px; visual parity NOT proven. */
+@media screen {
+ #app .canva-lifecycle-035 {direction:rtl;display:flex;flex-direction:column;gap:14px;min-width:0;color:#172b45;font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+ #app .canva-lifecycle-035 .canva-lifecycle-heading {background:#fff;}
+ #app .canva-lifecycle-035 .canva-lifecycle-layout {display:grid;direction:rtl;grid-template-columns:minmax(0,1206fr) minmax(280px,511.2fr);gap:clamp(18px,4.0625vw,78px);margin:0 3.25%;align-items:start;}
+ #app .canva-lifecycle-035 .canva-lifecycle-main,#app .canva-lifecycle-035 .canva-lifecycle-aside {background:#fff;border:1px solid #e0e7f0;border-radius:10px;padding:18px 22px;min-width:0;min-height:650px;}
+ #app .canva-lifecycle-035 h2 {margin:0 0 18px;font-size:19px;font-weight:900;line-height:1.6;text-align:right;color:#172b45;}
+ #app .canva-lifecycle-035 .canva-lifecycle-search {display:flex;flex-direction:column;gap:8px;margin:8px 0 22px;font-size:13px;font-weight:900;text-align:right;}
+ #app .canva-lifecycle-035 .canva-lifecycle-search input {min-height:49px;background:#fff;border:1px solid #dce5ee;border-radius:8px;padding:9px 12px;width:100%;color:#172b45;font:inherit;font-size:13px;}
+ #app .canva-lifecycle-035 .canva-lifecycle-suggestions {display:flex;flex-direction:column;gap:5px;border:1px solid #e3eaf1;border-radius:8px;padding:8px;margin:-15px 0 15px;max-height:200px;overflow:auto;}
+ #app .canva-lifecycle-035 .canva-lifecycle-suggestions button {min-height:37px;text-align:right;}
+ #app .canva-lifecycle-035 .canva-lifecycle-explanation {background:#f6f8fb;color:#526a82;border-radius:8px;padding:13px 15px;margin:20px 0 24px;font-size:12px;font-weight:850;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table-scroll {width:100%;max-height:302px;overflow:auto;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table {direction:rtl;width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;color:#172b45;text-align:right;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table th,#app .canva-lifecycle-035 .canva-lifecycle-table td {height:64px;border-bottom:1px solid #e3eaf1;text-align:right;padding:9px;overflow-wrap:anywhere;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table th {background:#f1f5f9;font-weight:900;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table th:nth-child(1) {width:33%;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table th:nth-child(2) {width:23%;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table th:nth-child(3) {width:17%;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table th:nth-child(4) {width:17%;}
+ #app .canva-lifecycle-035 .canva-lifecycle-table th:nth-child(5) {width:10%;}
+ #app .canva-lifecycle-035 .canva-lifecycle-rule {background:#f7f9fc;color:#526a82;font-size:12px;font-weight:850;padding:13px 15px;margin:21px 0 8px;}
+ #app .canva-lifecycle-035 .canva-lifecycle-caution {font-size:12px;font-weight:800;color:#64758d;padding:8px;margin:0;}
+ #app .canva-lifecycle-035 .canva-lifecycle-aside dl {display:flex;flex-direction:column;gap:25px;margin:33px 0 25px;}
+ #app .canva-lifecycle-035 .canva-lifecycle-aside dl>div {display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px solid #e3eaf1;}
+ #app .canva-lifecycle-035 .canva-lifecycle-aside dt {font-size:12px;color:#64758d;font-weight:900;}
+ #app .canva-lifecycle-035 .canva-lifecycle-aside dd {font-size:16px;color:#172b45;font-weight:900;margin:0;}
+ #app .canva-lifecycle-035 .canva-lifecycle-reason {display:flex;flex-direction:column;gap:10px;font-size:13px;font-weight:900;color:#172b45;margin:25px 0 50px;}
+ #app .canva-lifecycle-035 .canva-lifecycle-reason textarea {width:100%;min-height:75px;border:1px solid #dce5ee;border-radius:8px;background:#fff;padding:10px 12px;font:inherit;font-size:13px;color:#172b45;resize:vertical;}
+ #app .canva-lifecycle-035 .canva-lifecycle-aside button {width:100%;min-height:49px;margin-top:13px;font-weight:900;}
+ #app .canva-lifecycle-035 .canva-lifecycle-aside button:disabled {opacity:.56;cursor:not-allowed;}
+ @media(max-width:1180px) {
+  #app .canva-lifecycle-035 .canva-lifecycle-layout {grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:12px;margin:0 8px;}
+  #app .canva-lifecycle-035 .canva-lifecycle-main,#app .canva-lifecycle-035 .canva-lifecycle-aside {padding:12px;}
+ }
+}

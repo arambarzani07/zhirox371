@@ -240,6 +240,29 @@ try {
  assert.equal(await page.locator(".section-workspace__metric").first().innerText().then(x=>x.includes("لیستی کاڵاکان")),true);
  await page.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 035: never claim a barcode is active or permit unauthorized
+ // stop/restoration when the DEMO product model lacks trusted status.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(1).click();
+ await page.getByRole("button",{name:"ناچالاککردن و گەڕاندنەوەی کاڵا"}).click();
+ const lifecycle035=page.locator('[data-canva-screen="035"]');
+ await lifecycle035.waitFor({state:"visible"});
+ assert.equal(await lifecycle035.locator("h1").innerText(),"ناچالاککردن و گەڕاندنەوەی کاڵا");
+ assert.equal(await lifecycle035.getByRole("button",{name:"داواکردنی ناچالاککردن"}).isDisabled(),true);
+ assert.equal(await lifecycle035.getByRole("button",{name:"گەڕاندنەوەی کاڵا"}).isDisabled(),true);
+ await lifecycle035.getByPlaceholder("دۆزینەوەی کاڵا بە ناو یان بارکۆد").fill("2000000000018");
+ await lifecycle035.getByRole("button",{name:/ئاوی کانی چنار 500ml — 2000000000018/}).click();
+ assert.ok(await lifecycle035.locator(".canva-lifecycle-table tbody tr[data-lifecycle-status]").count()>=3);
+ assert.equal(await lifecycle035.locator(".canva-lifecycle-table tbody tr[data-lifecycle-status='unverified']").count(),await lifecycle035.locator(".canva-lifecycle-table tbody tr[data-lifecycle-status]").count());
+ assert.match(await lifecycle035.locator(".canva-lifecycle-table tbody").innerText(),/2000000000025/);
+ assert.equal(await lifecycle035.locator(".canva-lifecycle-aside dd").nth(0).innerText(),"پشتڕاست نەکراوە");
+ assert.equal(await lifecycle035.locator(".canva-lifecycle-aside dd").nth(1).innerText(),"—");
+ await lifecycle035.getByPlaceholder("هۆکاری ناچالاککردن").fill("هۆکاری تاقیکردنەوە، نەک داواکاری فەرمی");
+ assert.equal(await lifecycle035.getByRole("button",{name:"داواکردنی ناچالاککردن"}).isDisabled(),true);
+ assert.equal(await lifecycle035.getByRole("button",{name:"گەڕاندنەوەی کاڵا"}).isDisabled(),true);
+ await lifecycle035.getByRole("button",{name:"کاڵا و نرخ"}).click();
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 028: preview only, before any real local DEMO price edits.
  await page.locator(".home-screen .module").nth(1).click();
  await page.locator(".home-screen .subgrid .sub").nth(2).click();
