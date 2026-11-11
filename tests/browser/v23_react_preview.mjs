@@ -105,6 +105,27 @@ try {
  assert.equal(await page.locator('[data-canva-screen="024"]').count(),1);
  await barcodeScreen.locator(".canva-catalog-home").click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 029: user-facing permission matrix is only a role specification;
+ // no authenticated actor, no real requests, and no authorization granted.
+ await page.locator(".home-screen .module").nth(1).click();
+ await page.locator(".home-screen .subgrid .sub").nth(2).click();
+ await page.getByRole("button",{name:"دەسەڵاتی کاشێر و بەڕێوەبەر"}).click();
+ const permissions029=page.locator('[data-canva-screen="029"]');
+ await permissions029.waitFor({state:"visible"});
+ assert.equal(await permissions029.locator("h1").innerText(),"دەسەڵاتی کاشێر و بەڕێوەبەر");
+ assert.equal(await permissions029.locator(".canva-permission-table tbody tr").count(),5);
+ assert.equal(await permissions029.locator('[data-policy-action="change-sale-price"] td').nth(1).innerText(),"داواکاری");
+ assert.equal(await permissions029.locator('[data-policy-action="change-sale-price"] td').nth(2).innerText(),"دەستکاری");
+ assert.equal(await permissions029.locator(".canva-permission-aside dd").first().innerText(),"پشتڕاست نەکراوە");
+ assert.equal(await permissions029.getByRole("button",{name:"ناردنی داواکاری"}).isDisabled(),true);
+ await permissions029.getByPlaceholder("هۆکاری داواکاری بنووسە").fill("دروستکردنی داواکاریی تاقیکردنەوە");
+ assert.equal(await permissions029.locator(".canva-permission-aside dd").last().innerText(),"نەنێردراوە");
+ assert.equal(await permissions029.getByRole("button",{name:"ناردنی داواکاری"}).isDisabled(),true);
+ await permissions029.locator('[data-policy-action="bulk-price"]').getByRole("button",{name:"گۆڕینی نرخ بەکۆمەڵ"}).click();
+ assert.equal(await page.locator('[data-canva-screen="028"]').count(),1);
+ await page.locator('[data-canva-screen="028"]').getByRole("button",{name:"هەڵوەشاندنەوە",exact:true}).click();
+ await page.locator(".canva-catalog-home").click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 028: preview only, before any real local DEMO price edits.
  await page.locator(".home-screen .module").nth(1).click();
  await page.locator(".home-screen .subgrid .sub").nth(2).click();

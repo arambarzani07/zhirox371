@@ -11,7 +11,7 @@
 |---|---|
 | Original Canva screen-to-GitHub ID mapping | 148/148 committed |
 | Original Canva source screens | 148 distinct single-page designs in existing folder; unmodified |
-| Native 1920×1080 text-container geometry captured | 022 (34), 023 (30), 024 (40), 025 (56), 026 (40), 027 (48), **028 (44)** |
+| Native 1920×1080 text-container geometry captured | 022 (34), 023 (30), 024 (40), 025 (56), 026 (40), 027 (48), 028 (44), **029 (35)** |
 | GitHub React design-reference route | `?canva-source=001..148` (explicit opt-in) |
 | React UI alignment work | 001, 002, 021, 022, 023 **partial only** |
 | In-screen product editor 023 | Source-measured column proportions, item search and permissions panel; live editor remains the existing DEMO implementation |
@@ -20,6 +20,7 @@
 | Original screen 026 | Exact local-DEMO read-only barcode scanner, cross-product and cross-unit duplicate detection for unit/carton/bundle/set/kg and aliases; **not a production-wide scan or proven pixel parity** |
 | Original screen 027 | Five original Canva unit rows (unit, carton, bundle, set, kg), actual local-DEMO selling and purchase prices only, last known real DEMO change date; approval action disabled pending screen 029; **pixel parity NOT verified** |
 | Original screen 028 | Read-only bulk price **preview**, actual category-scoped unit/carton prices and bounded percent/IQD calculation; wholesale unsupported; no approval or write path; **pixel parity NOT verified** |
+| Original screen 029 | Original 5-row cashier/manager permission template and local request-reason draft, navigation to 028/026; **identity unverified, submission disabled, no backend authorization or price write**, pixel parity unverified |
 | Pixel-perfect typography, shapes, icons, colors, responsive states | **Not verified** |
 | Real role-based permission approval for price edits | **Not verified in preview**; approval request is disabled rather than presented as real |
 | Functional POS parity for all 148 screens | **Not done — NO-GO** |
@@ -33,6 +34,7 @@ Geometry files are grounded in the original Canva editable text container positi
 - [026 original text bounds](./canva-original-screen-026-geometry.json)
 - [027 original text bounds](./canva-original-screen-027-geometry.json)
 - [028 original text bounds](./canva-original-screen-028-geometry.json)
+- [029 original text bounds](./canva-original-screen-029-geometry.json)
 
 These do **not** include full editable vector/shape styling, fonts/weights, backgrounds, icon geometry or all visual states. Until a rendered 1920×1080 screen is compared to the authentic original using exported artwork/layer styles and functional tests, label each screen **partial**, not "pixel-perfect." Preserve the same project and never replace existing Canva originals.
 

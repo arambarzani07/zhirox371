@@ -878,3 +878,37 @@
   #app .canva-bulk-price-028 .canva-bulk-price-main,#app .canva-bulk-price-028 .canva-bulk-price-aside {padding:12px;}
  }
 }
+
+/* Authentic Canva 029 source DAHaaSStk5E, original 1920x1080 text bounds:
+ * 1206px main / 511.2px aside. Full rendered pixel parity remains pending. */
+@media screen {
+ #app .canva-permissions-029 {direction:rtl;display:flex;flex-direction:column;gap:14px;min-width:0;color:#172b45;font-family:"Noto Kufi Arabic","Noto Sans Arabic",Tahoma,sans-serif;}
+ #app .canva-permissions-029 .canva-permission-heading {background:#fff;}
+ #app .canva-permissions-029 .canva-permission-layout {display:grid;direction:rtl;grid-template-columns:minmax(0,1206fr) minmax(280px,511.2fr);gap:clamp(18px,4.0625vw,78px);margin:0 3.25%;align-items:start;}
+ #app .canva-permissions-029 .canva-permission-main,#app .canva-permissions-029 .canva-permission-aside {background:#fff;border:1px solid #e0e7f0;border-radius:10px;padding:18px 22px;min-width:0;min-height:650px;}
+ #app .canva-permissions-029 h2 {margin:0 0 20px;font-size:19px;font-weight:900;line-height:1.6;text-align:right;color:#172b45;}
+ #app .canva-permissions-029 .canva-permission-intro {background:#f6f9fc;border-radius:8px;color:#46627b;font-size:14px;font-weight:850;padding:13px 14px;margin:18px 0 40px;}
+ #app .canva-permissions-029 .canva-permission-table-scroll {width:100%;overflow-x:auto;}
+ #app .canva-permissions-029 .canva-permission-table {width:100%;table-layout:fixed;border-collapse:collapse;direction:rtl;text-align:right;font-size:13px;color:#172b45;}
+ #app .canva-permissions-029 .canva-permission-table th,#app .canva-permissions-029 .canva-permission-table td {height:65px;text-align:right;padding:10px 12px;border-bottom:1px solid #e3eaf1;overflow-wrap:anywhere;}
+ #app .canva-permissions-029 .canva-permission-table th {background:#f1f5f9;font-weight:900;}
+ #app .canva-permissions-029 .canva-permission-table th:nth-child(1) {width:55%;}
+ #app .canva-permissions-029 .canva-permission-table th:nth-child(2) {width:23%;}
+ #app .canva-permissions-029 .canva-permission-table th:nth-child(3) {width:22%;}
+ #app .canva-permissions-029 .canva-permission-linked-action {font:inherit;font-weight:900;background:transparent;color:#172b45;text-align:right;border:1px solid transparent;border-radius:6px;cursor:pointer;min-height:36px;padding:5px;}
+ #app .canva-permissions-029 .canva-permission-linked-action:hover,#app .canva-permissions-029 .canva-permission-linked-action:focus-visible {border-color:#bdcee0;color:#24527d;background:#f1f6fb;}
+ #app .canva-permissions-029 .canva-permission-rule {background:#f6f9fc;color:#526a82;padding:13px 15px;margin:20px 0 0;font-size:12px;font-weight:850;}
+ #app .canva-permissions-029 .canva-permission-unverified {color:#586d82;font-weight:800;font-size:12px;margin:14px 0 0;}
+ #app .canva-permissions-029 .canva-permission-aside dl {display:flex;flex-direction:column;gap:22px;margin:30px 0;}
+ #app .canva-permissions-029 .canva-permission-aside dl>div {display:flex;flex-direction:column;gap:7px;border-bottom:1px solid #e3eaf1;padding-bottom:14px;}
+ #app .canva-permissions-029 .canva-permission-aside dt {color:#64758d;font-size:12px;font-weight:900;}
+ #app .canva-permissions-029 .canva-permission-aside dd {margin:0;font-size:15px;color:#172b45;font-weight:900;}
+ #app .canva-permissions-029 .canva-permission-reason {display:flex;flex-direction:column;gap:9px;color:#172b45;font-size:13px;font-weight:900;text-align:right;margin:34px 0;}
+ #app .canva-permissions-029 .canva-permission-reason textarea {width:100%;background:white;color:#172b45;border:1px solid #dce5ee;border-radius:8px;font:inherit;font-size:13px;padding:10px 12px;resize:vertical;}
+ #app .canva-permissions-029 .canva-permission-aside button {width:100%;min-height:49px;margin-top:12px;font-weight:900;}
+ #app .canva-permissions-029 .canva-permission-aside button:disabled {opacity:.58;cursor:not-allowed;}
+ @media(max-width:1180px){
+  #app .canva-permissions-029 .canva-permission-layout {grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:12px;margin:0 8px;}
+  #app .canva-permissions-029 .canva-permission-main,#app .canva-permissions-029 .canva-permission-aside {padding:12px;}
+ }
+}

@@ -277,3 +277,39 @@ test('Canva 028 preview calculates only real selected product values and remains
   assert.ok(previewBulkPrices028(products,{...req,adjustment:'1e3'}).error);
   assert.equal(JSON.stringify(products),before,'Preview must never write data');
 });
+
+test('Canva 029 original authority matrix source geometry and fail-closed UI',()=>{
+  const geometry=JSON.parse(read('design/canva-original-screen-029-geometry.json'));
+  const component=read('src/components/CanvaPermissions029.tsx');
+  const policy=read('src/utils/permissionPolicy029.ts');
+  const catalog=read('src/components/ProductCatalogView.tsx');
+  const css=read('src/components/canvaOfficialV1.css');
+  assert.equal(geometry.design_id,layout.screens[28].id);
+  assert.equal(geometry.element_count,35);
+  assert.deepEqual(geometry.canvas,{width:1920,height:1080});
+  assert.equal(new Set(geometry.elements.map(x=>x.id)).size,35);
+  assert.match(component,/data-canva-screen="029"/);
+  assert.match(component,/پشتڕاست نەکراوە/);
+  assert.match(component,/نەنێردراوە/);
+  assert.match(component,/disabled=\{!permissions.canSubmitRequest\}/);
+  assert.doesNotMatch(component,/updateProduct\(|addProduct\(|approveRequest\(|setCurrentRole\(/);
+  assert.match(policy,/sessionVerifiedByServer/);
+  assert.match(policy,/canApproveChanges: false/);
+  assert.match(catalog,/activeTab === 'permissions'/);
+  assert.match(css,/canva-permissions-029 \.canva-permission-layout/);
+});
+test('Canva 029 template roles never authorize writes, even if caller passes spoofed manager',async()=>{
+  const {permissionPolicyRows029,authorizationStatus029}=await import('../src/utils/permissionPolicy029.ts');
+  assert.equal(permissionPolicyRows029.length,5);
+  assert.equal(permissionPolicyRows029[0].cashier,'بینین');
+  assert.equal(permissionPolicyRows029[1].cashier,'داواکاری');
+  assert.equal(permissionPolicyRows029[1].manager,'دەستکاری');
+  assert.equal(permissionPolicyRows029[3].cashier,'نەخێر');
+  assert.equal(permissionPolicyRows029[3].manager,'پەسەندکردن');
+  assert.equal(permissionPolicyRows029[4].target,'duplicates');
+  assert.deepEqual(authorizationStatus029(),{
+    isVerified:false,canEditPrices:false,canCreateProduct:false,canApproveChanges:false,canSubmitRequest:false
+  });
+  assert.equal(authorizationStatus029({role:'manager',sessionVerifiedByServer:true,actorId:'forged'}).canApproveChanges,false);
+  assert.equal(authorizationStatus029({role:'cashier',sessionVerifiedByServer:false,actorId:'fake'}).canSubmitRequest,false);
+});
