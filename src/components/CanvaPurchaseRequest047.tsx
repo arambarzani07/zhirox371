@@ -56,7 +56,7 @@ export function CanvaPurchaseRequest047(){
      setNotice('ڕەشنووس تەنها لەم وێبگەڕەدا پاشەکەوت کرا؛ بۆ سێرڤەر نەنێردراوە.');
    }catch{setNotice('پاشەکەوتکردنی ڕەشنووسی ناوخۆیی سەرکەوتوو نەبوو');}
  };
- return <section className="canva-purchase-047" data-canva-screen="047" data-demo-only="true" dir="rtl">
+ return <section className="canva-purchase-047" data-canva-screen="047" data-demo-only="true" data-storage-scope="tab-session" dir="rtl">
   <header className="canva-purchase-heading">
    <h1>داواکاریی کڕین</h1>
    <nav aria-label="ڕێڕەوی کڕین">

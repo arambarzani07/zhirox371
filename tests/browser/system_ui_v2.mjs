@@ -87,7 +87,9 @@ try{
        buttonRight:buttons.map(b=>b.right),rowBottom:row.bottom,
        appY:document.querySelector("#app").getBoundingClientRect().y};
    });
-   assert.ok(Math.abs(g.headBottom-g.rowY)<3&&Math.abs(g.rowBottom-g.appY)<3,"subnav directly between top nav and content");
+   const navAligned=Math.abs(g.headBottom-g.rowY)<3&&Math.abs(g.rowBottom-g.appY)<3;
+   if(!navAligned)console.error("NAV_GEOMETRY",JSON.stringify({moduleIndex:i,...g}));
+   assert.ok(navAligned,"subnav directly between top nav and content");
    assert.ok(g.buttonY.every(y=>Math.abs(y-g.buttonY[0])<3),"all four subtabs horizontally aligned");
    assert.ok(g.buttonRight.every((v,k)=>k===0||v<g.buttonRight[k-1]),"subtabs flow RTL without stacked columns");
    assert.equal(await page.locator(".system-module-column,.system-submodule-column,.module,.drawer").count(),0);
