@@ -1,35 +1,44 @@
-/* Unified System-Wide Workspace Design System for all 48 semantic submodules.
-   Ensures every section and sub-section shares the exact same header, KPI strip,
-   action/form bar, button sizing, and data table geometry.
-   Does not apply to thermal receipts or print media. */
+/* Shared desktop workspace controls from the Canva PC reference.
+   Screen-specific layouts keep their own structure and sizing. */
 @media screen {
  #root > .viewport > .desktop > main#app.system-two-rows > section.section-workspace {
    box-sizing:border-box;width:100%!important;max-width:none!important;
-   height:calc(100dvh - 159px)!important;max-height:calc(100dvh - 159px)!important;
-   min-height:0!important;margin:0!important;padding:8px 18px 10px!important;
+   height:100%!important;max-height:100%!important;
+   min-height:0!important;margin:0!important;padding:0 2vw clamp(16px, 3vh, 32px)!important;
    display:flex!important;flex-direction:column!important;overflow:hidden!important;
-   background:#f4f6fa;color:#1d3450;
+   background:#f2f5f9;color:#173757;
+   font-family:"Noto Kufi Arabic",Tahoma,sans-serif;
  }
  #app .section-workspace__header {
-   flex:0 0 auto;display:flex;align-items:center;gap:10px;min-height:32px;
-   margin:0 0 6px;padding-bottom:5px;
-   border-bottom:1px solid #e2e9f1;
+   flex:none;
+   display:grid;
+   grid-template-columns:minmax(0, 59%) 1fr auto;
+   align-items:center;
+   gap:12px;
+   min-height:clamp(64px, 9.3vh, 100px);
+   margin:0 0 clamp(12px, 2.1vh, 23px);
+   border-bottom:1px solid #e2eaf3;
  }
  #app .section-workspace__header h1 {
-   flex:1;min-width:0;margin:0!important;
-   font:900 17px Tahoma,"Segoe UI",sans-serif!important;
-   color:#1d3450!important;line-height:1.3;
+   margin:0 1vw 0 0;
+   padding-inline-start:8px;
+   border-inline-start:3px solid #00949d;
+   color:#173757;
+   font-size:clamp(20px, 1.6vw, 31px);
+   line-height:1.5;
  }
- #app .section-workspace__icon {
-   flex:none;width:30px;height:30px;
-   display:grid;place-items:center;
-   background:#e8f1fa;color:#203e66;
-   border:1px solid #d5e3f0;border-radius:8px;
+ #app .section-workspace__breadcrumb {
+   color:#526d89;
+   font-size:clamp(11px, .78vw, 15px);
  }
- #app .section-workspace__icon svg {width:17px;height:17px;stroke:currentColor;}
+ #app .section-workspace .section-workspace__home-btn {
+   min-width:clamp(105px, 8.65vw, 166px);
+   min-height:clamp(40px, 5.3vh, 57px);
+ }
+ #app .section-workspace__actions { display:flex; gap:8px; align-items:center; }
  #app .section-workspace__pending {
    flex:none;border:1px solid #e7d5b4;background:#fff8e9;color:#936620;
-   border-radius:8px;padding:5px 10px;font:850 11px Tahoma,"Segoe UI",sans-serif;
+   border-radius:8px;padding:5px 10px;font:850 11px "Noto Kufi Arabic",Tahoma,sans-serif;
  }
 
  /* Unified layout stack inside any submodule */
@@ -46,25 +55,25 @@
  }
  #app .ws-kpi-card {
    background:#ffffff;
-   border:1px solid #dde6f0;
+   border:1px solid #d1e0ee;
    border-radius:10px;
    padding:8px 14px;
    display:flex;flex-direction:column;gap:2px;
  }
  #app .ws-kpi-label {
-   font:800 11.5px Tahoma,"Segoe UI",sans-serif;
-   color:#536c85;
+   font:800 11.5px "Noto Kufi Arabic",Tahoma,sans-serif;
+   color:#526d89;
  }
  #app .ws-kpi-value {
-   font:900 18px Tahoma,"Segoe UI",sans-serif;
-   color:#1d3450;
+   font:900 18px "Noto Kufi Arabic",Tahoma,sans-serif;
+   color:#173757;
    direction:ltr;text-align:right;
    font-variant-numeric:tabular-nums;
  }
  #app .ws-kpi-value.positive {color:#15803d;}
  #app .ws-kpi-value.negative {color:#b91c1c;}
  #app .ws-kpi-sub {
-   font:700 10.5px Tahoma,"Segoe UI",sans-serif;
+   font:700 10.5px "Noto Kufi Arabic",Tahoma,sans-serif;
    color:#74899f;
  }
 
@@ -73,15 +82,15 @@
  #app .section-workspace .surface {
    flex:0 0 auto;position:relative;
    background:#ffffff!important;
-   border:1px solid #dde6f0!important;
-   border-radius:10px!important;
+   border:1px solid #d1e0ee!important;
+   border-radius:8px!important;
    padding:9px 14px!important;
    box-shadow:none!important;
  }
  #app .ws-panel-title {
    margin:0 0 6px!important;
-   font:900 13.5px Tahoma,"Segoe UI",sans-serif!important;
-   color:#1d3450!important;
+   font:900 13.5px "Noto Kufi Arabic",Tahoma,sans-serif!important;
+   color:#173757!important;
  }
  #app .ws-toolbar,
  #app .section-workspace .toolbar {
@@ -97,7 +106,7 @@
  /* Unified Form Controls */
  #app .section-workspace .form-col {
    display:flex;flex-direction:column;gap:4px;
-   font:800 11.5px Tahoma,"Segoe UI",sans-serif;color:#243b55;
+   font:800 11.5px "Noto Kufi Arabic",Tahoma,sans-serif;color:#243b55;
    margin:0;
  }
  #app .section-workspace .form-col input,
@@ -105,9 +114,9 @@
  #app .section-workspace .form-col textarea,
  #app .section-workspace .input-search {
    width:100%;height:33px;box-sizing:border-box;
-   padding:0 10px;border:1px solid #cbd6e2;border-radius:7px;
-   background:#f9fbfd;color:#1d3450;
-   font:750 12px Tahoma,"Segoe UI",sans-serif;
+   padding:0 10px;border:1px solid #d1e0ee;border-radius:7px;
+   background:#f5f8fb;color:#173757;
+   font:750 12px "Noto Kufi Arabic",Tahoma,sans-serif;
  }
  #app .section-workspace .form-col textarea {
    height:auto;min-height:56px;padding:6px 10px;
@@ -121,8 +130,8 @@
  #app .section-workspace .ws-btn-primary {
    height:33px;padding:0 14px;
    border-radius:7px;border:1px solid #1e3a5f;
-   background:#203e66;color:#ffffff!important;
-   font:850 12px Tahoma,"Segoe UI",sans-serif;
+   background:#173757;color:#ffffff!important;
+   font:850 12px "Noto Kufi Arabic",Tahoma,sans-serif;
    cursor:pointer;white-space:nowrap;
    display:inline-flex;align-items:center;justify-content:center;gap:6px;
  }
@@ -130,9 +139,9 @@
  #app .section-workspace .ws-btn-secondary,
  #app .section-workspace .catalog-table-btn {
    height:32px;padding:0 11px;
-   border-radius:7px;border:1px solid #cbd6e2;
-   background:#f5f8fb;color:#1d3450!important;
-   font:800 11.5px Tahoma,"Segoe UI",sans-serif;
+   border-radius:7px;border:1px solid #d1e0ee;
+   background:#fff;color:#173757!important;
+   font:800 11.5px "Noto Kufi Arabic",Tahoma,sans-serif;
    cursor:pointer;white-space:nowrap;
    display:inline-flex;align-items:center;justify-content:center;gap:6px;
  }
@@ -141,7 +150,7 @@
  #app .section-workspace__table {
    flex:0 1 auto;height:auto;min-height:0;
    background:#ffffff;
-   border:1px solid #dde6f0;border-radius:10px;
+   border:1px solid #d1e0ee;border-radius:10px;
    overflow-y:auto!important;overflow-x:auto!important;
    max-height:100%!important;box-shadow:none;
  }
@@ -157,16 +166,16 @@
  #app .section-workspace__table table,
  #app .section-workspace table.table {
    width:100%;border-collapse:collapse;text-align:right;
-   font:750 12px Tahoma,"Segoe UI",sans-serif;
+   font:750 12px "Noto Kufi Arabic",Tahoma,sans-serif;
    background:#ffffff;
  }
  #app .section-workspace__table th,
  #app .section-workspace table.table th {
    position:sticky;top:0;z-index:5;
-   background:#f5f8fb!important;color:#536c85!important;
+   background:#eaf1f6!important;color:#526d89!important;
    border-bottom:1px solid #e0e8f0!important;
    padding:8px 12px!important;text-align:right!important;white-space:nowrap;
-   font:850 11.5px Tahoma,"Segoe UI",sans-serif!important;
+   font:850 11.5px "Noto Kufi Arabic",Tahoma,sans-serif!important;
  }
  #app .section-workspace__table td,
  #app .section-workspace table.table td {
@@ -178,19 +187,19 @@
  #app .section-workspace__table td.section-workspace__empty,
  #app .section-workspace .blank {
    text-align:center!important;padding:24px 14px!important;
-   color:#7b8da0!important;font:800 13px Tahoma,"Segoe UI",sans-serif;
+   color:#7b8da0!important;font:800 13px "Noto Kufi Arabic",Tahoma,sans-serif;
  }
  #app .section-workspace__metric {
-   display:block;padding:8px 14px;color:#1d3450;
-   font:900 14px Tahoma,"Segoe UI",sans-serif;
+   display:block;padding:8px 14px;color:#173757;
+   font:900 14px "Noto Kufi Arabic",Tahoma,sans-serif;
    border-bottom:1px solid #e4ebf1;
-   background:#f9fbfd;
+   background:#f5f8fb;
    direction:rtl;text-align:right;
    font-variant-numeric:tabular-nums;
  }
  #app .section-workspace__live {
    flex:1 1 0%;min-height:0;
-   display:flex;flex-direction:column;overflow:hidden;
+   display:flex;flex-direction:column;overflow:auto;
    width:100%;max-width:none;margin:0;padding:0;
  }
  #app .section-workspace__live > div,
@@ -206,7 +215,7 @@
  #app .ws-badge {
    display:inline-flex;align-items:center;justify-content:center;
    padding:3px 9px;border-radius:6px;
-   font:850 11px Tahoma,"Segoe UI",sans-serif;white-space:nowrap;
+   font:850 11px "Noto Kufi Arabic",Tahoma,sans-serif;white-space:nowrap;
  }
  #app .ws-badge.success {background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
  #app .ws-badge.warning {background:#fef3c7;color:#92400e;border:1px solid #fde68a;}

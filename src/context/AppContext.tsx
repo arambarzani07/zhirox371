@@ -812,7 +812,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addAuditLog(
       'پارەدان بە دابینکەر',
       `بڕی ${amount.toLocaleString('en-US')} IQD درا بە دابینکەر (${sup?.name || supplierId})${fromCashDrawer ? ' لە سندووقی کاشێر' : ' لە قاسەی گشتی'}`,
-      { supplierId, amount }
+      { supplierId, amount, source: fromCashDrawer ? 'drawer' : 'safe' }
     );
   };
 

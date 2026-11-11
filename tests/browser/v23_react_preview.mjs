@@ -90,7 +90,18 @@ try {
  assert.match(await suppliers046.getByRole("region",{name:"زانیاری پەیوەندی"}).innerText(),/0770 111 2233/);
  await suppliers046.getByRole("button",{name:"کۆی قەرز"}).click();
  assert.equal(await page.locator('[data-section-id="supplier-accounts"]').count(),1);
- await page.locator(".section-workspace__home-btn").click();
+ const accounts052=page.locator('[data-canva-screen="052"]');
+ await accounts052.getByRole("button",{name:"مێژووی پارەدان"}).click();
+ const payments053=page.locator('[data-canva-screen="053"]');
+ await payments053.getByRole("button",{name:"پارەدانی نوێ"}).click();
+ await payments053.getByRole("combobox",{name:"دابینکەر",exact:true}).selectOption("sup-1");
+ await payments053.getByLabel("بڕی پارەی دراو").fill("999999999");
+ assert.equal(await payments053.getByRole("button",{name:"تۆمارکردنی پارەدان بە دابینکەر"}).isDisabled(),true);
+ await payments053.getByRole("combobox",{name:"سەرچاوەی پارەدان",exact:true}).selectOption("safe");
+ await payments053.getByLabel("بڕی پارەی دراو").fill("250");
+ await payments053.getByRole("button",{name:"تۆمارکردنی پارەدان بە دابینکەر"}).click();
+ assert.match(await payments053.locator("tbody").innerText(),/250 IQD/);
+ await payments053.getByRole("button",{name:"ماڵەوە",exact:true}).click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 047: request draft only. Actual procurement, manager approval,
  // stock movement and real supplier payments remain untouched.

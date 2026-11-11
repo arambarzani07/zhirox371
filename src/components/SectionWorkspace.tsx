@@ -3,13 +3,13 @@ import {CanvaPurchaseOrder048} from './CanvaPurchaseOrder048';
 import {CanvaPurchaseReceiving049} from './CanvaPurchaseReceiving049';
 import React, { useEffect, useState } from "react";
 import {useApp} from "../context/AppContext";
-import {MODULE_SPECS,CardIcon} from "./CardIcon";
+import {MODULE_SPECS} from "./CardIcon";
 import {CashierPos} from "./CashierPos";
 import {LocalCashierV32} from "./LocalCashierV32";
 import {ProductCatalogView} from "./ProductCatalogView";
 import {InventoryStockView} from "./InventoryStockView";
 import {CustomersLedgerView} from "./CustomersLedgerView";
-import {SuppliersView} from "./SuppliersView";
+import {CanvaSupplierPayments053} from "./CanvaSupplierPayments053";
 import {CanvaSuppliers046} from "./CanvaSuppliers046";
 import {CanvaPurchaseRequest047} from "./CanvaPurchaseRequest047";
 import {FinanceShiftView} from "./FinanceShiftView";
@@ -19,7 +19,7 @@ import {OperationalSubmodulesView} from "./OperationalSubmodulesView";
 import {localCashierV32} from "../localCashierModeV32";
 import {KurdishVoiceAnnouncer} from "../utils/kurdishVoiceEngine";
 import {KurdishVoiceAssistantModal} from "./KurdishVoiceAssistantModal";
-import "./sectionWorkspace.css";
+import {CanvaWorkspaceHeader} from "./CanvaWorkspace";
 
 // Every semantic submodule has a permanent, unique screen. Connected demo
 // workflows reuse their existing components; operational workflows render
@@ -124,7 +124,7 @@ export const SectionWorkspace:React.FC<{sectionId:string}>=({sectionId})=>{
    case "products":return <ProductCatalogView key={sectionId}/>;
    case "stock":return <InventoryStockView key={sectionId}/>;
    case "customers":return <CustomersLedgerView key={sectionId}/>;
-   case "suppliers":return sectionId==="supplier-building"?<CanvaSuppliers046 key={sectionId}/>:state.subtab==="payments"?<SuppliersView key={sectionId}/>:<CanvaSupplierRecords screen="052"/>;
+   case "suppliers":return sectionId==="supplier-building"?<CanvaSuppliers046 key={sectionId}/>:state.subtab==="payments"?<CanvaSupplierPayments053/>:<CanvaSupplierRecords screen="052"/>;
    case "finance":return <FinanceShiftView key={sectionId}/>;
    case "labels":return <LabelsPrintView key={sectionId}/>;
    case "diagnostics":return <DiagnosticsQaView key={sectionId}/>;
@@ -139,47 +139,12 @@ export const SectionWorkspace:React.FC<{sectionId:string}>=({sectionId})=>{
  })();
  return <section className="section-workspace" data-section-id={sectionId} data-section-title={found.label}
     data-module-id={found.moduleId} dir="rtl">
-   <div className="section-workspace__header">
-     <span className="section-workspace__icon"><CardIcon id={sectionId} size={25}/></span>
-     <div className="section-workspace__title-group">
-       <span className="section-workspace__breadcrumb">{found.moduleTitle} ‹</span>
-       <h1>{found.label}</h1>
-     </div>
-     {data&&!data.ready&&<span className="section-workspace__pending">هێشتا چالاک نییە</span>}
-     <div style={{ marginInlineStart: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
-       {found.moduleId === 7 && (
-         <button
-           id="settings-voice-studio-btn"
-           type="button"
-           className="secondary"
-           onClick={() => setShowSettingsVoiceModal(true)}
-           style={{
-             height: "32px",
-             padding: "0 12px",
-             fontSize: "11.5px",
-             fontWeight: 850,
-             background: "#eff6ff",
-             color: "#1e3a8a",
-             borderColor: "#bfdbfe",
-             display: "inline-flex",
-             alignItems: "center",
-             gap: "6px"
-           }}
-         >
-           🎙️ ستۆدیۆی دەنگی کوردی و AI
-         </button>
-       )}
-       <button
-         type="button"
-         className="secondary section-workspace__home-btn"
-         onClick={() => state.navigateTo("home")}
-         title="گەڕانەوەی خێرا بۆ شاشەی سەرەکی"
-         style={{ marginInlineStart: 0 }}
-       >
-         ⌂ گەڕانەوە بۆ سەرەتا
-       </button>
-     </div>
-   </div>
+   <CanvaWorkspaceHeader title={found.label} category={found.moduleTitle} actions={
+     found.moduleId === 7 && (
+       <button id="settings-voice-studio-btn" type="button" className="secondary"
+         onClick={() => setShowSettingsVoiceModal(true)}>ستۆدیۆی دەنگی کوردی و AI</button>
+     )
+   }/>
    {component?<div className="section-workspace__live">{component}</div>:
      <div className="section-workspace__table" role="region" aria-label={found.label}>
        {data?.metric&&<strong className="section-workspace__metric">{data.metric}</strong>}

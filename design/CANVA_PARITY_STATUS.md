@@ -145,3 +145,9 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - 051 uses the same receipt lines for a tab-local return draft. It validates quantity against the received amount and previews the value. Submitting an approved return requires a server endpoint.
 - 052 shows structured local invoice records and supplier payments still present in the capped audit log. The outstanding balance comes from the supplier record. Existing account-level payment entry is accessible through the account details action. Old records lack the fields needed to reconstruct invoice history or running balances.
 - Verified the build, 38 Canva source tests and browser workflows at 1920×1080 and 1366×768. Visual comparison used the original Canva exports. Exact pixel parity remains unverified.
+
+### Shared Canva workspace and supplier payment history 053
+- The main React PC app uses one Canva-derived workspace heading and control style for module and direct navigation. Screen-specific layouts keep their own geometry. Noto Kufi Arabic ships locally for offline rendering.
+- 053 replaces the old supplier payment view. It lists the structured payment records still present in the local audit log, filters by drawer or safe, and reuses the account-level payment handler. The form checks the supplier balance and available drawer cash.
+- Browser checks passed for the 12 main sections, 48 sub-tabs, Home, demo checkout and receipt printing, and supplier payment entry and persistence. Build and 38 source tests passed.
+- This changes the shared PC design and the supplier payment workflow. Remaining screens need individual Canva layout work, and the separate pilot entrypoints still need review. Per-screen exact visual parity and a dedicated supplier payment history print layout remain unverified.

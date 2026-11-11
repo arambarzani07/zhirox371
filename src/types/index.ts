@@ -169,7 +169,7 @@ export interface PriceChangeAudit025 {
 }
 
 export interface AuditLogEntry {
-  supplierPayment?: { supplierId: string; amount: number };
+  supplierPayment?: { supplierId: string; amount: number; source?: 'drawer' | 'safe' };
   priceChange?: PriceChangeAudit025;
   id: string;
   timestamp: string;

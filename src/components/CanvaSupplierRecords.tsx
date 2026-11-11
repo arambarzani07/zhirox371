@@ -129,7 +129,7 @@ export function CanvaSupplierRecords({ screen }: { screen: '050' | '051' | '052'
         ['کۆی پسووڵە', rows.length ? money(total) : '—'], ['پارەی پێدراو', '—'], ['پارەی ماوەی پسووڵە', '—'],
       ]).map(([label, value]) => <div key={label}><dt>{label}</dt><dd><bdi>{value}</bdi></dd></div>)}</dl>}
       actions={isLedger ? <>
-        <button type="button" className="stock-036-primary" onClick={() => navigateTo('suppliers', 'payments', 'supplier-accounts')}>بینینی وردەکاریی حساب</button>
+        <button type="button" className="stock-036-primary" onClick={() => navigateTo('suppliers', 'payments', 'supplier-accounts')}>مێژووی پارەدان</button>
         <button type="button" onClick={() => navigateTo('suppliers', 'list', 'supplier-building')}>گەڕانەوە بۆ دابینکەران</button>
       </> : isReturn ? <>
         <button type="button" className="stock-036-primary" disabled>ناردن بۆ پەسەندکردن</button>
