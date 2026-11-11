@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Product } from '../types';
 import { formatDateTime, money } from '../utils/retailHelpers';
+import { matchesUnitPriceQuery027 } from '../utils/unitPrices027';
+import { CanvaStockOverview036 } from './CanvaStockOverview036';
 
 export const InventoryStockView: React.FC = () => {
-  const { products, suppliers, receiveStock, adjustStock, updateProduct, stockMovements, subtab, activeSectionId } =
+  const { products, suppliers, receiveStock, adjustStock, updateProduct, stockMovements, subtab, activeSectionId, navigateTo } =
     useApp();
 
   const resolveMode = (): 'overview' | 'low' | 'expiry' | 'receive' | 'movements' => {
@@ -130,11 +132,22 @@ export const InventoryStockView: React.FC = () => {
     setAdjustingProd(null);
   };
 
+  const openStockAdjustment = (product: Product) => {
+    setAdjustingProd(product);
+    setAdjustMode('unit');
+    setAdjustDelta('1');
+  };
+
+  const overviewQuery = search.trim().toLowerCase();
   const filteredProducts = products
     .filter(p => {
+      if (activeTab === 'overview') {
+        return !overviewQuery || matchesUnitPriceQuery027(p, overviewQuery)
+          || Boolean(p.category?.toLowerCase().includes(overviewQuery));
+      }
       const match = p.name.toLowerCase().includes(search.toLowerCase()) || p.unit_barcode.includes(search);
       if (!match) return false;
-      if (activeTab === 'low') return p.stock <= (p.min_stock || 10);
+      if (activeTab === 'low') return p.stock <= (p.min_stock ?? 10);
       if (activeTab === 'expiry') return Boolean(p.expiry_date);
       return true;
     })
@@ -159,7 +172,7 @@ export const InventoryStockView: React.FC = () => {
   });
 
   const totalUnitsInStock = products.reduce((s, p) => s + p.stock, 0);
-  const lowStockCount = products.filter(p => p.stock <= (p.min_stock || 10)).length;
+  const lowStockCount = products.filter(p => p.stock <= (p.min_stock ?? 10)).length;
   const expiryTrackedCount = products.filter(p => Boolean(p.expiry_date)).length;
 
   const getDaysUntilExpiry = (dateStr?: string | null): number | null => {
@@ -170,7 +183,7 @@ export const InventoryStockView: React.FC = () => {
   };
 
   return (
-    <div className="ws-stack">
+    <div className={activeTab === 'overview' ? 'ws-stack stock-036-shell' : 'ws-stack'}>
       {/* 1. RECEIVE GOODS SUBMODULE (وەرگرتنی کاڵا) */}
       {activeTab === 'receive' && (
         <>
@@ -619,8 +632,15 @@ export const InventoryStockView: React.FC = () => {
         </>
       )}
 
-      {/* 3. OVERVIEW, LOW STOCK, OR EXPIRY SUBMODULES */}
-      {(activeTab === 'overview' || activeTab === 'low' || activeTab === 'expiry') && (
+      {activeTab === 'overview' && (
+        <CanvaStockOverview036 products={products} filteredProducts={filteredProducts}
+          lowStockCount={lowStockCount} search={search} onSearch={setSearch}
+          onAdjust={openStockAdjustment} onHome={() => navigateTo('home')}
+          onMovements={() => navigateTo('stock', 'receive', 'stock-transfer')} />
+      )}
+
+      {/* 3. LOW STOCK AND EXPIRY SUBMODULES */}
+      {(activeTab === 'low' || activeTab === 'expiry') && (
         <>
           <div className="ws-kpi-grid">
             <div className="ws-kpi-card">
@@ -647,9 +667,7 @@ export const InventoryStockView: React.FC = () => {
               <span style={{ fontWeight: 900, fontSize: '13px', color: '#1d3450' }}>
                 {activeTab === 'low'
                   ? 'لیستی کاڵا کەمبووەکانی کۆگا (کۆگا ≤ کەمترین بڕ)'
-                  : activeTab === 'expiry'
-                  ? 'چاودێری بەرواری بەسەرچوونی کاڵاکان (ڕیزبەندکراو بەپێی FEFO)'
-                  : 'باڵانسی یەکە و کارتۆنی کاڵاکانی ناو کۆگا'}
+                  : 'چاودێری بەرواری بەسەرچوونی کاڵاکان (ڕیزبەندکراو بەپێی FEFO)'}
               </span>
               <input
                 type="text"
@@ -665,9 +683,7 @@ export const InventoryStockView: React.FC = () => {
             <strong className="section-workspace__metric">
               {activeTab === 'low'
                 ? `کاڵا کەمبووەکان لە کۆگا (${filteredProducts.length} کاڵا)`
-                : activeTab === 'expiry'
-                ? `کاڵاکانی خاوەن بەرواری بەسەرچوون (${filteredProducts.length} کاڵا)`
-                : `لیستی بڕی بەردەستی کاڵاکان (${filteredProducts.length} کاڵا)`}
+                : `کاڵاکانی خاوەن بەرواری بەسەرچوون (${filteredProducts.length} کاڵا)`}
             </strong>
             <table>
               <thead>
@@ -706,12 +722,12 @@ export const InventoryStockView: React.FC = () => {
                         <td
                           style={{
                             fontWeight: 900,
-                            color: p.stock <= 0 ? '#b91c1c' : p.stock <= (p.min_stock || 10) ? '#b45309' : '#15803d'
+                            color: p.stock <= 0 ? '#b91c1c' : p.stock <= (p.min_stock ?? 10) ? '#b45309' : '#15803d'
                           }}
                         >
                           {p.stock}
                         </td>
-                        <td>{p.min_stock || 10}</td>
+                        <td>{p.min_stock ?? 10}</td>
                         <td>{p.base_unit === 'kg' ? 'کیلۆگرام' : 'دانە'}</td>
                         <td>
                           {cartonEquiv
@@ -793,11 +809,7 @@ export const InventoryStockView: React.FC = () => {
                             <button
                               type="button"
                               className="secondary"
-                              onClick={() => {
-                                setAdjustingProd(p);
-                                setAdjustMode('unit');
-                                setAdjustDelta('1');
-                              }}
+                              onClick={() => openStockAdjustment(p)}
                             >
                               ڕێکخستنی بڕ (+/−)
                             </button>
@@ -842,6 +854,9 @@ export const InventoryStockView: React.FC = () => {
             <p style={{ fontSize: '12px', color: '#536c85', margin: '0 0 14px' }}>
               بڕی ئێستا لە کۆگا: <strong>{adjustingProd.stock}</strong>{' '}
               {adjustingProd.base_unit === 'kg' ? 'کیلۆگرام' : 'دانە'}
+              {activeTab === 'overview' && adjustingProd.carton && adjustingProd.carton.units_per_carton > 0 && (
+                <> · {(adjustingProd.stock / adjustingProd.carton.units_per_carton).toFixed(1)} کارتۆن</>
+              )}
             </p>
 
             <form onSubmit={handleAdjustSubmit} style={{ display: 'grid', gap: '12px' }}>
