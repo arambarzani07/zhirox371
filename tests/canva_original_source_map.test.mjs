@@ -961,3 +961,61 @@ test('Canva 055 compares only complete validated DEMO price and quantity data',a
  assert.equal(canPostInvoiceReview055('manager'),false);
  assert.equal(JSON.stringify({p,k,line,kg}),before,'Never alter source catalog or supplier records');
 });
+
+test('Canva 059 original customer debt screen and safe route preserve actual balances',()=>{
+ const geometry=JSON.parse(read('design/canva-original-screen-059-geometry.json'));
+ const screen=read('src/components/CanvaCustomerDebt059.tsx');
+ const rules=read('src/utils/customerDebtDraft059.ts');
+ const workspace=read('src/components/CanvaCustomerWorkspace.tsx');
+ const css=read('src/components/canvaCustomerDebt059.css');
+ assert.equal(geometry.design_id,layout.screens[58].id);
+ assert.deepEqual(geometry.canvas,{width:1920,height:1080});
+ assert.equal(geometry.element_count,29);
+ assert.equal(new Set(geometry.elements.map(x=>x.id)).size,29);
+ assert.match(screen,/number="059"/);
+ assert.match(screen,/زیادکردنی قەرز بۆ کڕیار/);
+ assert.match(screen,/پاشەکەوتکردنی ڕەشنووس/);
+ assert.match(screen,/disabled=\{!canSubmitCustomerDebt059\(\)\}/);
+ assert.match(screen,/sessionStorage\.setItem\(storageKey/);
+ assert.match(screen,/data-demo-only="true"/);
+ assert.match(workspace,/'059': \['debt-add', 'debt-book'\]/);
+ assert.match(workspace,/mode === 'debt-add' \? '059'/);
+ assert.match(workspace,/case '059': return <CanvaCustomerDebt059/);
+ assert.match(css,/data-canva-screen="059"/);
+ assert.match(rules,/canSubmitCustomerDebt059/);
+ assert.doesNotMatch(screen,/setCustomers\(|recordDebtRepayment\(|addCustomer\(|completeCheckout\(|addAuditLog\(/);
+});
+test('Canva 059 validates positive IQD, stale snapshots, credit limits and stable non-posted draft', async()=>{
+ const {parseCustomerDebtAmount059,checkCustomerDebt059,readCustomerDebtDraft059,
+  canSubmitCustomerDebt059}=await import('../src/utils/customerDebtDraft059.ts');
+ const customer={id:'cust-1',name:'کڕیار',phone:'0750',balanceDebt:45000,creditLimit:46000,createdAt:'2026-10-01'};
+ const snapshot=JSON.stringify(customer);
+ assert.equal(parseCustomerDebtAmount059('2500'),2500);
+ for(const invalid of ['','0','-1','1.5','1e3','00010','9999999999999','1000000001','١٠٠٠']){
+  assert.equal(parseCustomerDebtAmount059(invalid),null,invalid);
+ }
+ const verified=checkCustomerDebt059(customer,'2500','RCP-059','تێبینی');
+ assert.equal(verified.valid,true);
+ assert.equal(verified.currentBalanceIqd,45000);
+ assert.equal(verified.previewBalanceIqd,47500);
+ assert.equal(verified.exceedsKnownLimit,true);
+ assert.equal(checkCustomerDebt059(customer,'2500','','').valid,false);
+ assert.equal(checkCustomerDebt059(undefined,'2500','INV-12','').valid,false);
+ const noLimit=checkCustomerDebt059({...customer,creditLimit:undefined},'2500','INV-12','');
+ assert.equal(noLimit.valid,true);
+ assert.equal(noLimit.limitKnown,false);
+ assert.equal(noLimit.exceedsKnownLimit,false);
+ const invalidBalance=checkCustomerDebt059({...customer,balanceDebt:NaN},'2500','INV-12','');
+ assert.equal(invalidBalance.valid,false);
+ const draft={draftId:'DRAFT-550e8400-e29b-41d4-a716-446655440000',customerId:'cust-1',
+  balanceAtSaveIqd:45000,amountIqd:2500,reference:'RCP-059',note:'تێبینی',
+  savedAt:'2026-11-12T10:00:00.000Z',status:'local-demo-draft'};
+ assert.deepEqual(readCustomerDebtDraft059(JSON.stringify(draft),[customer]),draft);
+ assert.equal(readCustomerDebtDraft059(JSON.stringify(draft),[{...customer,balanceDebt:44000}]),null);
+ assert.equal(readCustomerDebtDraft059(JSON.stringify({...draft,amountIqd:0}),[customer]),null);
+ assert.equal(readCustomerDebtDraft059(JSON.stringify({...draft,draftId:'rcp-1'}),[customer]),null);
+ assert.equal(readCustomerDebtDraft059('not json',[customer]),null);
+ assert.equal(canSubmitCustomerDebt059('manager'),false);
+ assert.equal(canSubmitCustomerDebt059('owner'),false);
+ assert.equal(JSON.stringify(customer),snapshot,'Local preview must not mutate actual customer debt');
+});

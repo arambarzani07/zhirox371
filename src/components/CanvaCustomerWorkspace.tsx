@@ -5,14 +5,16 @@ import type { AuditLogEntry, Customer, Receipt } from '../types';
 import { formatDateTime, money } from '../utils/retailHelpers';
 import { KurdishVoiceAnnouncer } from '../utils/kurdishVoiceEngine';
 import { CanvaStockFrame, CanvaStockTable } from './CanvaStockFrame';
+import { CanvaCustomerDebt059 } from './CanvaCustomerDebt059';
 import './canvaCustomerWorkspace.css';
 
-type Screen = '056' | '057' | '058' | '060' | '061';
+type Screen = '056' | '057' | '058' | '059' | '060' | '061';
 type Metric = [label: string, value: ReactNode];
 const screens: Record<Screen, [string, string, string]> = {
   '056': ['لیستی کڕیاران و قەرز', 'لیستی کڕیاران و دۆخی حساب', 'پوختەی کڕیار'],
   '057': ['تۆمارکردنی کڕیاری نوێ', 'زانیاریی بنەڕەتی کڕیار', 'پشکنینی تۆمارکردن'],
   '058': ['کەشفی حسابی قەرزی کڕیار', 'مامەڵە و مێژووی قەرزی کڕیار', 'پوختەی حساب'],
+  '059': ['زیادکردنی قەرز بۆ کڕیار', 'تۆمارکردنی مامەڵەی قەرزی نوێ', 'پوختەی قەرزی نوێ'],
   '060': ['وەرگرتنەوەی پارەی قەرز', 'پارەدان لە قەرزی کڕیار', 'پوختەی وەرگرتنەوە'],
   '061': ['مێژووی مامەڵەکانی کڕیار', 'مێژووی کڕین و دانەوەی قەرز', 'پوختەی مامەڵەکان'],
 };
@@ -80,6 +82,8 @@ function CustomerDirectory({ open }: { open: (screen: Screen, customerId?: strin
     actions={<>
       <button className="stock-036-primary" type="button" disabled={!selected}
         onClick={() => open('058', selected?.id)}>بینینی کەشفی حساب</button>
+      <button className="stock-workflow-link" type="button" disabled={!selected}
+        onClick={() => open('059', selected?.id)}>زیادکردنی قەرز — ڕەشنووس</button>
       <button type="button" onClick={() => navigateTo('home')}>گەڕانەوە بۆ ماڵەوە</button>
     </>}
     notice={selected ? <>مۆبایل <bdi>{selected.phone}</bdi></> : 'کڕیارێک هەڵبژێرە بۆ بینینی حسابەکەی.'}>
@@ -249,6 +253,8 @@ function CustomerHistory({ screen, initialId, open }: {
       <button className="stock-036-primary" type="button" onClick={() => open('061', id)}>بینینی مێژووی مامەڵە</button>
       <button type="button" disabled={!customer} onClick={() => window.print()}>چاپکردنی کەشفی حساب</button>
       <button className="stock-workflow-link" type="button" disabled={!customer?.balanceDebt} onClick={() => open('060', id)}>وەرگرتنەوەی قەرز</button>
+      <button className="stock-workflow-link" type="button" disabled={!customer}
+        onClick={() => open('059', id)}>زیادکردنی قەرز — ڕەشنووس</button>
     </> : <button className="stock-036-primary" type="button" onClick={() => open('056')}>گەڕانەوە بۆ کڕیاران</button>}
     notice="کڕین و تۆمارە بەردەستەکانی وەرگرتنەوە پیشان دەدرێن.">
     <CanvaStockTable columns={['مامەڵە', 'بەروار', 'جۆر', 'بڕ', 'باقی لە کاتی مامەڵە']}>
@@ -280,6 +286,7 @@ const customerRoutes = {
   '056': ['list', 'single-customer'],
   '057': ['register', 'single-customer'],
   '058': ['debts', 'debt-book'],
+  '059': ['debt-add', 'debt-book'],
   '060': ['repayment', 'customer-repayment'],
   '061': ['history', 'purchase-history'],
 } as const;
@@ -288,6 +295,7 @@ export function CanvaCustomerWorkspace() {
   const { activeSectionId, subtab, navigateTo } = useApp();
   const [mode, customerId = ''] = subtab.split(':', 2);
   const screen = mode === 'register' ? '057'
+    : mode === 'debt-add' ? '059'
     : mode === 'debts' || activeSectionId === 'debt-book' ? '058'
     : mode === 'repayment' || activeSectionId === 'customer-repayment' ? '060'
     : mode === 'history' || activeSectionId === 'purchase-history' ? '061' : '056';
@@ -298,6 +306,7 @@ export function CanvaCustomerWorkspace() {
   switch (screen) {
     case '056': return <CustomerDirectory open={open} />;
     case '057': return <CustomerRegistration open={open} />;
+    case '059': return <CanvaCustomerDebt059 key={subtab} initialId={customerId} />;
     case '060': return <CustomerRepayment key={subtab} initialId={customerId} open={open} />;
     default: return <CustomerHistory key={subtab} screen={screen} initialId={customerId} open={open} />;
   }

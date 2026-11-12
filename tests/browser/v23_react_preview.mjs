@@ -223,6 +223,42 @@ try {
  await page.locator('[data-canva-screen="046"]').waitFor({state:"visible"});
  await page.locator('[data-canva-screen="046"]').getByRole("button",{name:"ماڵەوە"}).click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
+ // Canva 059: adding debt is a tab-local UNSUBMITTED demo draft, not a booked sale.
+ await page.locator(".home-screen .module").nth(4).click();
+ await page.locator(".home-screen .subgrid .sub").first().click();
+ const directory056=page.locator('[data-canva-screen="056"]');
+ await directory056.waitFor({state:"visible"});
+ await directory056.getByRole("button",{name:"ئارام بارزانی",exact:true}).click();
+ assert.match(await directory056.locator(".stock-036-summary").innerText(),/45,000/);
+ await directory056.getByRole("button",{name:"زیادکردنی قەرز — ڕەشنووس"}).click();
+ const draft059=page.locator('[data-canva-screen="059"]');
+ await draft059.waitFor({state:"visible"});
+ assert.equal(await draft059.locator("h1").innerText(),"زیادکردنی قەرز بۆ کڕیار");
+ assert.equal(await draft059.getByRole("combobox",{name:"هەڵبژاردنی کڕیار"}).inputValue(),"cust-1");
+ assert.equal(await draft059.getByRole("button",{name:"ناردن بۆ پەسەندکردن"}).isDisabled(),true);
+ assert.equal(await draft059.getByRole("button",{name:"پاشەکەوتکردنی ڕەشنووس"}).isDisabled(),true);
+ await draft059.getByRole("textbox",{name:"بڕی قەرز"}).fill("0");
+ assert.equal(await draft059.getByRole("textbox",{name:"بڕی قەرز"}).getAttribute("aria-invalid"),"true");
+ await draft059.getByRole("textbox",{name:"بڕی قەرز"}).fill("2500");
+ await draft059.getByRole("textbox",{name:"ژمارەی پسووڵە یان هۆکاری قەرز"}).fill("DEMO-059");
+ assert.equal(await draft059.getByRole("button",{name:"پاشەکەوتکردنی ڕەشنووس"}).isDisabled(),false);
+ assert.match(await draft059.locator(".stock-036-summary").innerText(),/47,500/);
+ await draft059.getByRole("button",{name:"پاشەکەوتکردنی ڕەشنووس"}).click();
+ const draftId059=await draft059.getByRole("textbox",{name:"ناسنامەی مامەڵە"}).inputValue();
+ assert.match(draftId059,/^DRAFT-/);
+ assert.match(await draft059.getByRole("status").innerText(),/هیچ قەرزێک زیاد نەکرا/);
+ assert.equal(await draft059.getByRole("button",{name:"ناردن بۆ پەسەندکردن"}).isDisabled(),true);
+ await draft059.getByRole("button",{name:"گەڕانەوە بۆ کەشفی حساب"}).click();
+ const statement058=page.locator('[data-canva-screen="058"]');
+ await statement058.waitFor({state:"visible"});
+ assert.match(await statement058.locator(".stock-036-summary").innerText(),/45,000/);
+ await statement058.getByRole("button",{name:"زیادکردنی قەرز — ڕەشنووس"}).click();
+ await page.locator('[data-canva-screen="059"]').waitFor({state:"visible"});
+ assert.equal(await page.locator('[data-canva-screen="059"]').getByRole("textbox",{name:"ناسنامەی مامەڵە"}).inputValue(),draftId059);
+ assert.equal(await page.locator('[data-canva-screen="059"]').getByRole("textbox",{name:"بڕی قەرز"}).inputValue(),"2500");
+ assert.equal(await page.locator('[data-canva-screen="059"]').getByRole("button",{name:"ناردن بۆ پەسەندکردن"}).isDisabled(),true);
+ await page.locator('[data-canva-screen="059"]').getByRole("button",{name:"ماڵەوە",exact:true}).click();
+ assert.equal(await page.locator(".home-screen .module").count(),12);
  // Canva 021: product list + detail stay in the same route, filters apply
  // in place and the item details are data-bound (not a flat Canva image).
  await page.locator(".home-screen .module").nth(1).click();

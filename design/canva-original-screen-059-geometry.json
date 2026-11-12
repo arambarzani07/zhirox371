@@ -1,0 +1,245 @@
+{
+  "project": "ZHIROX371",
+  "screen": "059",
+  "design_id": "DAHaasWD0ug",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "note": "Editable native Canva text bounds only; graphic pixel parity and trusted production customer approval not verified.",
+  "element_count": 29,
+  "elements": [
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBCwNHHZQG15pJbJ",
+      "text": "ZHIROX",
+      "x": 50.400000000000006,
+      "y": 24,
+      "w": 366,
+      "h": 52.8
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB5qcBLYtR1dJcfc",
+      "text": "سوپەرمارکێتی کانی چنار",
+      "x": 618,
+      "y": 20.4,
+      "w": 684,
+      "h": 61.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBCp9gVWXfprQBBd",
+      "text": "زیادکردنی قەرز بۆ کڕیار",
+      "x": 1014,
+      "y": 132,
+      "w": 849.6,
+      "h": 54
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBM1QK6K2TPMLbB4",
+      "text": "ماڵەوە",
+      "x": 49.2,
+      "y": 133.8,
+      "w": 146.4,
+      "h": 45.599999999999994
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBzTPrlNGWtsKxXF",
+      "text": "کڕیار و قەرز",
+      "x": 509.99999999999994,
+      "y": 136.8,
+      "w": 441.6,
+      "h": 39.599999999999994
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBQqdrhxmZytcVFq",
+      "text": "تۆمارکردنی مامەڵەی قەرزی نوێ",
+      "x": 651.5999999999999,
+      "y": 248.40000000000003,
+      "w": 1206,
+      "h": 56.4
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB7nG90bSKl9r5X5",
+      "text": "پوختەی قەرزی نوێ",
+      "x": 62.400000000000006,
+      "y": 248.40000000000003,
+      "w": 511.2,
+      "h": 56.4
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBKgHZ7QfFS1DQBx",
+      "text": "ناوی کڕیار",
+      "x": 1135.2000000000003,
+      "y": 297.6,
+      "w": 697.2,
+      "h": 39.6
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB3vhSdm9fXYVgxn",
+      "text": "هەڵبژاردنی کڕیار",
+      "x": 1149.6,
+      "y": 348,
+      "w": 668.4,
+      "h": 49.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBJlJbzdtP9jvQPy",
+      "text": "ناسنامە",
+      "x": 669.5999999999999,
+      "y": 297.6,
+      "w": 422.4,
+      "h": 39.6
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBdWvM0DX7cPJ0pl",
+      "text": "ناسنامەی مامەڵە ـ خۆکار",
+      "x": 684,
+      "y": 348,
+      "w": 393.6,
+      "h": 49.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB6Vq5vfktlSvvP0",
+      "text": "بڕی قەرز",
+      "x": 1228.8,
+      "y": 427.2,
+      "w": 603.6,
+      "h": 39.6
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBPRSFPVtrb721wy",
+      "text": "0 IQD",
+      "x": 1243.1999999999998,
+      "y": 477.6,
+      "w": 574.8,
+      "h": 49.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBZZq9vlpSXdsgGk",
+      "text": "بەروار",
+      "x": 668.4,
+      "y": 427.2,
+      "w": 510,
+      "h": 39.6
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB4QQ87S635fNP6N",
+      "text": "بەرواری مامەڵە",
+      "x": 682.8,
+      "y": 477.6,
+      "w": 481.2,
+      "h": 49.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB39HPJjVJ3RKRGx",
+      "text": "پەیوەندی بە مامەڵە",
+      "x": 1129.2000000000003,
+      "y": 558,
+      "w": 703.2,
+      "h": 39.6
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBHdpJ41z7l6tG27",
+      "text": "ژمارەی پسووڵە یان هۆکاری قەرز",
+      "x": 1143.6,
+      "y": 608.4,
+      "w": 674.4,
+      "h": 49.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBhh3WCZ9Mg7kFW7",
+      "text": "وردەکاری",
+      "x": 668.4,
+      "y": 558,
+      "w": 420,
+      "h": 39.6
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBMKdH6YMSnc12pV",
+      "text": "تێبینیی مامەڵە ـ ئارەزوومەندانە",
+      "x": 682.8,
+      "y": 608.4,
+      "w": 391.2,
+      "h": 49.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB7g41SFgWHBRxn2",
+      "text": "بڕی قەرز دەبێت لە سفر زیاتر بێت؛ مامەڵەی تۆمارکراو بە هەمان ناسنامە دووبارە زیاد ناکرێت.",
+      "x": 680.4,
+      "y": 766.8,
+      "w": 1135.2,
+      "h": 52.8
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBHX3Mq7MmxnTsyT",
+      "text": "قەرزی زیاتر لە سنووری ڕێگەپێدراو پێویستی بە پەسەندی بەڕێوەبەر هەیە.",
+      "x": 680.4,
+      "y": 866.4,
+      "w": 1135.2,
+      "h": 44.4
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBJHCqnbwpjjhYBK",
+      "text": "باقی قەرزی پێشوو",
+      "x": 87.6,
+      "y": 362.4,
+      "w": 460.8,
+      "h": 32.4
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBWF6CzNPXFPSbqv",
+      "text": "0 IQD",
+      "x": 87.6,
+      "y": 404.4,
+      "w": 460.8,
+      "h": 37.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBKPNmZwZtNDgWpN",
+      "text": "قەرزی نوێ",
+      "x": 87.6,
+      "y": 495.6,
+      "w": 460.8,
+      "h": 32.4
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LB9rr32T26F100Mg",
+      "text": "0 IQD",
+      "x": 87.6,
+      "y": 537.6,
+      "w": 460.8,
+      "h": 37.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBCRPHkhMLpy8Sxh",
+      "text": "باقی دوای تۆمارکردن",
+      "x": 87.6,
+      "y": 628.8,
+      "w": 460.8,
+      "h": 32.4
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBJXZsmVcNP1KQpy",
+      "text": "0 IQD",
+      "x": 87.6,
+      "y": 670.8,
+      "w": 460.8,
+      "h": 37.2
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBHTtwbf1dzwLXns",
+      "text": "ناردن بۆ پەسەندکردن",
+      "x": 82.80000000000001,
+      "y": 816.6,
+      "w": 470.4,
+      "h": 61.200000000000045
+    },
+    {
+      "id": "PBKRDNMQ7hMpf5ys-LBYwH32XxR2NPmcw",
+      "text": "پاشەکەوتکردنی ڕەشنووس",
+      "x": 82.80000000000001,
+      "y": 911.4,
+      "w": 470.4,
+      "h": 52.8
+    }
+  ]
+}
