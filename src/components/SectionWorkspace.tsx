@@ -1,6 +1,7 @@
 import { CanvaSaleReturn } from './CanvaSaleReturn';
 import {CanvaSupplierRecords} from './CanvaSupplierRecords';
 import {CanvaPurchaseOrder048} from './CanvaPurchaseOrder048';
+import {CanvaPurchaseApprovals054} from './CanvaPurchaseApprovals054';
 import {CanvaPurchaseReceiving049} from './CanvaPurchaseReceiving049';
 import React, { useEffect, useState } from "react";
 import {useApp} from "../context/AppContext";
@@ -73,6 +74,7 @@ export const SectionWorkspace:React.FC<{sectionId:string}>=({sectionId})=>{
      ?state.subtab==="invoice"?<CanvaSupplierRecords key="050" screen="050"/>
       :state.subtab==="supplier-return"?<CanvaSupplierRecords key="051" screen="051"/>
       :state.subtab==="receiving-preview"?<CanvaPurchaseReceiving049/>
+      :state.subtab==="purchase-approvals"?<CanvaPurchaseApprovals054/>
       :state.subtab==="order"?<CanvaPurchaseOrder048/>:<CanvaPurchaseRequest047 key={sectionId}/>
      :<OperationalSubmodulesView key={sectionId} sectionId={sectionId}/>;
    default:return null;

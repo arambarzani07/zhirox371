@@ -1,0 +1,78 @@
+/* Canva original ZHIROX screen 054, PC RTL 1920×1080.
+ * Derived from 47 native Canva text bounds; vector/pixel parity unverified.
+ * Main right x=652..1858 (1206), left aside x=62..573 (511).
+ */
+@media screen {
+ #app [data-canva-screen="054"] .purchase-approval-filters054 {
+   display:flex;flex-direction:column;gap:clamp(12px,2.8vh,30px);
+   padding:0 clamp(4px,1.2vw,20px);
+   margin:clamp(4px,1vh,10px) 0 clamp(16px,3vh,32px);
+ }
+ #app [data-canva-screen="054"] .purchase-approval-filters054 label {
+   display:flex;flex-direction:column;gap:10px;
+   font-size:clamp(12px,.85vw,16px);font-weight:850;
+ }
+ #app [data-canva-screen="054"] .purchase-approval-filters054 input {
+   background:var(--stock-field);
+   color:var(--stock-ink);
+   border:1px solid var(--stock-border);
+   border-radius:7px;
+   min-height:clamp(41px,5vh,54px);
+   padding:8px 13px;
+   font:inherit;
+   width:100%;
+   box-sizing:border-box;
+ }
+ #app [data-canva-screen="054"] .purchase-approval-tabs054 {
+   display:flex;flex-wrap:wrap;align-items:center;gap:clamp(9px,1.3vw,22px);
+ }
+ #app [data-canva-screen="054"] .purchase-approval-tabs054 button {
+   font:inherit;font-size:clamp(12px,.83vw,15px);font-weight:900;
+   min-width:clamp(108px,8vw,156px);
+   min-height:clamp(40px,4.8vh,52px);
+   border:1px solid var(--stock-border);border-radius:8px;
+   background:var(--stock-field);color:var(--stock-ink);
+   cursor:pointer;
+ }
+ #app [data-canva-screen="054"] .purchase-approval-tabs054 button[aria-pressed="true"] {
+   background:var(--stock-ink);border-color:var(--stock-ink);color:#fff;
+ }
+ #app [data-canva-screen="054"] .purchase-approval-unavailable054 {
+   background:var(--stock-field);
+   color:var(--stock-muted);
+   border-radius:8px;
+   padding:8px 12px;
+   margin:0;
+   font-size:clamp(11px,.74vw,14px);
+   font-weight:800;
+ }
+ #app [data-canva-screen="054"] .stock-036-table th:first-child {width:38%;}
+ #app [data-canva-screen="054"] .stock-036-table th:nth-child(2) {width:22%;}
+ #app [data-canva-screen="054"] .stock-036-table th:nth-child(3) {width:16%;}
+ #app [data-canva-screen="054"] .stock-036-table th:nth-child(4) {width:13%;}
+ #app [data-canva-screen="054"] .stock-036-table th:nth-child(5) {width:11%;}
+ #app [data-canva-screen="054"] .stock-036-table th,
+ #app [data-canva-screen="054"] .stock-036-table td {text-align:right;}
+ #app [data-canva-screen="054"] .stock-036-table button {font:inherit;font-weight:850;text-align:right;}
+ #app [data-canva-screen="054"] tr.purchase-approval-selected054 td {background:#eef8fc;}
+ #app [data-canva-screen="054"] .purchase-approval-note054 {display:block;}
+ #app [data-canva-screen="054"] .purchase-approval-permissions054 {
+   display:block;margin-top:clamp(12px,2vh,22px);
+   font-weight:800;color:var(--stock-muted);
+ }
+ #app [data-canva-screen="054"] .stock-036-summary dl {gap:clamp(12px,2.7vh,26px);}
+ #app [data-canva-screen="054"] .stock-036-summary dl>div:nth-child(2) {background:var(--stock-field);}
+ #app [data-canva-screen="054"] .stock-036-summary dl>div:nth-child(3) {background:var(--stock-teal);}
+ #app [data-canva-screen="054"] .stock-036-actions {gap:clamp(9px,1.5vh,16px);}
+ #app [data-canva-screen="054"] .stock-036-actions button:disabled {
+   cursor:not-allowed;opacity:.53;
+ }
+ #app [data-canva-screen="054"] .stock-036-actions .purchase-approval-return054 {
+   background:var(--stock-field);
+ }
+ @media(max-width:1180px) {
+   #app [data-canva-screen="054"] .purchase-approval-tabs054 button {
+     min-width:90px;
+   }
+ }
+}

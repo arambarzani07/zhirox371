@@ -180,3 +180,10 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Replaced the old receipt overlay with the Canva 010 preview. History opens the existing recorded receipt, and the 58 mm and 80 mm formats share the same six-column, demo-marked receipt paper as direct checkout.
 - Printer selection and copies are supplied by the browser print dialog. No checkout or print hardware integration was added.
 - The PC build and browser tests cover basket hold and resume, printing and returning to history, direct checkout, and the 48 Home destinations. Exact Canva visual parity remains unverified.
+
+### Screen 054 — purchase approval review, backend-disconnected by design
+- Original Canva design DAHaalsHRqQ (47 native text elements at 1920×1080), documented at [054 geometry](./canva-original-screen-054-geometry.json).
+- The screen is linked from 048's purchase order pricing preview; use its return navigation to 048. It provides search by request ID, supplier or request type, status tabs, a 5-column request table, and separate managerial review summary.
+- There is currently **no trusted server-side purchase approval feed**, actor identity/role check, concurrency guard or idempotent approval/rejection endpoint in this local-DEMO route. No draft is represented as a submitted or pending request. Verified pending count, selected request and actual status are withheld; empty table cells remain placeholders.
+- Both Approve and Reject-with-reason actions are disabled regardless of client-side role claims. No order approval, supplier payment, stock change, receipt or database write occurs.
+- This is partial functional UI parity and source-measured text geometry, NOT pixel-perfect parity or a production approval workflow.

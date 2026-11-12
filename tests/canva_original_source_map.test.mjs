@@ -827,3 +827,56 @@ test('Canva 049 converts base units, checks under/over receipts and rejects stal
   rows:{[first.key]:{quantity:'1.2',expiry:'2027-06-01'}}}),ls,ps).rows,{});
  assert.equal(JSON.stringify({ls,ps}),snapshot);
 });
+
+test('Canva 054 authentic 47 purchase approval text boxes and read-only linked route',()=>{
+ const source=JSON.parse(read('design/canva-original-screen-054-geometry.json'));
+ const screen=read('src/components/CanvaPurchaseApprovals054.tsx');
+ const guard=read('src/utils/purchaseApprovals054.ts');
+ const router=read('src/components/SectionWorkspace.tsx');
+ const order=read('src/components/CanvaPurchaseOrder048.tsx');
+ const css=read('src/components/canvaPurchaseApprovals054.css');
+ assert.equal(source.design_id,layout.screens[53].id);
+ assert.equal(source.element_count,47);
+ assert.deepEqual(source.canvas,{width:1920,height:1080});
+ assert.equal(new Set(source.elements.map(x=>x.id)).size,47);
+ assert.match(screen,/number="054"/);
+ assert.match(screen,/پەسەندکردنی داواکارییەکانی کڕین/);
+ assert.match(screen,/ناسنامە، دابینکەر یان جۆری داواکاری/);
+ assert.match(screen,/ڕەتکردنەوە بە هۆکار/);
+ assert.match(screen,/disabled=\{!selected\|\|!canDecide\}/);
+ assert.match(guard,/authenticated:false,connected:false,requests:\[\]/);
+ assert.doesNotMatch(screen,/addProduct\(|updateProduct\(|receiveStock\(|approveRequest\(|recordSupplierPayment\(/);
+ assert.match(router,/state\.subtab==="purchase-approvals"/);
+ assert.match(order,/navigateTo\('suppliers','purchase-approvals','purchase-order'\)/);
+ assert.match(css,/data-canva-screen="054"/);
+});
+test('Canva 054 does not call local purchase draft a real pending request and fails closed',async()=>{
+ const {disconnectedPurchaseApproval054,visiblePurchaseApprovals054,
+   pendingPurchaseApprovals054,canDecidePurchaseApproval054}
+   =await import('../src/utils/purchaseApprovals054.ts');
+ const feed=disconnectedPurchaseApproval054();
+ assert.equal(feed.authenticated,false);
+ assert.equal(feed.connected,false);
+ assert.deepEqual(feed.requests,[]);
+ assert.equal(pendingPurchaseApprovals054(feed),null);
+ for(const status of ['pending','approved','rejected'])
+  assert.deepEqual(visiblePurchaseApprovals054(feed,'water',status),[]);
+ assert.equal(canDecidePurchaseApproval054('manager','purchase-1'),false);
+ assert.equal(canDecidePurchaseApproval054('owner','purchase-1'),false);
+ const sample={id:'req-01',supplier:'کۆمپانیای ئەلبورز',
+   requestType:'کڕین',requester:'کارمەند',requestedAt:'2026-11-12',
+   amountIqd:25000,previousAmountIqd:23000,proposedAmountIqd:25000,
+   status:'pending',reason:null};
+ const unsourced={authenticated:false,connected:true,requests:[sample]};
+ const unplugged={authenticated:true,connected:false,requests:[sample]};
+ assert.deepEqual(visiblePurchaseApprovals054(unsourced,'pending',''),[]);
+ assert.deepEqual(visiblePurchaseApprovals054(unplugged,'pending',''),[]);
+ const trusted={authenticated:true,connected:true,requests:[
+   sample,{...sample,id:'req-02',requestType:'گەڕاندنەوە',status:'rejected'}
+ ]};
+ assert.equal(pendingPurchaseApprovals054(trusted),1);
+ assert.deepEqual(visiblePurchaseApprovals054(trusted,'pending','ئەلبورز').map(x=>x.id),['req-01']);
+ assert.deepEqual(visiblePurchaseApprovals054(trusted,'rejected','گەڕاندنەوە').map(x=>x.id),['req-02']);
+ assert.equal(visiblePurchaseApprovals054(trusted,'approved','').length,0);
+ assert.equal(canDecidePurchaseApproval054('manager','req-01'),false);
+});

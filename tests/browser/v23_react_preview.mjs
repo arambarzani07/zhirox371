@@ -134,6 +134,26 @@ try {
  const order048=page.locator('[data-canva-screen="048"]');
  await order048.waitFor({state:"visible"});
  assert.equal(await order048.getByRole("button",{name:"ناردن بۆ پەسەندکردن"}).isDisabled(),true);
+ // Canva 054: original approval browser is separate from the unsubmitted 047/048 draft.
+ await order048.getByRole("button",{name:"پشکنینی داواکارییەکانی کڕین"}).click();
+ const purchase054=page.locator('[data-canva-screen="054"]');
+ await purchase054.waitFor({state:"visible"});
+ assert.equal(await purchase054.locator("h1").innerText(),"پەسەندکردنی داواکارییەکانی کڕین");
+ assert.equal(await purchase054.locator("tbody tr[data-approval054-placeholder]").count(),4);
+ assert.equal(await purchase054.locator(".stock-036-summary dd").first().innerText(),"—");
+ assert.equal(await purchase054.getByRole("button",{name:"پەسەندکردنی داواکاری"}).isDisabled(),true);
+ assert.equal(await purchase054.getByRole("button",{name:"ڕەتکردنەوە بە هۆکار"}).isDisabled(),true);
+ assert.match(await purchase054.getByRole("status").innerText(),/پەیوەست نییە/);
+ for(const tab of ["پەسەندکراو","ڕەتکراوە","چاوەڕوان"]){
+  await purchase054.getByRole("button",{name:tab,exact:true}).click();
+  assert.equal(await purchase054.getByRole("button",{name:tab,exact:true}).getAttribute("aria-pressed"),"true");
+  assert.equal(await purchase054.locator("tbody tr[data-approval054-placeholder]").count(),4);
+ }
+ await purchase054.getByPlaceholder("ناسنامە، دابینکەر یان جۆری داواکاری").fill("req-fake-01");
+ assert.equal(await purchase054.locator("tbody tr[data-approval054-placeholder]").count(),4);
+ assert.equal(await purchase054.getByRole("button",{name:"پەسەندکردنی داواکاری"}).isDisabled(),true);
+ await purchase054.getByRole("button",{name:"گەڕانەوە بۆ فەرمانی کڕین"}).click();
+ await order048.waitFor({state:"visible"});
  await order048.getByRole("button",{name:"پێداچوونەوەی وەرگرتن — ڕەشنووس"}).click();
  const receiving049=page.locator('[data-canva-screen="049"]');
  await receiving049.waitFor({state:"visible"});
