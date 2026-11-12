@@ -65,6 +65,6 @@ test("An ambiguous checkout freezes basket, preserves UUID and offers replay onl
 test("Demo cashier, QR/thermal receipt, and old React financial paths are unchanged",()=>{
  assert.match(cashier,/فرۆشتنی ڕاستەقینە نییە/);
  assert.match(read("src/context/AppContext.tsx"),/DEMO-RCP-/);
- assert.match(read("src/components/ThermalReceiptModal.tsx"),/data-demo-watermark="true"/);
+ assert.match(read("src/components/ReceiptPaper.tsx"),/data-demo-watermark="true"/);
  assert.doesNotMatch(ui,/setProducts\(|setReceipts\(|setCurrentShift\(/);
 });

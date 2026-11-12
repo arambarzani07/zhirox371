@@ -10,7 +10,7 @@ const read=path=>readFileSync(resolve(root,path),"utf8");
 const config=read("config.js");
 const app=read("src/context/AppContext.tsx");
 const cashier=read("src/components/CashierPos.tsx");
-const receipt=read("src/components/ThermalReceiptModal.tsx");
+const receipt=read("src/components/ReceiptPaper.tsx");
 
 test("Default browser does not fabricate Supabase sign-in, stores, sync, or service workers",()=>{
  const writes=[];
@@ -43,7 +43,7 @@ test("Every printable React thermal receipt is marked not a fiscal sale",()=>{
  assert.match(receipt,/data-demo-watermark="true"/);
  assert.match(receipt,/بەڵگەی فرۆشتنی ڕاستەقینە نییە/);
  assert.match(receipt,/پسووڵەی تاقیکردنەوە/);
- assert.match(receipt,/window\.print\(\)/);
+ assert.match(read("src/components/CanvaReceiptPrint.tsx"),/window\.print\(\)/);
 });
 // No Home SHA/pixel/card-count freeze: UI is owner-authorized for full redesign.
 // Financial Demo vs real checkout protections above remain enforced.

@@ -14,7 +14,7 @@ import { CanvaFinanceWorkspace } from './components/CanvaFinanceWorkspace';
 import { ReportsAnalyticsView } from './components/ReportsAnalyticsView';
 import { LabelsPrintView } from './components/LabelsPrintView';
 import { DiagnosticsQaView } from './components/DiagnosticsQaView';
-import { ThermalReceiptModal } from './components/ThermalReceiptModal';
+import { CanvaReceiptPrint } from './components/CanvaReceiptPrint';
 
 const workspaceTitles = {
   pos: 'فرۆشتن و کاشێر',
@@ -43,6 +43,8 @@ export const App: React.FC = () => {
         } else if (currentView !== 'home') {
           navigateTo('home');
         }
+      } else if (activeReceiptForModal) {
+        return;
       } else if (e.key === 'F1') {
         e.preventDefault();
         navigateTo('pos');
@@ -85,7 +87,8 @@ export const App: React.FC = () => {
       </div>
 
       {activeReceiptForModal && !(localCashierV32 && currentView === 'pos') && (
-        <ThermalReceiptModal
+        <CanvaReceiptPrint
+          key={activeReceiptForModal.id}
           receipt={activeReceiptForModal}
           onClose={() => setActiveReceiptForModal(null)}
         />

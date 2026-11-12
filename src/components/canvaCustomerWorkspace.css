@@ -40,5 +40,5 @@
     padding: 5px;
     border: 1px solid #d1e0ee;
   }
-  body:has(.thermal-receipt-backdrop) > .canva-customer-print { display: none; }
+  body:has(.canva-receipt-print) > .canva-customer-print { display: none; }
 }

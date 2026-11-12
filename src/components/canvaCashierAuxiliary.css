@@ -1,0 +1,143 @@
+@media screen {
+  #app .canva-held-tickets__grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(8px, 1.1vw, 20px);
+  }
+
+  #app .canva-held-tickets__grid button {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    min-height: clamp(78px, 13vh, 140px);
+    padding: 12px;
+    border: 1px solid #d1e0ee;
+    border-radius: 8px;
+    background: #f5f8fb;
+    color: #173757;
+    font: inherit;
+  }
+
+  #app .canva-held-tickets__grid button[aria-pressed="true"] {
+    border-color: #00949d;
+    background: #e7f4f4;
+  }
+
+  #root:has(> .canva-receipt-print) > .viewport {
+    display: none;
+  }
+
+  #root > .canva-receipt-print {
+    height: calc(100dvh - var(--market-banner-height));
+    overflow: auto;
+    box-sizing: border-box;
+    padding: 0 2vw clamp(16px, 3vh, 32px);
+    background: #f2f5f9;
+    color: #173757;
+  }
+
+  .canva-receipt-print .section-workspace__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: clamp(64px, 9.3vh, 100px);
+    margin-bottom: clamp(12px, 2.1vh, 23px);
+    border-bottom: 1px solid #e2eaf3;
+  }
+
+  .canva-receipt-print .section-workspace__header h1 {
+    padding-inline-start: 8px;
+    border-inline-start: 3px solid #00949d;
+    font-size: clamp(20px, 1.6vw, 31px);
+    margin: 0;
+  }
+
+  .canva-receipt-print .section-workspace__breadcrumb:empty {
+    display: none;
+  }
+
+  .canva-receipt-print button {
+    min-height: clamp(36px, 4.7vh, 50px);
+    padding: 0 14px;
+    border: 1px solid #d1e0ee;
+    border-radius: 6px;
+    background: #fff;
+    color: #173757;
+    font: inherit;
+    font-weight: 700;
+  }
+
+  .canva-receipt-print button.primary {
+    background: #173757;
+    color: #fff;
+  }
+
+  .canva-receipt-print__preview .canva-thermal-paper {
+    justify-self: center;
+    box-shadow: 0 1px 8px #17375718;
+    margin-block: 8px;
+  }
+
+  .canva-receipt-print__controls fieldset {
+    margin: 0;
+    border: 1px solid #d1e0ee;
+    border-radius: 6px;
+  }
+
+  .canva-receipt-print__sizes {
+    display: flex;
+    gap: 14px;
+  }
+
+  .canva-receipt-print__sizes label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+  }
+}
+
+#thermal-receipt-ticket {
+  width: var(--zhirox-receipt-width);
+  max-width: 100%;
+  padding: 2mm;
+  box-sizing: border-box;
+  color: #000;
+  background: #fff;
+  font: 9px / 1.5 Tahoma, Arial, sans-serif;
+}
+
+#thermal-receipt-ticket table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+#thermal-receipt-ticket :is(th, td) {
+  border: 1px solid #000;
+  padding: 2px 1px;
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  @page { margin: 0; }
+
+  body:has(.canva-receipt-print),
+  body:has(.canva-receipt-print) > #root {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+  }
+
+  .canva-receipt-print__controls,
+  .canva-receipt-print__preview > h2 {
+    display: none !important;
+  }
+
+  #thermal-receipt-ticket {
+    margin: 0 !important;
+    break-inside: avoid;
+  }
+}

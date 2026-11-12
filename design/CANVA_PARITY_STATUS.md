@@ -174,3 +174,9 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Replaced the sales return layout with screen 004, including the original receipt lines, refund amount and return history. The existing return handler continues to validate eligible quantities and prevents duplicate cash and stock changes.
 - Replaced compact legacy control sizing and overflow on payment history, staff, reports, offers, labels, diagnostics, alerts and settings. The direct reports page uses the shared list and summary layout.
 - The shared layout is in use across the existing React PC routes. Separate screen-by-screen Canva implementation and visual comparison remain in progress. Isolated desktop builds are outside this React route migration.
+
+### Cashier held tickets and receipt reprint
+- Replaced the held-basket popover with the Canva 005 workspace. Five numbered tickets show their actual basket lines. Older held baskets remain accessible. Switching tickets keeps the current customer's items and in-session checkout inputs.
+- Replaced the old receipt overlay with the Canva 010 preview. History opens the existing recorded receipt, and the 58 mm and 80 mm formats share the same six-column, demo-marked receipt paper as direct checkout.
+- Printer selection and copies are supplied by the browser print dialog. No checkout or print hardware integration was added.
+- The PC build and browser tests cover basket hold and resume, printing and returning to history, direct checkout, and the 48 Home destinations. Exact Canva visual parity remains unverified.

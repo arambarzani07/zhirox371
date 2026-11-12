@@ -125,28 +125,10 @@ html, body, #root {
     padding: 0 !important;
     margin: 0 !important;
   }
-  .market-banner, header, nav, .viewport, main#app, .thermal-receipt-controls, .tabs, .toolbar, .footer-actions, .catalog-buttons, button {
+  .market-banner, header, nav, .viewport, main#app, .tabs, .toolbar, .footer-actions, .catalog-buttons, button {
     display: none !important;
   }
-  .thermal-receipt-backdrop {
-    position: static !important;
-    background: none !important;
-    padding: 0 !important;
-    display: block !important;
-  }
-  .thermal-receipt-modal-box {
-    box-shadow: none !important;
-    border: none !important;
-    max-width: none !important;
-    width: 100% !important;
-    background: none !important;
-  }
-  #thermal-receipt-ticket {
-    box-shadow: none !important;
-    margin: 0 auto !important;
-    padding: 2mm !important;
-    page-break-inside: avoid;
-  }
+
 }
 
 

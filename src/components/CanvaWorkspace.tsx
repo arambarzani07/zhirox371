@@ -4,8 +4,8 @@ import './sectionWorkspace.css';
 import './canvaDetailLayout.css';
 
 export function CanvaWorkspaceHeader({
-  title, category, actions,
-}: { title: string; category?: string; actions?: ReactNode }) {
+  title, category, actions, onHome,
+}: { title: string; category?: string; actions?: ReactNode; onHome?: () => void }) {
   const { navigateTo } = useApp();
 
   return (
@@ -15,7 +15,10 @@ export function CanvaWorkspaceHeader({
       <div className="section-workspace__actions">
         {actions}
         <button type="button" className="secondary section-workspace__home-btn"
-          onClick={() => navigateTo('home')}>ماڵەوە</button>
+          onClick={() => {
+            onHome?.();
+            navigateTo('home');
+          }}>ماڵەوە</button>
       </div>
     </header>
   );

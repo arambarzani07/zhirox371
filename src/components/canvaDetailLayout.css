@@ -14,14 +14,14 @@
     margin-bottom: 0;
   }
 
-  #app .canva-detail__columns {
+  :is(#app, .canva-receipt-print) .canva-detail__columns {
     display: grid;
     grid-template-columns: minmax(0, 1.95fr) minmax(0, 1fr);
     align-items: start;
     gap: clamp(12px, 1.25vw, 24px);
   }
 
-  #app .canva-detail__panel {
+  :is(#app, .canva-receipt-print) .canva-detail__panel {
     display: grid;
     gap: clamp(10px, 1.6vh, 17px);
     min-width: 0;
@@ -31,7 +31,7 @@
     border-radius: 9px;
   }
 
-  #app .canva-detail__panel h2 {
+  :is(#app, .canva-receipt-print) .canva-detail__panel h2 {
     margin: 0;
     font-size: clamp(14px, 1.06vw, 20px);
   }
@@ -59,7 +59,7 @@
     align-items: center;
   }
 
-  #app .canva-detail__panel .section-workspace__table {
+  :is(#app, .canva-receipt-print) .canva-detail__panel .section-workspace__table {
     max-height: clamp(180px, 40vh, 460px) !important;
   }
 
@@ -88,7 +88,7 @@
     font-weight: 700;
   }
 
-  #app .canva-detail__actions {
+  :is(#app, .canva-receipt-print) .canva-detail__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;

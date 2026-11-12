@@ -1,3 +1,4 @@
+import { CanvaHeldTickets, cashierTicketLabel as ticketLabel, cashierTicketNumbers } from './CanvaHeldTickets';
 import { CanvaReceiptHistory } from './CanvaReceiptHistory';
 import React, { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
@@ -96,7 +97,6 @@ export const CashierPos: React.FC = () => {
     toggleCartLineMode,
     removeFromCart,
     clearCart,
-    parkedCart,
     parkedCarts,
     parkCart,
     restoreParkedCart,
@@ -108,6 +108,7 @@ export const CashierPos: React.FC = () => {
     openNewShift,
     completeCheckout,
     receipts,
+    activeReceiptForModal,
     setActiveReceiptForModal,
     navigateTo,
     subtab,
@@ -120,7 +121,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -141,37 +142,55 @@ export const CashierPos: React.FC = () => {
   const [newCustomerName, setNewCustomerName] = useState<string>('');
   const [newCustomerPhone, setNewCustomerPhone] = useState<string>('');
   const [newCustomerLimit, setNewCustomerLimit] = useState<string>('250000');
-  const [showParkedList, setShowParkedList] = useState<boolean>(false);
   // Canva 002: five numbered tickets share the existing parked-basket store.
-  const [activeTicketNumber, setActiveTicketNumber] = useState(1);
+  const [activeTicketNumber, setActiveTicketNumber] = useState(() => cashierTicketNumbers.find(number =>
+    !parkedCarts.some(ticket => ticket.label === ticketLabel(number))) ?? 1);
   const ticketPreferencesRef = useRef<Record<number, {
-    payment: PaymentMethod; customerId: string; discountPercent: number; directDiscountIqd: number;
+    payment: PaymentMethod; customerId: string; discountPercent: number; directDiscountIqd: number; tenderedCash: number;
   }>>({});
-  const ticketLabel = (n: number) => `پسووڵە ${String(n).padStart(2, '0')}`;
-  const switchTicket = (next: number) => {
-    if (next < 1 || next > 5 || next === activeTicketNumber) return;
-    const target = parkedCarts.find(p => p.label === ticketLabel(next));
-    if (!target && cart.length > 0 && parkedCarts.length >= 4) {
-      setFeedbackMsg({ text: 'زۆرترین ژمارەی پسووڵەی هاوکات 5 ـە', error: true });
-      return;
-    }
+  const switchTicket = (next: number, parkedId?: string) => {
+    if (next === activeTicketNumber && !parkedId) return true;
+    const target = parkedId
+      ? parkedCarts.find(ticket => ticket.id === parkedId)
+      : parkedCarts.find(ticket => ticket.label === ticketLabel(next));
+    if (parkedId && !target) return false;
+    const isNumberedTicket = !target || (next !== activeTicketNumber && target.label === ticketLabel(next));
     ticketPreferencesRef.current[activeTicketNumber] = {
-      payment: paymentMethod, customerId: selectedCustomerId, discountPercent, directDiscountIqd
+      payment: paymentMethod, customerId: selectedCustomerId, discountPercent, directDiscountIqd, tenderedCash,
     };
     if (target) {
-      restoreParkedCart(target.id, cart.length > 0 ? ticketLabel(activeTicketNumber) : undefined);
+      restoreParkedCart(target.id, isNumberedTicket ? ticketLabel(activeTicketNumber) : undefined);
     } else if (cart.length > 0 && !parkCart(ticketLabel(activeTicketNumber))) {
-      setFeedbackMsg({ text: 'نەتوانرا پسووڵەکە هەڵبگیرێت', error: true });
-      return;
+      setFeedbackMsg({ text: 'زۆرترین ژمارەی پسووڵەی هاوکات 5 ـە', error: true });
+      return false;
     }
-    const prefs = ticketPreferencesRef.current[next];
+    const prefs = isNumberedTicket ? ticketPreferencesRef.current[next] : undefined;
     setActiveTicketNumber(next);
     setPaymentMethod(prefs?.payment ?? 'cash');
     setSelectedCustomerId(prefs?.customerId ?? '');
     setDiscountPercent(prefs?.discountPercent ?? 0);
     setDirectDiscountIqd(prefs?.directDiscountIqd ?? 0);
+    setTenderedCash(prefs?.tenderedCash ?? 0);
     setBarcodeInput('');
     setFeedbackMsg(null);
+    return true;
+  };
+
+  const closeDraft = (parkedId?: string) => {
+    const entry = parkedCarts.find(ticket => ticket.id === parkedId);
+    if (entry) {
+      const number = cashierTicketNumbers.find(number => ticketLabel(number) === entry.label);
+      if (number !== undefined && number !== activeTicketNumber) delete ticketPreferencesRef.current[number];
+      removeParkedCart(entry.id);
+    } else if (!parkedId) {
+      clearCart();
+      delete ticketPreferencesRef.current[activeTicketNumber];
+      setTenderedCash(0);
+      setSelectedCustomerId('');
+      setPaymentMethod('cash');
+      setDiscountPercent(0);
+      setDirectDiscountIqd(0);
+    }
   };
 
   const [tenderedCash, setTenderedCash] = useState<number>(0);
@@ -497,9 +516,27 @@ export const CashierPos: React.FC = () => {
   const finishSaleRef = useRef(handleFinishSale);
   finishSaleRef.current = handleFinishSale;
 
+  const holdOrResume = () => {
+    if (cart.length > 0) {
+      const freeNumber = cashierTicketNumbers.find(number => number !== activeTicketNumber &&
+        !parkedCarts.some(ticket => ticket.label === ticketLabel(number)));
+      if (freeNumber && switchTicket(freeNumber)) {
+        setFeedbackMsg({ text: 'پسووڵەکە هەڵگیرا (F7)', error: false });
+      } else {
+        setFeedbackMsg({ text: 'زۆرترین ژمارەی پسووڵەی هاوکات 5 ـە', error: true });
+      }
+    } else if (parkedCarts.length > 0) {
+      const first = parkedCarts[0];
+      const number = cashierTicketNumbers.find(number => ticketLabel(number) === first.label) ?? activeTicketNumber;
+      if (switchTicket(number, first.id)) setFeedbackMsg({ text: 'پسووڵەی هەڵگیراو گەڕێنرایەوە', error: false });
+    }
+  };
+  const holdOrResumeRef = useRef(holdOrResume);
+  holdOrResumeRef.current = holdOrResume;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (activeTab !== 'checkout') return;
+      if (activeTab !== 'checkout' || activeReceiptForModal) return;
       if (e.key === 'F1') {
         e.preventDefault();
         barcodeInputRef.current?.focus();
@@ -508,22 +545,7 @@ export const CashierPos: React.FC = () => {
         finishSaleRef.current();
       } else if (e.key === 'F7') {
         e.preventDefault();
-        if (cart.length > 0) {
-          if (parkCart(ticketLabel(activeTicketNumber))) {
-            const next = [1, 2, 3, 4, 5].find(n => n !== activeTicketNumber &&
-              !parkedCarts.some(p => p.label === ticketLabel(n)));
-            if (next) setActiveTicketNumber(next);
-            setFeedbackMsg({ text: 'پسووڵەکە هەڵگیرا (F7)', error: false });
-          } else {
-            setFeedbackMsg({ text: 'زۆرترین ژمارەی پسووڵەی هاوکات 5 ـە', error: true });
-          }
-        } else if (parkedCart) {
-          const first = parkedCarts[0];
-          restoreParkedCart(first.id);
-          const n = Number(first.label.match(/پسووڵە ([0-9]+)/)?.[1] || 1);
-          if (n >= 1 && n <= 5) setActiveTicketNumber(n);
-          setFeedbackMsg({ text: 'پسووڵەی هەڵگیراو گەڕێنرایەوە', error: false });
-        }
+        holdOrResumeRef.current();
       } else if (e.key === 'F8') {
         e.preventDefault();
         setPaymentMethod('cash');
@@ -534,7 +556,7 @@ export const CashierPos: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, cart, parkedCart, parkedCarts, activeTicketNumber, parkCart, restoreParkedCart, soundEnabled]);
+  }, [activeTab, activeReceiptForModal]);
 
   const totalCustomerDebt = customers.reduce((sum, c) => sum + c.balanceDebt, 0);
 
@@ -582,7 +604,11 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : demoNotice}
+        : activeTab !== 'held' && demoNotice}
+      {activeTab === 'held' && <CanvaHeldTickets active={activeTicketNumber} cart={cart} parked={parkedCarts}
+        onBack={() => setActiveTab('checkout')}
+        onResume={(number, id) => { if (switchTicket(number, id)) setActiveTab('checkout'); }}
+        onClose={closeDraft}>{demoNotice}</CanvaHeldTickets>}
 
       {/* SUBSECTION 1.4: PAYMENTS (پارەدان) */}
       {activeTab === 'payments' && (
@@ -727,7 +753,7 @@ export const CashierPos: React.FC = () => {
             </button>
           </div>
           <div className="canva-ticket-tabs" role="group" aria-label="پسووڵەکانی هاوکات">
-            {[1, 2, 3, 4, 5].map(n => (
+            {cashierTicketNumbers.map(n => (
               <React.Fragment key={n}>
                 <button className={n === activeTicketNumber ? 'canva-ticket active' : 'canva-ticket'}
                   data-canva-ticket={String(n).padStart(2, '0')}
@@ -740,13 +766,13 @@ export const CashierPos: React.FC = () => {
                         const parkedOne = parkedCarts.find(p => p.label === ticketLabel(1));
                         const hasActiveBasket = activeTicketNumber === 1 && cart.length > 0;
                         if ((hasActiveBasket || parkedOne) && !window.confirm('پسووڵەی 01 بەبێ تۆمارکردن دابخرێت؟')) return;
-                        if (parkedOne) removeParkedCart(parkedOne.id);
-                        if (hasActiveBasket) clearCart();
+                        if (parkedOne) closeDraft(parkedOne.id);
+                        if (hasActiveBasket) closeDraft();
                         if (activeTicketNumber === 1) setFeedbackMsg({ text: 'پسووڵەی 01 پاککرایەوە', error: false });
                       }}>×</button>
                     <button className="canva-ticket-plus" type="button" aria-label="پسووڵەی نوێ"
                       onClick={() => {
-                        const empty = [1, 2, 3, 4, 5].find(x => x !== activeTicketNumber &&
+                        const empty = cashierTicketNumbers.find(x => x !== activeTicketNumber &&
                           !parkedCarts.some(p => p.label === ticketLabel(x)));
                         if (empty) switchTicket(empty);
                         else setFeedbackMsg({ text: 'پێنج پسووڵە بەکاردەهێنرێن', error: true });
@@ -1224,7 +1250,7 @@ export const CashierPos: React.FC = () => {
                       <button
                         type="button"
                         className="secondary"
-                        onClick={() => setShowParkedList(prev => !prev)}
+                        onClick={() => setActiveTab('held')}
                         style={{
                           height: '28px',
                           fontSize: '11.5px',
@@ -1235,7 +1261,7 @@ export const CashierPos: React.FC = () => {
                           fontWeight: 900
                         }}
                       >
-                        سەبەتە هەڵگیراوەکان ({parkedCarts.length}) {showParkedList ? '▲' : '▼'}
+                        پسووڵە ڕاگیراوەکان ({parkedCarts.length})
                       </button>
                     )}
                     {cart.length > 0 && (
@@ -1243,10 +1269,7 @@ export const CashierPos: React.FC = () => {
                         <button
                           type="button"
                           className="secondary"
-                          onClick={() => {
-                            parkCart();
-                            setFeedbackMsg({ text: 'سەبەتەکە بە کاتی هەڵگیرا (F7)', error: false });
-                          }}
+                          onClick={holdOrResume}
                           style={{ height: '28px', fontSize: '11.5px', padding: '0 10px' }}
                         >
                           هەڵگرتنی سەبەتە (F7)
@@ -1262,74 +1285,6 @@ export const CashierPos: React.FC = () => {
                       </>
                     )}
 
-                    {showParkedList && parkedCarts.length > 0 && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: 'calc(100% + 6px)',
-                          left: 0,
-                          zIndex: 38,
-                          minWidth: '290px',
-                          background: '#ffffff',
-                          border: '1.5px solid #203e66',
-                          borderRadius: '10px',
-                          padding: '8px 10px',
-                          boxShadow: '0 12px 28px rgba(29, 52, 80, 0.18)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', fontWeight: 900, color: '#1d3450', borderBottom: '1px solid #e8eef5', paddingBottom: '4px' }}>
-                          <span>لیستی سەبەتە هەڵگیراوەکان ({parkedCarts.length})</span>
-                          <button type="button" className="secondary" onClick={() => setShowParkedList(false)} style={{ height: '22px', minHeight: '22px', padding: '0 6px', fontSize: '10px' }}>✕</button>
-                        </div>
-                        {parkedCarts.map(pc => (
-                          <div
-                            key={pc.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '8px',
-                              padding: '6px 8px',
-                              background: '#f8fafc',
-                              border: '1px solid #d5e0ec',
-                              borderRadius: '7px',
-                              fontSize: '11px'
-                            }}
-                          >
-                            <div>
-                              <div style={{ fontWeight: 900, color: '#1d3450' }}>{pc.label} ({pc.items.length} جۆر)</div>
-                              <div style={{ color: '#203e66', fontWeight: 800, direction: 'ltr', textAlign: 'right' }}>{money(pc.totalIqd)}</div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '4px' }}>
-                              <button
-                                type="button"
-                                className="primary"
-                                onClick={() => {
-                                  restoreParkedCart(pc.id);
-                                  setShowParkedList(false);
-                                  setFeedbackMsg({ text: `${pc.label} گەڕێنرایەوە ناو سەبەتە`, error: false });
-                                }}
-                                style={{ height: '24px', minHeight: '24px', padding: '0 8px', fontSize: '10.5px' }}
-                              >
-                                گەڕاندنەوە
-                              </button>
-                              <button
-                                type="button"
-                                className="secondary"
-                                onClick={() => removeParkedCart(pc.id)}
-                                style={{ height: '24px', minHeight: '24px', width: '24px', padding: 0, color: '#b91c1c' }}
-                                title="سڕینەوەی سەبەتەی هەڵگیراو"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
 

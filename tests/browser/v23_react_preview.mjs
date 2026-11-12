@@ -521,7 +521,7 @@ try {
  await page.keyboard.press("F4");
  const inline=page.locator('[data-inline-checkout-confirmation="true"]');
  await inline.waitFor({state:"visible"});
- assert.equal(await page.locator(".thermal-receipt-backdrop").count(),0);
+ assert.equal(await page.locator('[data-canva-screen="010"]').count(),0);
  assert.match(await inline.innerText(),/DEMO-RCP-/);
  const ticket=page.locator('#zhirox-inline-print-ticket[data-demo-receipt="true"]');
  assert.equal(await ticket.count(),1);
