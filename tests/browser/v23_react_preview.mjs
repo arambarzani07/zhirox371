@@ -673,6 +673,35 @@ try {
  await inline.getByRole("button",{name:"دووبارە چاپ"}).click();
  assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),2);
  assert.equal(await page.locator('[data-inline-checkout-confirmation="true"]').count(),1);
+ await barcode.fill("2000000000018");
+ await barcode.press("Enter");
+ await page.getByRole("button",{name:"قەرز",exact:true}).click();
+ await page.getByRole("button",{name:"پێشبینینی فرۆشتنی قەرز"}).click();
+ const credit = page.locator('[data-canva-screen="012"]');
+ const confirmCredit = credit.getByRole("button",{name:"پشتڕاستکردنەوەی فرۆشتنی قەرز"});
+ assert.equal(await confirmCredit.isDisabled(),true);
+ await credit.getByLabel("تێبینیی مامەڵە").fill("تاقیکردنەوەی 012");
+ await credit.getByRole("button",{name:"کڕیار هەڵبژێرە",exact:true}).click();
+ assert.equal(await picker.getByRole("button",{name:"کڕیاری ئاسایی",exact:true}).isDisabled(),true);
+ await picker.getByRole("button",{name:"هەڵبژاردنی " + customerName,exact:true}).click();
+ await picker.getByRole("button",{name:"پەسەندکردنی کڕیار"}).click();
+ assert.equal(await credit.getByLabel("تێبینیی مامەڵە").inputValue(),"تاقیکردنەوەی 012");
+ const readCredit = () => page.evaluate(id => {
+   const receipts = JSON.parse(localStorage.getItem("kanichnar_retail_pos_v18_receipts"));
+   const customers = JSON.parse(localStorage.getItem("kanichnar_retail_pos_v18_customers"));
+   return { count: receipts.length, latest: receipts[0], debt: customers.find(customer => customer.id === id).balanceDebt };
+ }, customerId);
+ const beforeCredit = await readCredit();
+ await page.keyboard.press("F4");
+ assert.equal((await readCredit()).count,beforeCredit.count);
+ await confirmCredit.click();
+ await page.waitForFunction(count => JSON.parse(localStorage.getItem("kanichnar_retail_pos_v18_receipts")).length === count + 1,beforeCredit.count);
+ const afterCredit = await readCredit();
+ assert.equal(afterCredit.latest.customerId,customerId);
+ assert.equal(afterCredit.latest.paymentMethod,"debt");
+ assert.equal(afterCredit.latest.notes,"تاقیکردنەوەی 012");
+ assert.equal(afterCredit.debt,beforeCredit.debt+afterCredit.latest.total);
+ assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),3);
  assert.deepEqual(errors,[],"React client should not throw when internet disappears during demo checkout");
  console.log("PASS: locked Home navigation, offline Demo checkout, no modal, single print, safe reprint");
 } finally {

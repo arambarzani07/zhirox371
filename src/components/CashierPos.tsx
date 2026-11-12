@@ -1,3 +1,4 @@
+import { CanvaCreditSale } from './CanvaCreditSale';
 import { CanvaCustomerPicker } from './CanvaCustomerPicker';
 import { CanvaSplitPayment } from './CanvaSplitPayment';
 import { CanvaBasketEditor } from './CanvaBasketEditor';
@@ -125,7 +126,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker' | 'credit-sale'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -141,6 +142,8 @@ export const CashierPos: React.FC = () => {
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [directDiscountIqd, setDirectDiscountIqd] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [customerPickerReturn, setCustomerPickerReturn] = useState<'checkout' | 'credit-sale'>('checkout');
+  const [creditNotes, setCreditNotes] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [showNewCustomerInline, setShowNewCustomerInline] = useState<boolean>(false);
   const [newCustomerName, setNewCustomerName] = useState<string>('');
@@ -414,7 +417,7 @@ export const CashierPos: React.FC = () => {
     }
   };
 
-  const handleFinishSale = () => {
+  const handleFinishSale = (notes?: string) => {
     if (checkoutGuardRef.current) return;
     if (cart.length === 0) {
       if (soundEnabled) playPosAudio('error');
@@ -428,7 +431,8 @@ export const CashierPos: React.FC = () => {
       return;
     }
 
-    if (paymentMethod === 'debt' && !selectedCustomerId) {
+    const selectedCust = customers.find(c => c.id === selectedCustomerId);
+    if (paymentMethod === 'debt' && !selectedCust) {
       if (soundEnabled) playPosAudio('error');
       setFeedbackMsg({ text: 'تکایە کڕیارێک هەڵبژێرە بۆ تۆمارکردنی فرۆشتن بە قەرز!', error: true });
       return;
@@ -443,7 +447,6 @@ export const CashierPos: React.FC = () => {
       return;
     }
 
-    const selectedCust = customers.find(c => c.id === selectedCustomerId);
     checkoutGuardRef.current = true;
     let res: ReturnType<typeof completeCheckout>;
     try {
@@ -453,7 +456,8 @@ export const CashierPos: React.FC = () => {
         customerName: selectedCust ? selectedCust.name : paymentMethod === 'debt' ? 'کڕیاری قەرز' : 'کڕیاری نەختینە',
         paidAmount: paymentMethod === 'cash' ? tenderedCash : 0,
         discountPercent,
-        discountAmount
+        discountAmount,
+        notes
       });
     } catch (_error) {
       checkoutGuardRef.current = false;
@@ -467,7 +471,10 @@ export const CashierPos: React.FC = () => {
       KurdishVoiceAnnouncer.announceCheckout(grandTotal);
       // Flush the printable receipt before invoking browser printing. No POS
       // modal, route change, or second financial submission is involved.
-      flushSync(() => setInlineCheckoutReceipt(res.receipt!));
+      flushSync(() => {
+        setActiveTab('checkout');
+        setInlineCheckoutReceipt(res.receipt!);
+      });
       setFeedbackMsg({ text: `فرۆشتنی تاقیکردنەوە تۆمارکرا — پسووڵەی ${res.receipt.receiptNumber}`, error: false });
       delete ticketPreferencesRef.current[activeTicketNumber];
       setDiscountPercent(0);
@@ -590,10 +597,16 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && activeTab !== 'credit-sale' && demoNotice}
       {activeTab === 'customer-picker' && <CanvaCustomerPicker initialId={selectedCustomerId}
-        requiresCustomer={paymentMethod === 'debt'} onBack={() => setActiveTab('checkout')}
-        onSelect={id => { setSelectedCustomerId(id); setActiveTab('checkout'); }}>{demoNotice}</CanvaCustomerPicker>}
+        requiresCustomer={paymentMethod === 'debt'} onBack={() => setActiveTab(customerPickerReturn)}
+        onSelect={id => { setSelectedCustomerId(id); setActiveTab(customerPickerReturn); }}>{demoNotice}</CanvaCustomerPicker>}
+      {activeTab === 'credit-sale' && <CanvaCreditSale total={grandTotal} customer={selectedCustomerObj}
+        notes={creditNotes} feedback={feedbackMsg?.error ? feedbackMsg.text : undefined}
+        canConfirm={Boolean(selectedCustomerObj) && cart.length > 0 && currentShift.status === 'open'}
+        onNotes={setCreditNotes} onPick={() => { setCustomerPickerReturn('credit-sale'); setActiveTab('customer-picker'); }}
+        onConfirm={() => handleFinishSale(creditNotes.trim() || undefined)}
+        onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaCreditSale>}
       {activeTab === 'split-payment' && <CanvaSplitPayment total={grandTotal}
         customerName={selectedCustomerObj?.name} onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaSplitPayment>}
       {activeTab === 'basket-edit' && <CanvaBasketEditor initialId={editLineId}
@@ -1383,7 +1396,7 @@ export const CashierPos: React.FC = () => {
               <div className="canva-pos-customer-line">
                 <span>کڕیار</span>
                 <button type="button" className="secondary" aria-label="هەڵبژاردنی کڕیار"
-                  onClick={() => setActiveTab('customer-picker')}>{selectedCustomerObj?.name || 'کڕیاری ئاسایی'}</button>
+                  onClick={() => { setCustomerPickerReturn('checkout'); setActiveTab('customer-picker'); }}>{selectedCustomerObj?.name || 'کڕیاری ئاسایی'}</button>
               </div>
               <dl className="canva-pos-totals" aria-label="پوختەی بڕەکانی پارەدان">
                 <div><dt>کۆی کاڵاکان</dt><dd>{money(subtotal)}</dd></div>
@@ -1642,11 +1655,15 @@ export const CashierPos: React.FC = () => {
                 </div>
               )}
 
+              {paymentMethod === 'debt' && <button type="button" className="secondary" disabled={cart.length === 0}
+                onClick={() => { setCreditNotes(''); setFeedbackMsg(null); setActiveTab('credit-sale'); }}>
+                پێشبینینی فرۆشتنی قەرز
+              </button>}
               <button
                 id="finish-sale"
                 type="button"
                 className="primary"
-                onClick={handleFinishSale}
+                onClick={() => handleFinishSale()}
                 disabled={cart.length === 0 || currentShift.status !== 'open'}
                 style={{
                   height: '36px',
