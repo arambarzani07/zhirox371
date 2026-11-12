@@ -950,7 +950,8 @@ test('Canva 055 compares only complete validated DEMO price and quantity data',a
  assert.equal(partial.state,'mismatch');
  assert.equal(partial.amountDifferenceIqd,null);
  assert.equal(summarizeInvoiceDifferences055([fewer,partial]).monetaryDifference,null);
- assert.equal(summarizeInvoiceDifferences055([fewer,partial]).mismatchCount,1);
+ assert.equal(summarizeInvoiceDifferences055([fewer,partial]).mismatchCount,2,
+  'Both quantities differ even though the second price is still unknown');
  const saved={...emptyInvoiceReview055([line]),supplierId:'sup-1',invoice:'DEMO-12',
   prices:{[line.key]:'3000'},reason:'short'};
  assert.equal(loadInvoiceReview055(JSON.stringify(saved),[line]).reason,'short');
