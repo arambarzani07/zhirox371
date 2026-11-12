@@ -74,7 +74,8 @@ try{
  await page.locator('#locked-home-subcards [data-section-target="barcode-scan"]').click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
  assert.equal(await page.locator(".pos-clean__trial").count(),1,"local PG trial marker remains visible");
- assert.equal(await page.locator("header.zhirox-canva-masthead").count(),1,"store masthead remains on local cashier");
+ assert.equal(await page.locator(".market-banner.zhirox-canva-masthead").count(),1,"store masthead remains on local cashier");
+ assert.equal(await page.locator(".market-banner .zhirox-canva-store-name").innerText(),"سوپەرمارکێتی کانی چنار");
  assert.equal(await page.locator(".pos-clean__login").count(),1,"compact cashier sign-in");
  assert.equal(await page.locator(".pos-clean__notes[open]").count(),0,"technical notes are collapsed");
  await mkdir("artifacts/cashier-v1",{recursive:true});
