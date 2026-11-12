@@ -548,6 +548,25 @@ try {
  assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls), 0);
  await split.getByRole("button", {name:"گەڕانەوە بۆ کاشێر"}).click();
  assert.equal(await page.locator('[data-canva-ticket="02"]').getAttribute("aria-pressed"), "true");
+ const chooseCustomer = page.getByRole("button", {name:"هەڵبژاردنی کڕیار", exact:true});
+ await chooseCustomer.click();
+ const picker = page.locator('[data-canva-screen="011"]');
+ const customerSearch = picker.getByRole("searchbox");
+ const customer = picker.locator("tbody tr").first();
+ const customerName = await customer.locator("td").nth(0).innerText();
+ const customerId = await customer.locator("td").nth(1).innerText();
+ await customerSearch.fill("no-matching-customer");
+ await picker.getByText("هیچ کڕیارێک نەدۆزرایەوە").waitFor();
+ await customerSearch.fill(customerId);
+ await picker.getByRole("button",{name:"هەڵبژاردنی " + customerName,exact:true}).click();
+ await picker.getByRole("button",{name:"پەسەندکردنی کڕیار"}).click();
+ assert.equal(await chooseCustomer.innerText(),customerName);
+ await chooseCustomer.click();
+ await picker.getByRole("button",{name:"گەڕانەوە بۆ فرۆشتن"}).click();
+ assert.equal(await chooseCustomer.innerText(),customerName);
+ await chooseCustomer.click();
+ await picker.getByRole("button",{name:"کڕیاری ئاسایی",exact:true}).click();
+ assert.equal(await chooseCustomer.innerText(),"کڕیاری ئاسایی");
  // Offline DEMO checkout stays on the same cashier screen: never auto-open a modal.
  await page.keyboard.press("F4");
  const inline=page.locator('[data-inline-checkout-confirmation="true"]');

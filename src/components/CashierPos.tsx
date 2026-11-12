@@ -1,3 +1,4 @@
+import { CanvaCustomerPicker } from './CanvaCustomerPicker';
 import { CanvaSplitPayment } from './CanvaSplitPayment';
 import { CanvaBasketEditor } from './CanvaBasketEditor';
 import { CanvaProductSearch } from './CanvaProductSearch';
@@ -124,7 +125,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -141,7 +142,6 @@ export const CashierPos: React.FC = () => {
   const [directDiscountIqd, setDirectDiscountIqd] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-  const [customerSearchQuery, setCustomerSearchQuery] = useState<string>('');
   const [showNewCustomerInline, setShowNewCustomerInline] = useState<boolean>(false);
   const [newCustomerName, setNewCustomerName] = useState<string>('');
   const [newCustomerPhone, setNewCustomerPhone] = useState<string>('');
@@ -390,7 +390,6 @@ export const CashierPos: React.FC = () => {
       note: 'تۆمارکراو ڕاستەوخۆ لە شاشەی کاشێر'
     });
     setSelectedCustomerId(created.id);
-    setCustomerSearchQuery('');
     setNewCustomerName('');
     setNewCustomerPhone('');
     setShowNewCustomerInline(false);
@@ -591,7 +590,10 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && demoNotice}
+      {activeTab === 'customer-picker' && <CanvaCustomerPicker initialId={selectedCustomerId}
+        requiresCustomer={paymentMethod === 'debt'} onBack={() => setActiveTab('checkout')}
+        onSelect={id => { setSelectedCustomerId(id); setActiveTab('checkout'); }}>{demoNotice}</CanvaCustomerPicker>}
       {activeTab === 'split-payment' && <CanvaSplitPayment total={grandTotal}
         customerName={selectedCustomerObj?.name} onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaSplitPayment>}
       {activeTab === 'basket-edit' && <CanvaBasketEditor initialId={editLineId}
@@ -1380,7 +1382,8 @@ export const CashierPos: React.FC = () => {
               <h2 className="canva-pos-summary-title">پوختەی پارەدان</h2>
               <div className="canva-pos-customer-line">
                 <span>کڕیار</span>
-                <strong>{selectedCustomerObj?.name || 'کڕیاری ئاسایی'}</strong>
+                <button type="button" className="secondary" aria-label="هەڵبژاردنی کڕیار"
+                  onClick={() => setActiveTab('customer-picker')}>{selectedCustomerObj?.name || 'کڕیاری ئاسایی'}</button>
               </div>
               <dl className="canva-pos-totals" aria-label="پوختەی بڕەکانی پارەدان">
                 <div><dt>کۆی کاڵاکان</dt><dd>{money(subtotal)}</dd></div>
@@ -1530,45 +1533,7 @@ export const CashierPos: React.FC = () => {
                         تۆمارکردن و هەڵبژاردنی کڕیار
                       </button>
                     </form>
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={customerSearchQuery}
-                        onChange={e => {
-                          const q = e.target.value;
-                          setCustomerSearchQuery(q);
-                          const matches = customers.filter(
-                            c => c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q)
-                          );
-                          if (matches.length === 1) {
-                            setSelectedCustomerId(matches[0].id);
-                          }
-                        }}
-                        placeholder="گەڕان بە ناو یان ژمارە مۆبایلی کڕیار..."
-                        style={{ height: '28px', fontSize: '11px', padding: '0 8px', borderRadius: '6px', border: '1px solid #cbd6e2' }}
-                      />
-                      <select
-                        value={selectedCustomerId}
-                        onChange={e => setSelectedCustomerId(e.target.value)}
-                        style={{ height: '30px', fontSize: '11.5px' }}
-                      >
-                        <option value="">-- کڕیارێک هەڵبژێرە --</option>
-                        {customers
-                          .filter(
-                            c =>
-                              !customerSearchQuery.trim() ||
-                              c.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-                              c.phone.includes(customerSearchQuery.trim())
-                          )
-                          .map(c => (
-                            <option key={c.id} value={c.id}>
-                              {c.name} ({c.phone}) — قەرز: {money(c.balanceDebt)}
-                            </option>
-                          ))}
-                      </select>
-                    </>
-                  )}
+                  ) : null}
 
                   {selectedCustomerObj && (
                     <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#536c85', display: 'flex', flexDirection: 'column', gap: '2px' }}>
