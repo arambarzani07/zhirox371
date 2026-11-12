@@ -12,7 +12,7 @@ import {CanvaCustomerWorkspace} from "./CanvaCustomerWorkspace";
 import {CanvaSupplierPayments053} from "./CanvaSupplierPayments053";
 import {CanvaSuppliers046} from "./CanvaSuppliers046";
 import {CanvaPurchaseRequest047} from "./CanvaPurchaseRequest047";
-import {FinanceShiftView} from "./FinanceShiftView";
+import {CanvaFinanceWorkspace} from "./CanvaFinanceWorkspace";
 import {LabelsPrintView} from "./LabelsPrintView";
 import {DiagnosticsQaView} from "./DiagnosticsQaView";
 import {OperationalSubmodulesView} from "./OperationalSubmodulesView";
@@ -38,7 +38,7 @@ const supported:Record<string,string>={
  "manage-users":"operational","access-key":"operational","system-controls":"operational",
  "new-offer":"operational","discount-percent":"operational","coupon-ticket":"operational","promotion-speaker":"operational",
  "print-template":"operational",
- "attendance":"operational","work-timer":"operational","staff-review":"operational","shift-clock":"operational",
+ "attendance":"operational","work-timer":"operational","staff-review":"operational","shift-clock":"finance",
  "approval-file":"operational"
 };
 type ScreenData={headers:string[];rows:(string|number)[][];ready:boolean;metric?:string};
@@ -125,7 +125,7 @@ export const SectionWorkspace:React.FC<{sectionId:string}>=({sectionId})=>{
    case "stock":return <InventoryStockView key={sectionId}/>;
    case "customers":return <CanvaCustomerWorkspace key={sectionId}/>;
    case "suppliers":return sectionId==="supplier-building"?<CanvaSuppliers046 key={sectionId}/>:state.subtab==="payments"?<CanvaSupplierPayments053/>:<CanvaSupplierRecords screen="052"/>;
-   case "finance":return <FinanceShiftView key={sectionId}/>;
+   case "finance":return <CanvaFinanceWorkspace key={sectionId}/>;
    case "labels":return <LabelsPrintView key={sectionId}/>;
    case "diagnostics":return <DiagnosticsQaView key={sectionId}/>;
    case "operational":return sectionId==="purchase-order"

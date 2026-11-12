@@ -1,0 +1,25 @@
+@media screen {
+  #app .canva-finance-shell .finance-fields {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: clamp(12px, 2.7vh, 32px) 2vw;
+    margin-block: 0 clamp(12px, 2vh, 22px);
+  }
+  #app .canva-finance-shell .finance-full-field { grid-column: 1 / -1; }
+  #app .canva-finance-shell .stock-036-summary dl {
+    gap: clamp(8px, 1.5vh, 16px);
+    margin-block: 16px;
+  }
+  #app .canva-finance-shell .stock-036-summary dl div {
+    min-height: clamp(48px, 7vh, 76px);
+  }
+  .canva-finance-print { display: none; }
+}
+@media print {
+  body:has(> .canva-finance-print) { overflow: visible !important; }
+  .canva-finance-print {
+    display: block;
+    padding: 8mm;
+    font-family: "Noto Kufi Arabic", Tahoma, sans-serif;
+    color: #173757;
+  }
+}

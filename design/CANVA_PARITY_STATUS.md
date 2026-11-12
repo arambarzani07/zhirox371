@@ -157,3 +157,9 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Cash collections record customer ID, amount and remaining balance alongside the existing audit event and update the open cash shift. Account statements and payment receipts have a browser print view. Older payment notes remain visible in unfiltered history, with unavailable numeric fields left blank.
 - Browser checks cover registration, duplicate phone rejection, overpayment prevention, payment and balance persistence, printing, and navigation. Running balances for old transactions are unknown; the audit-backed payment list has the existing 100-event retention limit.
 - 059, 062 and 063 and exact pixel matching remain pending.
+
+### Finance and cashier shifts 066–071
+- Replaced the legacy finance workspace and the legacy staff shift-clock screen with Canva-based PC views for the cash summary, cashier shifts, movements, expense entry, reconciliation and history.
+- Expense entry previews the effect on the current drawer and requires explicit confirmation. Reconciliation uses counted cash and requires a reason for a discrepancy. The current closed shift has a printable report.
+- Sales receipts, expenses, cash refunds and retained customer payment events feed the history. The current shift summary uses recorded totals. Historical shift summaries, bank activity, separate other-income posting and the server approval workflow are outside this implementation.
+- Build, 38 source tests and browser checks passed, including all six finance screens at 1366×768 and 1920×1080, preserved 48-subtab navigation and demo checkout. Exact visual parity remains unverified.

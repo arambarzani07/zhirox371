@@ -120,6 +120,8 @@ export interface Shift {
   expectedCash: number;
   actualCash: number | null;
   discrepancy: number | null;
+  openNote?: string;
+  closeReason?: string;
   status: 'open' | 'closed';
 }
 

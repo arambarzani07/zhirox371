@@ -319,8 +319,6 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     receipts,
     expenses,
     currentShift,
-    closeShift,
-    openNewShift,
     setActiveReceiptForModal,
     recordSaleReturn,
     demoRefunds,
@@ -2277,105 +2275,6 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
-  // 19. SHIFT CLOCK (شەفتی کار — Subsection 10.1)
-  if (sectionId === 'shift-clock') {
-    return (
-      <div className="ws-stack">
-        <div className="ws-kpi-grid">
-          <div className="ws-kpi-card">
-            <span className="ws-kpi-label">دۆخی شەفتی ئێستا</span>
-            <span className={`ws-kpi-value ${currentShift.status === 'open' ? 'positive' : 'negative'}`}>
-              {currentShift.status === 'open' ? 'کراوە (چالاک)' : 'داخراو'}
-            </span>
-            <span className="ws-kpi-sub">کاشێر: {currentShift.cashierName}</span>
-          </div>
-          <div className="ws-kpi-card">
-            <span className="ws-kpi-label">سەرمایەی دەستپێکی شەفت</span>
-            <span className="ws-kpi-value">{money(currentShift.openingFloat)}</span>
-            <span className="ws-kpi-sub">پارەی سەرەتای کردنەوەی سندووق</span>
-          </div>
-          <div className="ws-kpi-card">
-            <span className="ws-kpi-label">باڵانسی چاوەڕوانکراوی سندووق</span>
-            <span className="ws-kpi-value positive">{money(currentShift.expectedCash)}</span>
-            <span className="ws-kpi-sub">دوای فرۆشتن و خەرجییەکانی شەفت</span>
-          </div>
-        </div>
-
-        <div className="ws-panel">
-          <div className="ws-toolbar" style={{ marginBottom: 0 }}>
-            <div>
-              <h2 className="ws-panel-title" style={{ margin: 0 }}>
-                کۆنترۆڵی شەفتی کار و دەوامی کاشێرەکان
-              </h2>
-              <div style={{ fontSize: '12px', color: '#536c85', marginTop: '4px', fontWeight: 700 }}>
-                کاتی دەستپێکی شەفت: {new Date(currentShift.openedAt).toLocaleString('en-GB')}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {currentShift.status === 'open' ? (
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={() => closeShift(currentShift.expectedCash)}
-                >
-                  داخستنی شەفتی ئێستا ({money(currentShift.expectedCash)})
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={() => openNewShift('ئارام (کاشێری سەرەکی)', 250000)}
-                >
-                  کردنەوەی شەفتی نوێ (250,000 IQD)
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="section-workspace__table">
-          <strong className="section-workspace__metric">
-            تۆماری شەفتەکانی کارکردنی کاشێر
-          </strong>
-          <table>
-            <thead>
-              <tr>
-                <th>ناوی کاشێر</th>
-                <th>کاتی کردنەوە</th>
-                <th>کاتی داخستن</th>
-                <th>سەرمایەی سەرەتا</th>
-                <th>فرۆشتنی نەختینە</th>
-                <th>باڵانسی چاوەڕوانکراو</th>
-                <th>دۆخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <strong>{currentShift.cashierName}</strong>
-                </td>
-                <td style={{ direction: 'ltr' }}>{new Date(currentShift.openedAt).toLocaleDateString('en-GB')}</td>
-                <td style={{ direction: 'ltr' }}>
-                  {currentShift.closedAt ? new Date(currentShift.closedAt).toLocaleDateString('en-GB') : '—'}
-                </td>
-                <td style={{ direction: 'ltr' }}>{money(currentShift.openingFloat)}</td>
-                <td style={{ direction: 'ltr', color: '#15803d', fontWeight: 900 }}>
-                  {money(currentShift.cashSales)}
-                </td>
-                <td style={{ direction: 'ltr', fontWeight: 900 }}>{money(currentShift.expectedCash)}</td>
-                <td>
-                  <span className={`ws-badge ${currentShift.status === 'open' ? 'success' : 'warning'}`}>
-                    {currentShift.status === 'open' ? 'کراوە' : 'داخراو'}
-                  </span>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>

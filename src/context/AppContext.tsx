@@ -71,9 +71,9 @@ interface AppContextType {
 
   currentShift: Shift;
   expenses: Expense[];
-  recordExpense: (title: string, amount: number, category: string, note?: string) => void;
-  closeShift: (actualCash: number) => Shift;
-  openNewShift: (cashierName: string, openingFloat: number) => Shift;
+  recordExpense: (title: string, amount: number, category: string, note?: string) => boolean;
+  closeShift: (actualCash: number, reason?: string) => Shift;
+  openNewShift: (cashierName: string, openingFloat: number, note?: string) => Shift;
 
   receipts: Receipt[];
   demoRefunds: DemoReturnV107[];
@@ -812,9 +812,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const recordExpense = (title: string, amount: number, category: string, note?: string) => {
-    if (amount <= 0) return;
+    if (currentShift.status !== 'open' || !title.trim() || !Number.isSafeInteger(amount)
+      || amount <= 0 || amount > currentShift.expectedCash) return false;
     const newExp: Expense = {
-      id: `exp-${Date.now()}`,
+      id: 'exp-' + crypto.randomUUID(),
       shiftId: currentShift.id,
       title,
       amount,
@@ -829,15 +830,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       expectedCash: Math.max(0, prev.expectedCash - amount)
     }));
     addAuditLog('تۆمارکردنی خەرجی', `خەرجی: ${title} (${amount.toLocaleString()} IQD)`);
+    return true;
   };
 
-  const closeShift = (actualCash: number): Shift => {
+  const closeShift = (actualCash: number, reason?: string): Shift => {
+    if (currentShift.status !== 'open' || !Number.isSafeInteger(actualCash) || actualCash < 0) return currentShift;
     const discrepancy = actualCash - currentShift.expectedCash;
     const closed: Shift = {
       ...currentShift,
       closedAt: new Date().toISOString(),
       actualCash,
       discrepancy,
+      closeReason: reason || undefined,
       status: 'closed'
     };
     setCurrentShift(closed);
@@ -848,13 +852,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return closed;
   };
 
-  const openNewShift = (cashierName: string, openingFloat: number): Shift => {
+  const openNewShift = (cashierName: string, openingFloat: number, note?: string): Shift => {
+    if (currentShift.status === 'open' || !cashierName.trim() || !Number.isSafeInteger(openingFloat) || openingFloat < 0) return currentShift;
     const newShift: Shift = {
       id: `shift-${Date.now()}`,
       cashierName,
       openedAt: new Date().toISOString(),
       closedAt: null,
       openingFloat,
+      openNote: note || undefined,
       cashSales: 0,
       debtSales: 0,
       cashReturns: 0,

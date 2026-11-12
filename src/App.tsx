@@ -11,7 +11,7 @@ import { ProductCatalogView } from './components/ProductCatalogView';
 import { InventoryStockView } from './components/InventoryStockView';
 import { CanvaCustomerWorkspace } from './components/CanvaCustomerWorkspace';
 import { CanvaSuppliers046 } from './components/CanvaSuppliers046';
-import { FinanceShiftView } from './components/FinanceShiftView';
+import { CanvaFinanceWorkspace } from './components/CanvaFinanceWorkspace';
 import { ReportsAnalyticsView } from './components/ReportsAnalyticsView';
 import { LabelsPrintView } from './components/LabelsPrintView';
 import { DiagnosticsQaView } from './components/DiagnosticsQaView';
@@ -76,7 +76,7 @@ export const App: React.FC = () => {
                 {currentView === 'stock' && <InventoryStockView key={subtab} />}
                 {currentView === 'customers' && <CanvaCustomerWorkspace key={subtab} />}
                 {currentView === 'suppliers' && <CanvaSuppliers046 key={subtab} />}
-                {(currentView === 'finance' || currentView === 'shifts') && <FinanceShiftView key={subtab} />}
+                {(currentView === 'finance' || currentView === 'shifts') && <CanvaFinanceWorkspace key={subtab} />}
                 {currentView === 'reports' && <ReportsAnalyticsView />}
                 {currentView === 'labels' && <LabelsPrintView />}
                 {(['qa', 'settings', 'audit', 'offers'] as const).some(view => view === currentView) && <DiagnosticsQaView />}
