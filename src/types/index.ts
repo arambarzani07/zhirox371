@@ -42,6 +42,7 @@ export interface Product {
 }
 
 export interface CartLine {
+  locked?: boolean;
   id: string; // unique line key
   productId: string;
   name: string;

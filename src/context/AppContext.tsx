@@ -53,6 +53,8 @@ interface AppContextType {
   addToCart: (input: string | Product, mode?: 'unit' | 'carton', requestedQty?: number) => { success: boolean; message?: string };
   updateCartQty: (index: number, nextQty: number) => { success: boolean; message?: string };
   toggleCartLineMode: (index: number) => { success: boolean; message?: string };
+  editCartLine: (index: number, quantity: number, mode: CartLine['mode']) => { success: boolean; message?: string };
+  setCartLineLocked: (id: string, locked: boolean) => void;
   removeFromCart: (index: number) => void;
   clearCart: () => void;
   parkedCart: CartLine[] | null;
@@ -584,7 +586,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Check if can merge with existing line
     const existingIndex = isScale
       ? -1
-      : cart.findIndex(c => c.productId === p.id && c.mode === mode && c.price === pricePerUnit);
+      : cart.findIndex(c => !c.locked && c.productId === p.id && c.mode === mode && c.price === pricePerUnit);
 
     if (existingIndex >= 0) {
       const nextCart = [...cart];
@@ -610,79 +612,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true };
   };
 
-  const updateCartQty = (index: number, nextQty: number): { success: boolean; message?: string } => {
-    if (index < 0 || index >= cart.length) return { success: false };
+  const editCartLine = (index: number, quantity: number, mode: CartLine['mode']) => {
     const line = cart[index];
-    if (line.isScale && nextQty > 1) {
-      return { success: false, message: 'کێشی تەرازوو ناگۆڕدرێت؛ دانەی جیاواز بسکێنە' };
+    if (!line || line.locked || !Number.isSafeInteger(quantity) || quantity < 1) {
+      return { success: false, message: 'ڕیزەکە قوفڵە یان بڕەکە نادروستە' };
     }
-    if (nextQty <= 0) {
-      removeFromCart(index);
-      return { success: true };
+    if (line.isScale && (quantity !== line.qty || mode !== line.mode)) {
+      return { success: false, message: 'کێشی تەرازوو ناگۆڕدرێت؛ لیبڵی جیاواز بسکێنە' };
     }
-
-    const p = products.find(x => x.id === line.productId);
-    if (!p) return { success: false };
-
-    // Calculate other usages in cart
-    const otherUsed = cart.reduce((sum, l, i) => {
-      return i !== index && l.productId === p.id ? sum + l.qty * l.units : sum;
-    }, 0);
-
-    const neededTotal = otherUsed + nextQty * line.units;
-    if (neededTotal > p.stock + 0.001) {
-      return { success: false, message: `تەنها ${p.stock} لەم کاڵایە لە کۆگا بەردەستە!` };
+    const product = products.find(item => item.id === line.productId);
+    if (!product) return { success: false, message: 'کاڵاکە لە کەتەلۆگ نەدۆزرایەوە' };
+    const changesMode = mode !== line.mode;
+    const carton = product.carton;
+    if (changesMode && (!carton || (mode === 'unit' && product.sale_mode === 'carton'))) {
+      return { success: false, message: 'ئەم یەکەیە بۆ کاڵاکە بەردەست نییە' };
     }
-
-    const next = [...cart];
-    next[index] = { ...line, qty: nextQty };
-    setCart(next);
+    const next = changesMode ? {
+      ...line, mode,
+      units: mode === 'carton' ? carton!.units_per_carton : 1,
+      price: mode === 'carton' ? carton!.sale_price_iqd : product.unit_sale_price_iqd,
+      name: mode === 'carton' ? (carton!.name || `کارتۆنی ${product.name}`) : product.name,
+      barcode: mode === 'carton' ? carton!.barcode : product.unit_barcode,
+    } : line;
+    const otherUsed = cart.reduce((sum, item, itemIndex) =>
+      itemIndex !== index && item.productId === product.id ? sum + item.qty * item.units : sum, 0);
+    if (otherUsed + quantity * next.units > product.stock + 0.001) {
+      return { success: false, message: 'بڕی بەردەست لە کۆگا بەس نییە' };
+    }
+    setCart(previous => previous.map(item => item.id === line.id ? { ...next, qty: quantity } : item));
     return { success: true };
   };
 
-  const toggleCartLineMode = (index: number): { success: boolean; message?: string } => {
-    if (index < 0 || index >= cart.length) return { success: false };
-    const line = cart[index];
-    if (line.isScale) {
-      return { success: false, message: 'کاڵای تەرازوو ناکرێتە کارتۆن' };
-    }
-    const p = products.find(x => x.id === line.productId);
-    if (!p || !p.carton) {
-      return { success: false, message: 'ئەم کاڵایە زانیاریی کارتۆنی نییە' };
-    }
-
-    const nextMode: 'unit' | 'carton' = line.mode === 'unit' ? 'carton' : 'unit';
-    const nextUnits = nextMode === 'carton' ? p.carton.units_per_carton : 1;
-    const nextPrice = nextMode === 'carton' ? p.carton.sale_price_iqd : p.unit_sale_price_iqd;
-    const nextName = nextMode === 'carton' ? (p.carton.name || `کارتۆنی ${p.name}`) : p.name;
-    const nextBarcode = nextMode === 'carton' ? p.carton.barcode : p.unit_barcode;
-
-    const otherUsed = cart.reduce((sum, l, i) => {
-      return i !== index && l.productId === p.id ? sum + l.qty * l.units : sum;
-    }, 0);
-
-    if (otherUsed + line.qty * nextUnits > p.stock + 0.001) {
-      return {
-        success: false,
-        message: `بڕی کۆگا بەشی ${line.qty} کارتۆن ناکات! (بەردەست: ${p.stock} یەکە)`
-      };
-    }
-
-    const next = [...cart];
-    next[index] = {
-      ...line,
-      mode: nextMode,
-      units: nextUnits,
-      price: nextPrice,
-      name: nextName,
-      barcode: nextBarcode
-    };
-    setCart(next);
-    return { success: true };
+  const setCartLineLocked = (id: string, locked: boolean) => {
+    setCart(previous => previous.map(line => line.id === id ? { ...line, locked } : line));
   };
 
   const removeFromCart = (index: number) => {
-    setCart(prev => prev.filter((_, i) => i !== index));
+    setCart(previous => previous.filter((line, itemIndex) => itemIndex !== index || line.locked));
+  };
+
+  const updateCartQty = (index: number, nextQty: number) => {
+    const line = cart[index];
+    if (!line) return { success: false };
+    if (nextQty === 0 && !line.locked) {
+      removeFromCart(index);
+      return { success: true };
+    }
+    return editCartLine(index, nextQty, line.mode);
+  };
+
+  const toggleCartLineMode = (index: number) => {
+    const line = cart[index];
+    if (!line) return { success: false };
+    return editCartLine(index, line.qty, line.mode === 'unit' ? 'carton' : 'unit');
   };
 
   const clearCart = () => {
@@ -1129,6 +1111,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         cart,
         addToCart,
         updateCartQty,
+        editCartLine,
+        setCartLineLocked,
         toggleCartLineMode,
         removeFromCart,
         clearCart,

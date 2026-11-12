@@ -1,3 +1,4 @@
+import { CanvaBasketEditor } from './CanvaBasketEditor';
 import { CanvaProductSearch } from './CanvaProductSearch';
 import { CanvaHeldTickets, cashierTicketLabel as ticketLabel, cashierTicketNumbers } from './CanvaHeldTickets';
 import { CanvaReceiptHistory } from './CanvaReceiptHistory';
@@ -122,12 +123,13 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
   }, [subtab, activeSectionId]);
 
+  const [editLineId, setEditLineId] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; error: boolean } | null>(null);
   const [inlineCheckoutReceipt, setInlineCheckoutReceipt] = useState<Receipt | null>(null);
@@ -588,7 +590,9 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && activeTab !== 'search' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && demoNotice}
+      {activeTab === 'basket-edit' && <CanvaBasketEditor initialId={editLineId}
+        onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaBasketEditor>}
       {activeTab === 'search' && <CanvaProductSearch initialQuery={barcodeInput} onBack={() => {
         setBarcodeInput('');
         setActiveTab('checkout');
@@ -1224,7 +1228,11 @@ export const CashierPos: React.FC = () => {
                               </td>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontWeight: 900, color: '#1d3450' }}>{line.name}</span>
+                                  <button type="button" className="secondary" onClick={() => {
+                                    setEditLineId(line.id);
+                                    setActiveTab('basket-edit');
+                                  }}>{line.name}</button>
+                                  {line.locked && <span>قوفڵکراو</span>}
                                   {isLowStockInCart && (
                                     <span
                                       style={{
@@ -1249,6 +1257,7 @@ export const CashierPos: React.FC = () => {
                                   <button
                                     type="button"
                                     className="secondary"
+                                    disabled={line.locked}
                                     onClick={() => handleToggleMode(idx)}
                                     style={{ height: '25px', padding: '0 6px', fontSize: '10.5px' }}
                                     title="گۆڕین لە نێوان دانە و کارتۆن"
@@ -1267,7 +1276,7 @@ export const CashierPos: React.FC = () => {
                                   <button
                                     type="button"
                                     className="secondary"
-                                    disabled={line.isScale}
+                                    disabled={line.isScale || line.locked}
                                     onClick={() => handleQtyChange(idx, line.qty - 1)}
                                     style={{ width: '25px', height: '26px', padding: 0 }}
                                   >
@@ -1275,7 +1284,7 @@ export const CashierPos: React.FC = () => {
                                   </button>
                                   <input
                                     type="number"
-                                    disabled={line.isScale}
+                                    disabled={line.isScale || line.locked}
                                     value={line.qty}
                                     min="1"
                                     max="1000"
@@ -1293,7 +1302,7 @@ export const CashierPos: React.FC = () => {
                                   <button
                                     type="button"
                                     className="secondary"
-                                    disabled={line.isScale}
+                                    disabled={line.isScale || line.locked}
                                     onClick={() => handleQtyChange(idx, line.qty + 1)}
                                     style={{ width: '25px', height: '26px', padding: 0 }}
                                   >
@@ -1308,7 +1317,8 @@ export const CashierPos: React.FC = () => {
                                 <button
                                   type="button"
                                   className="secondary"
-                                  onClick={() => removeFromCart(idx)}
+                                  disabled={line.locked}
+                                    onClick={() => removeFromCart(idx)}
                                   style={{
                                     width: '26px',
                                     height: '26px',
