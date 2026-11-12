@@ -1,3 +1,4 @@
+import { CanvaReceiptHistory } from './CanvaReceiptHistory';
 import React, { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useApp } from '../context/AppContext';
@@ -178,8 +179,6 @@ export const CashierPos: React.FC = () => {
   const [showQuickProducts, setShowQuickProducts] = useState(false);
 
   // Receipts & Payments search/filter state
-  const [receiptSearch, setReceiptSearch] = useState('');
-  const [receiptMethodFilter, setReceiptMethodFilter] = useState<'all' | 'cash' | 'debt'>('all');
 
   // Quick debt collection in Payments tab
   const [repayCustomerId, setRepayCustomerId] = useState<string>(
@@ -537,23 +536,6 @@ export const CashierPos: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab, cart, parkedCart, parkedCarts, activeTicketNumber, parkCart, restoreParkedCart, soundEnabled]);
 
-  const filteredReceipts = receipts.filter(rcp => {
-    const matchSearch =
-      receiptSearch === '' ||
-      rcp.receiptNumber.toLowerCase().includes(receiptSearch.toLowerCase()) ||
-      rcp.customerName.toLowerCase().includes(receiptSearch.toLowerCase()) ||
-      rcp.items.some(i => i.name.toLowerCase().includes(receiptSearch.toLowerCase()));
-    if (!matchSearch) return false;
-    if (receiptMethodFilter !== 'all' && rcp.paymentMethod !== receiptMethodFilter) return false;
-    return true;
-  });
-
-  const cashReceiptsTotal = receipts
-    .filter(r => r.paymentMethod === 'cash')
-    .reduce((sum, r) => sum + r.total, 0);
-  const debtReceiptsTotal = receipts
-    .filter(r => r.paymentMethod === 'debt')
-    .reduce((sum, r) => sum + r.total, 0);
   const totalCustomerDebt = customers.reduce((sum, c) => sum + c.balanceDebt, 0);
 
   const handleQuickDebtRepay = (e: React.FormEvent) => {
@@ -587,147 +569,20 @@ export const CashierPos: React.FC = () => {
 
   const selectedCustomerObj = customers.find(c => c.id === selectedCustomerId);
 
-  return (
-    <div className="ws-stack canva-pos-002" data-canva-screen="002" dir="rtl">
+  const demoNotice = <>
       <div role="status" aria-label="دۆخی تاقیکردنەوەی کاشێر" style={{ padding: '6px 12px', border: '1px solid #a85d16', borderRadius: '7px', background: '#fff7ed', color: '#7c2d12', fontSize: '11.5px', fontWeight: 850, textAlign: 'center' }}>
         تاقیکردنەوە — داتای ئەم کاشێرە لە وێبگەڕ پاشەکەوت دەکرێت؛ فرۆشتنی ڕاستەقینە نییە
       </div>
 
       {pilotEnabled && <LocalPostgresPilotV24 />}
+  </>;
 
-      {/* SUBSECTION 1.2: RECEIPTS (پسووڵە) */}
-      {activeTab === 'receipts' && (
-        <>
-          <div className="ws-kpi-grid">
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کۆی پسووڵە دەرچووەکان</span>
-              <span className="ws-kpi-value">{receipts.length}</span>
-              <span className="ws-kpi-sub">لەم شێفتەدا تۆمارکراون</span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کۆی پسووڵەکانی نەختینە (Cash)</span>
-              <span className="ws-kpi-value positive">{money(cashReceiptsTotal)}</span>
-              <span className="ws-kpi-sub">
-                {receipts.filter(r => r.paymentMethod === 'cash').length} پسووڵەی نەختینە
-              </span>
-            </div>
-            <div className="ws-kpi-card">
-              <span className="ws-kpi-label">کۆی پسووڵەکانی قەرز (Debt)</span>
-              <span className="ws-kpi-value">{money(debtReceiptsTotal)}</span>
-              <span className="ws-kpi-sub">
-                {receipts.filter(r => r.paymentMethod === 'debt').length} پسووڵەی قەرز
-              </span>
-            </div>
-          </div>
-
-          <div className="ws-panel">
-            <div className="ws-toolbar" style={{ marginBottom: 0 }}>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className={receiptMethodFilter === 'all' ? 'primary' : 'secondary'}
-                  onClick={() => setReceiptMethodFilter('all')}
-                >
-                  هەموو پسووڵەکان ({receipts.length})
-                </button>
-                <button
-                  type="button"
-                  className={receiptMethodFilter === 'cash' ? 'primary' : 'secondary'}
-                  onClick={() => setReceiptMethodFilter('cash')}
-                >
-                  نەختینە ({receipts.filter(r => r.paymentMethod === 'cash').length})
-                </button>
-                <button
-                  type="button"
-                  className={receiptMethodFilter === 'debt' ? 'primary' : 'secondary'}
-                  onClick={() => setReceiptMethodFilter('debt')}
-                >
-                  قەرز ({receipts.filter(r => r.paymentMethod === 'debt').length})
-                </button>
-              </div>
-
-              <input
-                type="text"
-                className="input-search"
-                placeholder="گەڕان بە ژمارەی پسووڵە، کڕیار، یان کاڵا..."
-                value={receiptSearch}
-                onChange={e => setReceiptSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="section-workspace__table">
-            <table>
-              <thead>
-                <tr>
-                  <th>ژمارەی پسووڵە</th>
-                  <th>بەروار و کات</th>
-                  <th>کڕیار</th>
-                  <th>شێوازی پارەدان</th>
-                  <th>بڕگەکان</th>
-                  <th>داشکاندن</th>
-                  <th>کۆی گشتی</th>
-                  <th>کردارەکان</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReceipts.length === 0 ? (
-                  <tr>
-                    <td className="section-workspace__empty" colSpan={8}>
-                      هیچ پسووڵەیەک نەدۆزرایەوە
-                    </td>
-                  </tr>
-                ) : (
-                  filteredReceipts.map(rcp => (
-                    <tr key={rcp.id}>
-                      <td style={{ direction: 'ltr', fontWeight: 900 }}>{rcp.receiptNumber}</td>
-                      <td style={{ direction: 'ltr' }}>{formatDateTime(rcp.createdAt)}</td>
-                      <td>
-                        <strong>{rcp.customerName}</strong>
-                      </td>
-                      <td
-                        style={{
-                          fontWeight: 900,
-                          color: rcp.paymentMethod === 'cash' ? '#15803d' : '#b45309'
-                        }}
-                      >
-                        {rcp.paymentMethod === 'cash' ? 'نەختینە (Cash)' : 'قەرز (Debt)'}
-                      </td>
-                      <td>
-                        {rcp.items.length} جۆر ({rcp.items.reduce((s, i) => s + i.qty, 0)} یەکە)
-                      </td>
-                      <td style={{ direction: 'ltr' }}>
-                        {rcp.discount > 0 ? `-${money(rcp.discount)}` : '—'}
-                      </td>
-                      <td style={{ direction: 'ltr', fontWeight: 900 }}>{money(rcp.total)}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            type="button"
-                            className="primary"
-                            style={{ height: '32px', padding: '0 12px', fontSize: '11.5px' }}
-                            onClick={() => setActiveReceiptForModal(rcp)}
-                          >
-                            چاپ و بینین
-                          </button>
-                          <button
-                            type="button"
-                            className="secondary"
-                            style={{ height: '32px', padding: '0 10px', fontSize: '11.5px' }}
-                            onClick={() => navigateTo('pos', 'returns', 'return-arrow')}
-                          >
-                            گەڕاندنەوە
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+  return (
+    <div className={activeTab === 'checkout' ? 'ws-stack canva-pos-002' : 'ws-stack canva-standard-view'}
+      data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
+      {activeTab === 'receipts'
+        ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
+        : demoNotice}
 
       {/* SUBSECTION 1.4: PAYMENTS (پارەدان) */}
       {activeTab === 'payments' && (

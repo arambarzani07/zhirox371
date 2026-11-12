@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useApp } from '../context/AppContext';
 import './sectionWorkspace.css';
+import './canvaDetailLayout.css';
 
 export function CanvaWorkspaceHeader({
   title, category, actions,

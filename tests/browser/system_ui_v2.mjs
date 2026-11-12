@@ -58,6 +58,17 @@ try {
   await drawer.locator('[data-section-target="barcode-scan"]').click();
   await page.locator('.canva-pos-back-home').click();
   await home.waitFor();
+  await cards.nth(0).click();
+  await drawer.locator('[data-section-target="receipt"]').click();
+  const receipts = page.locator('[data-canva-screen="003"]');
+  await receipts.getByRole('searchbox').fill('DEMO-RCP-1001');
+  await receipts.getByRole('button', { name: 'DEMO-RCP-1001', exact: true }).click();
+  assert.ok(await receipts.locator('aside').getByText('DEMO-RCP-1001').isVisible());
+  await receipts.getByRole('button', { name: 'پێشبینینی چاپ' }).click();
+  await page.locator('.thermal-receipt-modal-box').waitFor();
+  await page.keyboard.press('Escape');
+  await receipts.getByRole('button', { name: 'گەڕاندنەوە', exact: true }).click();
+  assert.equal(await page.locator('[data-canva-screen="004"] form select').first().inputValue(), 'DEMO-RCP-1001');
   assert.deepEqual(errors, []);
   console.log('PASS: Canva Home 12 cards and 48 destinations, native PC dimensions, no legacy navigation');
 } finally {

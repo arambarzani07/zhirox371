@@ -39,7 +39,7 @@ export const LabelsPrintView: React.FC = () => {
   const totalStickersCount = selectedProducts.reduce((sum, p) => sum + (copiesByProd[p.id] || 1), 0);
 
   return (
-    <div className="ws-stack">
+    <div className="ws-stack canva-standard-view">
       <div className="ws-kpi-grid">
         <div className="ws-kpi-card">
           <span className="ws-kpi-label">کاڵا هەڵبژێردراوەکان بۆ چاپ</span>

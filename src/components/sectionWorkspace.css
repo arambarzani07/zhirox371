@@ -237,3 +237,112 @@
  }
 }
 
+
+/* Desktop controls shared by views that use the Canva workspace layout. */
+@media screen {
+  #app .ws-stack.canva-standard-view {
+    flex: 0 0 auto;
+    overflow: visible;
+    gap: clamp(12px, 2vh, 22px);
+  }
+
+  #app .canva-standard-view .ws-kpi-grid {
+    gap: clamp(10px, 1.25vw, 24px);
+  }
+
+  #app .canva-standard-view .ws-kpi-card {
+    justify-content: center;
+    min-width: 0;
+    min-height: clamp(66px, 9.6vh, 104px);
+    gap: 5px;
+    padding: 10px clamp(12px, 1.1vw, 21px);
+    border-radius: 9px;
+  }
+
+  #app .canva-standard-view .ws-kpi-label,
+  #app .canva-standard-view .form-col {
+    font-size: clamp(11px, .77vw, 15px);
+  }
+
+  #app .canva-standard-view .ws-kpi-value {
+    font-size: clamp(17px, 1.25vw, 24px);
+  }
+
+  #app .canva-standard-view .ws-kpi-sub {
+    font-size: clamp(10px, .68vw, 13px);
+  }
+
+  #app .section-workspace .canva-standard-view .ws-panel {
+    padding: clamp(12px, 1.15vw, 22px) !important;
+  }
+
+  #app .canva-standard-view .ws-panel-title {
+    font-size: clamp(14px, 1.06vw, 20px) !important;
+    margin-bottom: clamp(10px, 1.5vh, 16px) !important;
+  }
+
+  #app .canva-standard-view .ws-form-grid {
+    gap: clamp(8px, 1.1vw, 21px);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  }
+
+  #app .section-workspace .canva-standard-view :is(
+    button.primary, button.secondary, .input-search, .form-col input, .form-col select
+  ) {
+    min-height: clamp(36px, 4.7vh, 50px);
+    font-size: clamp(11px, .74vw, 14px);
+  }
+
+  #app .section-workspace .canva-standard-view button:disabled {
+    cursor: default;
+    opacity: .52;
+  }
+
+  #app .canva-standard-view .section-workspace__table {
+    flex: 0 1 auto !important;
+    max-height: clamp(190px, 50vh, 540px) !important;
+  }
+
+  #app .canva-standard-view .section-workspace__table :is(th, td),
+  #app .canva-standard-view table.table :is(th, td) {
+    padding: clamp(8px, 1vh, 11px) clamp(8px, .8vw, 16px) !important;
+  }
+
+  #app .canva-standard-view :is(button, input, select, textarea):focus-visible {
+    outline: 2px solid #00949d;
+    outline-offset: 2px;
+  }
+}
+
+@media screen {
+  #app .ws-stack.canva-form-and-table {
+    display: grid;
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  #app .canva-form-and-table > .ws-kpi-grid {
+    grid-column: 1 / -1;
+  }
+
+  #app .canva-form-and-table > .ws-panel {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  #app .canva-form-and-table > .section-workspace__table {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  #app .canva-form-and-table > .ws-panel .ws-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #app .canva-form-and-table .ws-form-grid > button[type="submit"] {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

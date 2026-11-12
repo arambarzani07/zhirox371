@@ -168,3 +168,9 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Removed the legacy two-row navigation from the main React app. Home is the shared entry point for all 48 subsections, with a Home action in each workspace and Escape available for keyboard navigation.
 - Home uses the Canva 001 card layout. The store masthead sits directly above the workspace.
 - The isolated V57 desktop test shell retains its own navigation. Screen-by-screen visual parity remains in progress.
+
+### Receipt history, sales returns and shared PC workspaces
+- Replaced the cashier's old receipt list with screen 003. Receipt lookup supports number, barcode, customer and date, and the selected record drives print preview and the entry to sales returns.
+- Replaced the sales return layout with screen 004, including the original receipt lines, refund amount and return history. The existing return handler continues to validate eligible quantities and prevents duplicate cash and stock changes.
+- Replaced compact legacy control sizing and overflow on payment history, staff, reports, offers, labels, diagnostics, alerts and settings. The direct reports page uses the shared list and summary layout.
+- The shared layout is in use across the existing React PC routes. Separate screen-by-screen Canva implementation and visual comparison remain in progress. Isolated desktop builds are outside this React route migration.

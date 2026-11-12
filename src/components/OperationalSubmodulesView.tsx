@@ -318,10 +318,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     customers,
     receipts,
     expenses,
-    currentShift,
     setActiveReceiptForModal,
-    recordSaleReturn,
-    demoRefunds,
     receiveStock,
     updateProduct,
     addAuditLog
@@ -346,12 +343,6 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
   // Form states
   const [selectedProductId, setSelectedProductId] = useState<string>(products[0]?.id || '');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(suppliers[0]?.id || '');
-  const [returnReceiptNo, setReturnReceiptNo] = useState<string>(receipts[0]?.receiptNumber || '');
-  const [returnQty, setReturnQty] = useState<string>('1');
-  const [returnRestock, setReturnRestock] = useState<boolean>(true);
-  const [returnRefundMethod, setReturnRefundMethod] = useState<'cash' | 'debt'>('cash');
-  const [returnReason, setReturnReason] = useState<string>('داواکاریی کڕیار — کاڵای سالم');
-  const [returnMsg, setReturnMsg] = useState<{ text: string; error: boolean } | null>(null);
 
   const [poQty, setPoQty] = useState<string>('10');
   const [poUnitCost, setPoUnitCost] = useState<string>('');
@@ -388,219 +379,6 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
   const [aprType, setAprType] = useState<string>('گۆڕینی نرخ / داشکاندن');
   const [aprDetail, setAprDetail] = useState<string>('');
 
-  // 1. RETURN ARROW (گەڕاندنەوە)
-  if (sectionId === 'return-arrow') {
-    const matchedReceipt = receipts.find(r => r.receiptNumber === returnReceiptNo);
-
-    const handleReturnSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      const prod = products.find(p => p.id === selectedProductId);
-      const qtyNum = Number(returnQty);
-      if (!matchedReceipt || !prod || !Number.isFinite(qtyNum) || qtyNum <= 0) {
-        setReturnMsg({ text: 'پسووڵە، کاڵا یان بڕی گەڕاندنەوە نادروستە', error: true });
-        return;
-      }
-      const receiptLine = matchedReceipt.items.find(i => i.productId === prod.id);
-      if (!receiptLine) {
-        setReturnMsg({ text: 'ئەم کاڵایە لە پسووڵەی هەڵبژێردراو نییە', error: true });
-        return;
-      }
-      const unitPrice = receiptLine.price;
-      const lineMode = receiptLine.mode;
-      const refundAmount = unitPrice * qtyNum;
-
-      const res = recordSaleReturn({
-        receiptNo: returnReceiptNo.trim(),
-        productId: prod.id,
-        qty: qtyNum,
-        mode: lineMode,
-        refundAmount,
-        restock: returnRestock,
-        refundMethod: returnRefundMethod,
-        customerId: matchedReceipt.customerId,
-        reason: returnReason.trim() || 'گەڕاندنەوەی کاڵا'
-      });
-
-      if (!res.success) {
-        setReturnMsg({ text: res.message || 'هەڵە لە تۆمارکردنی گەڕاندنەوەدا', error: true });
-        return;
-      }
-
-      setReturnQty('1');
-      setReturnMsg({
-        text: `گەڕاندنەوەی ${qtyNum} × ${prod.name} بە بڕی ${money(refundAmount)} بە سەرکەوتوویی تۆمارکرا`,
-        error: false
-      });
-    };
-
-    const totalReturnedIqd = demoRefunds.reduce((s, r) => s + r.refundAmount, 0);
-    const totalRestockedUnits = demoRefunds.filter(r => r.restocked).reduce((s, r) => s + r.qty, 0);
-
-    return (
-      <div className="ws-stack">
-        <div className="ws-kpi-grid">
-          <div className="ws-kpi-card">
-            <span className="ws-kpi-label">کۆی پارەی گەڕێندراوە</span>
-            <span className="ws-kpi-value negative">{money(totalReturnedIqd)}</span>
-            <span className="ws-kpi-sub">لە کۆی {demoRefunds.length} مامەڵەی گەڕاندنەوە</span>
-          </div>
-          <div className="ws-kpi-card">
-            <span className="ws-kpi-label">یەکەی گەڕاوە بۆ کۆگا (سالم)</span>
-            <span className="ws-kpi-value positive">{totalRestockedUnits}</span>
-            <span className="ws-kpi-sub">زیادکراوەتەوە سەر باڵانسی کۆگا</span>
-          </div>
-          <div className="ws-kpi-card">
-            <span className="ws-kpi-label">باڵانسی چاوەڕوانکراوی سندووق</span>
-            <span className="ws-kpi-value">{money(currentShift.expectedCash)}</span>
-            <span className="ws-kpi-sub">دوای دەرکردنی گەڕاندنەوەی نەختینە</span>
-          </div>
-        </div>
-
-        <div className="ws-panel">
-          <h2 className="ws-panel-title">تۆمارکردنی گەڕاندنەوەی کاڵا و گێڕانەوەی پارە</h2>
-          {returnMsg && (
-            <div
-              style={{
-                padding: '8px 12px',
-                borderRadius: '8px',
-                marginBottom: '12px',
-                background: returnMsg.error ? '#fef2f2' : '#f0fdf4',
-                border: `1px solid ${returnMsg.error ? '#fca5a5' : '#bbf7d0'}`,
-                color: returnMsg.error ? '#991b1b' : '#166534',
-                fontSize: '12px',
-                fontWeight: 800
-              }}
-            >
-              {returnMsg.text}
-            </div>
-          )}
-
-          <form onSubmit={handleReturnSubmit} className="ws-form-grid">
-            <label className="form-col">
-              ژمارەی پسووڵەی فرۆشتن
-              <select
-                value={returnReceiptNo}
-                onChange={e => {
-                  const nextNo = e.target.value;
-                  setReturnReceiptNo(nextNo);
-                  const rcp = receipts.find(r => r.receiptNumber === nextNo);
-                  if (rcp) {
-                    setReturnRefundMethod(rcp.paymentMethod === 'debt' ? 'debt' : 'cash');
-                    if (rcp.items[0]?.productId) {
-                      setSelectedProductId(rcp.items[0].productId);
-                    }
-                  }
-                }}
-              >
-                {receipts.map(r => (
-                  <option key={r.id} value={r.receiptNumber}>
-                    {r.receiptNumber} — {r.customerName} ({money(r.total)})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="form-col">
-              کاڵای گەڕاوە
-              <select value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
-                {products.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({money(p.unit_sale_price_iqd)})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="form-col">
-              بڕی گەڕاوە
-              <input
-                type="number"
-                min="0.001"
-                step="0.001"
-                value={returnQty}
-                onChange={e => setReturnQty(e.target.value)}
-                required
-              />
-            </label>
-
-            <label className="form-col">
-              دۆخی کاڵا لە کاتی گەڕانەوە
-              <select
-                value={returnRestock ? 'restock' : 'damaged'}
-                onChange={e => setReturnRestock(e.target.value === 'restock')}
-              >
-                <option value="restock">سالم — بگەڕێتەوە ناو کۆگا</option>
-                <option value="damaged">خراپبوو — نەگەڕێتەوە کۆگا</option>
-              </select>
-            </label>
-
-            <label className="form-col">
-              شێوازی گێڕانەوەی پارە
-              <select
-                value={returnRefundMethod}
-                onChange={e => setReturnRefundMethod(e.target.value as 'cash' | 'debt')}
-              >
-                <option value="cash">نەختینە لە سندووقی کاشێر</option>
-                <option value="debt">کەمکردنەوە لە قەرزی کڕیار</option>
-              </select>
-            </label>
-
-            <label className="form-col">
-              هۆکاری گەڕاندنەوە
-              <input
-                value={returnReason}
-                onChange={e => setReturnReason(e.target.value)}
-                required
-              />
-            </label>
-
-            <button type="submit" className="primary">
-              تۆمارکردنی گەڕاندنەوە
-            </button>
-          </form>
-        </div>
-
-        <div className="section-workspace__table">
-          <strong className="section-workspace__metric">
-            مێژووی گەڕاندنەوەی کاڵاکان ({demoRefunds.length} مامەڵە · کۆ: {money(totalReturnedIqd)})
-          </strong>
-          <table>
-            <thead>
-              <tr>
-                <th>پسووڵە</th>
-                <th>ناوی کاڵا</th>
-                <th>بڕ</th>
-                <th>بڕی پارەی گەڕاوە</th>
-                <th>گەڕانەوە بۆ کۆگا</th>
-                <th>هۆکار</th>
-                <th>بەروار</th>
-              </tr>
-            </thead>
-            <tbody>
-              {demoRefunds.map(r => (
-                <tr key={r.id}>
-                  <td style={{ direction: 'ltr', fontWeight: 900 }}>{r.receiptNo}</td>
-                  <td>
-                    <strong>{r.productName}</strong>
-                  </td>
-                  <td>{r.qty}</td>
-                  <td style={{ direction: 'ltr', fontWeight: 900, color: '#b91c1c' }}>
-                    {money(r.refundAmount)}
-                  </td>
-                  <td style={{ fontWeight: 800, color: r.restocked ? '#15803d' : '#b45309' }}>
-                    {r.restocked ? 'بەڵێ (سالم)' : 'نەخێر (خراپبوو)'}
-                  </td>
-                  <td>{r.reason}</td>
-                  <td style={{ direction: 'ltr' }}>{new Date(r.createdAt).toLocaleDateString('en-GB')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
   // 2. PROFIT CHART (قازانج)
   if (sectionId === 'profit-chart') {
     const realizedRevenue=receipts.reduce((sum,r)=>sum+r.total,0);
@@ -611,7 +389,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const netProfit=grossProfit===null?null:grossProfit-totalExpenses;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی فرۆشتنی تۆمارکراو</span>
@@ -713,7 +491,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const highMarginCount = insights.filter(i => i.unitMargin!==null&&i.unitMargin >= 1000).length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کاڵاکانی شیکراوە لە کەتەلۆگ</span>
@@ -814,7 +592,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const totalPoCost = storeState.purchaseOrders.reduce((s, p) => s + p.qty * p.unitCost, 0);
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی داواکارییەکانی کڕین (PO)</span>
@@ -939,7 +717,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const activeOffersCount = storeState.offers.filter(o => o.active).length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی ئافەرە تۆمارکراوەکان</span>
@@ -1060,7 +838,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
       : 0;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کاڵاکانی ناو کەتەلۆگ</span>
@@ -1152,7 +930,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const activeCoupons = storeState.coupons.filter(c => c.active).length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی کوپۆنەکان</span>
@@ -1263,7 +1041,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const activeCampaignsCount = storeState.campaigns.filter(c => c.active).length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی کەمپەینەکانی بازاڕگەری</span>
@@ -1379,7 +1157,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const activeUsersCount = storeState.users.filter(u => u.active).length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی بەکارهێنەرانی سیستەم</span>
@@ -1474,7 +1252,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     ];
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">ئاستەکانی دەسەڵات (RBAC)</span>
@@ -1534,7 +1312,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     };
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">دراوی فەرمیی سیستەم</span>
@@ -1656,7 +1434,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const activeTemplates = storeState.templates.filter(t => t.active).length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی قاڵبەکانی چاپ</span>
@@ -1750,7 +1528,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const presentCount = storeState.attendance.filter(a => a.status === 'ئامادە').length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی تۆمارەکانی دەوام</span>
@@ -1855,7 +1633,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     };
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی هەڵسەنگاندنەکان</span>
@@ -1960,7 +1738,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     const approvedCount = storeState.approvals.filter(a => a.status === 'پەسەندکراو').length;
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view canva-form-and-table">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی داواکارییەکانی مۆڵەت</span>
@@ -2097,7 +1875,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     );
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی گشتیی داهاتی فرۆشتن</span>
@@ -2215,7 +1993,7 @@ export const OperationalSubmodulesView: React.FC<{ sectionId: string }> = ({ sec
     );
 
     return (
-      <div className="ws-stack">
+      <div className="ws-stack canva-standard-view">
         <div className="ws-kpi-grid">
           <div className="ws-kpi-card">
             <span className="ws-kpi-label">کۆی یەکەکانی ناو کۆگا</span>

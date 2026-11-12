@@ -122,7 +122,7 @@ export const DiagnosticsQaView: React.FC = () => {
   );
 
   return (
-    <div className="ws-stack">
+    <div className="ws-stack canva-standard-view">
       {/* 1. CONNECTED DEVICES SUBMODULE (ئامێرەکان) */}
       {activeTab === 'hardware' && (
         <>
