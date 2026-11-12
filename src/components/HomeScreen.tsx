@@ -4,9 +4,7 @@ import { MODULE_SPECS, CardIcon } from './CardIcon';
 import { NavView } from '../types';
 
 /**
- * Owner-locked desktop Home, restored from design-lock/pc-home-v1/index.html.
- * Keep navigation wired to the current React routes; no POS or DB logic lives here.
- * The later owner-approved 60 local SVG icons and global market banner are retained.
+ * Canva 001 desktop home. The locked order and the subcard routes are shared with the PC navigation registry.
  */
 export const HomeScreen: React.FC = () => {
   const { navigateTo } = useApp();
@@ -21,42 +19,27 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <section className="home-screen locked-home canva-home-001" data-canva-screen="001" dir="rtl" aria-label="بەشە سەرەکییەکان" style={{ maxWidth: 1760, margin: '0 auto', position: 'relative', padding: '28px 28px 24px' }}>
-      <h1 className="canva-home-title" style={{ fontSize: 30, margin: '0 0 24px', fontWeight: 900, color: '#172b45', textAlign: 'right' }}>بەشە سەرەکییەکان</h1>
+    <section className="home-screen locked-home canva-home-001" data-canva-screen="001" dir="rtl" aria-label="بەشە سەرەکییەکان">
+      <h1 className="canva-home-title">بەشە سەرەکییەکان</h1>
       {[0, 1, 2].map(rowIndex => {
         const start = rowIndex * 4;
         const openInRow = openModuleIndex >= start && openModuleIndex < start + 4;
         const activeModule = openInRow ? canvaHomeModules[openModuleIndex] : null;
         const openUpwards = rowIndex === 2;
         return (
-          <div key={rowIndex} style={{ position: 'relative', marginBottom: rowIndex === 2 ? 0 : 22 }}>
-            <div className="row locked-home-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 20, marginBottom: 0 }}>
+          <div key={rowIndex} className="canva-home-row">
+            <div className="row locked-home-row">
               {canvaHomeModules.slice(start, start + 4).map((spec, colIndex) => {
                 const index = start + colIndex;
                 const isOpen = openModuleIndex === index;
                 return (
-                  <button key={spec.id} type="button" className="module canva-home-card" data-module={index} data-canva-card={String(index + 1).padStart(2, '0')}
+                  <button key={spec.id} type="button" className="module canva-home-card"
+                    data-module={index} data-canva-card={String(index + 1).padStart(2, '0')}
+                    data-canva-highlight={isOpen || (openModuleIndex === -1 && index === 0)}
                     aria-expanded={isOpen} aria-controls={isOpen ? 'locked-home-subcards' : undefined}
-                    onClick={() => setOpenModuleIndex(prev => prev === index ? -1 : index)}
-                    style={{
-                      '--color': spec.color, '--light': spec.lightBg,
-                      minHeight: 184, border: isOpen ? `1.5px solid ${spec.color}` : '1px solid #dfe5ef',
-                      background: '#fff', borderRadius: 14, padding: '18px 20px',
-                      textAlign: 'right', display: 'flex', flexDirection: 'column',
-                      justifyContent: 'space-between', alignItems: 'start',
-                      color: '#26374e', boxShadow: isOpen ? '0 7px 19px #20415b12' : '0 2px 9px #1b385008',
-                      cursor: 'pointer'
-                    } as React.CSSProperties}>
-                    <span className="canva-home-card-top" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                      <strong className="canva-home-card-number" style={{ fontSize: 23, color: '#172b45', fontWeight: 900, direction: 'ltr' }}>{String(index + 1).padStart(2, '0')}</strong>
-                      <span className="icon" style={{ width: 45, height: 45, borderRadius: 12, background: spec.lightBg, color: spec.color, display: 'grid', placeItems: 'center' }}>
-                        <CardIcon id={spec.iconName} size={26} />
-                      </span>
-                    </span>
-                    <span className="end" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <span className="name" style={{ fontSize: 19, fontWeight: 900, color: '#172b45', textAlign: 'right' }}>{spec.title}</span>
-                      <span className="chev" style={{ fontSize: 16, fontWeight: 900, color: isOpen ? spec.color : '#8798ad', transform: isOpen ? 'rotate(180deg)' : undefined }}>⌄</span>
-                    </span>
+                    onClick={() => setOpenModuleIndex(previous => previous === index ? -1 : index)}>
+                    <strong className="canva-home-card-number" dir="ltr">{String(index + 1).padStart(2, '0')}</strong>
+                    <span className="name">{spec.title}</span>
                   </button>
                 );
               })}
@@ -80,7 +63,7 @@ export const HomeScreen: React.FC = () => {
                 </div>
                 <div className="subgrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 10 }}>
                   {activeModule.submodules.map((sub, index) => (
-                    <button className="sub" key={index} type="button"
+                    <button className="sub" key={index} type="button" data-section-target={sub.iconName}
                       onClick={() => handleSubcardClick(sub.targetView, sub.targetSubtab, sub.iconName)}
                       style={{ minHeight: 96, border: '1px solid #e5eaf1', borderRadius: 10,
                         background: '#f9fafc', color: '#273a54', padding: 12, textAlign: 'right',

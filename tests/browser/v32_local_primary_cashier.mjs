@@ -70,10 +70,11 @@ const login=async()=>{
 };
 try{
  await page.goto("http://127.0.0.1:3001/",{waitUntil:"networkidle"});
- await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
+ await page.locator('[data-canva-card="01"]').click();
+ await page.locator('#locked-home-subcards [data-section-target="barcode-scan"]').click();
  await page.getByRole("heading",{name:"کاشێر و فرۆشتن — PostgreSQL"}).waitFor();
  assert.equal(await page.locator(".pos-clean__trial").count(),1,"local PG trial marker remains visible");
- assert.equal(await page.locator("header.system-header.system-local-only").count(),1,"no Demo shift/finance header on local cashier");
+ assert.equal(await page.locator("header.zhirox-canva-masthead").count(),1,"store masthead remains on local cashier");
  assert.equal(await page.locator(".pos-clean__login").count(),1,"compact cashier sign-in");
  assert.equal(await page.locator(".pos-clean__notes[open]").count(),0,"technical notes are collapsed");
  await mkdir("artifacts/cashier-v1",{recursive:true});
@@ -118,7 +119,8 @@ try{
  await page.evaluate(([key,p])=>sessionStorage.setItem(key,JSON.stringify(p)),
   [pendingKey,prepared]);
  await page.reload({waitUntil:"networkidle"});
- await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
+ await page.locator('[data-canva-card="01"]').click();
+ await page.locator('#locked-home-subcards [data-section-target="barcode-scan"]').click();
  await login();
  await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #7/).waitFor();
  assert.equal(await page.evaluate(k=>sessionStorage.getItem(k),pendingKey),null);

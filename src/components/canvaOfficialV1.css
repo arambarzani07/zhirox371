@@ -16,6 +16,9 @@
     text-shadow: none !important;
     direction: rtl;
     position: fixed;
+    height: var(--market-banner-height) !important;
+    min-height: var(--market-banner-height) !important;
+    max-height: var(--market-banner-height) !important;
   }
   .market-banner.zhirox-canva-masthead .zhirox-canva-store-name {
     display: inline-block;
@@ -37,50 +40,113 @@
     color: #172b45 !important;
     -webkit-text-fill-color: #172b45 !important;
   }
+  body:has(.canva-pc-workspace) {
+    --market-banner-height: clamp(64px, 10.37vh, 112px);
+  }
+  body:has(.canva-home-001) {
+    --market-banner-height: clamp(64px, 10.56vh, 114px);
+  }
+  .market-banner.zhirox-canva-masthead::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(to left, #00949d 9%, #172b45 9%);
+  }
+  .market-banner.zhirox-canva-masthead .zhirox-canva-brand {
+    left: 3.44vw;
+    padding-inline-start: .72vw;
+    border-inline-start: 4px solid #00949d;
+    font-size: clamp(24px, 2.2vw, 43px) !important;
+    letter-spacing: 0;
+  }
+  .market-banner.zhirox-canva-masthead .zhirox-canva-store-name {
+    font-size: clamp(20px, 1.7vw, 33px);
+  }
   #app .home-screen.canva-home-001 {
     direction: rtl;
-    background: #ffffff !important;
+    position: relative;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0 3.44vw clamp(24px, 5vh, 54px);
+    background: #f2f5f9 !important;
     font-family: "Noto Kufi Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
-    max-width: 1760px;
   }
-  #app .home-screen.canva-home-001 .locked-home-row {
+  #app .canva-home-001 .canva-home-title {
+    display: flex;
+    align-items: center;
+    min-height: 9.07vh;
+    margin: 0 0 2.69vh;
+    padding-inline-start: .65vw;
+    border-bottom: 1px solid #e2eaf3;
+    font-size: clamp(22px, 1.6vw, 31px);
+    color: #172b45;
+  }
+  #app .canva-home-001 .canva-home-row { position: relative; }
+  #app .canva-home-001 .canva-home-row + .canva-home-row { margin-block-start: 2.08vh; }
+  #app .canva-home-001 .locked-home-row {
+    display: grid;
     direction: rtl;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1.25vw;
+    margin: 0;
   }
-  #app .home-screen.canva-home-001 .canva-home-card {
+  #app .canva-home-001 .canva-home-card {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
     min-width: 0;
-    direction: rtl;
-    border-color: #dfe5ed;
-    background: #ffffff !important;
-    box-shadow: 0 2px 12px rgba(23,43,69,.055);
+    height: 21.76vh;
+    min-height: 132px;
+    padding: 20px;
+    border: 1px solid #d1e0ee;
+    border-radius: clamp(16px, 1.5vw, 29px);
+    background: #fff !important;
+    box-shadow: none;
     outline-offset: 3px;
   }
-  #app .home-screen.canva-home-001 .canva-home-card-number {
-    font-family: "Segoe UI", Tahoma, sans-serif !important;
-    font-variant-numeric: tabular-nums;
-    color: #172b45 !important;
-    -webkit-text-fill-color: #172b45 !important;
+  #app .canva-home-001 .canva-home-card-number {
+    position: absolute;
+    inset: 9.4% 8% auto auto;
+    display: grid;
+    place-items: center;
+    min-width: clamp(32px, 2.5vw, 48px);
+    min-height: clamp(25px, 1.93vw, 37px);
+    border-radius: 5px;
+    background: #eaf1f6;
+    color: #00949d !important;
+    -webkit-text-fill-color: #00949d !important;
+    font: 700 clamp(15px, 1.08vw, 21px) system-ui, sans-serif !important;
   }
-  #app .home-screen.canva-home-001 .canva-home-title {
-    font-family: "Noto Kufi Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
-    text-align: right !important;
+  #app .canva-home-001 .canva-home-card .name {
+    font-size: clamp(17px, 1.43vw, 28px);
+    line-height: 1.55;
+    text-align: center !important;
   }
-  #app .home-screen.canva-home-001 .canva-home-card .name {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    line-height: 1.65;
-    text-align: right !important;
+  #app .canva-home-001 .canva-home-card[data-canva-highlight="true"] {
+    background: #173757 !important;
+    border-color: #173757;
   }
-  #app .home-screen.canva-home-001 .drawer,
-  #app .home-screen.canva-home-001 .sub {
-    background: #ffffff !important;
-    color: #172b45 !important;
+  #app .canva-home-001 .canva-home-card[data-canva-highlight="true"]::after {
+    content: "";
+    position: absolute;
+    inset: auto calc(50% - 1.25vw) 14%;
+    height: 3px;
+    background: #00949d;
   }
-  @media (max-height: 850px) {
-    #app .home-screen.canva-home-001 { padding-top: 12px !important; }
-    #app .home-screen.canva-home-001 .canva-home-card { min-height: 130px !important; }
-    #app .home-screen.canva-home-001 .canva-home-title { font-size: 24px !important; margin-bottom: 12px !important; }
+  #app .canva-home-001 .canva-home-card[data-canva-highlight="true"] :is(.name, .canva-home-card-number) {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
   }
+  #app .canva-home-001 .canva-home-card[data-canva-highlight="true"] .canva-home-card-number {
+    background: transparent;
+    border-right: 5px solid #00949d;
+    border-radius: 0;
+  }
+  #app .canva-home-001 :is(.drawer, .sub) { background: #fff !important; }
+
 }
 
 

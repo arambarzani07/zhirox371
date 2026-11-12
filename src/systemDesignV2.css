@@ -64,43 +64,6 @@
   border:1px solid var(--system-line)!important;border-radius:9px!important;
   font-size:22px;color:var(--system-blue)!important;}
  #root > .viewport > .desktop > main#app {background:var(--system-bg);scrollbar-gutter:stable;}
- /* Home: compact, consistent cards. No frozen dimensions or source hashes. */
- #app > .home-screen {
-  width:min(100%,1520px);max-width:1520px!important;margin:0 auto!important;
-  padding:14px 28px 16px!important;
- }
- #app .home-screen h1 {
-  margin:0 0 14px!important;color:var(--system-ink)!important;
-  font-size:20px!important;font-weight:900!important;
- }
- .system-module-rows {display:grid;gap:12px;}
- #app .home-screen .row {
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-  position:relative;gap:14px;min-height:132px;
- }
- #app .home-screen .module {
-  background:#fff!important;color:var(--system-ink)!important;
-  min-height:132px;border:1px solid var(--system-line)!important;
-  border-radius:13px!important;padding:15px 17px!important;
-  display:flex;flex-direction:column;align-items:flex-start;
-  justify-content:space-between;text-align:right;
-  box-shadow:var(--system-shadow)!important;
-  cursor:pointer;
- }
- #app .home-screen .module:hover,#app .home-screen .module[aria-expanded="true"] {
-  border-color:#9bb5d0!important;box-shadow:0 5px 17px #203f6416!important;
- }
- #app .home-screen .module .icon {
-  display:grid;place-items:center;flex:none;width:43px;height:43px;
-  border-radius:11px;
- }
- #app .home-screen .module .end {display:flex;width:100%;gap:10px;
-  align-items:center;justify-content:space-between;}
- #app .home-screen .module .name {
-  color:var(--system-ink)!important;font-size:14px!important;font-weight:900;
-  line-height:1.65;text-align:right;
- }
- #app .home-screen .module .chev {color:#95a4b6!important;font-size:18px;}
  #app .home-screen .drawer {
   position:absolute;inset-inline:0;top:calc(100% + 3px);z-index:25;
   width:100%;padding:15px;background:#fff;border:1px solid #cedae7;
@@ -216,7 +179,6 @@
   border-radius:10px!important;box-shadow:none!important;}
  .v57-app .v57-sub:disabled {opacity:.58;cursor:not-allowed;}
  @media (max-width:1100px) {
-  #app > .home-screen {padding:18px 20px 45px!important;}
   #app > div:not(.home-screen) {padding:18px 20px 30px!important;}
   #root > .viewport > .desktop > header.system-header {padding:0 14px!important;}
  }
@@ -377,7 +339,6 @@
 /* V5 owner-approved PC layout: two HORIZONTAL navigation lines, not cards
    or sidebar columns. Print receipts are never given these screen-only rules. */
 @media screen {
- #root > .viewport > .desktop > header.system-double-strip,
  .v57-app .v57-header.v57-double-strip {
    box-sizing:border-box!important;
    width:100%!important;max-width:none!important;height:auto!important;
@@ -389,7 +350,6 @@
    background:#fff!important;border-bottom:1px solid #dce5ef!important;
    position:relative;z-index:5;
  }
- #root > .viewport > .desktop > header.system-double-strip .system-primary-nav,
  .v57-app .v57-double-strip .system-primary-nav {
    box-sizing:border-box!important;
    flex:0 0 54px!important;width:100%!important;min-width:0;
@@ -401,11 +361,9 @@
    scrollbar-width:thin;scrollbar-color:#bed0e0 transparent;
    border-bottom:0!important;
  }
- #root > .viewport > .desktop > header.system-double-strip.has-subnav .system-primary-nav,
  .v57-app .v57-double-strip.has-subnav .system-primary-nav {
    border-bottom:1px solid #e8eef5!important;
  }
- #root > .viewport > .desktop > header.system-double-strip .system-primary-nav .ws-link,
  .v57-app .v57-double-strip .system-primary-nav button {
    box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
    flex:0 0 auto!important;height:36px!important;min-height:36px!important;
@@ -415,11 +373,9 @@
    background:transparent!important;color:#536b83!important;
    white-space:nowrap;cursor:pointer;
  }
- #root > .viewport > .desktop > header.system-double-strip .system-primary-nav .ws-link.active,
  .v57-app .v57-double-strip .system-primary-nav button.active {
    background:#24486e!important;color:#fff!important;border-color:#24486e!important;
  }
- #root > .viewport > .desktop > header.system-double-strip .system-subnav,
  .v57-app .v57-double-strip .system-subnav {
    box-sizing:border-box!important;width:100%!important;max-width:none!important;
    height:48px!important;min-height:48px!important;flex:0 0 48px!important;
@@ -431,9 +387,7 @@
    border-top:0!important;scrollbar-width:thin;
    scrollbar-color:#c2d2e2 transparent;
  }
- #root > .viewport > .desktop > header.system-double-strip:not(.has-subnav) .system-subnav,
  .v57-app .v57-double-strip:not(.has-subnav) .system-subnav {display:none!important;}
- #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link,
  .v57-app .v57-double-strip .system-subnav .system-subnav-link {
    box-sizing:border-box!important;flex:0 0 auto!important;
    display:inline-flex!important;align-items:center!important;gap:8px!important;
@@ -444,7 +398,6 @@
    color:#506981!important;font:850 12px Tahoma,"Segoe UI",sans-serif!important;
    text-align:center!important;white-space:nowrap;cursor:pointer;
  }
- #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link.selected,
  .v57-app .v57-double-strip .system-subnav .system-subnav-link.selected {
    background:#e5f0fc!important;color:#153f68!important;
    border:2px solid #2f6da6!important;
@@ -456,29 +409,9 @@
    min-width:16px;height:16px;border-radius:100%;font-size:12px;
    background:#276aa2;color:#fff;line-height:1;font-weight:900;
  }
- #root > .viewport > .desktop > header.system-double-strip .system-subnav .system-subnav-link:disabled,
  .v57-app .v57-double-strip .system-subnav .system-subnav-link:disabled {
    background:#f0f3f6!important;color:#8e9bab!important;
    border-color:#e8edf2!important;cursor:not-allowed;opacity:.75;
- }
- #root > .viewport > .desktop > main#app.system-two-rows {
-   box-sizing:border-box!important;display:block!important;
-   width:100%!important;max-width:none!important;
-   flex:1 1 0%!important;min-height:0!important;height:auto!important;
-   margin:0!important;padding:0!important;
-   overflow-y:scroll!important;overflow-x:hidden!important;
-   scrollbar-gutter:stable!important;
-   overscroll-behavior:none!important;
-   background:var(--system-bg)!important;
- }
- #root > .viewport > .desktop > main#app.system-two-rows > .home-strip-only {
-   width:100%!important;max-width:none!important;min-height:100%!important;
-   margin:0!important;padding:0!important;border:0!important;
-   border-radius:0!important;box-shadow:none!important;
- }
- #root > .viewport > .desktop > main#app.system-two-rows > :not(.home-strip-only) {
-   box-sizing:border-box!important;width:100%!important;max-width:none!important;
-   min-height:100%!important;margin:0!important;padding:20px 26px 28px!important;
  }
  .v57-app .v57-content.v57-horizontal-workspace {
    display:block!important;width:100%!important;max-width:none!important;
@@ -517,11 +450,6 @@
    min-width:0!important;
    width:100%!important;
    max-width:100vw!important;
- }
- #app .home-screen .row,
- #app .home-screen .row.locked-home-row {
-   grid-template-columns:repeat(4,minmax(0,1fr))!important;
-   gap:14px!important;
  }
  #app .home-screen .subgrid {
    grid-template-columns:repeat(4,minmax(0,1fr))!important;

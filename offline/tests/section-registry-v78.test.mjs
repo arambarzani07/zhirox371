@@ -23,7 +23,7 @@ test("section data flow uses explicit unique IDs and never silently reuses anoth
  for(const fragment of ['activeSectionId','data-section-id','data-section-title']){
    assert.ok(screen.includes(fragment)||read("src/context/AppContext.tsx").includes(fragment),fragment);
  }
- assert.match(read("src/components/Header.tsx"),/sub\.iconName\)/);
+ assert.match(read("src/components/HomeScreen.tsx"),/sub\.iconName\)/);
  assert.match(read("src/App.tsx"),/SectionWorkspace key=\{activeSectionId\}/);
 });
 test("database settings are per store and per section, private, versioned and audited",()=>{

@@ -163,3 +163,8 @@ proof that the 148 original Canva pages have been transferred as functioning UI.
 - Expense entry previews the effect on the current drawer and requires explicit confirmation. Reconciliation uses counted cash and requires a reason for a discrepancy. The current closed shift has a printable report.
 - Sales receipts, expenses, cash refunds and retained customer payment events feed the history. The current shift summary uses recorded totals. Historical shift summaries, bank activity, separate other-income posting and the server approval workflow are outside this implementation.
 - Build, 38 source tests and browser checks passed, including all six finance screens at 1366×768 and 1920×1080, preserved 48-subtab navigation and demo checkout. Exact visual parity remains unverified.
+
+### Shared PC navigation and Home 001
+- Removed the legacy two-row navigation from the main React app. Home is the shared entry point for all 48 subsections, with a Home action in each workspace and Escape available for keyboard navigation.
+- Home uses the Canva 001 card layout. The store masthead sits directly above the workspace.
+- The isolated V57 desktop test shell retains its own navigation. Screen-by-screen visual parity remains in progress.

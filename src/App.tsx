@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useApp } from './context/AppContext';
-import { Header } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
 import { CanvaWorkspace } from './components/CanvaWorkspace';
 import { SectionWorkspace } from './components/SectionWorkspace';
@@ -65,8 +64,7 @@ export const App: React.FC = () => {
       </div>
       <div className="viewport">
         <div className="desktop">
-          <Header localPilot={localCashierV32} />
-          <main id="app" className="system-two-rows">
+          <main id="app" className="canva-pc-workspace">
             {currentView === 'home' && <HomeScreen />}
             {currentView !== 'home' && activeSectionId && <SectionWorkspace key={activeSectionId} sectionId={activeSectionId} />}
             {!activeSectionId && currentView !== 'home' && (

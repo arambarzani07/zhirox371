@@ -1,7 +1,7 @@
 /* Shared desktop workspace controls from the Canva PC reference.
    Screen-specific layouts keep their own structure and sizing. */
 @media screen {
- #root > .viewport > .desktop > main#app.system-two-rows > section.section-workspace {
+ #root > .viewport > .desktop > main#app.canva-pc-workspace > section.section-workspace {
    box-sizing:border-box;width:100%!important;max-width:none!important;
    height:100%!important;max-height:100%!important;
    min-height:0!important;margin:0!important;padding:0 2vw clamp(16px, 3vh, 32px)!important;

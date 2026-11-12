@@ -3,26 +3,23 @@
     --market-banner-height: clamp(64px, 9.8vh, 106px);
   }
 
-  /* Preserve the global two-line PC navigation across every module.
-   * Only the redundant workspace-level heading is hidden for Canva stock screens.
-   * Hiding the entire global header broke stock navigation and 48-section parity. */
   #app .section-workspace:has(.canva-stock-036) > .section-workspace__header {
     display: none !important;
   }
 
-  #root > .viewport > .desktop > main#app.system-two-rows:has(.canva-stock-036) {
+  #root > .viewport > .desktop > main#app.canva-pc-workspace:has(.canva-stock-036) {
     scrollbar-gutter: auto !important;
     background: #f2f5f9 !important;
   }
 
-  #root > .viewport > .desktop > main#app.system-two-rows > section.section-workspace:has(.canva-stock-036) {
+  #root > .viewport > .desktop > main#app.canva-pc-workspace > section.section-workspace:has(.canva-stock-036) {
     height: 100% !important;
     max-height: none !important;
     padding: 0 !important;
     background: transparent;
   }
 
-  #root > .viewport > .desktop > main#app.system-two-rows > .stock-036-shell {
+  #root > .viewport > .desktop > main#app.canva-pc-workspace > .stock-036-shell {
     height: 100%;
     padding: 0 !important;
   }

@@ -475,7 +475,8 @@ try {
  assert.equal(await page.locator('[data-canva-screen="023"]').count(),1);
  await page.locator(".canva-catalog-new-heading").getByRole("button",{name:"ماڵەوە"}).click();
  assert.equal(await page.locator(".home-screen .module").count(),12);
- await page.locator(".system-header .ws-link").filter({hasText:"کاشێر"}).click();
+ await page.locator('[data-canva-card="01"]').click();
+ await page.locator('#locked-home-subcards [data-section-target="barcode-scan"]').click();
  const banner=page.getByRole("status",{name:"دۆخی تاقیکردنەوەی کاشێر"});
  await banner.waitFor({state:"visible"});
  assert.match(await banner.innerText(),/فرۆشتنی ڕاستەقینە نییە/);

@@ -18,9 +18,8 @@ test("Pilot cannot be enabled in production build or externally accessed by Vite
  assert.match(config,/target:localCashier\?'http:\/\/127\.0\.0\.1:3308':'http:\/\/127\.0\.0\.1:3307'/);
  assert.match(config,/\.\.\.\(pilot\?\{proxy/);
  assert.match(cashier,/\{pilotEnabled && <LocalPostgresPilotV24/);
- // Global top navigation remains; restored Home cards are only presentation.
  // Local V24 cashier remains DEV-only and bound to loopback.
- assert.match(read("src/components/Header.tsx"),/system-strip-only/);
+ assert.match(read("src/App.tsx"),/<HomeScreen \/>/);
  assert.match(home,/className="home-screen locked-home canva-home-001"/);
  assert.match(home,/canvaHomeModules\.slice\(start, start \+ 4\)/);
  assert.doesNotMatch(home,/LocalPostgresPilotV24|createPool|postgres:\/\//);

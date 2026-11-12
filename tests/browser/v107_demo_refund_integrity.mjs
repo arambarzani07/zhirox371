@@ -13,8 +13,8 @@ const read=()=>page.evaluate(()=>{
  };
 });
 const openRefunds=async()=>{
- await page.locator(".system-primary-nav button[data-module-id='0']").click();
- await page.locator(".system-subnav button[data-sub-icon='return-arrow']").click();
+ await page.locator("[data-canva-card='01']").click();
+ await page.locator("#locked-home-subcards [data-section-target='return-arrow']").click();
  const section=page.locator("section.section-workspace[data-section-id='return-arrow']");
  await section.waitFor();
  const form=section.locator("form.ws-form-grid").first();

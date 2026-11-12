@@ -125,7 +125,7 @@ html, body, #root {
     padding: 0 !important;
     margin: 0 !important;
   }
-  .market-banner, header, nav, .system-double-strip, .viewport, main#app, .thermal-receipt-controls, .tabs, .toolbar, .footer-actions, .catalog-buttons, button {
+  .market-banner, header, nav, .viewport, main#app, .thermal-receipt-controls, .tabs, .toolbar, .footer-actions, .catalog-buttons, button {
     display: none !important;
   }
   .thermal-receipt-backdrop {
@@ -150,8 +150,7 @@ html, body, #root {
 }
 
 
-/* Temporary React adapter while the interface is rebuilt from scratch.
-   Every layout parameter below is freely editable. This is NOT a design lock. */
+/* Main React PC viewport and Canva workspace. */
 @media screen {
   #root > .viewport {
     width: 100%;
@@ -169,12 +168,6 @@ html, body, #root {
     flex-direction: column;
     overflow: hidden;
   }
-  #root > .viewport > .desktop > header {
-    flex: 0 0 75px;
-    height: 75px;
-    min-height: 75px;
-    width: 100%;
-  }
   #root > .viewport > .desktop > main {
     flex: 1 1 0%;
     width: 100%;
@@ -185,56 +178,16 @@ html, body, #root {
     padding: 0;
     overscroll-behavior-y: contain;
   }
-  /* Current Home spacing is provisional and can be redesigned freely. */
-  #root > .viewport > .desktop > main > .home-screen {
-    padding: 39px 44px 60px;
-  }
-  /* Existing Home grid is provisional, not a mandatory 3x4 design. */
-  #root > .viewport > .desktop > main > .home-screen .row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  #root > .viewport > .desktop > main#app.canva-pc-workspace {
+    box-sizing: border-box;
+    max-width: none;
+    background: #f2f5f9 !important;
+    overflow-y: auto !important;
+    scrollbar-gutter: auto !important;
   }
 
-  /* Temporary header defaults. New design can replace them entirely. */
-  #root > .viewport > .desktop > header {
-    background: #fff;
-    padding: 0 42px;
-    border-bottom: 1px solid #e7ecf2;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  #root > .viewport > .desktop > header .brand {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    font-size: 19px;
-    font-weight: 800;
-  }
-  #root > .viewport > .desktop > header .brand i {
-    width: 43px;
-    height: 43px;
-    border-radius: 12px;
-    background: #243d60;
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-style: normal;
-    font-size: 25px;
-  }
-  #root > .viewport > .desktop > header .home {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    border: 1px solid #e5eaf0;
-    background: #f7f9fc;
-    color: #556a84;
-  }
-}
-
-@media screen {
-  /* Lock outer scroll when inside any submodule workspace so only inner tables scroll */
-  #root > .viewport > .desktop > main#app.system-two-rows {
-    overflow: hidden !important;
+  #app .section-workspace:has(.canva-pos-page-heading) > .section-workspace__header {
+    display: none;
   }
 
   /* Inner Scrollable Tables across all submodules */
