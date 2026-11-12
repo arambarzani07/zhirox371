@@ -1,0 +1,70 @@
+/* Authentic Canva 055 text geometry: 1920x1080, right list 1206px,
+ * left summary 511px. Visual parity requires further verified screenshots.
+ */
+@media screen {
+ #app [data-canva-screen="055"] .invoice055-filters {
+   display:grid;gap:clamp(12px,2.2vh,24px);margin:0 0 clamp(20px,3.4vh,36px);
+ }
+ #app [data-canva-screen="055"] .invoice055-fields {
+   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+   column-gap:clamp(14px,2vw,36px);
+ }
+ #app [data-canva-screen="055"] .invoice055-fields label,
+ #app [data-canva-screen="055"] .invoice055-supplier-label {
+   display:grid;gap:clamp(8px,1.2vh,12px);
+   font-size:clamp(12px,.82vw,16px);font-weight:900;
+ }
+ #app [data-canva-screen="055"] .invoice055-fields input,
+ #app [data-canva-screen="055"] .invoice055-supplier-label select,
+ #app [data-canva-screen="055"] .invoice055-notes select {
+   background:var(--stock-field);color:var(--stock-ink);
+   border:1px solid var(--stock-border);border-radius:7px;
+   box-sizing:border-box;min-width:0;width:100%;
+   min-height:clamp(42px,5vh,53px);
+   padding:9px 12px;font:inherit;
+ }
+ #app [data-canva-screen="055"] .invoice055-unverified {
+   font-size:clamp(11px,.75vw,14px);
+   font-weight:850;color:var(--stock-muted);padding:9px 12px;
+   background:var(--stock-field);border-radius:6px;margin:0;
+ }
+ #app [data-canva-screen="055"] .stock-036-table th:first-child{width:37%;}
+ #app [data-canva-screen="055"] .stock-036-table th:nth-child(2){width:15%;}
+ #app [data-canva-screen="055"] .stock-036-table th:nth-child(3){width:19%;}
+ #app [data-canva-screen="055"] .stock-036-table th:nth-child(4){width:17%;}
+ #app [data-canva-screen="055"] .stock-036-table th:nth-child(5){width:12%;}
+ #app [data-canva-screen="055"] .stock-036-table th,
+ #app [data-canva-screen="055"] .stock-036-table td {text-align:right;}
+ #app [data-canva-screen="055"] .stock-036-table input {
+   font:inherit;font-size:clamp(11px,.75vw,14px);background:var(--stock-field);
+   color:var(--stock-ink);border:1px solid var(--stock-border);
+   border-radius:6px;max-width:100%;box-sizing:border-box;min-height:42px;
+   padding:7px 8px;
+ }
+ #app [data-canva-screen="055"] .stock-036-table input[aria-invalid="true"] {
+   outline:2px solid #b85c36;
+ }
+ #app [data-canva-screen="055"] .stock-036-table [data-invoice055-delta="mismatch"] {
+   font-weight:900;color:#a85c2f;
+ }
+ #app [data-canva-screen="055"] .invoice055-notes {
+   display:grid;gap:clamp(10px,2vh,20px);
+ }
+ #app [data-canva-screen="055"] .invoice055-notes label {
+   display:grid;gap:7px;font-weight:900;max-width:85%;
+ }
+ #app [data-canva-screen="055"] .invoice055-notes span {display:block;}
+ #app [data-canva-screen="055"] .stock-036-summary dl div:nth-child(2) {
+   background:var(--stock-field);
+ }
+ #app [data-canva-screen="055"] .stock-036-summary dl div:nth-child(3) {
+   background:var(--stock-teal);
+ }
+ #app [data-canva-screen="055"] .stock-036-actions button:disabled {
+   opacity:.55;cursor:not-allowed;
+ }
+ @media(max-width:1180px) {
+   #app [data-canva-screen="055"] .invoice055-fields {gap:10px;}
+   #app [data-canva-screen="055"] .invoice055-notes label {max-width:100%;}
+ }
+}

@@ -127,6 +127,8 @@ export function CanvaPurchaseReceiving049(){
     <button type="button" className="stock-workflow-link"
      onClick={()=>navigateTo('suppliers','invoice','purchase-order')}>پسووڵەی کڕین و پارەدان</button>
     <button type="button" className="stock-workflow-link"
+     onClick={()=>navigateTo('suppliers','invoice-differences','purchase-order')}>جیاوازیی پسووڵەی کڕین — پێشبینین</button>
+    <button type="button" className="stock-workflow-link"
      onClick={()=>navigateTo('suppliers','order','purchase-order')}>گەڕانەوە بۆ فەرمانی کڕین</button>
    </>}
    note={<span className="receiving049-note">

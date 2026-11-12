@@ -137,6 +137,10 @@ export function CanvaSupplierRecords({ screen }: { screen: '050' | '051' | '052'
         <button type="button" className="stock-workflow-link" onClick={() => navigateTo('suppliers', 'invoice', 'purchase-order')}>گەڕانەوە بۆ پسووڵە</button>
       </> : <>
         <button type="button" className="stock-036-primary" disabled>پشتڕاستکردنەوەی پارەدان</button>
+        <button type="button" className="stock-workflow-link"
+          onClick={() => navigateTo('suppliers', 'invoice-differences', 'purchase-order')}>
+          پشکنینی جیاوازیی پسووڵە — Demo
+        </button>
         <button type="button" onClick={() => navigateTo('suppliers', 'supplier-return', 'purchase-order')}>گەڕاندنەوەی کڕین</button>
         <button type="button" className="stock-workflow-link" onClick={() => navigateTo('suppliers', 'order', 'purchase-order')}>گەڕانەوە بۆ فەرمان</button>
       </>}

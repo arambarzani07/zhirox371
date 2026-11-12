@@ -880,3 +880,83 @@ test('Canva 054 does not call local purchase draft a real pending request and fa
  assert.equal(visiblePurchaseApprovals054(trusted,'approved','').length,0);
  assert.equal(canDecidePurchaseApproval054('manager','req-01'),false);
 });
+
+test('Canva 055 original supplier invoice difference geometry and fail-closed navigation',()=>{
+ const geometry=JSON.parse(read('design/canva-original-screen-055-geometry.json'));
+ const screen=read('src/components/CanvaInvoiceDifferences055.tsx');
+ const policy=read('src/utils/invoiceDifferences055.ts');
+ const route=read('src/components/SectionWorkspace.tsx');
+ const receipt=read('src/components/CanvaSupplierRecords.tsx');
+ const receiving=read('src/components/CanvaPurchaseReceiving049.tsx');
+ const css=read('src/components/canvaInvoiceDifferences055.css');
+ assert.equal(geometry.design_id,layout.screens[54].id);
+ assert.deepEqual(geometry.canvas,{width:1920,height:1080});
+ assert.equal(geometry.element_count,48);
+ assert.equal(new Set(geometry.elements.map(x=>x.id)).size,48);
+ assert.match(screen,/number="055"/);
+ assert.match(screen,/جیاوازیی پسووڵەی کڕین/);
+ assert.match(screen,/ژمارەی فەرمانی کڕین — پشتڕاست نەکراوە/);
+ assert.match(screen,/ڕیزی ناهاوتا/);
+ assert.match(screen,/disabled=\{!canPostInvoiceReview055\(\)\}/);
+ assert.match(screen,/sessionStorage\.setItem\(reviewKey/);
+ assert.match(policy,/canPostInvoiceReview055/);
+ assert.doesNotMatch(screen,/receiveStock\(|recordSupplierPayment\(|adjustStock\(|updateProduct\(|submitPurchaseOrder\(/);
+ assert.match(route,/state\.subtab==="invoice-differences"/);
+ assert.match(receipt,/navigateTo\('suppliers', 'invoice-differences', 'purchase-order'\)/);
+ assert.match(receiving,/navigateTo\('suppliers','invoice-differences','purchase-order'\)/);
+ assert.match(css,/data-canva-screen="055"/);
+});
+test('Canva 055 compares only complete validated DEMO price and quantity data',async()=>{
+ const {price055,loadOrderPrices055,compareInvoiceLine055,summarizeInvoiceDifferences055,
+  emptyInvoiceReview055,loadInvoiceReview055,reviewSignature055,canPostInvoiceReview055}
+  =await import('../src/utils/invoiceDifferences055.ts');
+ const p={id:'p',name:'ئاوی کانی چنار',base_unit:'unit',unit_barcode:'a1',
+  carton:{units_per_carton:24,barcode:'a24'},extra_packs:[]};
+ const k={id:'kg',name:'تەماتە',base_unit:'kg',unit_barcode:'k1',extra_packs:[]};
+ const line={key:'p::carton::sup-1',productId:'p',productName:p.name,
+  supplierId:'sup-1',supplierName:'دابینکەر',unit:'carton',barcode:'a24',quantity:2};
+ const kg={key:'kg::kg::sup-1',productId:'kg',productName:k.name,
+  supplierId:'sup-1',supplierName:'دابینکەر',unit:'kg',barcode:'k1',quantity:1.5};
+ const before=JSON.stringify({p,k,line,kg});
+ assert.equal(price055('2500'),2500);
+ assert.equal(price055('0'),null);
+ assert.equal(price055('1.20'),null);
+ assert.equal(price055('1e6'),null);
+ assert.equal(price055('999999999999999'),null);
+ assert.equal(price055('-1'),null);
+ assert.deepEqual(loadOrderPrices055(JSON.stringify({[line.key]:'2500',deleted:'4500'}),[line]),{[line.key]:'2500'});
+ assert.deepEqual(loadOrderPrices055('not json',[line]),{});
+ const blank=compareInvoiceLine055(line,p,'','2500','');
+ assert.equal(blank.state,'incomplete');
+ assert.equal(blank.amountDifferenceIqd,null,'Unknown price must not be silently zero');
+ assert.equal(summarizeInvoiceDifferences055([blank]).monetaryDifference,null);
+ assert.equal(summarizeInvoiceDifferences055([blank]).mismatchCount,null);
+ const fewer=compareInvoiceLine055(line,p,'1','2500','3000');
+ assert.equal(fewer.state,'mismatch');
+ assert.equal(fewer.quantityDifference,-24,'Carton factor 24 converts to base units');
+ assert.equal(fewer.amountDifferenceIqd,-2000,'Invoice draft less full order draft');
+ assert.equal(summarizeInvoiceDifferences055([fewer]).mismatchCount,1);
+ assert.equal(summarizeInvoiceDifferences055([fewer]).monetaryDifference,-2000);
+ const equal=compareInvoiceLine055(line,p,'2','2500','2500');
+ assert.equal(equal.state,'matched');
+ assert.equal(equal.amountDifferenceIqd,0);
+ assert.equal(summarizeInvoiceDifferences055([equal]).mismatchCount,0);
+ assert.equal(compareInvoiceLine055(line,p,'1.5','2500','3000').state,'invalid');
+ const weighted=compareInvoiceLine055(kg,k,'1.25','1000','1100');
+ assert.equal(weighted.quantityDifference,-0.25);
+ assert.equal(weighted.amountDifferenceIqd,-125);
+ assert.equal(compareInvoiceLine055(kg,k,'1.2555','1000','1100').state,'invalid');
+ const partial=compareInvoiceLine055(kg,k,'1.25',undefined,'1100');
+ assert.equal(partial.state,'mismatch');
+ assert.equal(partial.amountDifferenceIqd,null);
+ assert.equal(summarizeInvoiceDifferences055([fewer,partial]).monetaryDifference,null);
+ assert.equal(summarizeInvoiceDifferences055([fewer,partial]).mismatchCount,1);
+ const saved={...emptyInvoiceReview055([line]),supplierId:'sup-1',invoice:'DEMO-12',
+  prices:{[line.key]:'3000'},reason:'short'};
+ assert.equal(loadInvoiceReview055(JSON.stringify(saved),[line]).reason,'short');
+ assert.deepEqual(loadInvoiceReview055(JSON.stringify(saved),[kg]).prices,{});
+ assert.deepEqual(loadInvoiceReview055(JSON.stringify({...saved,prices:{[line.key]:'-200'}}),[line]).prices,{});
+ assert.notEqual(reviewSignature055([line]),reviewSignature055([kg]));
+ assert.equal(canPostInvoiceReview055('manager'),false);
+ assert.equal(JSON.stringify({p,k,line,kg}),before,'Never alter source catalog or supplier records');
+});
