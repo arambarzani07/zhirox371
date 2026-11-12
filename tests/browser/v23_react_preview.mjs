@@ -702,6 +702,36 @@ try {
  assert.equal(afterCredit.latest.notes,"تاقیکردنەوەی 012");
  assert.equal(afterCredit.debt,beforeCredit.debt+afterCredit.latest.total);
  assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),3);
+ await barcode.fill("2000000000018");
+ await barcode.press("Enter");
+ const clearBasket = page.getByRole("button",{name:"پاککردنەوەی سەبەتە",exact:true});
+ await clearBasket.click();
+ const cancellation = page.locator('[data-canva-screen="013"]');
+ const confirmCancel = cancellation.getByRole("button",{name:"بەڵێ، هەڵوەشاندنەوەی پسووڵە"});
+ assert.equal(await confirmCancel.isDisabled(),true);
+ await cancellation.getByRole("button",{name:"نەخێر، گەڕانەوە بۆ فرۆشتن"}).click();
+ assert.equal(await page.locator("#finish-sale").isEnabled(),true);
+ await clearBasket.click();
+ await cancellation.getByLabel("هۆکاری هەڵوەشاندنەوە").selectOption("داواکاریی کڕیار");
+ await confirmCancel.click();
+ assert.equal(await page.locator("#finish-sale").isDisabled(),true);
+
+ await barcode.fill("2000000000018");
+ await barcode.press("Enter");
+ await page.locator('[data-canva-ticket="01"]').click();
+ await barcode.fill("2000000000018");
+ await barcode.press("Enter");
+ await page.getByRole("button",{name:/پسووڵە ڕاگیراوەکان/}).click();
+ const held = page.locator('[data-canva-screen="005"]');
+ await held.getByRole("button",{name:"داخستنی پسووڵە",exact:true}).click();
+ await cancellation.getByLabel("هۆکاری هەڵوەشاندنەوە").selectOption("پسووڵەی دووبارە");
+ await confirmCancel.click();
+ await held.getByRole("button",{name:"گەڕانەوە بۆ فرۆشتن"}).click();
+ assert.equal(await page.locator("#finish-sale").isEnabled(),true);
+ const audit = await page.evaluate(() => JSON.parse(localStorage.getItem("kanichnar_retail_pos_v18_audit")));
+ assert.ok(audit.some(entry => entry.details.includes("پسووڵە 02 · پسووڵەی دووبارە")));
+ assert.deepEqual(await readCredit(),afterCredit);
+ assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),3);
  assert.deepEqual(errors,[],"React client should not throw when internet disappears during demo checkout");
  console.log("PASS: locked Home navigation, offline Demo checkout, no modal, single print, safe reprint");
 } finally {

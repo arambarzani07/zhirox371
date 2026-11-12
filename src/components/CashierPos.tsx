@@ -1,3 +1,4 @@
+import { CanvaCancelTicket } from './CanvaCancelTicket';
 import { CanvaCreditSale } from './CanvaCreditSale';
 import { CanvaCustomerPicker } from './CanvaCustomerPicker';
 import { CanvaSplitPayment } from './CanvaSplitPayment';
@@ -108,6 +109,7 @@ export const CashierPos: React.FC = () => {
     removeParkedCart,
     customers,
     addCustomer,
+    addAuditLog,
     recordDebtRepayment,
     currentShift,
     openNewShift,
@@ -126,7 +128,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker' | 'credit-sale'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker' | 'credit-sale' | 'cancel-ticket'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -142,6 +144,11 @@ export const CashierPos: React.FC = () => {
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [directDiscountIqd, setDirectDiscountIqd] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [cancelTarget, setCancelTarget] = useState<{
+    ticketNumber: number;
+    parkedId?: string;
+    returnTo: 'checkout' | 'held';
+  } | null>(null);
   const [customerPickerReturn, setCustomerPickerReturn] = useState<'checkout' | 'credit-sale'>('checkout');
   const [creditNotes, setCreditNotes] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
@@ -199,6 +206,16 @@ export const CashierPos: React.FC = () => {
       setDirectDiscountIqd(0);
     }
   };
+
+  const openCancelTicket = (returnTo: 'checkout' | 'held', parkedId?: string) => {
+    setCancelTarget({ ticketNumber: activeTicketNumber, parkedId, returnTo });
+    setActiveTab('cancel-ticket');
+  };
+
+  const parkedCancelTicket = parkedCarts.find(ticket => ticket.id === cancelTarget?.parkedId);
+  const cancelItems = cancelTarget?.parkedId ? parkedCancelTicket?.items :
+    cancelTarget?.ticketNumber === activeTicketNumber ? cart : undefined;
+  const cancelLabel = parkedCancelTicket?.label ?? ticketLabel(activeTicketNumber);
 
   const [tenderedCash, setTenderedCash] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -597,7 +614,20 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && activeTab !== 'credit-sale' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && activeTab !== 'credit-sale' && activeTab !== 'cancel-ticket' && demoNotice}
+      {activeTab === 'cancel-ticket' && cancelTarget && <CanvaCancelTicket label={cancelLabel}
+        quantity={cancelItems?.reduce((sum, item) => sum + item.qty, 0) ?? 0}
+        total={cancelItems?.reduce((sum, item) => sum + item.price * item.qty, 0) ?? 0}
+        onBack={() => { setActiveTab(cancelTarget.returnTo); setCancelTarget(null); }}
+        onConfirm={reason => {
+          if (cancelItems?.length) {
+            closeDraft(cancelTarget.parkedId);
+            addAuditLog('هەڵوەشاندنەوەی پسووڵەی ناتەواو', `${cancelLabel} · ${reason}`);
+            setFeedbackMsg({ text: `${cancelLabel} هەڵوەشێنرایەوە`, error: false });
+          }
+          setActiveTab(cancelTarget.returnTo);
+          setCancelTarget(null);
+        }}>{demoNotice}</CanvaCancelTicket>}
       {activeTab === 'customer-picker' && <CanvaCustomerPicker initialId={selectedCustomerId}
         requiresCustomer={paymentMethod === 'debt'} onBack={() => setActiveTab(customerPickerReturn)}
         onSelect={id => { setSelectedCustomerId(id); setActiveTab(customerPickerReturn); }}>{demoNotice}</CanvaCustomerPicker>}
@@ -618,7 +648,7 @@ export const CashierPos: React.FC = () => {
       {activeTab === 'held' && <CanvaHeldTickets active={activeTicketNumber} cart={cart} parked={parkedCarts}
         onBack={() => setActiveTab('checkout')}
         onResume={(number, id) => { if (switchTicket(number, id)) setActiveTab('checkout'); }}
-        onClose={closeDraft}>{demoNotice}</CanvaHeldTickets>}
+        onClose={id => openCancelTicket('held', id)}>{demoNotice}</CanvaHeldTickets>}
 
       {/* SUBSECTION 1.4: PAYMENTS (پارەدان) */}
       {activeTab === 'payments' && (
@@ -775,10 +805,8 @@ export const CashierPos: React.FC = () => {
                       onClick={() => {
                         const parkedOne = parkedCarts.find(p => p.label === ticketLabel(1));
                         const hasActiveBasket = activeTicketNumber === 1 && cart.length > 0;
-                        if ((hasActiveBasket || parkedOne) && !window.confirm('پسووڵەی 01 بەبێ تۆمارکردن دابخرێت؟')) return;
-                        if (parkedOne) closeDraft(parkedOne.id);
-                        if (hasActiveBasket) closeDraft();
-                        if (activeTicketNumber === 1) setFeedbackMsg({ text: 'پسووڵەی 01 پاککرایەوە', error: false });
+                        if (hasActiveBasket) openCancelTicket('checkout');
+                        else if (parkedOne) openCancelTicket('checkout', parkedOne.id);
                       }}>×</button>
                     <button className="canva-ticket-plus" type="button" aria-label="پسووڵەی نوێ"
                       onClick={() => {
@@ -1202,7 +1230,7 @@ export const CashierPos: React.FC = () => {
                         <button
                           type="button"
                           className="secondary"
-                          onClick={clearCart}
+                          onClick={() => openCancelTicket('checkout')}
                           style={{ height: '28px', fontSize: '11.5px', padding: '0 10px', color: '#b91c1c' }}
                         >
                           پاککردنەوەی سەبەتە

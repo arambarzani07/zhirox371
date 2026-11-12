@@ -86,9 +86,7 @@ export function CanvaHeldTickets({ active, cart, parked, onBack, onResume, onClo
           <button type="button" className="primary"
             onClick={() => onResume(selected.number, selected.parkedId)}>چوون بۆ کاشێر</button>
           <button type="button" className="secondary" disabled={selected.items.length === 0}
-            onClick={() => {
-              if (window.confirm(`${selected.label} بەبێ تۆمارکردن دابخرێت؟`)) onClose(selected.parkedId);
-            }}>داخستنی پسووڵە</button>
+            onClick={() => onClose(selected.parkedId)}>داخستنی پسووڵە</button>
         </div>
       </section>
     </section>
