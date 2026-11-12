@@ -1,3 +1,6 @@
+import { CanvaSaleDiscount } from './CanvaSaleDiscount';
+import { CanvaWorkspaceHeader } from './CanvaWorkspace';
+import { CanvaPaymentRecovery } from './CanvaPaymentRecovery';
 import { CanvaScanRecovery } from './CanvaScanRecovery';
 import { CanvaCancelTicket } from './CanvaCancelTicket';
 import { CanvaCreditSale } from './CanvaCreditSale';
@@ -129,7 +132,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker' | 'credit-sale' | 'cancel-ticket' | 'scan-recovery'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker' | 'credit-sale' | 'cancel-ticket' | 'scan-recovery' | 'payment-recovery' | 'sale-discount'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -455,10 +458,7 @@ export const CashierPos: React.FC = () => {
 
     if (paymentMethod === 'cash' && tenderedCash < grandTotal) {
       if (soundEnabled) playPosAudio('error');
-      setFeedbackMsg({
-        text: `بڕی پارەی دراو (${money(tenderedCash)}) کەمترە لە کۆی پسووڵە (${money(grandTotal)})!`,
-        error: true
-      });
+      setActiveTab('payment-recovery');
       return;
     }
 
@@ -612,7 +612,21 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && activeTab !== 'credit-sale' && activeTab !== 'cancel-ticket' && activeTab !== 'scan-recovery' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && activeTab !== 'credit-sale' && activeTab !== 'cancel-ticket' && activeTab !== 'scan-recovery' && activeTab !== 'payment-recovery' && activeTab !== 'sale-discount' && demoNotice}
+      {activeTab === 'sale-discount' && <CanvaSaleDiscount subtotal={subtotal} current={discountAmount}
+        onApply={(percent, fixed) => { setDiscountPercent(percent); setDirectDiscountIqd(fixed); setActiveTab('checkout'); }}
+        onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaSaleDiscount>}
+      {activeTab === 'payment-recovery' && <>
+        {demoNotice}
+        <CanvaPaymentRecovery total={grandTotal} status="تۆمار نەکراوە"
+          header={<CanvaWorkspaceHeader title="چارەسەری هەڵەی پارەدان" />}
+          message={`بڕی نەقد کەمە. بڕی ماوە: ${money(cashShortfall)}`}>
+          <p>بڕی نەقدی وەرگیراو لە کاشێر ڕاست بکەوە.</p>
+          <div className="canva-detail__actions">
+            <button type="button" className="secondary" onClick={() => setActiveTab('checkout')}>گەڕانەوە بۆ کاشێر</button>
+          </div>
+        </CanvaPaymentRecovery>
+      </>}
       {activeTab === 'scan-recovery' && failedScan && <CanvaScanRecovery failedCode={failedScan.code}
         error={failedScan.error}
         onRetry={raw => {
@@ -1445,6 +1459,8 @@ export const CashierPos: React.FC = () => {
                 <div style={{ fontSize: '11px', fontWeight: 800, color: '#243b55' }}>
                   داشکاندن لەسەر سەبەتە (% یان بڕی دینار):
                 </div>
+                <button type="button" className="secondary" disabled={cart.length === 0}
+                  onClick={() => setActiveTab('sale-discount')}>پێشبینینی داشکاندن</button>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px' }}>
                   {[0, 5, 10, 15].map(pct => (
                     <button

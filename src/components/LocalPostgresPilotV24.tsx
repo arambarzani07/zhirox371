@@ -1,3 +1,5 @@
+import { CanvaPaymentRecovery } from './CanvaPaymentRecovery';
+import type { LocalIntentStatusV32 } from '../localCashierHistoryV32';
 import React,{useEffect,useState} from 'react';
 import {prepareDurableLocal,commitDurableLocal,cancelDurableLocal,recoverDurableLocal,loginLocal,makePilotPending,scanLocal,validPilotPending} from '../localPilotV24';
 import type {LocalPilotItem,PilotPending,PilotResult} from '../localPilotV24';
@@ -24,6 +26,8 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
  const [scan,setScan]=useState("");
  const [cart,setCart]=useState<Line[]>([]);
  const [pending,setPending]=useState<PilotPending|null>(null);
+ const [paymentStatus,setPaymentStatus]=useState<{requestId:string;intent:LocalIntentStatusV32|null}|null>(null);
+ const inspectedIntent=paymentStatus?.requestId===pending?.request_id ? paymentStatus?.intent : undefined;
  const [last,setLast]=useState<PilotResult|null>(null);
  const [history,setHistory]=useState<LocalReceiptV32[]>([]);
  const [historyError,setHistoryError]=useState("");
@@ -162,7 +166,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        setPending(request);
      }
    }catch(err){setError(err instanceof Error?err.message:"هەڵە لە سەبەتە");return;}
-   setBusy(true);setError("");
+   setBusy(true);setError("");setPaymentStatus(null);
    try{
      // First SQL statement durably prepares; only then can the second statement
      // execute the real atomic sale. Repeated calls use exactly the same UUID.
@@ -196,6 +200,19 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        setError("ئەنجامی فرۆشتن دڵنیا نییە؛ تەنها هەمان داواکاری دووبارە بنێرە. سەبەتە مەگۆڕە.");
      }
    }finally{setBusy(false);}
+ };
+ const checkPendingPayment=async()=>{
+   if(!pending||!available||busy)return;
+   const requestId=pending.request_id;
+   setBusy(true);
+   try {
+     const intent=await getLocalIntentStatusV32(token,requestId);
+     setPaymentStatus({requestId,intent});
+   }catch{
+     setPaymentStatus({requestId,intent:null});
+   }finally{
+     setBusy(false);
+   }
  };
  const changeQty=(barcode:string,delta:number)=>{
    if(busy||pending)return;
@@ -285,7 +302,7 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
          </button>
        </form>
        {pending&&<div className={standalone?"pos-clean__pending":undefined} role="alert" style={standalone?undefined:{color:"#9a3412",marginTop:8}}>
-         مامەڵەی چاوەڕوانە هەیە؛ لە PostgreSQL پاشەکەوت دەکرێت و سەبەتە قوفڵ کراوە. دوای داخستنی پەڕە دەتوانرێت بگەڕێنرێتەوە.
+         مامەڵەی چاوەڕوانە هەیە و سەبەتە قوفڵ کراوە. دۆخی داواکاری لە سێرڤەر بپشکنە.
        </div>}
        {last&&<div role="status" style={{marginTop:8,fontWeight:850}}>
          پسووڵەی PostgreSQL ـی تاقیکردنەوە: #{last.receipt_no} — {money(last.total_minor)}
@@ -294,6 +311,16 @@ export const LocalPostgresPilotV24:React.FC<{standalone?:boolean}>=({standalone=
        {isolatedLanPilotV36&&standalone&&last&&available&&<LocalV36ReceiptTools key={last.sale_id} token={token} saleId={last.sale_id}/>}
        </aside>
        </div>
+       {pending&&<CanvaPaymentRecovery total={pending.expected_total_minor}
+         receiptNumber={inspectedIntent?.receipt_no ?? undefined}
+         confirmedAmount={inspectedIntent?.total_minor ?? undefined}
+         status={inspectedIntent?.state==="committed" ? "تۆمارکراوە" : inspectedIntent?.state==="cancelled" ?
+           "هەڵوەشێندراوەتەوە" : inspectedIntent?.state==="prepared" ? "ئامادەکراوە" : "پێویستی بە پشکنینە"}
+         message={inspectedIntent ? "دۆخی داواکاری لە سێرڤەرەوە خوێندرایەوە." :
+           "وەڵامی کۆتاییی پارەدان هێشتا دیار نییە."}>
+         <p>پێش دووبارە ناردنەوە، دۆخی هەمان داواکاری بپشکنە.</p>
+         <button type="button" disabled={busy} onClick={()=>void checkPendingPayment()}>پشکنینی دۆخی مامەڵە</button>
+       </CanvaPaymentRecovery>}
        {standalone&&<details className="pos-clean__history" open={Boolean(last)}>
          <summary>پسووڵەکان</summary>
          <section aria-label="مێژووی پسووڵەی ناوخۆیی">

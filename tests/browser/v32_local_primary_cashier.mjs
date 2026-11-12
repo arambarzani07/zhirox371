@@ -7,7 +7,7 @@ const product="20000000-0000-0000-0000-000000000032";
 const saleId="30000000-0000-0000-0000-000000000032";
 const barcode="6260053183974";
 const pendingKey="zhirox-v24-local-pending:"+store;
-let failedScan=true,commits=0,prepares=0,receiptCount=0,prepared=null;
+let failedScan=true,statusChecks=0,commits=0,prepares=0,receiptCount=0,prepared=null;
 const requests=[],errors=[];
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1366,height:900}});
@@ -22,6 +22,8 @@ await page.route("**/api/local/**",async route=>{
  assert.equal(req.headers().authorization,"Bearer v32-test-session");
  if(path==="/api/local/v31/recover")return json(200,{ok:true,intent:null});
  if(path==="/api/local/v32/intent"){
+  assert.equal(req.method(),"GET");
+  statusChecks++;
   assert.equal(url.searchParams.get("request_id"),prepared?.request_id);
   return json(200,{ok:true,intent:prepared?{
    ...prepared,state:"committed",sale_id:saleId,receipt_no:"7",total_minor:"2500"
@@ -56,8 +58,7 @@ await page.route("**/api/local/**",async route=>{
   const data=req.postDataJSON();
   assert.equal(data.request_id,prepared?.request_id);
   commits++;receiptCount=1;
-  return json(200,{ok:true,receipt:{
-   sale_id:saleId,receipt_no:"7",total_minor:"2500",replayed:false}});
+  return json(503,{error:"response_lost_after_commit"});
  }
  throw Error("Unexpected local V32 API "+path);
 });
@@ -109,11 +110,15 @@ try{
  await page.getByText(/2,500 IQD/).first().waitFor();
  await page.screenshot({path:"artifacts/cashier-v1/03-verified-scan.png",fullPage:false});
  await page.getByRole("button",{name:"تاقیکردنەوەی فرۆشتنی Atomic"}).click();
- await page.getByText(/پسووڵەی PostgreSQL ـی تاقیکردنەوە: #7/).waitFor();
- await page.getByRole("region",{name:"مێژووی پسووڵەی ناوخۆیی"}).getByText("2,500 IQD").waitFor();
+ const recovery=page.locator('[data-canva-screen="015"]');
+ await recovery.getByText("وەڵامی کۆتاییی پارەدان هێشتا دیار نییە.").waitFor();
+ await recovery.getByRole("button",{name:"پشکنینی دۆخی مامەڵە"}).click();
+ await recovery.getByText("تۆمارکراوە",{exact:true}).waitFor();
+ assert.equal(await recovery.locator("dd").first().innerText(),"7");
+ assert.equal(statusChecks,1);
  assert.equal(prepares,1);
  assert.equal(commits,1);
- assert.equal(await page.evaluate(k=>sessionStorage.getItem(k),pendingKey),null);
+ assert.equal(await page.evaluate(k=>JSON.parse(sessionStorage.getItem(k)).request_id,pendingKey),prepared.request_id);
  assert.equal(await page.locator("#finish-sale").count(),0);
  // Browser retained a stale hint for a committed server intent. It must show
  // the ORIGINAL receipt, not prepare/commit a second sale.
