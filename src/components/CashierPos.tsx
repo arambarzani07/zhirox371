@@ -1,3 +1,4 @@
+import { CanvaSplitPayment } from './CanvaSplitPayment';
 import { CanvaBasketEditor } from './CanvaBasketEditor';
 import { CanvaProductSearch } from './CanvaProductSearch';
 import { CanvaHeldTickets, cashierTicketLabel as ticketLabel, cashierTicketNumbers } from './CanvaHeldTickets';
@@ -123,7 +124,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -590,7 +591,9 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && demoNotice}
+      {activeTab === 'split-payment' && <CanvaSplitPayment total={grandTotal}
+        customerName={selectedCustomerObj?.name} onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaSplitPayment>}
       {activeTab === 'basket-edit' && <CanvaBasketEditor initialId={editLineId}
         onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaBasketEditor>}
       {activeTab === 'search' && <CanvaProductSearch initialQuery={barcodeInput} onBack={() => {
@@ -1457,8 +1460,8 @@ export const CashierPos: React.FC = () => {
                   <button type="button" className="secondary" disabled
                     title="پارەدانی بانکی هێشتا کارا نەکراوە" aria-label="بانکی — هێشتا کارا نییە"
                     style={{ height: '30px', fontSize: '11.5px' }}>بانکی</button>
-                  <button type="button" className="secondary" disabled
-                    title="پارەدانی تێکەڵ هێشتا کارا نەکراوە" aria-label="تێکەڵ — هێشتا کارا نییە"
+                  <button type="button" className="secondary" disabled={cart.length === 0}
+                    aria-label="پێشبینینی پارەدانی تێکەڵ" onClick={() => setActiveTab('split-payment')}
                     style={{ height: '30px', fontSize: '11.5px' }}>تێکەڵ</button>
                   <button
                     type="button"
