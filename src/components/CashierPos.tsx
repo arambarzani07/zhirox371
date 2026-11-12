@@ -1,3 +1,4 @@
+import { CanvaProductSearch } from './CanvaProductSearch';
 import { CanvaHeldTickets, cashierTicketLabel as ticketLabel, cashierTicketNumbers } from './CanvaHeldTickets';
 import { CanvaReceiptHistory } from './CanvaReceiptHistory';
 import React, { useState, useRef, useEffect } from 'react';
@@ -121,7 +122,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -195,7 +196,6 @@ export const CashierPos: React.FC = () => {
 
   const [tenderedCash, setTenderedCash] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showQuickProducts, setShowQuickProducts] = useState(false);
 
   // Receipts & Payments search/filter state
 
@@ -300,16 +300,12 @@ export const CashierPos: React.FC = () => {
       }
       setBarcodeInput('');
       setHighlightedSearchIdx(0);
-      setShowQuickProducts(false);
       barcodeInputRef.current?.focus();
       return;
     }
 
     setBarcodeInput(rawVal);
     setHighlightedSearchIdx(0);
-    if (rawVal.trim().length > 0 && showQuickProducts) {
-      setShowQuickProducts(false);
-    }
   };
 
   const handleSelectSearchProduct = (p: Product, mode: 'unit' | 'carton' = 'unit') => {
@@ -396,18 +392,6 @@ export const CashierPos: React.FC = () => {
     setNewCustomerPhone('');
     setShowNewCustomerInline(false);
     setFeedbackMsg({ text: `کڕیاری نوێ «${created.name}» تۆمارکرا و هەڵبژێردرا`, error: false });
-  };
-
-  const handleQuickAdd = (p: Product) => {
-    const res = addToCart(p);
-    if (!res.success) {
-      if (soundEnabled) playPosAudio('error');
-      setFeedbackMsg({ text: res.message || 'هەڵە لە زیادکردندا', error: true });
-    } else {
-      if (soundEnabled) playPosAudio('beep');
-      setFeedbackMsg({ text: `${p.name} زیادکرا`, error: false });
-    }
-    barcodeInputRef.current?.focus();
   };
 
   const handleQtyChange = (idx: number, nextQty: number) => {
@@ -604,7 +588,11 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && demoNotice}
+      {activeTab === 'search' && <CanvaProductSearch initialQuery={barcodeInput} onBack={() => {
+        setBarcodeInput('');
+        setActiveTab('checkout');
+      }}>{demoNotice}</CanvaProductSearch>}
       {activeTab === 'held' && <CanvaHeldTickets active={activeTicketNumber} cart={cart} parked={parkedCarts}
         onBack={() => setActiveTab('checkout')}
         onResume={(number, id) => { if (switchTicket(number, id)) setActiveTab('checkout'); }}
@@ -909,9 +897,8 @@ export const CashierPos: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    className={showQuickProducts ? 'primary' : 'secondary'}
-                    onClick={() => setShowQuickProducts(prev => !prev)}
-                    aria-expanded={showQuickProducts}
+                    className="secondary"
+                    onClick={() => setActiveTab('search')}
                     style={{
                       height: '36px',
                       padding: '0 12px',
@@ -923,7 +910,6 @@ export const CashierPos: React.FC = () => {
                     }}
                   >
                     <span>هەڵبژاردن</span>
-                    <span style={{ fontSize: '10px', opacity: 0.85 }}>{showQuickProducts ? '▲' : '▼'}</span>
                   </button>
                 </form>
 
@@ -1127,90 +1113,7 @@ export const CashierPos: React.FC = () => {
                   </div>
                 )}
 
-                {showQuickProducts && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 6px)',
-                      insetInline: 0,
-                      zIndex: 35,
-                      background: '#ffffff',
-                      border: '1.5px solid #203e66',
-                      borderRadius: '11px',
-                      padding: '12px 14px',
-                      boxShadow: '0 12px 32px rgba(29, 52, 80, 0.16)'
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: '8px',
-                        paddingBottom: '6px',
-                        borderBottom: '1px solid #e8eef5'
-                      }}
-                    >
-                      <span style={{ fontSize: '12px', fontWeight: 900, color: '#1d3450' }}>
-                        هەڵبژاردنی خێرای کاڵاکان (کرتە بکە بۆ زیادکردنی دەستبەجێ):
-                      </span>
-                      <button
-                        type="button"
-                        className="secondary"
-                        onClick={() => setShowQuickProducts(false)}
-                        style={{ height: '26px', minHeight: '26px', padding: '0 9px', fontSize: '11px' }}
-                      >
-                        ✕ داخستن
-                      </button>
-                    </div>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                        gap: '7px'
-                      }}
-                    >
-                      {products.slice(0, 8).map(p => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => handleQuickAdd(p)}
-                          style={{
-                            padding: '8px 10px',
-                            background: '#f5f8fb',
-                            border: '1px solid #cbd6e2',
-                            borderRadius: '8px',
-                            fontSize: '11.5px',
-                            fontWeight: 800,
-                            color: '#1d3450',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            gap: '2px',
-                            textAlign: 'right',
-                            height: 'auto',
-                            minHeight: '48px'
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: '100%',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {p.name}
-                          </span>
-                          <strong style={{ direction: 'ltr', color: '#203e66', fontSize: '11px' }}>
-                            {money(p.unit_sale_price_iqd)}
-                          </strong>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
               </div>
 
               {/* Basket Table */}
