@@ -1,3 +1,4 @@
+import { CanvaScanRecovery } from './CanvaScanRecovery';
 import { CanvaCancelTicket } from './CanvaCancelTicket';
 import { CanvaCreditSale } from './CanvaCreditSale';
 import { CanvaCustomerPicker } from './CanvaCustomerPicker';
@@ -128,7 +129,7 @@ export const CashierPos: React.FC = () => {
     return 'checkout';
   };
 
-  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker' | 'credit-sale' | 'cancel-ticket'>(resolveMode);
+  const [activeTab, setActiveTab] = useState<'checkout' | 'receipts' | 'payments' | 'held' | 'search' | 'basket-edit' | 'split-payment' | 'customer-picker' | 'credit-sale' | 'cancel-ticket' | 'scan-recovery'>(resolveMode);
 
   useEffect(() => {
     setActiveTab(resolveMode());
@@ -136,6 +137,7 @@ export const CashierPos: React.FC = () => {
 
   const [editLineId, setEditLineId] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
+  const [failedScan, setFailedScan] = useState<{ code: string; error?: string } | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; error: boolean } | null>(null);
   const [inlineCheckoutReceipt, setInlineCheckoutReceipt] = useState<Receipt | null>(null);
   // Retain this lock until React has rendered the cleared basket after a sale.
@@ -304,30 +306,42 @@ export const CashierPos: React.FC = () => {
     );
   };
 
-  const handleBarcodeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawVal = e.target.value;
-    const { qty, cleanQuery } = parseScanMultiplier(rawVal);
-
-    if (cleanQuery && isExactBarcodeOrScaleMatch(cleanQuery)) {
-      const res = addToCart(cleanQuery, undefined, qty);
-      if (res.success) {
-        if (soundEnabled) playPosAudio('beep');
-        setFeedbackMsg({
-          text: qty > 1 ? `${qty} یەکە بە سەرکەوتوویی زیادکرا بۆ سەبەتە` : 'کاڵا بە سەرکەوتوویی زیادکرا بۆ سەبەتە',
-          error: false
-        });
-      } else {
-        if (soundEnabled) playPosAudio('error');
-        KurdishVoiceAnnouncer.announceBarcodeNotFound();
-        setFeedbackMsg({ text: res.message || 'بارکۆد نەدۆزرایەوە', error: true });
+  const submitBarcode = (code: string, quantity: number, retry = false) => {
+    const result = addToCart(code, undefined, quantity);
+    if (result.success) {
+      if (soundEnabled) playPosAudio('beep');
+      setFeedbackMsg({
+        text: quantity > 1 ? `${quantity} یەکە بە سەرکەوتوویی زیادکرا بۆ سەبەتە` : 'کاڵا بە سەرکەوتوویی زیادکرا بۆ سەبەتە',
+        error: false
+      });
+      if (retry) {
+        setFailedScan(null);
+        setActiveTab('checkout');
       }
-      setBarcodeInput('');
-      setHighlightedSearchIdx(0);
-      barcodeInputRef.current?.focus();
+    } else {
+      if (soundEnabled) playPosAudio('error');
+      const unknownBarcode = result.reason === 'barcode-not-found';
+      if (unknownBarcode || retry) {
+        if (unknownBarcode) KurdishVoiceAnnouncer.announceBarcodeNotFound();
+        setFailedScan({ code, error: unknownBarcode ? undefined : result.message });
+        setActiveTab('scan-recovery');
+      } else {
+        setFeedbackMsg({ text: result.message || 'کاڵا زیاد نەکرا', error: true });
+      }
+    }
+    setBarcodeInput('');
+    setHighlightedSearchIdx(0);
+    barcodeInputRef.current?.focus();
+  };
+
+  const handleBarcodeInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = event.target.value;
+    const { qty, cleanQuery } = parseScanMultiplier(raw);
+    if (cleanQuery && isExactBarcodeOrScaleMatch(cleanQuery)) {
+      submitBarcode(cleanQuery, qty);
       return;
     }
-
-    setBarcodeInput(rawVal);
+    setBarcodeInput(raw);
     setHighlightedSearchIdx(0);
   };
 
@@ -380,23 +394,7 @@ export const CashierPos: React.FC = () => {
       return;
     }
 
-    const res = addToCart(cleanQuery, undefined, qty);
-    if (res.success) {
-      if (soundEnabled) playPosAudio('beep');
-      setFeedbackMsg({
-        text: qty > 1 ? `${qty} یەکە بە سەرکەوتوویی زیادکرا بۆ سەبەتە` : 'کاڵا بە سەرکەوتوویی زیادکرا بۆ سەبەتە',
-        error: false
-      });
-      setBarcodeInput('');
-      setHighlightedSearchIdx(0);
-    } else {
-      if (soundEnabled) playPosAudio('error');
-      KurdishVoiceAnnouncer.announceBarcodeNotFound();
-      setFeedbackMsg({ text: res.message || 'بارکۆد یان ناوی کاڵا نەدۆزرایەوە', error: true });
-      setBarcodeInput('');
-      setHighlightedSearchIdx(0);
-    }
-    barcodeInputRef.current?.focus();
+    submitBarcode(cleanQuery, qty);
   };
 
   const handleCreateQuickCustomer = (e: React.FormEvent) => {
@@ -614,7 +612,17 @@ export const CashierPos: React.FC = () => {
       data-canva-screen={activeTab === 'checkout' ? '002' : undefined} dir="rtl">
       {activeTab === 'receipts'
         ? <CanvaReceiptHistory onBack={() => setActiveTab('checkout')}>{demoNotice}</CanvaReceiptHistory>
-        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && activeTab !== 'credit-sale' && activeTab !== 'cancel-ticket' && demoNotice}
+        : activeTab !== 'held' && activeTab !== 'search' && activeTab !== 'basket-edit' && activeTab !== 'split-payment' && activeTab !== 'customer-picker' && activeTab !== 'credit-sale' && activeTab !== 'cancel-ticket' && activeTab !== 'scan-recovery' && demoNotice}
+      {activeTab === 'scan-recovery' && failedScan && <CanvaScanRecovery failedCode={failedScan.code}
+        error={failedScan.error}
+        onRetry={raw => {
+          const { qty, cleanQuery } = parseScanMultiplier(raw);
+          if (cleanQuery) submitBarcode(cleanQuery, qty, true);
+        }}
+        onSearch={() => { setFailedScan(null); setActiveTab('search'); }}
+        onBack={() => { setFailedScan(null); setFeedbackMsg(null); setActiveTab('checkout'); }}>
+        {demoNotice}
+      </CanvaScanRecovery>}
       {activeTab === 'cancel-ticket' && cancelTarget && <CanvaCancelTicket label={cancelLabel}
         quantity={cancelItems?.reduce((sum, item) => sum + item.qty, 0) ?? 0}
         total={cancelItems?.reduce((sum, item) => sum + item.price * item.qty, 0) ?? 0}

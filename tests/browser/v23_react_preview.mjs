@@ -732,6 +732,28 @@ try {
  assert.ok(audit.some(entry => entry.details.includes("پسووڵە 02 · پسووڵەی دووبارە")));
  assert.deepEqual(await readCredit(),afterCredit);
  assert.equal(await page.evaluate(() => window.__zhiroxPrintCalls),3);
+ const basketQuantity = page.locator("#cart-list input[type=number]").first();
+ const beforeRecovery = Number(await basketQuantity.inputValue());
+ await barcode.fill("9999999999999");
+ await barcode.press("Enter");
+ const recovery = page.locator('[data-canva-screen="014"]');
+ await recovery.getByText("9999999999999",{exact:true}).waitFor();
+ const retryScan = recovery.getByPlaceholder("بارکۆد بنووسە");
+ await retryScan.fill("9999999999998");
+ await retryScan.press("Enter");
+ await recovery.getByText("9999999999998",{exact:true}).waitFor();
+ await recovery.getByRole("button",{name:"گەڕانەوە بۆ سەبەتە"}).click();
+ assert.equal(Number(await basketQuantity.inputValue()),beforeRecovery);
+ await barcode.fill("9999999999999");
+ await barcode.press("Enter");
+ await retryScan.fill("2000000000018");
+ await retryScan.press("Enter");
+ assert.equal(Number(await basketQuantity.inputValue()),beforeRecovery+1);
+ await barcode.fill("9999999999999");
+ await barcode.press("Enter");
+ await recovery.getByRole("button",{name:"گەڕان بە ناوی کاڵا"}).click();
+ await page.locator('[data-canva-screen="007"]').waitFor();
+ assert.deepEqual(await readCredit(),afterCredit);
  assert.deepEqual(errors,[],"React client should not throw when internet disappears during demo checkout");
  console.log("PASS: locked Home navigation, offline Demo checkout, no modal, single print, safe reprint");
 } finally {

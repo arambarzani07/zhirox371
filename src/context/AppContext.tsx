@@ -50,7 +50,7 @@ interface AppContextType {
   receiveStock: (productId: string, quantity: number, mode: 'unit' | 'carton', supplierId?: string, invoiceNo?: string) => void;
 
   cart: CartLine[];
-  addToCart: (input: string | Product, mode?: 'unit' | 'carton', requestedQty?: number) => { success: boolean; message?: string };
+  addToCart: (input: string | Product, mode?: 'unit' | 'carton', requestedQty?: number) => { success: boolean; message?: string; reason?: 'barcode-not-found' };
   updateCartQty: (index: number, nextQty: number) => { success: boolean; message?: string };
   toggleCartLineMode: (index: number) => { success: boolean; message?: string };
   editCartLine: (index: number, quantity: number, mode: CartLine['mode']) => { success: boolean; message?: string };
@@ -504,11 +504,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return null;
   };
 
-  const addToCart = (
-    input: string | Product,
-    requestedMode?: 'unit' | 'carton',
-    requestedQty?: number
-  ): { success: boolean; message?: string } => {
+  const addToCart: AppContextType['addToCart'] = (input, requestedMode, requestedQty) => {
     let p: Product;
     let mode: 'unit' | 'carton' = requestedMode || 'unit';
     let isScale = false;
@@ -536,7 +532,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       const match = findProductByCode(queryStr);
       if (!match) {
-        return { success: false, message: 'ئەم بارکۆدە نەدۆزرایەوە!' };
+        return { success: false, message: 'ئەم بارکۆدە نەدۆزرایەوە!', reason: 'barcode-not-found' };
       }
       p = match.product;
       mode = requestedMode || match.mode;
