@@ -144,6 +144,10 @@ export function CanvaPurchaseRequest047(){
     <button type="button" className="canva-purchase-save" onClick={save}
      >پاشەکەوتکردنی ڕەشنووس</button>
     <button type="button" className="canva-purchase-save" onClick={()=>navigateTo('suppliers','order','purchase-order')}>فەرمانی کڕین لە ڕەشنووسی پاشەکەوتکراو</button>
+    <button type="button" className="canva-purchase-save"
+      onClick={()=>navigateTo('suppliers','purchase-approvals','purchase-order')}>
+      پشکنینی داواکارییەکانی کڕین — تەنها بینین
+    </button>
    </aside>
   </div>
  </section>;
